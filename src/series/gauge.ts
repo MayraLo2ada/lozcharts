@@ -9,6 +9,7 @@
  */
 import type { DrawContext, SeriesImpl } from '../core/series';
 import { attrs, esc } from '../core/dom';
+import { polarPoint } from '../core/shapes';
 import { fitText } from '../core/axis';
 
 const DEG = Math.PI / 180;
@@ -57,10 +58,6 @@ export function valueFraction(v: number, d0: number, d1: number): number {
 /** Ángulo (radianes) de v sobre el arco. */
 export function valueAngle(v: number, d0: number, d1: number): number {
   return START_ANGLE + valueFraction(v, d0, d1) * SPAN;
-}
-
-export function polarPoint(cx: number, cy: number, r: number, a: number): [number, number] {
-  return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
 }
 
 /** Ruta SVG de un arco de a0 a a1 (horario). Vacía si no hay recorrido. */
@@ -113,10 +110,9 @@ export function lastFinite(values: readonly number[]): number {
   return -1;
 }
 
-/** Diferencia con signo explícito; el menos tipográfico (−) para que no parezca un guion. */
-export function signed(diff: number, format: (v: number) => string): string {
-  const sign = diff > 0 ? '+' : diff < 0 ? '−' : '';
-  return sign + format(Math.abs(diff));
+/** La marca de la meta dice qué es, no solo su número. */
+function targetLabel(ctx: DrawContext, t: number): string {
+  return `Meta ${ctx.format(t)}`;
 }
 
 function target(ctx: DrawContext): number | undefined {
@@ -133,7 +129,7 @@ function layout(ctx: DrawContext): GaugeLayout {
   const t = target(ctx);
   if (t === undefined) return gaugeLayout(ctx.width, ctx.height);
   const a = valueAngle(t, ctx.y.d0, ctx.y.d1);
-  const w = ctx.measure(ctx.format(t));
+  const w = ctx.measure(targetLabel(ctx, t));
   const out = LABEL_GAP + TARGET_OVERHANG;
   const padX = Math.abs(Math.cos(a)) < LABEL_SIDE ? w / 2 : w + out;
   const padTop = Math.sin(a) < -LABEL_TOP ? LABEL_SIZE + out : 0;
@@ -153,6 +149,11 @@ function text(x: number, y: number, body: string, a: Record<string, string | num
 
 export const gauge: SeriesImpl = {
   coords: 'free',
+  // El teclado recorre solo el valor que se dibuja (el último), no las filas anteriores.
+  navigable: (ps) => {
+    const i = lastFinite(ps.values);
+    return i < 0 ? [] : [i];
+  },
   // La meta también debe caber en el rango, aunque el valor no la alcance.
   domainValues: (o) => (o.target === undefined ? [] : [o.target]),
   includeZero: true,
@@ -184,7 +185,7 @@ export const gauge: SeriesImpl = {
       const [lx, ly] = polarPoint(cx, cy, r + thickness / 2 + TARGET_OVERHANG + LABEL_GAP, a);
       const cos = Math.cos(a);
       const sin = Math.sin(a);
-      s += text(lx, ly, ctx.format(t), {
+      s += text(lx, ly, targetLabel(ctx, t), {
         fill: th.textMuted,
         'font-size': LABEL_SIZE,
         'text-anchor': Math.abs(cos) < LABEL_SIDE ? 'middle' : cos > 0 ? 'start' : 'end',
@@ -251,7 +252,7 @@ export const gauge: SeriesImpl = {
       value: format.value(v),
       details: [
         ['Meta', format.value(t)],
-        ['Diferencia', signed(v - t, format.value)],
+        ['Diferencia', format.difference(v - t)],
       ],
     };
   },

@@ -26,6 +26,8 @@ export interface Prepared {
   pointLegend: boolean;
   /** Con pointLegend: posición en la paleta de cada punto (-1 para "Otros"). */
   pointSlots: number[];
+  /** Categorías sumadas en "Otros", con su valor: el tooltip y la tabla las detallan. */
+  others: { label: string; value: number }[];
 }
 
 export interface PrepareInput {
@@ -87,16 +89,21 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
     defs = defs.slice(0, 1);
   }
   let pointSlots: number[] = [];
+  let others: { label: string; value: number }[] = [];
   if (pointLegend) {
-    // Más categorías que colores: las sobrantes se suman en "Otros". Nunca se repite un color.
+    // Más categorías que colores: las primeras llevan los colores de la paleta y el resto (al menos
+    // dos, nunca un "Otros" de una sola) se suma en "Otros", en gris neutro. Nunca se repite un color, y ninguna categoría desaparece: su
+    // detalle queda en `others`. Los negativos no cuentan (en una proporción valen 0).
     const field = defs[0].field;
     if (rows.length > maxSeries) {
       const tail = rows.slice(maxSeries - 1);
-      const sum = tail.reduce((acc, r) => acc + (isFinite(toNumber(r[field])) ? toNumber(r[field]) : 0), 0);
+      others = tail.map((r) => ({ label: String(r[xField] ?? ''), value: toNumber(r[field]) }));
+      const parts = others.map((o) => o.value).filter(isFinite);
+      const sum = parts.length ? parts.reduce((acc, v) => acc + Math.max(0, v), 0) : NaN;
       rows = [...rows.slice(0, maxSeries - 1), { [xField]: OTHERS, [field]: sum }];
       if (xNum.length) xNum = [...xNum.slice(0, maxSeries - 1), NaN];
     }
-    pointSlots = rows.map((r, i) => (r[xField] === OTHERS && i === maxSeries - 1 ? -1 : i));
+    pointSlots = rows.map((_, i) => (others.length && i === rows.length - 1 ? -1 : i));
   }
 
   let folded: SeriesOptions[] = [];
@@ -169,6 +176,7 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
     coords,
     pointLegend,
     pointSlots,
+    others,
   };
 }
 

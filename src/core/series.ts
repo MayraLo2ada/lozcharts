@@ -110,6 +110,11 @@ export interface TooltipFormat {
   percent: (v: number) => string;
   /** ¿El punto i está oculto desde la leyenda? Para calcular partes del total visible. */
   isHidden: (i: number) => boolean;
+  /**
+   * Una diferencia entre dos valores del eje, con signo. Con formato de porcentaje se escribe en
+   * puntos porcentuales ("−7 p. p."), que no se confunde con una variación relativa.
+   */
+  difference: (d: number) => string;
 }
 
 /** Una línea del tooltip. */
@@ -132,6 +137,10 @@ export interface SeriesImpl {
    * las porciones de un pie; ocultar una la deja en cero). Con 'points' solo se usa la primera serie.
    */
   legendBy?: 'series' | 'points';
+  /** Índices que recorre el teclado (por defecto, todos). Un gauge solo tiene el que dibuja. */
+  navigable?(ps: PreparedSeries): number[];
+  /** Cómo se llaman sus datos en la descripción accesible: ['etapa', 'etapas']. Por defecto, puntos. */
+  items?: readonly [singular: string, plural: string];
   /** En 'free': índice del dato bajo el punto (px, py) del área, o -1. */
   hit?(ctx: DrawContext, px: number, py: number): number;
   /** En 'free': dónde apoyar el tooltip del dato i (px del área). */

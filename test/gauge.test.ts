@@ -8,11 +8,10 @@ import {
   gaugeLayout,
   hitGauge,
   lastFinite,
-  polarPoint,
-  signed,
   valueAngle,
   valueFraction,
 } from '../src/series/gauge';
+import { polarPoint } from '../src/core/shapes';
 import type { PreparedSeries, TooltipFormat } from '../src/core/series';
 
 const close = (a: number, b: number) => assert.ok(Math.abs(a - b) < 1e-9, `${a} ≠ ${b}`);
@@ -78,7 +77,14 @@ test('gauge: muestra el último valor finito', () => {
 
 test('gauge: el tooltip trae meta y diferencia con signo', () => {
   const fmt = (v: number) => String(v);
-  const format: TooltipFormat = { value: fmt, number: fmt, percent: fmt, isHidden: () => false };
+  const sign = (d: number) => (d > 0 ? '+' : d < 0 ? '−' : '');
+  const format: TooltipFormat = {
+    value: fmt,
+    number: fmt,
+    percent: fmt,
+    isHidden: () => false,
+    difference: (d) => sign(d) + Math.abs(d),
+  };
   const ps = { values: [40, 72], options: { target: 80 } } as unknown as PreparedSeries;
   assert.deepEqual(gauge.tooltip!(ps, 1, format), {
     value: '72',
@@ -89,8 +95,11 @@ test('gauge: el tooltip trae meta y diferencia con signo', () => {
   });
   const plain = { values: [72], options: {} } as unknown as PreparedSeries;
   assert.deepEqual(gauge.tooltip!(plain, 0, format), { value: '72' });
-  assert.equal(signed(5, fmt), '+5');
-  assert.equal(signed(0, fmt), '0');
+});
+
+test('gauge: el teclado solo recorre el valor que se dibuja', () => {
+  const ps = { values: [40, 72, NaN] } as unknown as PreparedSeries;
+  assert.deepEqual(gauge.navigable!(ps), [1]);
 });
 
 test('gauge: se dibuja en cualquier cuadro de la animación y el número no usa el color de la serie', () => {

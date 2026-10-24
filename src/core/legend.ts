@@ -40,13 +40,15 @@ export class Legend {
     this.sync(items);
   }
 
-  /** Actualiza estado y colores sin recrear los botones. */
+  /** Actualiza estado, colores y textos (por ejemplo, los porcentajes de un pie) sin recrear los botones. */
   sync(items: LegendItem[]): void {
     for (const item of items) {
       const button = this.buttons.get(item.key);
       if (!button) continue;
       button.setAttribute('aria-pressed', String(item.visible));
       (button.firstElementChild as HTMLElement).style.background = item.color;
+      const name = button.lastElementChild as HTMLElement;
+      if (name.textContent !== item.name) name.textContent = item.name;
     }
   }
 

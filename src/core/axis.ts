@@ -23,6 +23,8 @@ const LABEL_GAP = 12;
 /** Texto de la X en el índice i: corto para el eje, completo para el tooltip y la tabla. */
 export function xLabel(p: Prepared, i: number, short: boolean, ctx: XLabelContext): string {
   const fmt = ctx.format;
+  // Una fila sin X numérica (el "Otros" de un pie) se nombra con su texto.
+  if (p.xType !== 'category' && !isFinite(p.xNum[i])) return String(p.xRaw[i] ?? '');
   if (p.xType === 'time') {
     const t = p.xNum[i];
     const unit = p.timeUnit!;

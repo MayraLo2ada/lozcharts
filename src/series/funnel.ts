@@ -6,11 +6,13 @@
  * engañan; con barras centradas compara largos sobre un eje común de simetría, que es la
  * lectura más precisa. Todas llevan el color de la serie: la etapa la dice la etiqueta.
  *
- * Etiquetas: el nombre a la izquierda; a la derecha el valor y su porcentaje del inicio; y
- * entre dos filas, en texto secundario, la conversión respecto de la etapa anterior.
+ * Etiquetas: el nombre a la izquierda; a la derecha el valor y su porcentaje del inicio; y en
+ * una columna propia, a la altura del borde entre dos filas, la conversión de un paso al
+ * siguiente ("↓ 44 %"): así no se confunde con el porcentaje de la fila de arriba.
  */
 import type { DrawContext, PreparedSeries, SeriesImpl, TooltipFormat, TooltipValue } from '../core/series';
 import { attrs, esc } from '../core/dom';
+import { r2 } from '../core/shapes';
 import { fitText } from '../core/axis';
 
 /** Separación entre barras vecinas (espacio, no borde). */
@@ -91,6 +93,8 @@ export interface FunnelLayout {
   valueX: number;
   /** X donde terminan los valores (alineados a la derecha, como una columna de tabla) y empiezan los porcentajes. */
   valueEnd: number;
+  /** X de la columna de conversiones. */
+  conversionX: number;
   showLabels: boolean;
   showPercent: boolean;
   showConversion: boolean;
@@ -112,7 +116,7 @@ export function funnelLayout(width: number, height: number, n: number, labels: L
   if (showLabels) {
     nameW = Math.min(labels.name, width * MAX_NAME_SHARE);
     const rightCol = () =>
-      Math.max(labels.value + (showPercent ? INNER + labels.percent : 0), showConversion ? labels.conversion : 0);
+      labels.value + (showPercent ? INNER + labels.percent : 0) + (showConversion ? PAD + labels.conversion : 0);
     const fits = () => width - (nameW + PAD) - (rightCol() + PAD) >= width * MIN_BAR_SHARE;
     if (!fits()) showPercent = false;
     if (!fits()) showConversion = false;
@@ -129,6 +133,7 @@ export function funnelLayout(width: number, height: number, n: number, labels: L
     nameW,
     valueX: left + areaW + PAD,
     valueEnd: left + areaW + PAD + (showLabels ? labels.value : 0),
+    conversionX: left + areaW + PAD + (showLabels ? labels.value + (showPercent ? INNER + labels.percent : 0) + PAD : 0),
     showLabels,
     showPercent,
     showConversion,
@@ -141,8 +146,6 @@ export function rowAt(py: number, top: number, rowH: number, n: number): number 
   const i = Math.floor((py - top) / rowH);
   return i < n ? i : -1;
 }
-
-const r2 = (v: number) => Math.round(v * 100) / 100;
 
 /** Rectángulo con las cuatro esquinas redondeadas (el radio se achica si la barra es corta). */
 export function roundedBar(x: number, y: number, w: number, h: number, radius: number): string {
@@ -157,20 +160,29 @@ export function roundedBar(x: number, y: number, w: number, h: number, radius: n
   );
 }
 
+type StageTexts = { names: string[]; values: string[]; shares: string[]; steps: string[] };
+
+/** Textos ya formateados por conjunto de datos: no se reformatean en cada cuadro de la animación. */
+const textCache = new WeakMap<readonly number[], StageTexts>();
+
 /** Textos de cada etapa con los valores finales (no los animados): el layout no salta al animar. */
-function stageTexts(ctx: DrawContext): { names: string[]; values: string[]; shares: string[]; steps: string[] } {
+function stageTexts(ctx: DrawContext): StageTexts {
   const values = ctx.frame.ps.values;
+  const cached = textCache.get(values);
+  if (cached) return cached;
   const { fromStart, fromPrev } = conversions(values);
-  return {
+  const texts: StageTexts = {
     names: values.map((_, i) => ctx.label(i)),
     values: values.map((v) => (isFinite(v) ? ctx.format(v) : '')),
     shares: fromStart.map((p) => percentLabel(p, ctx.percent)),
     steps: fromPrev.map((p) => (isFinite(p) ? '↓ ' + percentLabel(p, ctx.percent) : '')),
   };
+  textCache.set(values, texts);
+  return texts;
 }
 
 /** Layout del contexto: mide las etiquetas solo si están encendidas. */
-function layoutOf(ctx: DrawContext): { L: FunnelLayout; texts: ReturnType<typeof stageTexts> | null } {
+function layoutOf(ctx: DrawContext): { L: FunnelLayout; texts: StageTexts | null } {
   if (ctx.frame.ps.options.labels === false) return { L: funnelLayout(ctx.width, ctx.height, ctx.n, null), texts: null };
   const texts = stageTexts(ctx);
   const widest = (list: string[]) => Math.max(0, ...list.map((s) => (s ? ctx.measure(s) : 0)));
@@ -183,9 +195,9 @@ function layoutOf(ctx: DrawContext): { L: FunnelLayout; texts: ReturnType<typeof
   return { L: funnelLayout(ctx.width, ctx.height, ctx.n, widths), texts };
 }
 
-/** Ancho animado de la barra i: crece desde el centro hacia el valor final. */
-function widthAt(ctx: DrawContext, L: FunnelLayout, i: number): number {
-  return barWidth(ctx.frame.y1[i], stageMax(ctx.frame.ps.values), L.areaW);
+/** Ancho animado de la barra i (crece desde el centro); `max` es la etapa mayor, calculada una vez. */
+function widthAt(ctx: DrawContext, L: FunnelLayout, i: number, max: number): number {
+  return barWidth(ctx.frame.y1[i], max, L.areaW);
 }
 
 function text(x: number, y: number, s: string, fill: string, extra: Record<string, string | number> = {}): string {
@@ -198,15 +210,17 @@ export const funnel: SeriesImpl = {
   layer: 0,
   legendSymbol: 'square',
   label: 'embudo',
+  items: ['etapa', 'etapas'],
   draw(ctx) {
     const { L, texts } = layoutOf(ctx);
     const th = ctx.theme;
+    const max = stageMax(ctx.frame.ps.values);
     let d = '';
     let labels = '';
     for (let i = 0; i < ctx.n; i++) {
       const y = L.top + i * L.rowH;
       const mid = y + (L.rowH - GAP) / 2;
-      const w = widthAt(ctx, L, i);
+      const w = widthAt(ctx, L, i, max);
       d += roundedBar(L.center - w / 2, y, w, L.rowH - GAP, RADIUS);
       if (!texts || !L.showLabels) continue;
       // Si ni una letra cabe, mejor sin nombre que un "…" suelto.
@@ -219,9 +233,9 @@ export const funnel: SeriesImpl = {
       if (L.showPercent && texts.shares[i]) {
         labels += text(L.valueEnd + INNER, mid, texts.shares[i], th.textMuted);
       }
-      // La conversión va en el borde entre esta fila y la anterior, bajo el valor de arriba.
+      // La conversión, en su columna, a la altura del borde entre esta fila y la anterior.
       if (L.showConversion && texts.steps[i]) {
-        labels += text(L.valueX, y - GAP / 2, texts.steps[i], th.textMuted, { 'font-size': SMALL_FONT });
+        labels += text(L.conversionX, y - GAP / 2, texts.steps[i], th.textMuted, { 'font-size': SMALL_FONT });
       }
     }
     const bars = d ? `<path${attrs({ d, fill: ctx.color })}/>` : '';
@@ -233,7 +247,7 @@ export const funnel: SeriesImpl = {
   },
   anchor(ctx, i) {
     const { L } = layoutOf(ctx);
-    return [L.center + widthAt(ctx, L, i) / 2, L.top + i * L.rowH + (L.rowH - GAP) / 2];
+    return [L.center + widthAt(ctx, L, i, stageMax(ctx.frame.ps.values)) / 2, L.top + i * L.rowH + (L.rowH - GAP) / 2];
   },
   hover(ctx, i) {
     const { L } = layoutOf(ctx);

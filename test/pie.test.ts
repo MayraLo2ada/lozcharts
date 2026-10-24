@@ -131,6 +131,7 @@ test('porcentaje del total visible: las ocultas no cuentan', () => {
 
 test('tooltip: valor exacto y su parte del total visible', () => {
   const format: TooltipFormat = {
+    difference: (d: number) => String(d),
     value: (v) => v.toLocaleString('es-ES'),
     number: String,
     percent: (v) => `${(Math.round(v * 1000) / 10).toString().replace('.', ',')} %`,

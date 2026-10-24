@@ -8,7 +8,12 @@ import { stepDecimals, type TimeUnit } from './ticks';
 const numCache = new Map<string, Intl.NumberFormat>();
 const dateCache = new Map<string, Intl.DateTimeFormat>();
 
-function nf(locale: string, opts: Intl.NumberFormatOptions): Intl.NumberFormat {
+/**
+ * Formateador de números en caché. Siempre agrupa los miles: en español la norma omite el punto
+ * en cifras de cuatro dígitos (6830), pero en una columna junto a 48.210 eso se lee mal.
+ */
+function nf(locale: string, options: Intl.NumberFormatOptions): Intl.NumberFormat {
+  const opts: Intl.NumberFormatOptions = { useGrouping: true, ...options };
   const key = locale + JSON.stringify(opts);
   let f = numCache.get(key);
   if (!f) {

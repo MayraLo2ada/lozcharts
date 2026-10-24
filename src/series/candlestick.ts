@@ -8,6 +8,7 @@
  */
 import type { DrawContext, PreparedSeries, SeriesImpl, TooltipFormat, TooltipValue } from '../core/series';
 import { attrs } from '../core/dom';
+import { r2 } from '../core/shapes';
 
 const MAX_WIDTH = 14;
 const BODY_SHARE = 0.6;
@@ -41,8 +42,6 @@ function candles(ctx: DrawContext): Candle[] {
 function width(ctx: DrawContext): number {
   return Math.max(1, Math.min(MAX_WIDTH, ctx.x.step * BODY_SHARE));
 }
-
-const r2 = (v: number) => Math.round(v * 100) / 100;
 
 const fields = (o: { open?: string; high?: string; low?: string }) => ({ open: o.open, high: o.high, low: o.low });
 

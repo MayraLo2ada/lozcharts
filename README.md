@@ -3,8 +3,8 @@
 Gráficos SVG interactivos, accesibles y sin dependencias, escritos en TypeScript.
 Modo claro, oscuro y automático; tooltip, leyenda, teclado, animación y exportación a SVG/PNG.
 
-> Estado: **fase 2**: líneas, barras (verticales u horizontales, agrupadas y apiladas), áreas,
-> líneas escalonadas, bandas de rango, dispersión, burbujas, velas, OHLC y small multiples.
+> Estado: **fase 3**: líneas, barras (verticales u horizontales, agrupadas y apiladas), áreas,
+> líneas escalonadas, bandas de rango, dispersión, burbujas, velas, OHLC, small multiples, pie, donut, gauge, radar y embudo.
 
 ## Instalación y build
 
@@ -92,10 +92,38 @@ const chart = new LozChart('#grafico', {
 | LozBubble    | `bubble`      | Como dispersión, con un tercer valor como tamaño | `field`, `size`; `sizeName` para el tooltip                      |
 | LozCandle    | `candlestick` | Precios: apertura, máximo, mínimo y cierre       | `field` (cierre), `open`, `high`, `low`                          |
 | LozOHLC      | `ohlc`        | Lo mismo que las velas, en trazos                | `field` (cierre), `open`, `high`, `low`                          |
+| LozPie       | `pie`         | Partes de un todo (pocas categorías)             | `xAxis.field` (categoría), `field` (valor)                       |
+| LozDonut     | `donut`       | Como el pie, con el total al centro              | igual que `pie`; `innerRadius` (0,6)                             |
+| LozGauge     | `gauge`       | Un indicador contra su rango y su meta           | `field`; `target`; rango con `yAxis.min` y `yAxis.max`           |
+| LozRadar     | `radar`       | Perfiles en varias dimensiones                   | `xAxis.field` (criterio), `field` por serie                      |
+| LozFunnel    | `funnel`      | Pasos de un proceso y su conversión              | `xAxis.field` (paso), `field` (cantidad)                         |
 | LozMultiples | —             | Cuadrícula de gráficos pequeños                  | `LozChart.multiples(…)`; ver [Small multiples](#small-multiples) |
 
 Los nombres (LozBar, LozLine…) son los de la familia LozChart en la documentación; en el código
 cada tipo se elige con su nombre corto: `type: 'bar'`.
+
+**Pie, donut, gauge y embudo** muestran una sola serie. En el pie y el donut cada categoría tiene
+su color y su botón en la leyenda, con su porcentaje (ocultarla lo recalcula); con más de 8
+categorías, las 7 primeras llevan color y el resto se suma en "Otros", con su detalle en el
+tooltip y la tabla. Si son más de 5, considera barras horizontales ordenadas: se leen mejor. Las etiquetas (`labels: false` las apaga) se reparten para no
+encimarse y se omiten en pantallas angostas, donde la leyenda y el tooltip ya lo dicen.
+Para varios gauges o varios embudos, usa small multiples.
+
+```js
+new LozChart('#categorias', {
+  data: [{ categoria: 'Electrónica', ventas: 184200 } /* … */],
+  xAxis: { field: 'categoria' },
+  yAxis: { format: 'currency' },
+  series: [{ type: 'donut', field: 'ventas', name: 'Ventas' }],
+});
+
+new LozChart('#meta', {
+  data: [{ mes: 'Octubre', avance: 0.78 }],
+  xAxis: { field: 'mes' },
+  yAxis: { format: 'percent', min: 0, max: 1 },
+  series: [{ type: 'gauge', field: 'avance', name: 'Avance', target: 0.85 }],
+});
+```
 
 Con `orientation: 'horizontal'` el gráfico gira: las categorías van en el eje vertical. Sirve
 sobre todo para barras con nombres largos.
@@ -333,6 +361,18 @@ cercano", y `tooltip(ps, i, format)` personaliza el texto del tooltip y de la ta
 
 Las series dibujan siempre en un plano lógico (índice en X, valor en Y). En horizontal, el núcleo
 lo refleja sobre su diagonal, así que un tipo nuevo funciona en las dos orientaciones sin cambios.
+
+Además del plano cartesiano hay dos sistemas de coordenadas (`coords`):
+
+- `'polar'`: el núcleo dibuja anillos, radios y etiquetas; la serie ubica sus puntos con
+  `ctx.polar.point(i, valor)` (así lo hace el radar).
+- `'free'`: sin ejes; la serie usa todo el área (`ctx.width`, `ctx.height`) y responde `hit` (qué
+  dato hay bajo el puntero) y `anchor` (dónde apoyar el tooltip con el teclado).
+
+`legendBy: 'points'` hace que la leyenda liste categorías (como el pie): cada una con
+`ctx.pointColor(i)`, y las ocultas llegan en cero. `ctx.label(i)`, `ctx.format(v)`,
+`ctx.percent(v)` y `ctx.measure(texto)` ayudan con las etiquetas, y `domainValues(opciones)` suma
+valores fijos al dominio (como la meta del gauge).
 
 ## Reglas de diseño
 

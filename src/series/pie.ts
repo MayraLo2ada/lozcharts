@@ -11,6 +11,7 @@
  */
 import type { DrawContext, PreparedSeries, SeriesImpl, TooltipFormat, TooltipValue } from '../core/series';
 import { attrs, esc } from '../core/dom';
+import { r2, polarPoint } from '../core/shapes';
 import { fitText } from '../core/axis';
 
 /** Arranque arriba; en SVG la Y crece hacia abajo, así que sumar ángulo es ir en sentido horario. */
@@ -47,8 +48,6 @@ const TOTAL_MIN = 14;
 const CAPTION = 'Total';
 /** El total solo cabe si el agujero tiene al menos este radio. */
 const HOLE_MIN_FOR_TOTAL = 28;
-
-const r2 = (v: number) => Math.round(v * 100) / 100;
 
 /** Una porción en radianes: [start, end), con start ≤ end. */
 export interface Slice {
@@ -163,9 +162,6 @@ export function layoutLabels(candidates: readonly LabelCandidate[], gap: number,
   return [...placeSide(left, gap, top, bottom), ...placeSide(right, gap, top, bottom)];
 }
 
-/** Punto a distancia `r` del centro, en el ángulo `a`. */
-const polar = (cx: number, cy: number, r: number, a: number): [number, number] => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
-
 /**
  * Trazo de una porción entre los radios `inner` y `outer`. Con inner 0 es una cuña; una porción
  * de vuelta completa se dibuja como dos círculos (evenodd) para no dejar una costura arriba.
@@ -181,12 +177,12 @@ export function slicePath(cx: number, cy: number, inner: number, outer: number, 
     return circle(outer) + (inner > 0 ? circle(inner) : '');
   }
   const large = span > Math.PI ? 1 : 0;
-  const [x0, y0] = polar(cx, cy, outer, start);
-  const [x1, y1] = polar(cx, cy, outer, end);
+  const [x0, y0] = polarPoint(cx, cy, outer, start);
+  const [x1, y1] = polarPoint(cx, cy, outer, end);
   let d = `M${r2(x0)},${r2(y0)}A${ro},${ro} 0 ${large} 1 ${r2(x1)},${r2(y1)}`;
   if (inner > 0) {
-    const [x2, y2] = polar(cx, cy, inner, end);
-    const [x3, y3] = polar(cx, cy, inner, start);
+    const [x2, y2] = polarPoint(cx, cy, inner, end);
+    const [x3, y3] = polarPoint(cx, cy, inner, start);
     d += `L${r2(x2)},${r2(y2)}A${ri},${ri} 0 ${large} 0 ${r2(x3)},${r2(y3)}`;
   } else d += `L${r2(cx)},${r2(cy)}`;
   return d + 'Z';
@@ -246,7 +242,9 @@ function geometry(ctx: DrawContext, defaultHole: number): Geometry {
   // angostas): la leyenda, el tooltip y la tabla ya dicen lo mismo.
   if (nameMax < ctx.measure('M…') || outer < MIN_RADIUS / 2 || outer < plain * MIN_LABELED_SHARE) return done(plain, null);
   const labelText = (i: number) => {
-    const share = visibleShare(frame.y1, i, ctx.isHidden);
+    // Con los valores animados (las ocultas se van encogiendo): las etiquetas acompañan a las
+    // porciones durante la animación en vez de saltar a su porcentaje final.
+    const share = visibleShare(frame.y1, i, () => false);
     return fitText(ctx.label(i), nameMax, ctx.measure) + ' ' + ctx.percent(share);
   };
   return done(outer, labelText);
@@ -264,7 +262,7 @@ function labels(ctx: DrawContext, g: Geometry): string {
     candidates.push({
       index: i,
       side: Math.cos(mid) >= 0 ? 'right' : 'left',
-      y: polar(cx, cy, outer + HOVER_OFFSET + ELBOW, mid)[1],
+      y: polarPoint(cx, cy, outer + HOVER_OFFSET + ELBOW, mid)[1],
       weight: end - start,
     });
   }
@@ -277,7 +275,7 @@ function labels(ctx: DrawContext, g: Geometry): string {
     const { start, end } = slices[p.index];
     const mid = (start + end) / 2;
     const dir = p.side === 'right' ? 1 : -1;
-    const [x0, y0] = polar(cx, cy, outer + 2, mid);
+    const [x0, y0] = polarPoint(cx, cy, outer + 2, mid);
     // El codo se desliza por el anillo de las guías hasta la altura de su etiqueta: así las
     // diagonales salen casi radiales y no se cruzan con las vecinas al empujarlas.
     const ring = outer + HOVER_OFFSET + ELBOW;
@@ -338,6 +336,9 @@ function radial(defaultHole: number, label: string): SeriesImpl {
   return {
     coords: 'free',
     legendBy: 'points',
+    // Las porciones nacen en cero: el dominio debe incluirlo para que la animación parta de ahí.
+    includeZero: true,
+    items: ['categoría', 'categorías'],
     legendSymbol: 'square',
     label,
     draw(ctx) {
@@ -363,7 +364,7 @@ function radial(defaultHole: number, label: string): SeriesImpl {
       const g = geometry(ctx, defaultHole);
       const s = g.slices[i];
       const mid = s ? (s.start + s.end) / 2 : START;
-      return polar(g.cx, g.cy, g.outer + HOVER_OFFSET, mid);
+      return polarPoint(g.cx, g.cy, g.outer + HOVER_OFFSET, mid);
     },
     hover(ctx, i) {
       const g = geometry(ctx, defaultHole);
@@ -371,7 +372,7 @@ function radial(defaultHole: number, label: string): SeriesImpl {
       if (!s || !(s.end > s.start)) return '';
       // Una porción que es todo el círculo no tiene hacia dónde salir: se agranda en su lugar.
       const whole = s.end - s.start >= TAU - 1e-6;
-      const [dx, dy] = whole ? [0, 0] : polar(0, 0, HOVER_OFFSET, (s.start + s.end) / 2);
+      const [dx, dy] = whole ? [0, 0] : polarPoint(0, 0, HOVER_OFFSET, (s.start + s.end) / 2);
       const outer = whole ? g.outer + HOVER_OFFSET / 2 : g.outer;
       // Primero se tapa su lugar con la superficie: la porción sale y deja el hueco, sin sombra doble.
       const { start, end } = s;

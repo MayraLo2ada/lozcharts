@@ -6,7 +6,7 @@ Reglas fijas para todos los tipos de gráfico. Los valores viven en `src/core/th
 ## Nombres
 
 Cada tipo tiene un nombre de la familia: LozLine, LozBar, LozArea, LozStep, LozRange, LozScatter,
-LozBubble, LozCandle, LozOHLC y LozMultiples. En la galería aparecen como etiquetas de 12 px con
+LozBubble, LozCandle, LozOHLC, LozPie, LozDonut, LozGauge, LozRadar, LozFunnel y LozMultiples. En la galería aparecen como etiquetas de 12 px con
 borde redondeado, en texto secundario (sin mayúsculas sostenidas). En el código, el tipo usa su
 nombre corto (`type: 'bar'`).
 
@@ -63,6 +63,19 @@ El oscuro tiene sus propios valores; no es una inversión.
   color de su serie (la dirección no depende de verde y rojo). Mecha de 1 px.
 - OHLC: trazo de 1,5 px; marca de apertura a la izquierda y de cierre a la derecha.
 - Barras horizontales: las categorías ocupan como máximo el 40 % del ancho y se recortan con "…".
+- Pie y donut: empiezan arriba y avanzan en sentido horario, en el orden de los datos (ordénalos de
+  mayor a menor). 2 px del color de la superficie entre porciones. Cada categoría tiene su color
+  en el orden de la paleta; con más de 8, las 7 primeras llevan color y el resto (al menos dos) se
+  suma en "Otros", en gris neutro, con su detalle en el tooltip y la tabla. Etiquetas afuera
+  con guía de 1 px, separadas al menos 16 px; si no caben o achicarían el pie a menos del 60 %,
+  no se dibujan. Donut: agujero de 0,6 y el total visible al centro en texto principal.
+- Gauge: arco de 240° abierto abajo, grosor del 12 % del radio, pista en el color de la rejilla.
+  El número va al centro en texto principal; la meta es una marca de 2 px en texto principal con
+  halo de superficie.
+- Radar: como un área (relleno al 10 % y borde de 2 px). Rejilla poligonal (circular con menos
+  de 3 categorías), anillo del cero marcado y números del valor con halo de superficie.
+- Embudo: barras rectas centradas (no trapecios: comparar largos es más preciso), del color de la
+  serie, 2 px entre pasos; a la derecha el valor y la parte del inicio, y entre pasos la conversión.
 
 ## Texto
 

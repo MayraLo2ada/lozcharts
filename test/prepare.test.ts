@@ -171,3 +171,18 @@ test('los tipos libres (pie, gauge, embudo) muestran una sola serie, con aviso',
   assert.equal(p.series.length, 1);
   assert.equal(warn.mock.callCount(), 1);
 });
+
+test('pie con más de 8 categorías: 7 con color y "Otros" suma el resto, sin negativos, con su detalle', () => {
+  const reg = new Map(registry);
+  reg.set('pie', { coords: 'free', legendBy: 'points', includeZero: true, draw: () => '' });
+  const data = 'abcdefghi'.split('').map((x, i) => ({ x, v: i === 8 ? -3 : 10 }));
+  const p = prepare({ data, xField: 'x', xType: 'category', series: [{ type: 'pie', field: 'v' }] }, reg, 8);
+  assert.equal(p.n, 8);
+  assert.equal(p.xRaw[7], 'Otros');
+  assert.deepEqual(p.pointSlots, [0, 1, 2, 3, 4, 5, 6, -1]);
+  assert.deepEqual(p.series[0].values[7], 10);
+  assert.deepEqual(
+    p.others.map((o) => o.label),
+    ['h', 'i'],
+  );
+});

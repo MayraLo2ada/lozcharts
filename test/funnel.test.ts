@@ -122,11 +122,11 @@ test('layout a 390 px: prioridad nombre y valor > porcentaje > conversión', () 
   const L = funnelLayout(390, 240, 4, all);
   assert.ok(L.showLabels && L.showPercent && L.showConversion);
   assert.ok(L.areaW >= 390 * 0.3);
-  assert.ok(L.valueX + all.value + 6 + all.percent <= 390, 'nada se corta a la derecha');
-  // Valores largos: el porcentaje se suelta primero.
-  const wide = funnelLayout(390, 240, 4, { name: 120, value: 110, percent: 50, conversion: 50 });
+  assert.ok(L.conversionX + all.conversion <= 390, 'nada se corta a la derecha, ni la columna de conversiones');
+  // Valores largos: el porcentaje se suelta primero; la conversión se queda si cabe.
+  const wide = funnelLayout(390, 240, 4, { name: 100, value: 90, percent: 50, conversion: 50 });
   assert.ok(wide.showLabels && !wide.showPercent && wide.showConversion);
-  // Más largos aún: también la conversión (si es más ancha que el valor).
+  // Más largos aún: también la conversión; el nombre y el valor se quedan siempre.
   const wider = funnelLayout(390, 240, 4, { name: 150, value: 100, percent: 50, conversion: 130 });
   assert.ok(wider.showLabels && !wider.showPercent && !wider.showConversion);
   // Filas bajas: sin conversión; muy bajas: sin etiquetas.
@@ -160,6 +160,7 @@ test('hover: banda de toda la fila con el resaltado del tema', () => {
 
 test('tooltip: del inicio y del paso anterior', () => {
   const format: TooltipFormat = {
+    difference: (d: number) => String(d),
     value: String,
     number: String,
     percent: (p) => (p * 100).toFixed(1) + ' %',

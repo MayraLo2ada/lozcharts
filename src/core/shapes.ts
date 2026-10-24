@@ -5,7 +5,13 @@
 
 export type Pt = [number, number];
 
-const r2 = (v: number) => Math.round(v * 100) / 100;
+/** Redondeo a centésimas para el markup SVG: archivos más chicos, sin perder nitidez. */
+export const r2 = (v: number) => Math.round(v * 100) / 100;
+
+/** Punto a distancia `r` del centro (cx, cy), en el ángulo `a` (radianes, sentido horario en SVG). */
+export function polarPoint(cx: number, cy: number, r: number, a: number): [number, number] {
+  return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+}
 
 /** Parte una lista de puntos en tramos sin huecos (un NaN corta la línea). */
 export function segments(points: Pt[]): Pt[][] {

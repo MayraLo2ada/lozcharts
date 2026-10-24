@@ -9,6 +9,7 @@
 import type { DrawContext, SeriesImpl } from '../core/series';
 import type { Pt } from '../core/shapes';
 import { attrs } from '../core/dom';
+import { r2 } from '../core/shapes';
 import { stroke } from './common';
 
 /** Opacidad del relleno: la misma de las áreas. */
@@ -16,8 +17,6 @@ const FILL_OPACITY = 0.1;
 /** Punto de hover: radio y anillo, como hoverDot en common.ts. */
 const HOVER_RADIUS = 4.5;
 const HOVER_RING = 2;
-
-const r2 = (v: number) => Math.round(v * 100) / 100;
 const ok = (p: Pt) => isFinite(p[0]) && isFinite(p[1]);
 const xy = (p: Pt) => r2(p[0]) + ',' + r2(p[1]);
 
@@ -64,20 +63,12 @@ export function radarPaths(pts: Pt[]): { fill: string; edge: string } {
   return { fill: '', edge };
 }
 
-/**
- * Vértice en px de la categoría i con el valor v. El plano polar usa la escala del cuadro que se
- * dibuja (los vértices caen sobre los anillos también al animar) y nunca cruza al otro lado del centro.
- */
-function vertex(ctx: DrawContext, i: number, v: number): Pt {
-  return ctx.polar!.point(i, v);
-}
-
 /** Vértices de todos los índices; NaN donde falta el dato. */
 function vertices(ctx: DrawContext): Pt[] {
   const out: Pt[] = [];
   for (let i = 0; i < ctx.n; i++) {
     const v = ctx.frame.y1[i];
-    out.push(isFinite(v) ? vertex(ctx, i, v) : [NaN, NaN]);
+    out.push(isFinite(v) ? ctx.polar!.point(i, v) : [NaN, NaN]);
   }
   return out;
 }
@@ -88,6 +79,7 @@ export const radar: SeriesImpl = {
   includeZero: true,
   legendSymbol: 'square',
   label: 'radar',
+  items: ['criterio', 'criterios'],
   draw(ctx) {
     if (!ctx.polar) return '';
     const { fill, edge } = radarPaths(vertices(ctx));
@@ -99,7 +91,7 @@ export const radar: SeriesImpl = {
   hover(ctx, i) {
     const v = ctx.frame.y1[i];
     if (!ctx.polar || !isFinite(v)) return '';
-    const [cx, cy] = vertex(ctx, i, v);
+    const [cx, cy] = ctx.polar!.point(i, v);
     return `<circle${attrs({
       cx: cx.toFixed(2),
       cy: cy.toFixed(2),

@@ -484,6 +484,54 @@
         </figure>
       </div>
 
+      <header class="section-head">
+        <h2>Proporciones, radares y embudos</h2>
+        <p>Partes de un todo, un indicador contra su meta, perfiles en varias dimensiones y pasos de un proceso.</p>
+      </header>
+
+      <div class="grid">
+        <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozPie</span></div>
+          <div id="categorias"></div>
+          <figcaption>
+            Nueve categorías: las siete mayores llevan color y las demás se suman en "Otros" (gris), en vez de repetir un color;
+            su detalle está en el tooltip. Las etiquetas se reparten para no encimarse; pulsa la leyenda para ocultar una
+            categoría.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozDonut</span></div>
+          <div id="canales-donut"></div>
+          <figcaption>Donut con el total al centro: al ocultar un canal, el total y los porcentajes se recalculan.</figcaption>
+        </figure>
+
+        <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozGauge</span></div>
+          <div id="meta"></div>
+          <div class="fig-tools"><button type="button" class="btn" id="meta-mes">Ver septiembre</button></div>
+          <figcaption>
+            Un solo número contra su rango y su meta. El valor y la meta se leen en texto, no solo por el arco.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozRadar</span></div>
+          <div id="modelos"></div>
+          <figcaption>
+            Dos perfiles en seis criterios. Pasa el puntero alrededor del centro para recorrer cada criterio.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozFunnel</span></div>
+          <div id="embudo"></div>
+          <figcaption>
+            Pasos de una compra: cada barra respecto del inicio y, entre barras, cuánto pasa al paso siguiente.
+          </figcaption>
+        </figure>
+      </div>
+
       <section class="usage">
         <h2>Cómo se usa</h2>
         <p>
@@ -1119,6 +1167,109 @@
             }),
           );
         })();
+
+        // 18. Ventas por categoría (pie, con agrupación en "Otros").
+        charts.push(
+          new LozChart('#categorias', {
+            title: 'Ventas por categoría de producto',
+            subtitle: 'Octubre 2026, en dólares',
+            data: [
+              { categoria: 'Electrónica', ventas: 184200 },
+              { categoria: 'Hogar', ventas: 121500 },
+              { categoria: 'Ropa', ventas: 98400 },
+              { categoria: 'Deportes', ventas: 64300 },
+              { categoria: 'Belleza', ventas: 41800 },
+              { categoria: 'Libros', ventas: 27600 },
+              { categoria: 'Juguetes', ventas: 19900 },
+              { categoria: 'Mascotas', ventas: 12400 },
+              { categoria: 'Jardín', ventas: 8700 },
+            ],
+            xAxis: { field: 'categoria', title: 'Categoría' },
+            yAxis: { format: 'currency' },
+            series: [{ type: 'pie', field: 'ventas', name: 'Ventas' }],
+            height: 340,
+          }),
+        );
+
+        // 19. Visitas por canal (donut).
+        charts.push(
+          new LozChart('#canales-donut', {
+            title: 'Visitas por canal',
+            subtitle: 'Octubre 2026',
+            data: [
+              { canal: 'Búsqueda', visitas: 110100 },
+              { canal: 'Directo', visitas: 54300 },
+              { canal: 'Redes sociales', visitas: 48200 },
+              { canal: 'Anuncios', visitas: 32100 },
+              { canal: 'Correo', visitas: 25800 },
+            ],
+            xAxis: { field: 'canal', title: 'Canal' },
+            yAxis: { format: 'compact' },
+            series: [{ type: 'donut', field: 'visitas', name: 'Visitas' }],
+            height: 340,
+          }),
+        );
+
+        // 20. Meta anual de ventas (gauge).
+        var metaChart = new LozChart('#meta', {
+          title: 'Meta anual de ventas',
+          subtitle: 'Avance acumulado a octubre 2026',
+          data: [{ mes: 'Octubre', avance: 0.78 }],
+          xAxis: { field: 'mes', title: 'Mes' },
+          yAxis: { format: 'percent', min: 0, max: 1 },
+          series: [{ type: 'gauge', field: 'avance', name: 'Avance', target: 0.85 }],
+          height: 300,
+        });
+        charts.push(metaChart);
+        var metaSept = false;
+        document.getElementById('meta-mes').addEventListener('click', function (e) {
+          metaSept = !metaSept;
+          metaChart.setData([metaSept ? { mes: 'Septiembre', avance: 0.69 } : { mes: 'Octubre', avance: 0.78 }]);
+          metaChart.setOptions({ subtitle: 'Avance acumulado a ' + (metaSept ? 'septiembre' : 'octubre') + ' 2026' });
+          e.currentTarget.textContent = metaSept ? 'Ver octubre' : 'Ver septiembre';
+        });
+
+        // 21. Evaluación de dos modelos (radar).
+        charts.push(
+          new LozChart('#modelos', {
+            title: 'Evaluación de dos modelos',
+            subtitle: 'Puntaje promedio de 1.240 reseñas, de 0 a 5',
+            data: [
+              { criterio: 'Precio', aurora: 4.1, brisa: 3.4 },
+              { criterio: 'Calidad', aurora: 3.8, brisa: 4.5 },
+              { criterio: 'Diseño', aurora: 4.4, brisa: 3.9 },
+              { criterio: 'Soporte', aurora: 3.2, brisa: 4.2 },
+              { criterio: 'Entrega', aurora: 4.6, brisa: 3.7 },
+              { criterio: 'Garantía', aurora: 3.5, brisa: 4.0 },
+            ],
+            xAxis: { field: 'criterio', title: 'Criterio' },
+            yAxis: { format: 'number', max: 5 },
+            series: [
+              { type: 'radar', field: 'aurora', name: 'Modelo Aurora' },
+              { type: 'radar', field: 'brisa', name: 'Modelo Brisa' },
+            ],
+            height: 340,
+          }),
+        );
+
+        // 22. Embudo de compra (funnel).
+        charts.push(
+          new LozChart('#embudo', {
+            title: 'Embudo de compra en línea',
+            subtitle: 'Sesiones de octubre 2026',
+            data: [
+              { paso: 'Visitas', sesiones: 48210 },
+              { paso: 'Vieron un producto', sesiones: 21400 },
+              { paso: 'Agregaron al carrito', sesiones: 6830 },
+              { paso: 'Iniciaron el pago', sesiones: 3120 },
+              { paso: 'Compraron', sesiones: 2540 },
+            ],
+            xAxis: { field: 'paso', title: 'Paso' },
+            yAxis: { format: 'number' },
+            series: [{ type: 'funnel', field: 'sesiones', name: 'Sesiones' }],
+            height: 300,
+          }),
+        );
 
         // Selector de tema de la página: aplica el mismo tema a todos los gráficos.
         var botones = document.querySelectorAll('[data-theme-btn]');

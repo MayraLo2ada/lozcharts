@@ -30,6 +30,7 @@ import { prepare, type Prepared } from './core/prepare';
 import { buildFrame, collapse, interpolate, withExits, type Frame } from './core/frame';
 import { fitText, indexLabels, xLabel, xTicks, type XLabelContext } from './core/axis';
 import { attrs, esc, html, prefersReducedMotion, resolveElement, svg, textWidth } from './core/dom';
+import { polarPoint } from './core/shapes';
 import { Legend, legendSVG, type LegendItem } from './core/legend';
 import { downloadImage, slug } from './core/export';
 import { destroyDetached, destroyWithin, mount, mountedOn, unmount } from './core/mount';
@@ -82,10 +83,12 @@ interface Layout {
   /** Eje derecho (vacío si no hay). */
   rightTicks: number[];
   rightFormat: (v: number) => string;
-  /** Plano polar (radar). */
-  polar?: PolarPlane;
+  /** Centro, radio y ángulos del radar; los puntos se ubican por cuadro (ver polarPlane). */
+  polar?: PolarFrame;
   font: string;
 }
+
+type PolarFrame = Omit<PolarPlane, 'point'>;
 
 interface Row {
   s: PreparedSeries;
@@ -178,6 +181,10 @@ export class LozChart {
   private readonly hidden = new Set<string>();
   /** Categorías ocultas en los tipos con leyenda por categorías (por su texto, sobrevive a setData). */
   private readonly hiddenPoints = new Set<string>();
+  /** Índices de las categorías ocultas, calculados una vez por actualización (no por cuadro). */
+  private hiddenIdx = new Set<number>();
+  /** Layout del último dibujo: depende solo del destino y del ancho, no de cada cuadro. */
+  private layoutCache: { width: number; target: Frame; L: Layout } | null = null;
   private prepared!: Prepared;
   private target!: Frame;
   /** Cuadro en pantalla (intermedio si hay animación). */
@@ -268,9 +275,14 @@ export class LozChart {
 
   /** Cambia los datos y anima desde lo que se ve en pantalla. */
   setData(data: Datum[]): this {
+    const hadPoints = this.prepared.pointLegend;
     this.opts.data = Array.isArray(data) ? data : [];
     this.prepared = this.prepare();
+    // En un pie, las categorías son la leyenda: si cambian los datos, cambian los botones.
+    if (hadPoints || this.prepared.pointLegend) this.buildLegend();
     this.update(true);
+    // Un indicador de un solo valor (un gauge): el cambio se anuncia a los lectores de pantalla.
+    if (this.prepared.n === 1) this.liveEl.textContent = this.describe(0);
     return this;
   }
 
@@ -301,8 +313,10 @@ export class LozChart {
    */
   toggleSeries(name: string, visible?: boolean): this {
     const set = this.prepared.pointLegend ? this.hiddenPoints : this.hidden;
-    if (visible ?? set.has(name)) set.delete(name);
+    const show = visible ?? set.has(name);
+    if (show) set.delete(name);
     else set.add(name);
+    this.liveEl.textContent = `${name}: ${show ? 'visible' : 'oculta'}`;
     this.syncLegend();
     this.update(true);
     return this;
@@ -363,6 +377,7 @@ export class LozChart {
   /** Series nuevas: arrancan visibles salvo las marcadas con `visible: false`. */
   private resetVisibility(): void {
     this.hidden.clear();
+    this.hiddenPoints.clear();
     for (const s of this.opts.series) if (s.visible === false) this.hidden.add(s.name ?? s.field);
   }
 
@@ -385,6 +400,7 @@ export class LozChart {
 
   private update(animate: boolean): void {
     if (this.destroyed) return;
+    this.hiddenIdx = this.hiddenPointIndices();
     const ya = this.opts.yAxis;
     const ya2 = this.opts.yAxis2;
     this.target = buildFrame(
@@ -392,7 +408,7 @@ export class LozChart {
       this.hidden,
       { min: ya?.min, max: ya?.max, zero: ya?.zero, ticks: this.valueTickCount() },
       { min: ya2?.min, max: ya2?.max },
-      this.hiddenPointIndices(),
+      this.hiddenIdx,
     );
     this.renderTable();
     this.svgEl.setAttribute('aria-label', this.ariaLabel());
@@ -439,7 +455,10 @@ export class LozChart {
       this.draw();
       return;
     }
-    const from = this.current ?? collapse(this.target);
+    // Entre sistemas de coordenadas distintos (de barras a pie) no hay nada que interpolar: el
+    // gráfico nuevo entra desde cero.
+    const sameCoords = this.current?.series.every((s) => (s.ps.impl.coords ?? 'cartesian') === this.coords) ?? false;
+    const from = this.current && sameCoords ? this.current : collapse(this.target);
     this.anim = { from, to: withExits(from, this.target), start: performance.now() };
     const tick = (now: number) => {
       if (!this.anim || this.destroyed) return;
@@ -457,6 +476,15 @@ export class LozChart {
   }
 
   // ------------------------------------------------------------ Dibujo
+
+  /** El layout se recalcula solo si cambia el destino o el ancho, no en cada cuadro de la animación. */
+  private cachedLayout(): Layout | null {
+    const c = this.layoutCache;
+    if (c && c.width === this.width && c.target === this.target) return c.L;
+    const L = this.computeLayout(this.width);
+    this.layoutCache = L ? { width: this.width, target: this.target, L } : null;
+    return L;
+  }
 
   private computeLayout(width: number): Layout | null {
     if (!width) return null;
@@ -551,25 +579,18 @@ export class LozChart {
     const plotH = Math.max(10, o.height - 2 * AXIS_GAP);
     const valueTicks = numberTicks(t.d0, t.d1, t.step);
     const valueFormat = axisFormatter(o.yAxis?.format, this.numberContext(), t.step, Math.max(Math.abs(t.d0), Math.abs(t.d1)));
-    let polar: PolarPlane | undefined;
+    let polar: PolarFrame | undefined;
     /** En polar: el ancho máximo de las etiquetas de cada radio (las más largas se recortan). */
     let labelWidth = 0;
     if (this.coords === 'polar') {
       const labels = p.xRaw.map((_, i) => measure(xLabel(p, i, true, this.xContext())));
       labelWidth = Math.min(width * 0.28, Math.max(0, ...labels));
-      const labelW = labelWidth;
-      const radius = Math.max(20, Math.min(plotW / 2 - labelW - 14, plotH / 2 - FONT_SIZE - 10));
-      const cx = plotW / 2;
-      const cy = plotH / 2;
       const n = Math.max(1, p.n);
-      const angle = (i: number) => -Math.PI / 2 + (2 * Math.PI * i) / n;
-      const r = new LinearScale(t.d0, t.d1, 0, radius);
       polar = {
-        cx,
-        cy,
-        radius,
-        angle,
-        point: (i, v) => [cx + r.map(v) * Math.cos(angle(i)), cy + r.map(v) * Math.sin(angle(i))],
+        cx: plotW / 2,
+        cy: plotH / 2,
+        radius: Math.max(20, Math.min(plotW / 2 - labelWidth - 14, plotH / 2 - FONT_SIZE - 10)),
+        angle: (i: number) => -Math.PI / 2 + (2 * Math.PI * i) / n,
       };
     }
     return {
@@ -619,7 +640,7 @@ export class LozChart {
 
   private draw(): void {
     const frame = this.current;
-    const L = (this.layout = frame ? this.computeLayout(this.width) : null);
+    const L = (this.layout = frame ? this.cachedLayout() : null);
     if (!frame || !L) return;
     this.svgEl.setAttribute('width', String(L.width));
     this.svgEl.setAttribute('height', String(L.height));
@@ -737,10 +758,10 @@ export class LozChart {
     const p = this.prepared;
     const r = this.valueScale(frame, L);
     const n = p.n;
-    const at = (i: number, radius: number): [number, number] => [
-      P.cx + radius * Math.cos(P.angle(i)),
-      P.cy + radius * Math.sin(P.angle(i)),
-    ];
+    const at = (i: number, radius: number) => polarPoint(P.cx, P.cy, radius, P.angle(i));
+    // Los números del valor van entre los dos primeros radios: no chocan con un vértice ni con
+    // la etiqueta de la primera categoría.
+    const between = n > 1 ? (P.angle(0) + P.angle(1)) / 2 : P.angle(0);
     const ring = (radius: number) =>
       Array.from({ length: n }, (_, i) =>
         at(i, radius)
@@ -761,9 +782,9 @@ export class LozChart {
           : `<polygon${attrs({ points: ring(radius), fill: 'none', stroke, 'stroke-width': 1 })}/>`;
       if (L.valueLabels) {
         // Halo del color del fondo: el número no pisa el radio ni los polígonos.
-        const [x, y] = at(0, radius);
+        const [x, y] = polarPoint(P.cx, P.cy, radius, between);
         const a = {
-          x: x + 6,
+          x: x + 4,
           y,
           fill: th.textMuted,
           'font-size': FONT_SIZE - 1,
@@ -800,7 +821,7 @@ export class LozChart {
   }
 
   private drawContext(f: SeriesFrame, L: Layout, frame: Frame): DrawContext {
-    const hidden = this.hiddenPointIndices();
+    const hidden = this.hiddenIdx;
     return {
       frame: f,
       color: this.colorOf(f.ps),
@@ -827,17 +848,13 @@ export class LozChart {
   private polarPlane(L: Layout, frame: Frame): PolarPlane {
     const P = L.polar!;
     const r = this.valueScale(frame, L);
-    const at = (i: number, v: number): [number, number] => {
-      const d = Math.max(0, r.map(v));
-      return [P.cx + d * Math.cos(P.angle(i)), P.cy + d * Math.sin(P.angle(i))];
-    };
-    return { ...P, point: at };
+    return { ...P, point: (i, v) => polarPoint(P.cx, P.cy, Math.max(0, r.map(v)), P.angle(i)) };
   }
 
   /** Extremo exterior del radio de la categoría i, en px del área. */
   private spokeEnd(L: Layout, i: number): [number, number] {
     const P = L.polar!;
-    return [P.cx + P.radius * Math.cos(P.angle(i)), P.cy + P.radius * Math.sin(P.angle(i))];
+    return polarPoint(P.cx, P.cy, P.radius, P.angle(i));
   }
 
   /** Color de la categoría i (leyenda por categorías): la paleta en orden; "Otros", neutro. */
@@ -868,13 +885,35 @@ export class LozChart {
 
   /** Lo que dice el tooltip (y la tabla) de una serie en un índice. */
   private valueText(s: PreparedSeries, i: number): TooltipValue {
-    const hidden = this.hiddenPointIndices();
+    const hidden = this.hiddenIdx;
+    const value = this.valueFormat(s);
+    const number = valueFormatter('number', this.numberContext());
+    const spec = s.options.format ?? (s.axis === 'right' ? this.opts.yAxis2?.format : this.opts.yAxis?.format);
+    const sign = (d: number) => (d > 0 ? '+' : d < 0 ? '−' : '');
     const format: TooltipFormat = {
-      value: this.valueFormat(s),
-      number: valueFormatter('number', this.numberContext()),
+      value,
+      number,
       percent: valueFormatter('percent', this.numberContext()),
       isHidden: (i) => hidden.has(i),
+      difference: (d) =>
+        spec === 'percent' ? `${sign(d)}${number(Math.abs(d) * 100)} p. p.` : `${sign(d)}${value(Math.abs(d))}`,
     };
+    const text = this.baseValueText(s, i, format);
+    // "Otros" detalla qué categorías suma: ninguna se pierde.
+    const p = this.prepared;
+    if (p.pointLegend && p.pointSlots[i] < 0 && p.others.length) {
+      return {
+        ...text,
+        details: [
+          ...(text.details ?? []),
+          ...p.others.map((o): [string, string] => [o.label, isFinite(o.value) ? value(o.value) : 'Sin dato']),
+        ],
+      };
+    }
+    return text;
+  }
+
+  private baseValueText(s: PreparedSeries, i: number, format: TooltipFormat): TooltipValue {
     if (s.raw) {
       // Índice: el valor del eje y, debajo, el original en sus unidades.
       const v = s.values[i];
@@ -936,10 +975,18 @@ export class LozChart {
     const p = this.prepared;
     if (p.pointLegend) {
       // Una entrada por categoría, con su color: ocultarla la deja en cero.
+      // Cada botón dice también su parte del total visible: sin etiquetas (en móvil), la porción no
+      // se identifica solo por el color.
       const symbol = p.series[0]?.impl.legendSymbol ?? 'square';
+      const values = p.series[0]?.values ?? [];
+      const total = values.reduce((sum, v, i) => sum + (this.hiddenPoints.has(String(p.xRaw[i])) || !(v > 0) ? 0 : v), 0);
+      const percent = valueFormatter('percent', this.numberContext());
+      const ctx = this.xContext();
       return p.xRaw.map((x, i) => {
         const key = String(x);
-        return { key, name: key, color: this.pointColor(i), symbol, visible: !this.hiddenPoints.has(key) };
+        const visible = !this.hiddenPoints.has(key);
+        const share = visible && total > 0 && values[i] > 0 ? ` ${percent(values[i] / total)}` : '';
+        return { key, name: xLabel(p, i, true, ctx) + share, color: this.pointColor(i), symbol, visible };
       });
     }
     return this.prepared.series.map((s) => ({
@@ -980,7 +1027,8 @@ export class LozChart {
     const body = html('tbody');
     for (let i = 0; i < p.n; i++) {
       const row = html('tr');
-      row.appendChild(html('th', { scope: 'row' }, xLabel(p, i, false, ctx)));
+      const hiddenMark = p.pointLegend && this.hiddenIdx.has(i) ? ' (oculta)' : '';
+      row.appendChild(html('th', { scope: 'row' }, xLabel(p, i, false, ctx) + hiddenMark));
       for (const s of p.series) {
         const t = this.valueText(s, i);
         const details = t.details ? ` (${t.details.map(([k, v]) => `${k}: ${v}`).join('; ')})` : '';
@@ -995,16 +1043,30 @@ export class LozChart {
 
   private ariaLabel(): string {
     if (this.opts.ariaLabel) return this.opts.ariaLabel;
-    const { series, n } = this.prepared;
+    const p = this.prepared;
+    const { series, n } = p;
     const kinds = [...new Set(series.map((s) => s.impl.label ?? s.options.type))];
     const what = kinds.length ? 'Gráfico de ' + kinds.join(' y ') : 'Gráfico';
     const title = this.opts.title ? `${this.opts.title}. ` : '';
-    const count = this.prepared.pointLegend
-      ? `${n} ${n === 1 ? 'categoría' : 'categorías'}`
-      : `${series.length} ${series.length === 1 ? 'serie' : 'series'}`;
-    const keys = this.horizontal ? 'arriba y abajo' : 'izquierda y derecha';
-    const points = this.prepared.pointLegend ? '' : ` y ${n} puntos`;
-    return `${title}${what} con ${count}${points}. Usa las flechas ${keys} para recorrer los datos.`;
+    // Un solo dato (un gauge): se dice el valor, no se invita a recorrer nada.
+    if (n === 1) return `${title}${what}. ${this.describe(0)}`;
+    const plural = (k: number, [one, many]: readonly [string, string]) => `${k} ${k === 1 ? one : many}`;
+    const items = series[0]?.impl.items ?? (p.pointLegend ? ['categoría', 'categorías'] : ['punto', 'puntos']);
+    // Se cuentan las categorías de los datos, no las porciones: "Otros" reúne varias.
+    const real = p.others.length ? n - 1 + p.others.length : n;
+    const folded = p.others.length ? ` (${p.others.length} sumadas en Otros)` : '';
+    const count =
+      p.pointLegend || p.coords === 'free'
+        ? plural(real, items) + folded
+        : `${plural(series.length, ['serie', 'series'])} y ${plural(n, items)}`;
+    // Sin ejes valen las cuatro flechas; con ejes, las del eje del índice.
+    const keys =
+      p.coords !== 'cartesian'
+        ? 'las flechas'
+        : this.horizontal
+          ? 'las flechas arriba y abajo'
+          : 'las flechas izquierda y derecha';
+    return `${title}${what} con ${count}. Usa ${keys} para recorrer los datos.`;
   }
 
   // ------------------------------------------------------------ Hover, tooltip y teclado
@@ -1032,34 +1094,41 @@ export class LozChart {
     });
     this.svgEl.addEventListener('blur', () => this.clearActive());
     this.svgEl.addEventListener('keydown', (e) => {
-      const last = this.prepared.n - 1;
-      if (last < 0) return;
-      const [back, forward] = this.horizontal ? ['ArrowUp', 'ArrowDown'] : ['ArrowLeft', 'ArrowRight'];
-      const i = this.active;
+      const stops = this.navigable();
+      if (!stops.length) return;
+      // Sin ejes (pie, radar, embudo) valen las cuatro flechas; con ejes, las del eje del índice.
+      const free = this.coords !== 'cartesian';
+      const forwardKeys = free ? ['ArrowRight', 'ArrowDown'] : [this.horizontal ? 'ArrowDown' : 'ArrowRight'];
+      const backKeys = free ? ['ArrowLeft', 'ArrowUp'] : [this.horizontal ? 'ArrowUp' : 'ArrowLeft'];
+      const at = stops.indexOf(this.active);
       let next: number;
-      switch (e.key) {
-        case forward:
-          next = i < 0 ? 0 : Math.min(last, i + 1);
-          break;
-        case back:
-          next = i < 0 ? last : Math.max(0, i - 1);
-          break;
-        case 'Home':
-          next = 0;
-          break;
-        case 'End':
-          next = last;
-          break;
-        case 'Escape':
-          this.clearActive();
-          return;
-        default:
-          return;
-      }
+      if (forwardKeys.includes(e.key)) next = stops[at < 0 ? 0 : Math.min(stops.length - 1, at + 1)];
+      else if (backKeys.includes(e.key)) next = stops[at < 0 ? stops.length - 1 : Math.max(0, at - 1)];
+      else
+        switch (e.key) {
+          case 'Home':
+            next = stops[0];
+            break;
+          case 'End':
+            next = stops[stops.length - 1];
+            break;
+          case 'Escape':
+            this.clearActive();
+            return;
+          default:
+            return;
+        }
       e.preventDefault();
       this.pointer = { x: -1, y: -1 };
       this.setActive(next, true);
     });
+  }
+
+  /** Índices que recorre el teclado: los que el tipo declara, sin las categorías ocultas. */
+  private navigable(): number[] {
+    const s = this.prepared.series.find((x) => !this.hidden.has(x.key));
+    const all = s?.impl.navigable?.(s) ?? Array.from({ length: this.prepared.n }, (_, i) => i);
+    return all.filter((i) => !this.hiddenIdx.has(i));
   }
 
   /** Índice bajo el puntero: por su posición en el eje del índice, o el punto más cercano. */
@@ -1245,8 +1314,11 @@ export class LozChart {
     if (radial) {
       // Junto al punto de apoyo (la porción, el extremo del radio), del lado que quepa.
       const [px, py] = radial;
-      x = px + 14 + w > L.width ? px - 14 - w : px + 14;
-      y = py - h / 2;
+      // Del lado contrario al centro: no tapa la porción, la meta ni el vértice que se mira.
+      const right = px >= L.left + L.plotW / 2;
+      x = right ? px + 14 : px - 14 - w;
+      if (x < 0 || x + w > L.width) x = right ? px - 14 - w : px + 14;
+      y = py < L.top + L.plotH / 2 ? py - h - 10 : py + 10;
     } else if (this.nearestMode()) {
       // Junto al punto: su posición en pantalla sale del primer valor visible en ese índice.
       const f = frame.series.find((s) => s.alpha >= 0.5 && isFinite(s.y1[this.active]));
