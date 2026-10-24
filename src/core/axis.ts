@@ -111,3 +111,34 @@ function numberFormat(ctx: XLabelContext): (v: number) => string {
   if (typeof fmt === 'function') return fmt;
   return valueFormatter(typeof fmt === 'string' ? fmt : 'number', ctx);
 }
+
+/**
+ * Etiquetas del índice cuando el eje es vertical (barras horizontales): una por categoría si
+ * hay altura, si no una de cada k. Las que no caben a lo ancho se recortan con "…".
+ */
+export function indexLabels(
+  p: Prepared,
+  x: XScale,
+  lineHeight: number,
+  maxWidth: number,
+  measure: (text: string) => number,
+  ctx: XLabelContext,
+): { pos: number; label: string }[] {
+  const every = Math.max(1, Math.ceil(lineHeight / Math.max(1, x.step)));
+  const out: { pos: number; label: string }[] = [];
+  for (let i = 0; i < p.n; i += every) out.push({ pos: x.at(i), label: fitText(xLabel(p, i, true, ctx), maxWidth, measure) });
+  return out;
+}
+
+/** Recorta un texto con "…" hasta que quepa en `maxWidth`. */
+export function fitText(text: string, maxWidth: number, measure: (text: string) => number): string {
+  if (measure(text) <= maxWidth) return text;
+  let lo = 0;
+  let hi = text.length;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (measure(text.slice(0, mid).trimEnd() + '…') <= maxWidth) lo = mid;
+    else hi = mid - 1;
+  }
+  return lo ? text.slice(0, lo).trimEnd() + '…' : '…';
+}

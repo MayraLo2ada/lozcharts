@@ -7,6 +7,8 @@ export const registry = new Map<string, SeriesImpl>([
   ['bar', { band: true, cluster: true, stackable: true, includeZero: true, draw: () => '' }],
   ['area', { stackable: true, includeZero: true, draw: () => '' }],
   ['line', { draw: () => '' }],
+  ['range', { columns: (o) => ({ low: o.low }), valueColumns: ['low'], draw: () => '' }],
+  ['bubble', { pointer: 'nearest', columns: (o) => ({ size: o.size }), draw: () => '' }],
 ]);
 
 export function prep(

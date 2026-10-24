@@ -32,9 +32,12 @@ export interface YAxisOptions {
 }
 
 export interface SeriesOptions {
-  /** Tipo registrado: 'line', 'bar', 'area' o uno propio. */
+  /**
+   * Tipo registrado: 'line', 'bar', 'area', 'step', 'range', 'scatter', 'bubble',
+   * 'candlestick', 'ohlc' o uno propio.
+   */
   type: string;
-  /** Campo numérico de cada fila. */
+  /** Campo numérico de cada fila. En velas y OHLC es el cierre; en 'range', el límite superior. */
   field: string;
   /** Nombre visible (leyenda, tooltip). Por defecto, el campo. Debe ser único. */
   name?: string;
@@ -42,6 +45,16 @@ export interface SeriesOptions {
   stack?: boolean | string;
   /** Línea suave (curva monótona, no se pasa de los datos). */
   smooth?: boolean;
+  /** Línea escalonada: dónde cambia de nivel. 'after' (por defecto): el valor se mantiene hasta el siguiente punto. */
+  step?: 'before' | 'after' | 'middle';
+  /** Burbujas: campo que da el tamaño (el área del círculo es proporcional al valor). */
+  size?: string;
+  /** Burbujas: cómo se llama el tamaño en el tooltip ("Clientes"). Por defecto, "Tamaño". */
+  sizeName?: string;
+  /** Velas y OHLC: campos de apertura, máximo y mínimo. 'range': `low` es el límite inferior. */
+  open?: string;
+  high?: string;
+  low?: string;
   /** Posición en la paleta (desde 1). Por defecto, su orden en `series`. */
   color?: number;
   /** Visible al inicio. Por defecto true. */
@@ -61,6 +74,8 @@ export interface LegendOptions {
 }
 
 export interface LozChartOptions {
+  /** 'horizontal' pone las categorías en el eje vertical (barras horizontales). Por defecto 'vertical'. */
+  orientation?: 'vertical' | 'horizontal';
   title?: string;
   subtitle?: string;
   data: Datum[];

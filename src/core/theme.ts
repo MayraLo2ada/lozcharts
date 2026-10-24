@@ -108,6 +108,7 @@ const CSS = `
 .lc-legend-btn[aria-pressed="false"] .lc-name{text-decoration:line-through;text-decoration-thickness:1px}
 .lc-swatch{flex:none;display:inline-block;width:12px;height:12px;border-radius:3px}
 .lc-swatch.lc-line{height:3px;width:14px;border-radius:2px}
+.lc-swatch.lc-dot{width:10px;height:10px;border-radius:50%}
 .lc-tooltip{position:absolute;top:0;left:0;z-index:5;pointer-events:none;min-width:140px;max-width:min(280px,calc(100% - 16px));padding:10px 12px;border:1px solid var(--lc-tooltip-border);border-radius:8px;background:var(--lc-tooltip-bg);box-shadow:var(--lc-tooltip-shadow);color:var(--lc-text);font-size:13px;line-height:1.35;opacity:0;transition:opacity .12s}
 .lc-tooltip.lc-show{opacity:1}
 .lc-tt-head{font-weight:600;margin:0 0 6px;color:var(--lc-text)}
@@ -115,6 +116,9 @@ const CSS = `
 .lc-tt-key{flex:none;width:12px;height:3px;border-radius:2px}
 .lc-tt-val{font-weight:600;color:var(--lc-text)}
 .lc-tt-name{color:var(--lc-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lc-tt-detail{gap:12px;padding:0 0 0 20px;font-size:12px}
+.lc-tt-detail .lc-tt-name{min-width:56px}
+.lc-tt-detail .lc-tt-val{font-weight:500}
 .lc-tt-total{margin-top:4px;padding-top:6px;border-top:1px solid var(--lc-tooltip-border)}
 .lc-tt-total.lc-tt-mid{margin-bottom:4px;padding-bottom:6px;border-bottom:1px solid var(--lc-tooltip-border)}
 .lc-tt-total .lc-tt-val{padding-left:20px}

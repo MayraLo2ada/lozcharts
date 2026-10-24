@@ -76,22 +76,18 @@ export class ContinuousScale implements XScale {
   readonly n: number;
   readonly lin: LinearScale;
 
-  /** @param values valor numérico (timestamp o número) de cada índice, en orden. */
+  /**
+   * @param values valor numérico (timestamp o número) de cada índice, en orden.
+   * @param domain extremos del eje; por defecto, el primer y el último valor.
+   */
   constructor(
     public values: number[],
     public width: number,
+    domain?: [number, number],
   ) {
     this.n = values.length;
-    let lo = Infinity;
-    let hi = -Infinity;
-    for (const v of values) {
-      if (v < lo) lo = v;
-      if (v > hi) hi = v;
-    }
-    if (!isFinite(lo)) {
-      lo = 0;
-      hi = 1;
-    }
+    let [lo, hi] = domain ?? [values[0], values[values.length - 1]];
+    if (!isFinite(lo) || !isFinite(hi)) [lo, hi] = [0, 1];
     this.lin = new LinearScale(lo, hi, 0, width);
     this.step = this.n > 1 ? width / (this.n - 1) : width;
   }

@@ -138,3 +138,24 @@ export function barPath(x: number, w: number, yBase: number, yEnd: number, radiu
   }
   return `M${x0},${yb}V${r2(yEnd - r)}A${rr},${rr} 0 0 0 ${r2(x + r)},${ye}H${r2(x + w - r)}A${rr},${rr} 0 0 0 ${x1},${r2(yEnd - r)}V${yb}Z`;
 }
+
+/**
+ * Línea escalonada. `mode` dice dónde cambia de nivel entre dos puntos:
+ * 'after' mantiene el valor hasta el punto siguiente (precios, tarifas), 'before' salta
+ * de inmediato y 'middle' cambia a mitad de camino.
+ */
+export function stepPath(points: Pt[], mode: 'before' | 'after' | 'middle'): string {
+  return segments(points)
+    .map((seg) => {
+      let d = 'M' + r2(seg[0][0]) + ',' + r2(seg[0][1]);
+      for (let i = 1; i < seg.length; i++) {
+        const x0 = seg[i - 1][0];
+        const [x1, y1] = seg[i];
+        if (mode === 'after') d += 'H' + r2(x1) + 'V' + r2(y1);
+        else if (mode === 'before') d += 'V' + r2(y1) + 'H' + r2(x1);
+        else d += 'H' + r2((x0 + x1) / 2) + 'V' + r2(y1) + 'H' + r2(x1);
+      }
+      return seg.length === 1 ? point(seg[0]) : d;
+    })
+    .join('');
+}

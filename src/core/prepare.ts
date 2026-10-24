@@ -86,20 +86,22 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
       slot,
       options,
       values: column(options.field),
+      columns: extraColumns(options, impl, column),
       stackKey: stackKeyOf(options, impl),
     };
   });
 
   if (folded.length) {
     const first = folded[0];
-    const columns = folded.map((s) => column(s.field));
+    const parts = folded.map((s) => column(s.field));
     series.push({
       key: OTHERS,
       name: OTHERS,
       impl: registry.get(first.type)!,
       slot: -1,
       options: { ...first, name: OTHERS },
-      values: rows.map((_, i) => columns.reduce((sum, col) => sum + (isFinite(col[i]) ? col[i] : 0), 0)),
+      values: rows.map((_, i) => parts.reduce((sum, col) => sum + (isFinite(col[i]) ? col[i] : 0), 0)),
+      columns: {},
       stackKey: stackKeyOf(first, registry.get(first.type)!),
     });
   }
@@ -113,6 +115,15 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
     series,
     band: series.some((s) => s.impl.band),
   };
+}
+
+/** Columnas extra que pide el tipo de serie; un campo sin indicar queda vacío (NaN). */
+function extraColumns(options: SeriesOptions, impl: SeriesImpl, column: (field: string) => number[]): Record<string, number[]> {
+  const out: Record<string, number[]> = {};
+  for (const [name, field] of Object.entries(impl.columns?.(options) ?? {})) {
+    out[name] = field ? column(field) : column(options.field).map(() => NaN);
+  }
+  return out;
 }
 
 /** Las series se apilan con otras del mismo tipo y el mismo grupo. */

@@ -32,6 +32,7 @@ export function buildFrame(p: Prepared, hidden: ReadonlySet<string>, domain: Dom
     ps,
     y0: new Array<number>(n).fill(0),
     y1: ps.values.slice(),
+    cols: mapColumns(ps.columns, (col) => col.slice()),
     alpha: hidden.has(ps.key) ? 0 : 1,
     slot: 0,
     slots: 1,
@@ -112,9 +113,11 @@ function yDomain(frames: SeriesFrame[], opts: DomainOptions): [number, number] {
   for (const f of frames) {
     if (f.alpha === 0) continue;
     if (f.ps.impl.includeZero) zero = true;
+    const extra = (f.ps.impl.valueColumns ?? []).map((name) => f.cols[name]).filter(Boolean);
     for (let i = 0; i < f.y1.length; i++) {
       if (isFinite(f.y1[i])) extend(f.y1[i]);
       if (f.ps.stackKey && isFinite(f.y0[i])) extend(f.y0[i]);
+      for (const col of extra) if (isFinite(col[i])) extend(col[i]);
     }
   }
   if (lo > hi) [lo, hi] = [0, 1];
@@ -137,8 +140,16 @@ function settleUnstacked(frames: SeriesFrame[], d0: number, d1: number): void {
   for (const f of frames) {
     if (f.ps.stackKey) continue;
     f.y0.fill(base);
-    if (f.alpha === 0) f.y1 = f.ps.values.map((v) => (isFinite(v) ? base : NaN));
+    if (f.alpha === 0) {
+      f.y1 = toBase(f.y1, base);
+      for (const name of f.ps.impl.valueColumns ?? []) if (f.cols[name]) f.cols[name] = toBase(f.cols[name], base);
+    }
   }
+}
+
+/** Lleva cada valor a la base, respetando los huecos. */
+function toBase(values: number[], base: number): number[] {
+  return values.map((v) => (isFinite(v) ? base : NaN));
 }
 
 /** El mismo cuadro con todas las series en su base: el punto de partida de la primera animación. */
@@ -146,9 +157,16 @@ export function collapse(frame: Frame): Frame {
   return { ...frame, series: frame.series.map(collapseSeries) };
 }
 
+/** Una serie apilada nace desde el cero; una suelta, desde su base. */
 function collapseSeries(f: SeriesFrame): SeriesFrame {
-  const base = f.ps.stackKey ? f.y0.map(() => 0) : f.y0.slice();
-  return { ...f, y0: base, y1: base.slice(), alpha: 0 };
+  return shrink(f, f.ps.stackKey ? f.y0.map(() => 0) : f.y0);
+}
+
+/** La serie con altura cero sobre `base` (también sus columnas en unidades de Y) e invisible. */
+function shrink(f: SeriesFrame, base: number[]): SeriesFrame {
+  const cols = { ...f.cols };
+  for (const name of f.ps.impl.valueColumns ?? []) if (cols[name]) cols[name] = base.slice();
+  return { ...f, y0: base.slice(), y1: base.slice(), cols, alpha: 0 };
 }
 
 /**
@@ -160,8 +178,8 @@ export function withExits(from: Frame, to: Frame): Frame {
   const exiting = from.series
     .filter((s) => !keys.has(s.ps.key) && s.alpha > 0)
     .map((s) => {
-      const y0 = resize(s.y0, to.n, NaN);
-      return { ...s, y0, y1: y0.slice(), alpha: 0, outer: resize(s.outer, to.n, false) };
+      const sized = { ...s, cols: mapColumns(s.cols, (col) => resize(col, to.n, NaN)), outer: resize(s.outer, to.n, false) };
+      return shrink(sized, resize(s.y0, to.n, NaN));
     });
   return exiting.length ? { ...to, series: [...to.series, ...exiting] } : to;
 }
@@ -185,6 +203,10 @@ export function interpolate(a: Frame, b: Frame, t: number): Frame {
         ...s,
         y0: s.y0.map((v, i) => lerp(fy0[i], v, t)),
         y1: s.y1.map((v, i) => lerp(fy1[i], v, t)),
+        cols: mapColumns(s.cols, (col, name) => {
+          const fc = resize(from.cols[name] ?? [], b.n, NaN);
+          return col.map((v, i) => lerp(fc[i], v, t));
+        }),
         alpha: lerp(from.alpha, s.alpha, t),
         slot: lerp(from.slot, s.slot, t),
         slots: lerp(from.slots, s.slots, t),
@@ -196,6 +218,12 @@ export function interpolate(a: Frame, b: Frame, t: number): Frame {
 /** Interpolación lineal. Si un extremo no es un número (un hueco), se usa el destino. */
 export function lerp(a: number, b: number, t: number): number {
   return isFinite(a) && isFinite(b) ? a + (b - a) * t : b;
+}
+
+function mapColumns(cols: Record<string, number[]>, fn: (col: number[], name: string) => number[]): Record<string, number[]> {
+  const out: Record<string, number[]> = {};
+  for (const name in cols) out[name] = fn(cols[name], name);
+  return out;
 }
 
 /** Ajusta un arreglo a largo n, recortando o rellenando con `fill`. */
