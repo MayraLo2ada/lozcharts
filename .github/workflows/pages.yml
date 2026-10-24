@@ -1,5 +1,6 @@
 # Publica la galería de LozChart en GitHub Pages en cada push a main.
 # Mientras el repositorio sea privado (plan gratis), el trabajo se salta sin error.
+# Al hacerlo público: Settings → Pages → Source: "GitHub Actions" (una sola vez).
 name: Página de LozChart
 
 on:
@@ -39,8 +40,6 @@ jobs:
           cp demo/index.html _site/demo/index.html
           printf '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=demo/"><title>LozChart</title><a href="demo/">Ir a la galería de LozChart</a>\n' > _site/index.html
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - uses: actions/upload-pages-artifact@v3
       - id: deploy
         uses: actions/deploy-pages@v4
