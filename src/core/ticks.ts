@@ -148,12 +148,24 @@ function floorTo(d: Date, iv: TimeInterval): Date {
 function addInterval(d: Date, iv: TimeInterval): Date {
   const r = new Date(d.getTime());
   switch (iv.unit) {
-    case 'minute': r.setMinutes(r.getMinutes() + iv.every); break;
-    case 'hour': r.setHours(r.getHours() + iv.every); break;
-    case 'day': r.setDate(r.getDate() + iv.every); break;
-    case 'week': r.setDate(r.getDate() + 7 * iv.every); break;
-    case 'month': r.setMonth(r.getMonth() + iv.every); break;
-    case 'year': r.setFullYear(r.getFullYear() + iv.every); break;
+    case 'minute':
+      r.setMinutes(r.getMinutes() + iv.every);
+      break;
+    case 'hour':
+      r.setHours(r.getHours() + iv.every);
+      break;
+    case 'day':
+      r.setDate(r.getDate() + iv.every);
+      break;
+    case 'week':
+      r.setDate(r.getDate() + 7 * iv.every);
+      break;
+    case 'month':
+      r.setMonth(r.getMonth() + iv.every);
+      break;
+    case 'year':
+      r.setFullYear(r.getFullYear() + iv.every);
+      break;
   }
   return r;
 }

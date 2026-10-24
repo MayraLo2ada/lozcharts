@@ -5,16 +5,16 @@ Reglas fijas para todos los tipos de gráfico. Los valores viven en `src/core/th
 
 ## Paleta categórica (orden fijo, validada para daltonismo)
 
-| Slot | Claro | Oscuro |
-|---|---|---|
-| 1 azul | `#2a78d6` | `#3987e5` |
-| 2 naranja | `#eb6834` | `#d95926` |
-| 3 aqua | `#1baf7a` | `#199e70` |
+| Slot       | Claro     | Oscuro    |
+| ---------- | --------- | --------- |
+| 1 azul     | `#2a78d6` | `#3987e5` |
+| 2 naranja  | `#eb6834` | `#d95926` |
+| 3 aqua     | `#1baf7a` | `#199e70` |
 | 4 amarillo | `#eda100` | `#c98500` |
-| 5 magenta | `#e87ba4` | `#d55181` |
-| 6 verde | `#008300` | `#008300` |
-| 7 violeta | `#6250d6` | `#9085e9` |
-| 8 rojo | `#e34948` | `#e66767` |
+| 5 magenta  | `#e87ba4` | `#d55181` |
+| 6 verde    | `#008300` | `#008300` |
+| 7 violeta  | `#6250d6` | `#9085e9` |
+| 8 rojo     | `#e34948` | `#e66767` |
 
 Validación (24 oct 2026): las dos paletas pasan el rango de luminosidad, el croma mínimo, la
 separación para daltonismo (peor par vecino ΔE 9,1 en claro y 8,4 en oscuro) y la distinción
@@ -27,13 +27,13 @@ por eso el tooltip con valores exactos y la tabla de datos son obligatorios, no 
 
 ## Superficies y texto
 
-| | Claro | Oscuro |
-|---|---|---|
-| Superficie | `#fcfcfb` | `#1a1a19` |
-| Texto principal | `#0b0b0b` | `#f0efec` |
+|                  | Claro     | Oscuro    |
+| ---------------- | --------- | --------- |
+| Superficie       | `#fcfcfb` | `#1a1a19` |
+| Texto principal  | `#0b0b0b` | `#f0efec` |
 | Texto secundario | `#52514e` | `#c3c2b7` |
-| Rejilla | `#e7e6e1` | `#2f2f2d` |
-| Línea del cero | `#a9a8a1` | `#64635e` |
+| Rejilla          | `#e7e6e1` | `#2f2f2d` |
+| Línea del cero   | `#a9a8a1` | `#64635e` |
 
 El oscuro tiene sus propios valores; no es una inversión.
 

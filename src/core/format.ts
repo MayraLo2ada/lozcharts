@@ -59,15 +59,12 @@ export function axisFormatter(
     return (v) => nf(ctx.locale, { style: 'percent', maximumFractionDigits: d }).format(v);
   }
   const base: Intl.NumberFormatOptions =
-    s === 'currency'
-      ? { style: 'currency', currency: ctx.currency, currencyDisplay: 'narrowSymbol' }
-      : {};
+    s === 'currency' ? { style: 'currency', currency: ctx.currency, currencyDisplay: 'narrowSymbol' } : {};
   if (compact) {
     // En compacto el paso relativo al orden de magnitud decide los decimales (1,5 mil).
     const mag = Math.pow(10, Math.floor(Math.log10(Math.max(1, maxAbs)) / 3) * 3);
     const d = stepDecimals(step / mag);
-    return (v) =>
-      nf(ctx.locale, { ...base, notation: 'compact', maximumFractionDigits: d, minimumFractionDigits: 0 }).format(v);
+    return (v) => nf(ctx.locale, { ...base, notation: 'compact', maximumFractionDigits: d, minimumFractionDigits: 0 }).format(v);
   }
   const d = stepDecimals(step);
   return (v) =>
@@ -149,13 +146,21 @@ export function timeFullLabel(t: number, unit: TimeUnit, locale: string): string
       s = df(locale, { month: 'long', year: 'numeric' }).format(d);
       break;
     case 'week':
-      s = (locale.startsWith('es') ? 'Semana del ' : '') + df(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+      s =
+        (locale.startsWith('es') ? 'Semana del ' : '') + df(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
       break;
     case 'day':
       s = df(locale, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
       break;
     default:
-      s = df(locale, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d);
+      s = df(locale, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+      }).format(d);
   }
   return s.charAt(0).toUpperCase() + s.slice(1);
 }

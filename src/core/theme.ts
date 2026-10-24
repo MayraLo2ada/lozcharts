@@ -3,9 +3,11 @@
  * cada color de la paleta se eligió y validó contra su propia superficie.
  */
 
+import type { PaletteOption } from '../types';
+
 export interface Theme {
   name: 'light' | 'dark';
-  /** Paleta categórica en orden fijo (8 slots, validada para daltonismo). */
+  /** Paleta categórica en orden fijo (hasta 8 colores). */
   palette: readonly string[];
   surface: string;
   text: string;
@@ -51,8 +53,22 @@ export const DARK: Theme = {
   other: '#8e8d86',
 };
 
-export function resolveTheme(name: 'light' | 'dark'): Theme {
-  return name === 'dark' ? DARK : LIGHT;
+/** Máximo de colores categóricos: más series se agrupan o se dividen, nunca se cicla. */
+export const MAX_COLORS = 8;
+
+/** Tema del modo dado, con la paleta propia si la hay. */
+export function resolveTheme(mode: 'light' | 'dark', custom?: PaletteOption): Theme {
+  const base = mode === 'dark' ? DARK : LIGHT;
+  if (!custom) return base;
+  const list = isList(custom) ? custom : mode === 'dark' ? (custom.dark ?? custom.light) : custom.light;
+  if (!list.length) return base;
+  if (list.length > MAX_COLORS)
+    console.warn(`LozChart: la paleta tiene ${list.length} colores; se usan los primeros ${MAX_COLORS}.`);
+  return { ...base, palette: list.slice(0, MAX_COLORS) };
+}
+
+function isList(p: PaletteOption): p is readonly string[] {
+  return Array.isArray(p);
 }
 
 /** Variables CSS para las partes HTML (leyenda, tooltip, títulos). */

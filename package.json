@@ -19,8 +19,10 @@
   "sideEffects": true,
   "scripts": {
     "build": "tsc --noEmit && vite build && LC_FORMAT=umd vite build && tsc -p tsconfig.types.json",
+    "test": "esbuild test/*.test.ts --bundle --platform=node --format=esm --outdir=.pruebas --log-level=warning && node --test \".pruebas/*.test.js\"",
     "typecheck": "tsc --noEmit",
-    "test": "esbuild test/core.test.ts --bundle --platform=node --format=esm --log-level=warning --outfile=node_modules/.cache/core.test.mjs && node node_modules/.cache/core.test.mjs"
+    "format": "prettier --write .",
+    "check": "prettier --check . && tsc --noEmit && npm test"
   },
   "keywords": [
     "charts",
@@ -31,6 +33,9 @@
   "author": "Mayra Lozada",
   "license": "MIT",
   "devDependencies": {
+    "@types/node": "^22.20.5",
+    "esbuild": "^0.21.5",
+    "prettier": "^3.9.10",
     "typescript": "^5.9.3",
     "vite": "^5.4.21"
   }

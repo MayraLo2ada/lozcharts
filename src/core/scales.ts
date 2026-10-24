@@ -51,29 +51,21 @@ export class BandScale implements XScale {
   readonly kind = 'band' as const;
   readonly step: number;
   readonly bandwidth: number;
-  private readonly offset: number;
 
-  /**
-   * @param paddingOuter fracción de una banda que queda libre en cada extremo.
-   */
   constructor(
     public n: number,
     public width: number,
-    paddingOuter = 0,
   ) {
-    const count = Math.max(1, n);
-    this.step = width / (count + 2 * paddingOuter);
+    this.step = width / Math.max(1, n);
     this.bandwidth = this.step;
-    this.offset = this.step * paddingOuter;
   }
 
   at(i: number): number {
-    return this.offset + this.step * (i + 0.5);
+    return this.step * (i + 0.5);
   }
 
   indexAt(px: number): number {
-    const i = Math.floor((px - this.offset) / this.step);
-    return Math.max(0, Math.min(this.n - 1, i));
+    return Math.max(0, Math.min(this.n - 1, Math.floor(px / this.step)));
   }
 }
 

@@ -3,13 +3,7 @@
 export type ThemeName = 'light' | 'dark' | 'auto';
 
 /** Cómo se muestran los números. Una función recibe el valor y devuelve el texto. */
-export type FormatSpec =
-  | 'auto'
-  | 'compact'
-  | 'number'
-  | 'percent'
-  | 'currency'
-  | ((value: number) => string);
+export type FormatSpec = 'auto' | 'compact' | 'number' | 'percent' | 'currency' | ((value: number) => string);
 
 export type XAxisType = 'category' | 'time' | 'linear';
 
@@ -48,15 +42,19 @@ export interface SeriesOptions {
   stack?: boolean | string;
   /** Línea suave (curva monótona, no se pasa de los datos). */
   smooth?: boolean;
-  /** Slot de la paleta (1 a 8). Por defecto, su posición en `series`. */
+  /** Posición en la paleta (desde 1). Por defecto, su orden en `series`. */
   color?: number;
   /** Visible al inicio. Por defecto true. */
   visible?: boolean;
   /** Formato propio para el tooltip de esta serie. */
   format?: FormatSpec;
-  /** Cualquier opción extra que use un tipo de serie propio. */
-  [extra: string]: unknown;
 }
+
+/**
+ * Colores de las series, en orden (máximo 8). Un arreglo vale para los dos temas; para
+ * el modo oscuro conviene dar sus propios tonos, validados contra la superficie oscura.
+ */
+export type PaletteOption = readonly string[] | { light: readonly string[]; dark?: readonly string[] };
 
 export interface LegendOptions {
   position?: 'top' | 'bottom';
@@ -70,6 +68,8 @@ export interface LozChartOptions {
   yAxis?: YAxisOptions;
   series: SeriesOptions[];
   theme?: ThemeName;
+  /** Paleta propia. Por defecto, la de LozChart (validada para daltonismo). */
+  palette?: PaletteOption;
   /** Alto del área del gráfico (ejes incluidos), en px. Por defecto 320. */
   height?: number;
   /** false oculta la leyenda. Solo aparece con 2 o más series. */

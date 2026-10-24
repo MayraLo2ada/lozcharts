@@ -12,12 +12,12 @@ import type { Theme } from './theme';
 
 /** Una serie ya preparada por el núcleo. */
 export interface PreparedSeries {
-  /** Identificador estable (el nombre). */
+  /** Identificador estable: el nombre. */
   key: string;
   name: string;
-  type: string;
   impl: SeriesImpl;
-  color: string;
+  /** Posición en la paleta (0 a 7), o -1 para el grupo "Otros". */
+  slot: number;
   options: SeriesOptions;
   /** Valor de cada índice (NaN si falta). */
   values: number[];
@@ -28,23 +28,23 @@ export interface PreparedSeries {
 /** Estado de una serie en un cuadro de animación (en unidades de datos). */
 export interface SeriesFrame {
   ps: PreparedSeries;
-  /** Base de cada índice (0, o la serie de abajo si está apilada). */
+  /** Base de cada índice (el cero, o la punta de la serie de abajo si está apilada). */
   y0: number[];
   /** Punta de cada índice. */
   y1: number[];
   /** Opacidad (0 = oculta). */
   alpha: number;
-  /** Posición dentro del grupo de barras y cantidad de posiciones (pueden ser fraccionarias al animar). */
+  /** Posición dentro del grupo de barras y cantidad de posiciones (fraccionarias al animar). */
   slot: number;
   slots: number;
-  /** ¿Es el segmento exterior de su pila en el índice i? (solo ese lleva la punta redondeada). */
+  /** ¿Es el segmento exterior de su pila en el índice i? Solo ese lleva la punta redondeada. */
   outer: boolean[];
-  /** La serie va de salida: se elimina al terminar la animación. */
-  exiting?: boolean;
 }
 
 export interface DrawContext {
   frame: SeriesFrame;
+  /** Color de la serie en el tema actual. */
+  color: string;
   x: XScale;
   y: LinearScale;
   theme: Theme;
@@ -65,9 +65,9 @@ export interface SeriesImpl {
   includeZero?: boolean;
   /** Orden de dibujo: menor va abajo. Barras 0, áreas 1, líneas 2. */
   layer?: number;
-  /** Muestra en leyenda y tooltip. */
+  /** Muestra en leyenda: cuadrado (barras, áreas) o trazo (líneas). */
   legendSymbol?: 'line' | 'square';
-  /** Nombre en español para la descripción accesible ("barras", "líneas"…). */
+  /** Nombre para la descripción accesible ("barras", "líneas"…). */
   label?: string;
   /** Markup SVG de la serie. */
   draw(ctx: DrawContext): string;

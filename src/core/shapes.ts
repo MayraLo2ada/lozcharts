@@ -75,7 +75,8 @@ function monotone(pts: Pt[], move = true): string {
     const h = dx[i] / 3;
     const [x0, y0] = pts[i];
     const [x1, y1] = pts[i + 1];
-    d += 'C' + r2(x0 + h) + ',' + r2(y0 + m[i] * h) + ' ' + r2(x1 - h) + ',' + r2(y1 - m[i + 1] * h) + ' ' + r2(x1) + ',' + r2(y1);
+    d +=
+      'C' + r2(x0 + h) + ',' + r2(y0 + m[i] * h) + ' ' + r2(x1 - h) + ',' + r2(y1 - m[i + 1] * h) + ' ' + r2(x1) + ',' + r2(y1);
   }
   return d;
 }

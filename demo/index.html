@@ -1,145 +1,320 @@
 <!doctype html>
 <html lang="es" data-theme="auto">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LozChart · Galería</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --surface: #fcfcfb;
-    --text: #0b0b0b;
-    --muted: #52514e;
-    --line: #e7e6e1;
-    --control: #f1f0ec;
-    --control-hover: #e7e6e1;
-    --accent: #2a78d6;
-    --code-bg: #f3f2ee;
-    --space: 8px;
-    --radius: 6px;
-    --font: 'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-    --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-    color-scheme: light;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --surface: #1a1a19; --text: #f0efec; --muted: #c3c2b7; --line: #2f2f2d;
-      --control: #252523; --control-hover: #2f2f2d; --accent: #3987e5; --code-bg: #222220;
-      color-scheme: dark;
-    }
-  }
-  :root[data-theme="dark"] {
-    --surface: #1a1a19; --text: #f0efec; --muted: #c3c2b7; --line: #2f2f2d;
-    --control: #252523; --control-hover: #2f2f2d; --accent: #3987e5; --code-bg: #222220;
-    color-scheme: dark;
-  }
-  * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
-  body { margin: 0; background: var(--surface); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.5; }
-  .page { max-width: 1240px; margin: 0 auto; padding: calc(var(--space) * 5) calc(var(--space) * 5) calc(var(--space) * 10); }
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozChart · Galería</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --surface: #fcfcfb;
+        --text: #0b0b0b;
+        --muted: #52514e;
+        --line: #e7e6e1;
+        --control: #f1f0ec;
+        --control-hover: #e7e6e1;
+        --accent: #2a78d6;
+        --code-bg: #f3f2ee;
+        --space: 8px;
+        --radius: 6px;
+        --font: 'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+        --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --surface: #1a1a19;
+          --text: #f0efec;
+          --muted: #c3c2b7;
+          --line: #2f2f2d;
+          --control: #252523;
+          --control-hover: #2f2f2d;
+          --accent: #3987e5;
+          --code-bg: #222220;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme='dark'] {
+        --surface: #1a1a19;
+        --text: #f0efec;
+        --muted: #c3c2b7;
+        --line: #2f2f2d;
+        --control: #252523;
+        --control-hover: #2f2f2d;
+        --accent: #3987e5;
+        --code-bg: #222220;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--surface);
+        color: var(--text);
+        font-family: var(--font);
+        font-size: 15px;
+        line-height: 1.5;
+      }
+      .page {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: calc(var(--space) * 5) calc(var(--space) * 5) calc(var(--space) * 10);
+      }
 
-  header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: calc(var(--space) * 3); padding-bottom: calc(var(--space) * 4); border-bottom: 1px solid var(--line); }
-  .brand h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; }
-  .brand p { margin: var(--space) 0 0; max-width: 62ch; color: var(--muted); }
+      header.top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: calc(var(--space) * 3);
+        padding-bottom: calc(var(--space) * 4);
+        border-bottom: 1px solid var(--line);
+      }
+      .brand h1 {
+        margin: 0;
+        font-size: 30px;
+        line-height: 1.1;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .brand p {
+        margin: var(--space) 0 0;
+        max-width: 62ch;
+        color: var(--muted);
+      }
 
-  .seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--control); border-radius: 8px; }
-  .seg button { min-height: 32px; padding: 0 14px; border: 0; border-radius: var(--radius); background: transparent; color: var(--muted); font: inherit; font-size: 14px; cursor: pointer; }
-  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
-  .seg-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+      .seg {
+        display: inline-flex;
+        padding: 3px;
+        gap: 2px;
+        background: var(--control);
+        border-radius: 8px;
+      }
+      .seg button {
+        min-height: 32px;
+        padding: 0 14px;
+        border: 0;
+        border-radius: var(--radius);
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      .seg button[aria-pressed='true'] {
+        background: var(--surface);
+        color: var(--text);
+        font-weight: 600;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+      }
+      .seg-label {
+        display: block;
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
 
-  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .btn { min-height: 34px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); font: inherit; font-size: 14px; cursor: pointer; }
-  .btn:hover { background: var(--control); }
-  .btn.primary { background: var(--text); color: var(--surface); border-color: var(--text); font-weight: 600; }
-  .btn.primary:hover { opacity: .88; }
+      button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .btn {
+        min-height: 34px;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--surface);
+        color: var(--text);
+        font: inherit;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      .btn:hover {
+        background: var(--control);
+      }
+      .btn.primary {
+        background: var(--text);
+        color: var(--surface);
+        border-color: var(--text);
+        font-weight: 600;
+      }
+      .btn.primary:hover {
+        opacity: 0.88;
+      }
 
-  .hero { padding: calc(var(--space) * 5) 0; border-bottom: 1px solid var(--line); }
-  .toolbar { display: flex; flex-wrap: wrap; gap: var(--space); margin-top: calc(var(--space) * 2); }
+      .hero {
+        padding: calc(var(--space) * 5) 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space);
+        margin-top: calc(var(--space) * 2);
+      }
 
-  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: calc(var(--space) * 6); }
-  figure { margin: 0; padding: calc(var(--space) * 4) 0; border-bottom: 1px solid var(--line); min-width: 0; }
-  figcaption { margin-top: calc(var(--space) * 1.5); color: var(--muted); font-size: 13px; max-width: 64ch; }
-  figcaption code, .usage code { font-family: var(--mono); font-size: 12px; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
-  .fig-tools { margin-top: calc(var(--space) * 1.5); }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: calc(var(--space) * 6);
+      }
+      figure {
+        margin: 0;
+        padding: calc(var(--space) * 4) 0;
+        border-bottom: 1px solid var(--line);
+        min-width: 0;
+      }
+      figcaption {
+        margin-top: calc(var(--space) * 1.5);
+        color: var(--muted);
+        font-size: 13px;
+        max-width: 64ch;
+      }
+      figcaption code,
+      .usage code {
+        font-family: var(--mono);
+        font-size: 12px;
+        background: var(--code-bg);
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+      .fig-tools {
+        margin-top: calc(var(--space) * 1.5);
+      }
 
-  .usage { padding-top: calc(var(--space) * 5); max-width: 860px; }
-  .usage h2 { margin: 0 0 var(--space); font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
-  .usage p { color: var(--muted); margin: 0 0 calc(var(--space) * 2); }
-  pre { margin: 0; padding: calc(var(--space) * 2); background: var(--code-bg); border-radius: 8px; overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.55; }
+      .usage {
+        padding-top: calc(var(--space) * 5);
+        max-width: 860px;
+      }
+      .usage h2 {
+        margin: 0 0 var(--space);
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .usage p {
+        color: var(--muted);
+        margin: 0 0 calc(var(--space) * 2);
+      }
+      pre {
+        margin: 0;
+        padding: calc(var(--space) * 2);
+        background: var(--code-bg);
+        border-radius: 8px;
+        overflow-x: auto;
+        font-family: var(--mono);
+        font-size: 13px;
+        line-height: 1.55;
+      }
 
-  @media (max-width: 860px) {
-    .page { padding: calc(var(--space) * 3) 16px calc(var(--space) * 8); }
-    .grid { grid-template-columns: minmax(0, 1fr); }
-    .brand h1 { font-size: 26px; }
-    .hero { padding: calc(var(--space) * 4) 0; }
-  }
-</style>
-</head>
-<body>
-<div class="page">
-  <header class="top">
-    <div class="brand">
-      <h1>LozChart</h1>
-      <p>Gráficos SVG interactivos, accesibles y sin dependencias. Pasa el puntero o usa las flechas del teclado sobre cada gráfico; pulsa la leyenda para ocultar series.</p>
-    </div>
-    <div>
-      <span class="seg-label" id="tema-label">Tema</span>
-      <div class="seg" role="group" aria-labelledby="tema-label">
-        <button type="button" data-theme-btn="auto" aria-pressed="true">Automático</button>
-        <button type="button" data-theme-btn="light" aria-pressed="false">Claro</button>
-        <button type="button" data-theme-btn="dark" aria-pressed="false">Oscuro</button>
+      @media (max-width: 860px) {
+        .page {
+          padding: calc(var(--space) * 3) 16px calc(var(--space) * 8);
+        }
+        .grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .brand h1 {
+          font-size: 26px;
+        }
+        .hero {
+          padding: calc(var(--space) * 4) 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="top">
+        <div class="brand">
+          <h1>LozChart</h1>
+          <p>
+            Gráficos SVG interactivos, accesibles y sin dependencias. Pasa el puntero o usa las flechas del teclado sobre cada
+            gráfico; pulsa la leyenda para ocultar series.
+          </p>
+        </div>
+        <div>
+          <span class="seg-label" id="tema-label">Tema</span>
+          <div class="seg" role="group" aria-labelledby="tema-label">
+            <button type="button" data-theme-btn="auto" aria-pressed="true">Automático</button>
+            <button type="button" data-theme-btn="light" aria-pressed="false">Claro</button>
+            <button type="button" data-theme-btn="dark" aria-pressed="false">Oscuro</button>
+          </div>
+        </div>
+      </header>
+
+      <section class="hero" aria-label="Ejemplo principal">
+        <div id="ventas"></div>
+        <div class="toolbar">
+          <button type="button" class="btn primary" id="ventas-anio">Ver 2025</button>
+          <button type="button" class="btn" id="ventas-png">Descargar PNG</button>
+          <button type="button" class="btn" id="ventas-svg">Descargar SVG</button>
+        </div>
+      </section>
+
+      <div class="grid">
+        <figure>
+          <div id="accion"></div>
+          <figcaption>
+            Línea sobre eje de tiempo continuo con 210 días hábiles. El eje no empieza en cero porque es un precio; las etiquetas
+            del eje X marcan meses y se saltan si no caben.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div id="canales"></div>
+          <div class="fig-tools"><button type="button" class="btn" id="canales-mes">Ver septiembre</button></div>
+          <figcaption>
+            Barras agrupadas por canal con formato compacto. Barras de máximo 24 px, 2 px de aire entre vecinas y punta redondeada
+            solo del lado del dato.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div id="dispositivos"></div>
+          <figcaption>
+            Áreas apiladas por hora: cada capa al 10 % de opacidad con su línea encima. Oculta un dispositivo en la leyenda y los
+            demás se reacomodan sin cambiar de color.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div id="caja"></div>
+          <figcaption>
+            Valores positivos y negativos: las barras bajo cero redondean su punta hacia abajo y la línea del cero va un poco más
+            marcada que la rejilla.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div id="temperatura"></div>
+          <figcaption>
+            Cuatro líneas suaves con curva monótona y formato propio (<code>°C</code>): la curva nunca dibuja un pico que no esté
+            en los datos.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div id="pagos"></div>
+          <figcaption>
+            Barras apiladas en porcentaje (<code>format: 'percent'</code>). El tooltip muestra cada segmento y el total.
+          </figcaption>
+        </figure>
       </div>
-    </div>
-  </header>
 
-  <section class="hero" aria-label="Ejemplo principal">
-    <div id="ventas"></div>
-    <div class="toolbar">
-      <button type="button" class="btn primary" id="ventas-anio">Ver 2025</button>
-      <button type="button" class="btn" id="ventas-png">Descargar PNG</button>
-      <button type="button" class="btn" id="ventas-svg">Descargar SVG</button>
-    </div>
-  </section>
-
-  <div class="grid">
-    <figure>
-      <div id="accion"></div>
-      <figcaption>Línea sobre eje de tiempo continuo con 210 días hábiles. El eje no empieza en cero porque es un precio; las etiquetas del eje X marcan meses y se saltan si no caben.</figcaption>
-    </figure>
-
-    <figure>
-      <div id="canales"></div>
-      <div class="fig-tools"><button type="button" class="btn" id="canales-mes">Ver septiembre</button></div>
-      <figcaption>Barras agrupadas por canal con formato compacto. Barras de máximo 24 px, 2 px de aire entre vecinas y punta redondeada solo del lado del dato.</figcaption>
-    </figure>
-
-    <figure>
-      <div id="dispositivos"></div>
-      <figcaption>Áreas apiladas por hora: cada capa al 10 % de opacidad con su línea encima. Oculta un dispositivo en la leyenda y los demás se reacomodan sin cambiar de color.</figcaption>
-    </figure>
-
-    <figure>
-      <div id="caja"></div>
-      <figcaption>Valores positivos y negativos: las barras bajo cero redondean su punta hacia abajo y la línea del cero va un poco más marcada que la rejilla.</figcaption>
-    </figure>
-
-    <figure>
-      <div id="temperatura"></div>
-      <figcaption>Cuatro líneas suaves con curva monótona y formato propio (<code>°C</code>): la curva nunca dibuja un pico que no esté en los datos.</figcaption>
-    </figure>
-
-    <figure>
-      <div id="pagos"></div>
-      <figcaption>Barras apiladas en porcentaje (<code>format: 'percent'</code>). El tooltip muestra cada segmento y el total.</figcaption>
-    </figure>
-  </div>
-
-  <section class="usage">
-    <h2>Cómo se usa</h2>
-    <p>Abre este archivo con doble clic: carga <code>dist/lozchart.umd.js</code> y expone <code>window.LozChart</code>. En proyectos con Vite, React o Angular usa <code>import { LozChart } from 'lozchart'</code>.</p>
-<pre><code>&lt;div id="grafico"&gt;&lt;/div&gt;
+      <section class="usage">
+        <h2>Cómo se usa</h2>
+        <p>
+          Abre este archivo con doble clic: carga <code>dist/lozchart.umd.js</code> y expone <code>window.LozChart</code>. En
+          proyectos con Vite, React o Angular usa <code>import { LozChart } from 'lozchart'</code>.
+        </p>
+        <pre><code>&lt;div id="grafico"&gt;&lt;/div&gt;
 &lt;script src="lozchart.umd.js"&gt;&lt;/script&gt;
 &lt;script&gt;
   const chart = new LozChart('#grafico', {
@@ -155,235 +330,279 @@
   });
   chart.setData(nuevosDatos); // anima del estado anterior al nuevo
 &lt;/script&gt;</code></pre>
-  </section>
-</div>
+      </section>
+    </div>
 
-<script src="../dist/lozchart.umd.js"></script>
-<script>
-(function () {
-  // Generador pseudoaleatorio con semilla: los datos de ejemplo salen iguales cada vez.
-  function rng(seed) {
-    return function () {
-      seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
-      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-  }
-  var charts = [];
+    <script src="../dist/lozchart.umd.js"></script>
+    <script>
+      (function () {
+        // Generador pseudoaleatorio con semilla: los datos de ejemplo salen iguales cada vez.
+        function rng(seed) {
+          return function () {
+            seed |= 0;
+            seed = (seed + 0x6d2b79f5) | 0;
+            var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+        var charts = [];
 
-  // 1. Ventas por mes: barras apiladas + línea de meta.
-  function ventasDe(anio, seed) {
-    var r = rng(seed), out = [];
-    var estacional = [0.82, 0.78, 0.9, 0.94, 1.0, 0.97, 0.95, 1.02, 0.98, 1.06, 1.24, 1.42];
-    for (var m = 0; m < 12; m++) {
-      var k = estacional[m] * (anio === 2026 ? 1.12 : 1);
-      out.push({
-        mes: anio + '-' + String(m + 1).padStart(2, '0'),
-        online: Math.round((41000 + m * 1900 + r() * 6000) * k),
-        tienda: Math.round((33000 + r() * 5000) * k),
-        meta: Math.round((74000 + m * 2600) * (anio === 2026 ? 1.12 : 1) * (m > 9 ? 1.18 : 1)),
-      });
-    }
-    return out;
-  }
-  var anio = 2026;
-  var ventas = new LozChart('#ventas', {
-    title: 'Ventas por mes',
-    subtitle: 'Enero a diciembre 2026 · tienda física y canal online frente a la meta mensual',
-    data: ventasDe(2026, 7),
-    xAxis: { field: 'mes', type: 'time' },
-    yAxis: { format: 'currency' },
-    series: [
-      { type: 'bar', field: 'online', name: 'Online', stack: true },
-      { type: 'bar', field: 'tienda', name: 'Tienda', stack: true },
-      { type: 'line', field: 'meta', name: 'Meta', smooth: true },
-    ],
-    height: 340,
-    currency: 'USD',
-  });
-  charts.push(ventas);
-  document.getElementById('ventas-anio').addEventListener('click', function (e) {
-    anio = anio === 2026 ? 2025 : 2026;
-    ventas.setData(ventasDe(anio, anio === 2026 ? 7 : 3));
-    ventas.setOptions({ subtitle: 'Enero a diciembre ' + anio + ' · tienda física y canal online frente a la meta mensual' });
-    e.currentTarget.textContent = anio === 2026 ? 'Ver 2025' : 'Ver 2026';
-  });
-  document.getElementById('ventas-png').addEventListener('click', function () { ventas.download('png'); });
-  document.getElementById('ventas-svg').addEventListener('click', function () { ventas.download('svg'); });
+        // 1. Ventas por mes: barras apiladas + línea de meta.
+        function ventasDe(anio, seed) {
+          var r = rng(seed),
+            out = [];
+          var estacional = [0.82, 0.78, 0.9, 0.94, 1.0, 0.97, 0.95, 1.02, 0.98, 1.06, 1.24, 1.42];
+          for (var m = 0; m < 12; m++) {
+            var k = estacional[m] * (anio === 2026 ? 1.12 : 1);
+            out.push({
+              mes: anio + '-' + String(m + 1).padStart(2, '0'),
+              online: Math.round((41000 + m * 1900 + r() * 6000) * k),
+              tienda: Math.round((33000 + r() * 5000) * k),
+              meta: Math.round((74000 + m * 2600) * (anio === 2026 ? 1.12 : 1) * (m > 9 ? 1.18 : 1)),
+            });
+          }
+          return out;
+        }
+        var anio = 2026;
+        var ventas = new LozChart('#ventas', {
+          title: 'Ventas por mes',
+          subtitle: 'Enero a diciembre 2026 · tienda física y canal online frente a la meta mensual',
+          data: ventasDe(2026, 7),
+          xAxis: { field: 'mes', type: 'time' },
+          yAxis: { format: 'currency' },
+          series: [
+            { type: 'bar', field: 'online', name: 'Online', stack: true },
+            { type: 'bar', field: 'tienda', name: 'Tienda', stack: true },
+            { type: 'line', field: 'meta', name: 'Meta', smooth: true },
+          ],
+          height: 340,
+          currency: 'USD',
+        });
+        charts.push(ventas);
+        document.getElementById('ventas-anio').addEventListener('click', function (e) {
+          anio = anio === 2026 ? 2025 : 2026;
+          ventas.setData(ventasDe(anio, anio === 2026 ? 7 : 3));
+          ventas.setOptions({
+            subtitle: 'Enero a diciembre ' + anio + ' · tienda física y canal online frente a la meta mensual',
+          });
+          e.currentTarget.textContent = anio === 2026 ? 'Ver 2025' : 'Ver 2026';
+        });
+        document.getElementById('ventas-png').addEventListener('click', function () {
+          ventas.download('png');
+        });
+        document.getElementById('ventas-svg').addEventListener('click', function () {
+          ventas.download('svg');
+        });
 
-  // 2. Precio de una acción (línea en tiempo continuo, días hábiles). Empresa ficticia.
-  (function () {
-    var r = rng(42), p = 21.4, data = [], d = new Date(2026, 0, 2);
-    while (data.length < 210) {
-      var dow = d.getDay();
-      if (dow !== 0 && dow !== 6) {
-        p = Math.max(12, p * (1 + (r() - 0.48) * 0.032));
-        data.push({ fecha: new Date(d), cierre: Math.round(p * 100) / 100 });
-      }
-      d.setDate(d.getDate() + 1);
-    }
-    charts.push(new LozChart('#accion', {
-      title: 'Alimentos Aurora (AURF): cierre diario',
-      subtitle: 'Precio en dólares, enero a octubre 2026',
-      data: data,
-      xAxis: { field: 'fecha', type: 'time' },
-      yAxis: { format: 'currency' },
-      series: [{ type: 'line', field: 'cierre', name: 'Cierre' }],
-      height: 280,
-    }));
-  })();
+        // 2. Precio de una acción (línea en tiempo continuo, días hábiles). Empresa ficticia.
+        (function () {
+          var r = rng(42),
+            p = 21.4,
+            data = [],
+            d = new Date(2026, 0, 2);
+          while (data.length < 210) {
+            var dow = d.getDay();
+            if (dow !== 0 && dow !== 6) {
+              p = Math.max(12, p * (1 + (r() - 0.48) * 0.032));
+              data.push({ fecha: new Date(d), cierre: Math.round(p * 100) / 100 });
+            }
+            d.setDate(d.getDate() + 1);
+          }
+          charts.push(
+            new LozChart('#accion', {
+              title: 'Alimentos Aurora (AURF): cierre diario',
+              subtitle: 'Precio en dólares, enero a octubre 2026',
+              data: data,
+              xAxis: { field: 'fecha', type: 'time' },
+              yAxis: { format: 'currency' },
+              series: [{ type: 'line', field: 'cierre', name: 'Cierre' }],
+              height: 280,
+            }),
+          );
+        })();
 
-  // 3. Visitas a un sitio web por canal (barras agrupadas).
-  var canalesOct = [
-    { canal: 'Búsqueda', escritorio: 48200, movil: 61900 },
-    { canal: 'Directo', escritorio: 31500, movil: 22800 },
-    { canal: 'Redes sociales', escritorio: 9800, movil: 38400 },
-    { canal: 'Correo', escritorio: 14600, movil: 11200 },
-    { canal: 'Referidos', escritorio: 8900, movil: 6300 },
-    { canal: 'Anuncios', escritorio: 12400, movil: 19700 },
-  ];
-  var canales = new LozChart('#canales', {
-    title: 'Visitas al sitio web por canal',
-    subtitle: 'Octubre 2026, por tipo de dispositivo',
-    data: canalesOct,
-    xAxis: { field: 'canal', type: 'category' },
-    yAxis: { format: 'compact' },
-    series: [
-      { type: 'bar', field: 'escritorio', name: 'Escritorio' },
-      { type: 'bar', field: 'movil', name: 'Móvil' },
-    ],
-    height: 280,
-  });
-  charts.push(canales);
-  var septiembre = false;
-  document.getElementById('canales-mes').addEventListener('click', function (e) {
-    septiembre = !septiembre;
-    var r = rng(99);
-    canales.setData(septiembre ? canalesOct.map(function (c) {
-      return { canal: c.canal, escritorio: Math.round(c.escritorio * (0.75 + r() * 0.4)), movil: Math.round(c.movil * (0.7 + r() * 0.45)) };
-    }) : canalesOct);
-    canales.setOptions({ subtitle: (septiembre ? 'Septiembre' : 'Octubre') + ' 2026, por tipo de dispositivo' });
-    e.currentTarget.textContent = septiembre ? 'Ver octubre' : 'Ver septiembre';
-  });
+        // 3. Visitas a un sitio web por canal (barras agrupadas).
+        var canalesOct = [
+          { canal: 'Búsqueda', escritorio: 48200, movil: 61900 },
+          { canal: 'Directo', escritorio: 31500, movil: 22800 },
+          { canal: 'Redes sociales', escritorio: 9800, movil: 38400 },
+          { canal: 'Correo', escritorio: 14600, movil: 11200 },
+          { canal: 'Referidos', escritorio: 8900, movil: 6300 },
+          { canal: 'Anuncios', escritorio: 12400, movil: 19700 },
+        ];
+        var canales = new LozChart('#canales', {
+          title: 'Visitas al sitio web por canal',
+          subtitle: 'Octubre 2026, por tipo de dispositivo',
+          data: canalesOct,
+          xAxis: { field: 'canal', type: 'category' },
+          yAxis: { format: 'compact' },
+          series: [
+            { type: 'bar', field: 'escritorio', name: 'Escritorio' },
+            { type: 'bar', field: 'movil', name: 'Móvil' },
+          ],
+          height: 280,
+        });
+        charts.push(canales);
+        var septiembre = false;
+        document.getElementById('canales-mes').addEventListener('click', function (e) {
+          septiembre = !septiembre;
+          var r = rng(99);
+          canales.setData(
+            septiembre
+              ? canalesOct.map(function (c) {
+                  return {
+                    canal: c.canal,
+                    escritorio: Math.round(c.escritorio * (0.75 + r() * 0.4)),
+                    movil: Math.round(c.movil * (0.7 + r() * 0.45)),
+                  };
+                })
+              : canalesOct,
+          );
+          canales.setOptions({ subtitle: (septiembre ? 'Septiembre' : 'Octubre') + ' 2026, por tipo de dispositivo' });
+          e.currentTarget.textContent = septiembre ? 'Ver octubre' : 'Ver septiembre';
+        });
 
-  // 4. Visitas por hora según dispositivo (áreas apiladas, eje horario).
-  (function () {
-    var r = rng(5), data = [];
-    var curva = [0.22, 0.14, 0.09, 0.07, 0.07, 0.1, 0.2, 0.38, 0.55, 0.66, 0.72, 0.76, 0.84, 0.8, 0.74, 0.72, 0.74, 0.8, 0.88, 0.96, 1.0, 0.92, 0.7, 0.42];
-    for (var h = 0; h < 24; h++) {
-      var c = curva[h];
-      data.push({
-        hora: new Date(2026, 9, 23, h),
-        movil: Math.round((5200 + r() * 600) * c * (h > 18 || h < 1 ? 1.25 : 0.9)),
-        escritorio: Math.round((3900 + r() * 400) * c * (h >= 9 && h <= 17 ? 1.3 : 0.6)),
-        tableta: Math.round((900 + r() * 150) * c),
-      });
-    }
-    charts.push(new LozChart('#dispositivos', {
-      title: 'Visitas por hora y dispositivo',
-      subtitle: 'Jueves 23 de octubre de 2026',
-      data: data,
-      xAxis: { field: 'hora', type: 'time' },
-      yAxis: { format: 'auto' },
-      series: [
-        { type: 'area', field: 'movil', name: 'Móvil', stack: true, smooth: true },
-        { type: 'area', field: 'escritorio', name: 'Escritorio', stack: true, smooth: true },
-        { type: 'area', field: 'tableta', name: 'Tableta', stack: true, smooth: true },
-      ],
-      height: 280,
-    }));
-  })();
+        // 4. Visitas por hora según dispositivo (áreas apiladas, eje horario).
+        (function () {
+          var r = rng(5),
+            data = [];
+          var curva = [
+            0.22, 0.14, 0.09, 0.07, 0.07, 0.1, 0.2, 0.38, 0.55, 0.66, 0.72, 0.76, 0.84, 0.8, 0.74, 0.72, 0.74, 0.8, 0.88, 0.96,
+            1.0, 0.92, 0.7, 0.42,
+          ];
+          for (var h = 0; h < 24; h++) {
+            var c = curva[h];
+            data.push({
+              hora: new Date(2026, 9, 23, h),
+              movil: Math.round((5200 + r() * 600) * c * (h > 18 || h < 1 ? 1.25 : 0.9)),
+              escritorio: Math.round((3900 + r() * 400) * c * (h >= 9 && h <= 17 ? 1.3 : 0.6)),
+              tableta: Math.round((900 + r() * 150) * c),
+            });
+          }
+          charts.push(
+            new LozChart('#dispositivos', {
+              title: 'Visitas por hora y dispositivo',
+              subtitle: 'Jueves 23 de octubre de 2026',
+              data: data,
+              xAxis: { field: 'hora', type: 'time' },
+              yAxis: { format: 'auto' },
+              series: [
+                { type: 'area', field: 'movil', name: 'Móvil', stack: true, smooth: true },
+                { type: 'area', field: 'escritorio', name: 'Escritorio', stack: true, smooth: true },
+                { type: 'area', field: 'tableta', name: 'Tableta', stack: true, smooth: true },
+              ],
+              height: 280,
+            }),
+          );
+        })();
 
-  // 5. Flujo de caja (positivos y negativos).
-  charts.push(new LozChart('#caja', {
-    title: 'Flujo de caja mensual',
-    subtitle: 'Dólares, enero a octubre 2026',
-    data: [
-      { mes: '2026-01', operacion: 42000, inversion: -21000 },
-      { mes: '2026-02', operacion: 31000, inversion: -34000 },
-      { mes: '2026-03', operacion: 56000, inversion: 8000 },
-      { mes: '2026-04', operacion: 29000, inversion: -15000 },
-      { mes: '2026-05', operacion: 61000, inversion: 23000 },
-      { mes: '2026-06', operacion: 48000, inversion: -6000 },
-      { mes: '2026-07', operacion: -9000, inversion: -28000 },
-      { mes: '2026-08', operacion: 37000, inversion: 12000 },
-      { mes: '2026-09', operacion: 52000, inversion: 31000 },
-      { mes: '2026-10', operacion: 69000, inversion: 19000 },
-    ],
-    xAxis: { field: 'mes', type: 'time' },
-    yAxis: { format: 'currency' },
-    series: [
-      { type: 'bar', field: 'operacion', name: 'Operación' },
-      { type: 'bar', field: 'inversion', name: 'Inversión' },
-    ],
-    height: 280,
-  }));
+        // 5. Flujo de caja (positivos y negativos).
+        charts.push(
+          new LozChart('#caja', {
+            title: 'Flujo de caja mensual',
+            subtitle: 'Dólares, enero a octubre 2026',
+            data: [
+              { mes: '2026-01', operacion: 42000, inversion: -21000 },
+              { mes: '2026-02', operacion: 31000, inversion: -34000 },
+              { mes: '2026-03', operacion: 56000, inversion: 8000 },
+              { mes: '2026-04', operacion: 29000, inversion: -15000 },
+              { mes: '2026-05', operacion: 61000, inversion: 23000 },
+              { mes: '2026-06', operacion: 48000, inversion: -6000 },
+              { mes: '2026-07', operacion: -9000, inversion: -28000 },
+              { mes: '2026-08', operacion: 37000, inversion: 12000 },
+              { mes: '2026-09', operacion: 52000, inversion: 31000 },
+              { mes: '2026-10', operacion: 69000, inversion: 19000 },
+            ],
+            xAxis: { field: 'mes', type: 'time' },
+            yAxis: { format: 'currency' },
+            series: [
+              { type: 'bar', field: 'operacion', name: 'Operación' },
+              { type: 'bar', field: 'inversion', name: 'Inversión' },
+            ],
+            height: 280,
+          }),
+        );
 
-  // 6. Temperatura máxima semanal por ciudad (líneas suaves).
-  (function () {
-    var grados = new Intl.NumberFormat('es', { maximumFractionDigits: 1 });
-    var r = rng(11), data = [];
-    var ciudades = { miami: [31, -3], madrid: [33, -15], bogota: [19, -0.5], cdmx: [26, -4] };
-    for (var w = 0; w < 20; w++) {
-      var row = { semana: new Date(2026, 5, 1 + w * 7) }, t = w / 19;
-      for (var k in ciudades) {
-        var c = ciudades[k];
-        row[k] = Math.round((c[0] + c[1] * t * t + (r() - 0.5) * 2.4) * 10) / 10;
-      }
-      data.push(row);
-    }
-    charts.push(new LozChart('#temperatura', {
-      title: 'Temperatura máxima por ciudad',
-      subtitle: 'Promedio semanal, junio a octubre 2026',
-      data: data,
-      xAxis: { field: 'semana', type: 'time' },
-      yAxis: { format: function (v) { return grados.format(v) + ' °C'; }, zero: true },
-      series: [
-        { type: 'line', field: 'miami', name: 'Miami', smooth: true },
-        { type: 'line', field: 'madrid', name: 'Madrid', smooth: true },
-        { type: 'line', field: 'bogota', name: 'Bogotá', smooth: true },
-        { type: 'line', field: 'cdmx', name: 'Ciudad de México', smooth: true },
-      ],
-      height: 280,
-    }));
-  })();
+        // 6. Temperatura máxima semanal por ciudad (líneas suaves).
+        (function () {
+          var grados = new Intl.NumberFormat('es', { maximumFractionDigits: 1 });
+          var r = rng(11),
+            data = [];
+          var ciudades = { miami: [31, -3], madrid: [33, -15], bogota: [19, -0.5], cdmx: [26, -4] };
+          for (var w = 0; w < 20; w++) {
+            var row = { semana: new Date(2026, 5, 1 + w * 7) },
+              t = w / 19;
+            for (var k in ciudades) {
+              var c = ciudades[k];
+              row[k] = Math.round((c[0] + c[1] * t * t + (r() - 0.5) * 2.4) * 10) / 10;
+            }
+            data.push(row);
+          }
+          charts.push(
+            new LozChart('#temperatura', {
+              title: 'Temperatura máxima por ciudad',
+              subtitle: 'Promedio semanal, junio a octubre 2026',
+              data: data,
+              xAxis: { field: 'semana', type: 'time' },
+              yAxis: {
+                format: function (v) {
+                  return grados.format(v) + ' °C';
+                },
+                zero: true,
+              },
+              series: [
+                { type: 'line', field: 'miami', name: 'Miami', smooth: true },
+                { type: 'line', field: 'madrid', name: 'Madrid', smooth: true },
+                { type: 'line', field: 'bogota', name: 'Bogotá', smooth: true },
+                { type: 'line', field: 'cdmx', name: 'Ciudad de México', smooth: true },
+              ],
+              height: 280,
+            }),
+          );
+        })();
 
-  // 7. Ventas por método de pago (apilado en porcentaje).
-  charts.push(new LozChart('#pagos', {
-    title: 'Ventas por método de pago',
-    subtitle: 'Participación por trimestre',
-    data: [
-      { trimestre: 'T1 2025', tarjeta: 0.38, billetera: 0.24, efectivo: 0.38 },
-      { trimestre: 'T2 2025', tarjeta: 0.4, billetera: 0.27, efectivo: 0.33 },
-      { trimestre: 'T3 2025', tarjeta: 0.41, billetera: 0.3, efectivo: 0.29 },
-      { trimestre: 'T4 2025', tarjeta: 0.42, billetera: 0.33, efectivo: 0.25 },
-      { trimestre: 'T1 2026', tarjeta: 0.42, billetera: 0.36, efectivo: 0.22 },
-      { trimestre: 'T2 2026', tarjeta: 0.43, billetera: 0.38, efectivo: 0.19 },
-      { trimestre: 'T3 2026', tarjeta: 0.43, billetera: 0.41, efectivo: 0.16 },
-    ],
-    xAxis: { field: 'trimestre' },
-    yAxis: { format: 'percent', max: 1 },
-    series: [
-      { type: 'bar', field: 'tarjeta', name: 'Tarjeta', stack: true },
-      { type: 'bar', field: 'billetera', name: 'Billetera digital', stack: true },
-      { type: 'bar', field: 'efectivo', name: 'Efectivo', stack: true },
-    ],
-    height: 280,
-  }));
+        // 7. Ventas por método de pago (apilado en porcentaje).
+        charts.push(
+          new LozChart('#pagos', {
+            title: 'Ventas por método de pago',
+            subtitle: 'Participación por trimestre',
+            data: [
+              { trimestre: 'T1 2025', tarjeta: 0.38, billetera: 0.24, efectivo: 0.38 },
+              { trimestre: 'T2 2025', tarjeta: 0.4, billetera: 0.27, efectivo: 0.33 },
+              { trimestre: 'T3 2025', tarjeta: 0.41, billetera: 0.3, efectivo: 0.29 },
+              { trimestre: 'T4 2025', tarjeta: 0.42, billetera: 0.33, efectivo: 0.25 },
+              { trimestre: 'T1 2026', tarjeta: 0.42, billetera: 0.36, efectivo: 0.22 },
+              { trimestre: 'T2 2026', tarjeta: 0.43, billetera: 0.38, efectivo: 0.19 },
+              { trimestre: 'T3 2026', tarjeta: 0.43, billetera: 0.41, efectivo: 0.16 },
+            ],
+            xAxis: { field: 'trimestre' },
+            yAxis: { format: 'percent', max: 1 },
+            series: [
+              { type: 'bar', field: 'tarjeta', name: 'Tarjeta', stack: true },
+              { type: 'bar', field: 'billetera', name: 'Billetera digital', stack: true },
+              { type: 'bar', field: 'efectivo', name: 'Efectivo', stack: true },
+            ],
+            height: 280,
+          }),
+        );
 
-  // Selector de tema de la página: aplica el mismo tema a todos los gráficos.
-  var botones = document.querySelectorAll('[data-theme-btn]');
-  botones.forEach(function (b) {
-    b.addEventListener('click', function () {
-      var t = b.getAttribute('data-theme-btn');
-      document.documentElement.setAttribute('data-theme', t);
-      botones.forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
-      charts.forEach(function (c) { c.setTheme(t); });
-    });
-  });
-  window.demoCharts = charts;
-})();
-</script>
-</body>
+        // Selector de tema de la página: aplica el mismo tema a todos los gráficos.
+        var botones = document.querySelectorAll('[data-theme-btn]');
+        botones.forEach(function (b) {
+          b.addEventListener('click', function () {
+            var t = b.getAttribute('data-theme-btn');
+            document.documentElement.setAttribute('data-theme', t);
+            botones.forEach(function (o) {
+              o.setAttribute('aria-pressed', String(o === b));
+            });
+            charts.forEach(function (c) {
+              c.setTheme(t);
+            });
+          });
+        });
+        window.demoCharts = charts;
+      })();
+    </script>
+  </body>
 </html>
