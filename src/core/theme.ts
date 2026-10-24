@@ -122,6 +122,11 @@ const CSS = `
 .lc-tt-total{margin-top:4px;padding-top:6px;border-top:1px solid var(--lc-tooltip-border)}
 .lc-tt-total.lc-tt-mid{margin-bottom:4px;padding-bottom:6px;border-bottom:1px solid var(--lc-tooltip-border)}
 .lc-tt-total .lc-tt-val{padding-left:20px}
+.lc-multiples{display:grid;gap:24px 28px}
+.lc-panel{min-width:0}
+.lc-multiples .lc-header{margin:0 0 6px}
+.lc-multiples .lc-title{font-size:13px}
+.lc-multiples-root>.lc-legend.lc-top{margin:0 0 14px}
 .lc-sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media (prefers-reduced-motion:reduce){.lc-tooltip,.lc-legend-btn{transition:none}}
 `;

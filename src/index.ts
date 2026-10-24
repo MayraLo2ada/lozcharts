@@ -1,5 +1,6 @@
 /** LozChart: gráficos SVG interactivos, accesibles y sin dependencias. */
 import { LozChart } from './chart';
+import { LozMultiples } from './multiples';
 import { line } from './series/line';
 import { bar } from './series/bar';
 import { area } from './series/area';
@@ -18,7 +19,9 @@ LozChart.registerSeries('bubble', bubble);
 LozChart.registerSeries('candlestick', candlestick);
 LozChart.registerSeries('ohlc', ohlc);
 
-export { LozChart };
+LozChart.multiples = (target, options) => new LozMultiples(target, options);
+
+export { LozChart, LozMultiples };
 export default LozChart;
 export { LIGHT, DARK } from './core/theme';
 export type { Theme } from './core/theme';

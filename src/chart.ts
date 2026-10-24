@@ -11,9 +11,10 @@
  * se refleja sobre su diagonal; la rejilla, los ejes y el tooltip sí conocen la orientación.
  * La lógica de datos vive en core/ y es pura; esta clase maneja estado, DOM y eventos.
  */
-import type { Datum, FormatSpec, LozChartOptions, ThemeName } from './types';
+import type { Datum, FormatSpec, LozChartOptions, MultiplesOptions, ThemeName } from './types';
+import type { LozMultiples } from './multiples';
 import type { DrawContext, PreparedSeries, SeriesFrame, SeriesImpl, TooltipFormat, TooltipValue } from './core/series';
-import { injectStyles, LIGHT, resolveTheme, themeVars, type Theme } from './core/theme';
+import { injectStyles, LIGHT, MAX_COLORS, resolveTheme, themeVars, type Theme } from './core/theme';
 import { BandScale, ContinuousScale, LinearScale, type XScale } from './core/scales';
 import { niceDomain, niceStep, numberTicks } from './core/ticks';
 import { axisFormatter, valueFormatter, type NumberContext } from './core/format';
@@ -21,10 +22,11 @@ import { prepare, type Prepared } from './core/prepare';
 import { buildFrame, collapse, interpolate, withExits, type Frame } from './core/frame';
 import { indexLabels, xLabel, xTicks, type XLabelContext } from './core/axis';
 import { attrs, esc, html, prefersReducedMotion, resolveElement, svg, textWidth } from './core/dom';
+import { Legend, legendSVG, type LegendItem } from './core/legend';
+import { downloadImage, slug } from './core/export';
+import { destroyDetached, destroyWithin, mount, mountedOn, unmount } from './core/mount';
 
 const registry = new Map<string, SeriesImpl>();
-const instances = new WeakMap<HTMLElement, LozChart>();
-const live = new Set<LozChart>();
 let uid = 0;
 
 const DURATION = 600;
@@ -34,6 +36,8 @@ const CLIP_PAD = 6;
 /** Espacio aproximado por tick del eje del valor: vertical y horizontal. */
 const TICK_SPACING_V = 56;
 const TICK_SPACING_H = 96;
+/** Lo que ocupan aprox. los ejes y márgenes de un gráfico vertical, para estimar el largo del eje. */
+const AXIS_ALLOWANCE = 40;
 /** Las etiquetas de categorías en horizontal ocupan como máximo esta fracción del ancho. */
 const MAX_LABEL_SHARE = 0.4;
 /** Reflejo sobre la diagonal: (x, y) → (y, x). Gira el plano lógico para el modo horizontal. */
@@ -51,6 +55,8 @@ interface Layout {
   plotW: number;
   plotH: number;
   horizontal: boolean;
+  /** Mostrar los números del eje del valor. */
+  valueLabels: boolean;
   /** Largo del eje del índice y del eje del valor (el plano lógico). */
   indexLen: number;
   valueLen: number;
@@ -97,10 +103,16 @@ export class LozChart {
     return [...registry.keys()];
   }
 
-  /** El gráfico montado en un elemento, si hay. */
-  static getChart(target: string | HTMLElement): LozChart | undefined {
+  /**
+   * Crea small multiples: una cuadrícula de gráficos pequeños con escalas compartidas.
+   * Lo conecta index.ts, así el núcleo no depende del módulo de multiples.
+   */
+  static multiples: (target: string | HTMLElement, options: MultiplesOptions) => LozMultiples;
+
+  /** El gráfico (o los small multiples) montado en un elemento, si hay. */
+  static getChart(target: string | HTMLElement): LozChart | LozMultiples | undefined {
     const el = typeof target === 'string' ? document.querySelector<HTMLElement>(target) : target;
-    return el ? instances.get(el) : undefined;
+    return el ? (mountedOn(el) as LozChart | LozMultiples | undefined) : undefined;
   }
 
   /**
@@ -108,17 +120,19 @@ export class LozChart {
    * opciones en JSON o el selector de un <script type="application/json">.
    * Pensado para HTMX: `htmx.onLoad((el) => LozChart.initAll(el))`.
    * Si un elemento ya tenía gráfico, lo reemplaza; y libera los que salieron de la página.
+   * Con `facet` en las opciones crea small multiples.
    */
-  static initAll(root: ParentNode = document): LozChart[] {
+  static initAll(root: ParentNode = document): (LozChart | LozMultiples)[] {
     LozChart.cleanup();
     const nodes = [...root.querySelectorAll<HTMLElement>('[data-lozchart]')];
     if (root instanceof HTMLElement && root.hasAttribute('data-lozchart')) nodes.unshift(root);
-    const charts: LozChart[] = [];
+    const charts: (LozChart | LozMultiples)[] = [];
     for (const el of nodes) {
       const raw = el.getAttribute('data-lozchart')!.trim();
       try {
         const json = raw.startsWith('{') ? raw : (document.querySelector(raw)?.textContent ?? '');
-        charts.push(new LozChart(el, JSON.parse(json) as LozChartOptions));
+        const options = JSON.parse(json) as LozChartOptions | MultiplesOptions;
+        charts.push('facet' in options && options.facet ? LozChart.multiples(el, options) : new LozChart(el, options));
       } catch (err) {
         console.error('LozChart: no pude leer las opciones de', el, err);
       }
@@ -128,12 +142,12 @@ export class LozChart {
 
   /** Destruye los gráficos dentro de `root` (por ejemplo, en htmx:beforeSwap). */
   static destroyAll(root: ParentNode = document): void {
-    for (const c of [...live]) if (root === c.element || root.contains(c.element)) c.destroy();
+    destroyWithin(root);
   }
 
   /** Destruye los gráficos cuyo elemento ya no está en el documento. */
   static cleanup(): void {
-    for (const c of [...live]) if (!c.element.isConnected) c.destroy();
+    destroyDetached();
   }
 
   // ------------------------------------------------------------ Estado
@@ -158,8 +172,7 @@ export class LozChart {
 
   private readonly root: HTMLDivElement;
   private readonly header: HTMLDivElement;
-  private readonly legendEl: HTMLDivElement;
-  private readonly legendButtons = new Map<string, HTMLButtonElement>();
+  private readonly legend = new Legend((key) => this.toggleSeries(key));
   private readonly plotEl: HTMLDivElement;
   private readonly svgEl: SVGSVGElement;
   private readonly gPlot: SVGGElement;
@@ -180,16 +193,13 @@ export class LozChart {
 
   constructor(target: string | HTMLElement, options: LozChartOptions) {
     this.element = resolveElement(target);
-    instances.get(this.element)?.destroy();
-    instances.set(this.element, this);
-    live.add(this);
+    mount(this);
     injectStyles(document);
     this.opts = normalize(options);
 
     const clipId = `lc-clip-${++uid}`;
     this.root = html('div', { class: 'lc-root' });
     this.header = html('div', { class: 'lc-header' });
-    this.legendEl = html('div', { class: 'lc-legend', role: 'group', 'aria-label': 'Series: pulsa para mostrar u ocultar' });
     this.plotEl = html('div', { class: 'lc-plot' });
     this.svgEl = svg('svg', { class: 'lc-svg', role: 'img', tabindex: 0 });
     this.clipRect = svg('rect', { x: -CLIP_PAD, y: -CLIP_PAD });
@@ -241,8 +251,8 @@ export class LozChart {
     return this;
   }
 
-  /** Cambia opciones (se combinan con las actuales) y redibuja. */
-  setOptions(options: Partial<LozChartOptions>): this {
+  /** Cambia opciones (se combinan con las actuales) y redibuja, animando salvo que se pida lo contrario. */
+  setOptions(options: Partial<LozChartOptions>, animate = true): this {
     const prev = this.opts;
     this.opts = normalize({
       ...prev,
@@ -252,7 +262,7 @@ export class LozChart {
     });
     if (options.series) this.resetVisibility();
     this.applyTheme();
-    this.rebuild(true);
+    this.rebuild(animate);
     return this;
   }
 
@@ -276,33 +286,31 @@ export class LozChart {
     return this.prepared.series.filter((s) => !this.hidden.has(s.key)).map((s) => s.key);
   }
 
-  /** SVG completo (título, subtítulo, gráfico y leyenda) como texto. */
-  toSVG(): string {
-    return this.exportSVG().markup;
+  /** SVG completo (título, subtítulo, gráfico y leyenda) como texto. `padding`: margen alrededor (16 px). */
+  toSVG({ padding = EXPORT_PAD }: { padding?: number } = {}): string {
+    return this.exportSVG(padding).markup;
   }
 
   /** Descarga el gráfico como PNG (al doble de resolución) o SVG. */
-  async download(type: 'png' | 'svg' = 'png', filename?: string): Promise<void> {
-    const name = filename || slug(this.opts.title ?? '') || 'lozchart';
+  download(type: 'png' | 'svg' = 'png', filename?: string): Promise<void> {
     const { markup, width, height } = this.exportSVG();
-    if (type === 'svg') {
-      saveBlob(new Blob([markup], { type: 'image/svg+xml;charset=utf-8' }), name + '.svg');
-      return;
+    return downloadImage(markup, width, height, type, filename || slug(this.opts.title ?? '') || 'lozchart');
+  }
+
+  /**
+   * Marca el dato cuya X vale `x` (sin tooltip), o limpia la marca con null.
+   * Sirve para sincronizar el puntero entre varios gráficos (ver la opción onHover).
+   */
+  highlight(x: unknown): this {
+    const i = x === null || x === undefined ? -1 : this.indexOfX(x);
+    if (i < 0) {
+      this.clearActive(false);
+      return this;
     }
-    const img = new Image();
-    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(markup);
-    await img.decode();
-    const scale = 2;
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.round(width * scale);
-    canvas.height = Math.round(height * scale);
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('LozChart: el navegador no permite canvas.');
-    ctx.scale(scale, scale);
-    ctx.drawImage(img, 0, 0, width, height);
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-    if (!blob) throw new Error('LozChart: no pude generar el PNG.');
-    saveBlob(blob, name + '.png');
+    this.active = i;
+    this.tooltipEl.classList.remove('lc-show');
+    if (this.current && this.layout) this.drawHover(this.current, this.layout);
+    return this;
   }
 
   destroy(): void {
@@ -312,8 +320,7 @@ export class LozChart {
     this.resizeObserver?.disconnect();
     this.colorScheme?.removeEventListener('change', this.onColorScheme);
     this.root.remove();
-    if (instances.get(this.element) === this) instances.delete(this.element);
-    live.delete(this);
+    unmount(this);
   }
 
   // ------------------------------------------------------------ Datos y cuadros
@@ -361,7 +368,7 @@ export class LozChart {
    * Cuántos ticks caben en un eje del valor de `length` px. Antes del primer layout se estima
    * el largo: el alto menos los márgenes, o tres cuartos del ancho en horizontal.
    */
-  private valueTickCount(length = this.horizontal ? (this.width || 600) * 0.75 : this.opts.height - 40): number {
+  private valueTickCount(length = this.horizontal ? (this.width || 600) * 0.75 : this.opts.height - AXIS_ALLOWANCE): number {
     return Math.max(2, Math.round(length / (this.horizontal ? TICK_SPACING_H : TICK_SPACING_V)));
   }
 
@@ -405,7 +412,8 @@ export class LozChart {
     const indexTitle = o.xAxis.title;
     // Arriba a la izquierda va el título del eje vertical; abajo al centro, el del horizontal.
     const top = ((horizontal ? indexTitle : valueTitle) ? 22 : 0) + 8;
-    const bottom = FONT_SIZE + 12 + ((horizontal ? valueTitle : indexTitle) ? 20 : 0);
+    const valueLabels = o.yAxis?.labels !== false;
+    const bottom = (horizontal && !valueLabels ? 8 : FONT_SIZE + 12) + ((horizontal ? valueTitle : indexTitle) ? 20 : 0);
     const plotH = Math.max(10, o.height - top - bottom);
 
     let left: number;
@@ -424,7 +432,10 @@ export class LozChart {
     const step = niceStep(t.d1 - t.d0, this.valueTickCount(valueLen0));
     const valueTicks = numberTicks(t.d0, t.d1, step);
     const valueFormat = axisFormatter(o.yAxis?.format, this.numberContext(), step, Math.max(Math.abs(t.d0), Math.abs(t.d1)));
-    if (horizontal) {
+    if (!valueLabels) {
+      // Sin números en el eje (small multiples fuera de la primera columna): solo un respiro.
+      if (!horizontal) left = 4;
+    } else if (horizontal) {
       // La última etiqueta del valor va centrada en el borde: que no se salga.
       right = Math.ceil(measure(valueFormat(valueTicks[valueTicks.length - 1] ?? 0)) / 2) + 2;
     } else {
@@ -434,6 +445,7 @@ export class LozChart {
     const indexLen = horizontal ? plotH : plotW;
     const valueLen = horizontal ? plotW : plotH;
     return {
+      valueLabels,
       width,
       height: o.height,
       left,
@@ -517,10 +529,10 @@ export class LozChart {
       const text = L.valueFormat(v);
       if (L.horizontal) {
         grid += line(pos, 0, pos, L.plotH, color);
-        axes += label(pos, L.plotH + 10, text, { 'text-anchor': 'middle', 'dominant-baseline': 'hanging' });
+        if (L.valueLabels) axes += label(pos, L.plotH + 10, text, { 'text-anchor': 'middle', 'dominant-baseline': 'hanging' });
       } else {
         grid += line(0, pos, L.plotW, pos, color);
-        axes += label(-10, pos, text, { 'text-anchor': 'end', 'dominant-baseline': 'central' });
+        if (L.valueLabels) axes += label(-10, pos, text, { 'text-anchor': 'end', 'dominant-baseline': 'central' });
       }
     }
     // Sin el cero a la vista, una base discreta del lado del mínimo.
@@ -637,41 +649,31 @@ export class LozChart {
     this.header.hidden = !title && !subtitle;
   }
 
-  /** Crea los botones de la leyenda. Solo cuando cambian las series: así no se pierde el foco. */
+  private legendItems(): LegendItem[] {
+    return this.prepared.series.map((s) => ({
+      key: s.key,
+      name: s.name,
+      color: this.colorOf(s),
+      symbol: s.impl.legendSymbol ?? 'square',
+      visible: !this.hidden.has(s.key),
+    }));
+  }
+
+  /** Leyenda solo con 2 o más series. Los botones se crean al cambiar las series, no en cada clic. */
   private buildLegend(): void {
     const lg = this.opts.legend;
-    const series = this.prepared.series;
-    this.legendButtons.clear();
-    if (lg === false || series.length < 2) {
-      this.legendEl.remove();
+    if (lg === false || this.prepared.series.length < 2) {
+      this.legend.clear();
       return;
     }
     const top = typeof lg === 'object' && lg.position === 'top';
-    this.legendEl.classList.toggle('lc-top', top);
-    if (top) this.plotEl.before(this.legendEl);
-    else this.plotEl.after(this.legendEl);
-    this.legendEl.replaceChildren(
-      ...series.map((s) => {
-        const button = html('button', { type: 'button', class: 'lc-legend-btn' });
-        const symbol = s.impl.legendSymbol ?? 'square';
-        const swatch = html('span', { class: `lc-swatch lc-${symbol}`, 'aria-hidden': 'true' });
-        button.append(swatch, html('span', { class: 'lc-name' }, s.name));
-        button.addEventListener('click', () => this.toggleSeries(s.key));
-        this.legendButtons.set(s.key, button);
-        return button;
-      }),
-    );
-    this.syncLegend();
+    if (top) this.plotEl.before(this.legend.el);
+    else this.plotEl.after(this.legend.el);
+    this.legend.render(this.legendItems(), top);
   }
 
-  /** Actualiza estado y colores de la leyenda sin recrear los botones. */
   private syncLegend(): void {
-    for (const s of this.prepared.series) {
-      const button = this.legendButtons.get(s.key);
-      if (!button) continue;
-      button.setAttribute('aria-pressed', String(!this.hidden.has(s.key)));
-      (button.firstElementChild as HTMLElement).style.background = this.colorOf(s);
-    }
+    this.legend.sync(this.legendItems());
   }
 
   /** Tabla oculta con todos los datos, para lectores de pantalla. */
@@ -782,25 +784,44 @@ export class LozChart {
     return best;
   }
 
+  /** Activa el índice i desde el puntero o el teclado: marcas, tooltip y aviso a onHover. */
   private setActive(i: number, announce: boolean): void {
     const changed = i !== this.active;
     this.active = i;
     const frame = this.current;
     const L = this.layout;
     if (!frame || !L) return;
-    if (changed) {
+    // También si el índice venía marcado por highlight(): ahí no había tooltip.
+    if (changed || !this.tooltipEl.classList.contains('lc-show')) {
       this.drawHover(frame, L);
       this.fillTooltip(i);
     }
     this.positionTooltip();
     if (announce) this.liveEl.textContent = this.describe(i);
+    if (changed) this.opts.onHover?.(this.xKey(i));
   }
 
-  private clearActive(): void {
+  /** @param notify avisar a onHover (no cuando la limpieza viene de highlight). */
+  private clearActive(notify = true): void {
+    const was = this.active;
     this.active = -1;
     this.gBand.replaceChildren();
     this.gHover.replaceChildren();
     this.tooltipEl.classList.remove('lc-show');
+    if (notify && was >= 0) this.opts.onHover?.(null);
+  }
+
+  /** Clave de la X en el índice i: el texto de la categoría, o el número (fecha en ms) en tiempo y numérico. */
+  private xKey(i: number): string | number {
+    const p = this.prepared;
+    return p.xType === 'category' ? String(p.xRaw[i]) : p.xNum[i];
+  }
+
+  private indexOfX(x: unknown): number {
+    const p = this.prepared;
+    const key = p.xType === 'category' ? String(x) : x instanceof Date ? x.getTime() : Number(x);
+    for (let i = 0; i < p.n; i++) if (this.xKey(i) === key) return i;
+    return -1;
   }
 
   /** Banda resaltada (barras) o crosshair (líneas y áreas), más las marcas de cada serie. Plano lógico. */
@@ -920,9 +941,8 @@ export class LozChart {
 
   // ------------------------------------------------------------ Exportar
 
-  private exportSVG(): { markup: string; width: number; height: number } {
+  private exportSVG(pad = EXPORT_PAD): { markup: string; width: number; height: number } {
     const th = this.theme;
-    const pad = EXPORT_PAD;
     const width = this.width ? this.width + 2 * pad : 640;
     const L = this.computeLayout(width - 2 * pad)!;
     const parts = this.renderParts(this.target, L);
@@ -944,35 +964,11 @@ export class LozChart {
     const plotY = y;
     y += L.height;
 
-    // Leyenda con salto de línea cuando no cabe.
     let legend = '';
-    if (this.legendButtons.size) {
-      y += 14;
-      let x = pad;
-      for (const s of this.prepared.series) {
-        const itemW = 12 + 8 + textWidth(s.name, `13px ${family}`) + 20;
-        if (x + itemW > width - pad && x > pad) {
-          x = pad;
-          y += 22;
-        }
-        const on = !this.hidden.has(s.key);
-        const color = on ? this.colorOf(s) : 'none';
-        const outline = on ? {} : { stroke: th.textMuted, 'stroke-width': 1.5 };
-        const symbol = s.impl.legendSymbol ?? 'square';
-        legend +=
-          symbol === 'line'
-            ? `<rect${attrs({ x, y: y + 5, width: 14, height: 3, rx: 1.5, fill: on ? color : th.textMuted })}/>`
-            : symbol === 'dot'
-              ? `<circle${attrs({ cx: x + 6, cy: y + 6, r: 5, fill: color, ...outline })}/>`
-              : `<rect${attrs({ x, y, width: 12, height: 12, rx: 3, fill: color, ...outline })}/>`;
-        legend += text(x + 20, y + 6, s.name, {
-          'font-size': 13,
-          fill: on ? th.text : th.textMuted,
-          'dominant-baseline': 'central',
-        });
-        x += itemW;
-      }
-      y += 12;
+    if (this.legend.size) {
+      const block = legendSVG(this.legendItems(), pad, y + 14, width - 2 * pad, family, th);
+      legend = block.markup;
+      y += 14 + block.height;
     }
 
     const height = Math.ceil(y + pad);
@@ -989,21 +985,24 @@ export class LozChart {
   }
 }
 
-/** "Ventas por mes" → "ventas-por-mes". */
-function slug(s: string): string {
-  return s
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
+/**
+ * Dominio del valor que tendría un gráfico con estas opciones, sin dibujarlo; null si no hay
+ * series visibles. Lo usan los small multiples para que todos los paneles compartan el eje.
+ */
+export function valueDomain(options: LozChartOptions, hidden: ReadonlySet<string>, ticks: number): [number, number] | null {
+  const { data, xAxis, series, yAxis } = options;
+  const p = prepare({ data, xField: xAxis.field, xType: xAxis.type ?? 'category', series }, registry, MAX_COLORS);
+  if (p.series.every((s) => hidden.has(s.key))) return null;
+  const f = buildFrame(p, hidden, { zero: yAxis?.zero, ticks });
+  return [f.d0, f.d1];
 }
 
-function saveBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = html('a', { href: url, download: filename });
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+/** Símbolo de leyenda de un tipo de serie registrado. */
+export function seriesSymbol(type: string): 'line' | 'square' | 'dot' {
+  return registry.get(type)?.legendSymbol ?? 'square';
+}
+
+/** Cuántos ticks caben en un eje vertical del valor de `height` px (el mismo criterio del gráfico). */
+export function tickCountFor(height: number): number {
+  return Math.max(2, Math.round((height - AXIS_ALLOWANCE) / TICK_SPACING_V));
 }

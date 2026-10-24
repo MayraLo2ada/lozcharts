@@ -29,6 +29,8 @@ export interface YAxisOptions {
   max?: number;
   /** Fuerza que el eje incluya el cero (las barras y áreas ya lo incluyen). */
   zero?: boolean;
+  /** false oculta los números del eje (la rejilla queda). Por defecto true. */
+  labels?: boolean;
 }
 
 export interface SeriesOptions {
@@ -99,4 +101,26 @@ export interface LozChartOptions {
   ariaLabel?: string;
   /** Pinta el fondo con el color de superficie del tema. Por defecto true. */
   background?: boolean;
+  /**
+   * Se llama cuando el puntero o el teclado activan un dato, con su X (texto de la categoría,
+   * o número: fecha en ms o valor), y con null al salir. Junto con highlight() sincroniza gráficos.
+   */
+  onHover?: (x: string | number | null) => void;
+}
+
+/** Small multiples: una cuadrícula de gráficos pequeños con escalas compartidas. */
+export interface MultiplesOptions extends Omit<LozChartOptions, 'onHover' | 'orientation'> {
+  /**
+   * Cómo se reparten los paneles: 'series' (uno por serie) o { field } (uno por cada valor de
+   * ese campo; `order` fija el orden de los paneles).
+   */
+  facet: 'series' | { field: string; order?: string[] };
+  /** Columnas fijas. Por defecto, las que quepan con `minWidth`. */
+  columns?: number;
+  /** Ancho mínimo de cada panel, en px. Por defecto 240. */
+  minWidth?: number;
+  /** Alto del gráfico de cada panel, en px. Por defecto 180. */
+  height?: number;
+  /** Mismo eje del valor en todos los paneles (para compararlos de verdad). Por defecto true. */
+  sharedY?: boolean;
 }
