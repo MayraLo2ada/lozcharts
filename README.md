@@ -100,6 +100,7 @@ const chart = new LozChart('#grafico', {
 | `series[].visible`           | booleano                                    | `true`          | Visible al inicio.                                                                  |
 | `series[].format`            | formato                                     | el del eje Y    | Formato propio en el tooltip.                                                       |
 | `theme`                      | `'light'` `'dark'` `'auto'`                 | `'auto'`        | `auto` sigue al sistema y cambia en vivo.                                           |
+| `palette`                    | arreglo de colores o `{ light, dark }`      | la de LozChart  | Colores propios en orden (máximo 8). Ver [Paleta propia](#paleta-propia).           |
 | `height`                     | px                                          | `320`           | Alto del área del gráfico con sus ejes.                                             |
 | `legend`                     | `false` o `{ position: 'top' \| 'bottom' }` | abajo           | Solo aparece con 2 o más series.                                                    |
 | `tooltip`, `animate`         | booleano                                    | `true`          |                                                                                     |
@@ -110,6 +111,27 @@ const chart = new LozChart('#grafico', {
 **Formatos:** `'auto'` (compacto desde mil: 0 / 1 mil / 2 mil), `'compact'`, `'number'`,
 `'percent'` (los datos van como fracción: `0.25` = 25 %), `'currency'`, o una función
 `(v) => texto`. El tooltip siempre muestra el valor exacto.
+
+## Paleta propia
+
+Por defecto LozChart usa su paleta de 8 colores, validada para daltonismo y con tonos propios para
+el modo oscuro. Para usar los colores de una marca:
+
+```js
+new LozChart('#grafico', {
+  palette: {
+    light: ['#0a7d4f', '#6b3fa0', '#d9480f'],
+    dark: ['#2fb37a', '#9b74d1', '#f0703a'], // opcional: si falta, se usa light
+  },
+  // …
+});
+```
+
+- Un arreglo simple (`palette: ['#0a7d4f', …]`) vale para los dos modos.
+- Máximo 8 colores. El número de colores es el número de series que caben: las sobrantes se
+  agrupan en "Otros" si están apiladas juntas, o se descartan con un aviso. Nunca se repite un color.
+- Valida tu paleta para daltonismo y contraste antes de usarla; los colores de marca rara vez
+  están pensados para gráficos.
 
 ## Métodos
 

@@ -24,6 +24,8 @@ por eso el tooltip con valores exactos y la tabla de datos son obligatorios, no 
 - Nunca ciclar: con más de 8 series apiladas del mismo grupo, las sobrantes se agrupan en
   "Otros" (gris neutro); si no se pueden agrupar, se muestran 8 y se avisa en consola.
 - El color sigue a la serie (su posición en `series`), no a su visibilidad.
+- Esta es la paleta por defecto. La opción `palette` la reemplaza (máximo 8 colores, uno por
+  tema si se quiere); las reglas de orden fijo y de no ciclar se mantienen.
 
 ## Superficies y texto
 
