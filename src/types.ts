@@ -19,6 +19,10 @@ export interface XAxisOptions {
   format?: FormatSpec | Intl.DateTimeFormatOptions;
   /** Título bajo el eje. */
   title?: string;
+  /** false oculta las etiquetas del eje (small multiples las dejan solo en la última fila). Por defecto true. */
+  labels?: boolean;
+  /** Fuerza la escala de banda (cada punto al centro de su franja), para alinear con gráficos de barras. */
+  band?: boolean;
 }
 
 export interface YAxisOptions {
@@ -31,6 +35,14 @@ export interface YAxisOptions {
   zero?: boolean;
   /** false oculta los números del eje (la rejilla queda). Por defecto true. */
   labels?: boolean;
+  /** Ancho mínimo reservado para los números, en px: alinea el área de datos de varios gráficos. */
+  width?: number;
+  /**
+   * Índice base 100: cada serie se divide por su primer valor y se multiplica por 100, así series
+   * con unidades distintas comparan su crecimiento en un solo eje honesto. El tooltip muestra
+   * también el valor original.
+   */
+  index?: boolean;
 }
 
 export interface SeriesOptions {
@@ -108,6 +120,9 @@ export interface LozChartOptions {
   onHover?: (x: string | number | null) => void;
 }
 
+/** Cambios para setOptions: cualquier opción, y del eje X solo lo que cambia. */
+export type LozChartUpdate = Omit<Partial<LozChartOptions>, 'xAxis'> & { xAxis?: Partial<XAxisOptions> };
+
 /** Small multiples: una cuadrícula de gráficos pequeños con escalas compartidas. */
 export interface MultiplesOptions extends Omit<LozChartOptions, 'onHover' | 'orientation'> {
   /**
@@ -124,3 +139,6 @@ export interface MultiplesOptions extends Omit<LozChartOptions, 'onHover' | 'ori
   /** Mismo eje del valor en todos los paneles (para compararlos de verdad). Por defecto true. */
   sharedY?: boolean;
 }
+
+/** Cambios para setOptions de small multiples. */
+export type MultiplesUpdate = Omit<Partial<MultiplesOptions>, 'xAxis'> & { xAxis?: Partial<XAxisOptions> };

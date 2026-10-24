@@ -82,3 +82,20 @@ test('por campo con fechas: "2026-01" y una Date del mismo día son la misma X',
     [1, 1],
   );
 });
+
+test('por serie: cada panel usa el formato de su serie en el eje', () => {
+  const o: MultiplesOptions = {
+    facet: 'series',
+    data: ventas,
+    xAxis: { field: 'mes' },
+    yAxis: { format: 'number' },
+    series: [
+      { type: 'line', field: 'online', name: 'Ventas', format: 'currency' },
+      { type: 'line', field: 'tienda', name: 'Visitas' },
+    ],
+  };
+  assert.deepEqual(
+    facetPanels(o, base(o)).map((p) => p.options.yAxis?.format),
+    ['currency', 'number'],
+  );
+});

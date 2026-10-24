@@ -5,9 +5,9 @@
  * El puntero se sincroniza (todos marcan el mismo dato), la leyenda es una sola y los números
  * del eje solo aparecen en la primera columna.
  */
-import type { LozChartOptions, MultiplesOptions, ThemeName } from './types';
-import { LozChart, seriesSymbol, tickCountFor, valueDomain } from './chart';
-import { facetPanels } from './core/facet';
+import type { LozChartOptions, MultiplesOptions, MultiplesUpdate, ThemeName, YAxisOptions } from './types';
+import { AXIS_GAP, LozChart, seriesSymbol, tickCountFor, usesBand, valueDomain, X_LABEL_SPACE } from './chart';
+import { facetPanels, type PanelSpec } from './core/facet';
 import { attrs, esc, html, resolveElement } from './core/dom';
 import { downloadImage, slug } from './core/export';
 import { Legend, legendSVG, type LegendItem } from './core/legend';
@@ -19,13 +19,25 @@ const PANEL_HEIGHT = 180;
 const MIN_WIDTH = 240;
 const EXPORT_PAD = 16;
 
+/** Dónde está un panel en la cuadrícula: decide qué etiquetas lleva. */
+interface Edges {
+  /** Primera columna: lleva los números del eje del valor. */
+  left: boolean;
+  /** Último de su columna: lleva las etiquetas del eje X. */
+  bottom: boolean;
+}
+
 interface Panel {
   name: string;
   el: HTMLDivElement;
   chart: LozChart;
-  /** Muestra los números del eje del valor (primera columna). */
-  labels: boolean;
+  edges: Edges;
+  /** Ancho reservado hoy para los números del eje Y (yAxis.width). */
+  axisWidth?: number;
 }
+
+/** Extremos comunes del eje del valor (vacío si cada panel lleva el suyo). */
+type Range = Pick<YAxisOptions, 'min' | 'max'>;
 
 export class LozMultiples implements Mounted {
   readonly element: HTMLElement;
@@ -79,7 +91,7 @@ export class LozMultiples implements Mounted {
   }
 
   /** Cambia opciones (se combinan con las actuales). Cambiar `facet` o las series rearma la cuadrícula. */
-  setOptions(options: Partial<MultiplesOptions>): this {
+  setOptions(options: MultiplesUpdate): this {
     const prev = this.opts;
     this.opts = { ...prev, ...options, xAxis: { ...prev.xAxis, ...options.xAxis }, yAxis: { ...prev.yAxis, ...options.yAxis } };
     if (options.series) this.resetVisibility();
@@ -102,9 +114,9 @@ export class LozMultiples implements Mounted {
     if (visible) this.hidden.delete(name);
     else this.hidden.add(name);
     this.legend.sync(this.legendItems());
-    const yAxis = this.sharedYAxis(this.specs());
+    const range = this.sharedRange(this.specs());
     for (const p of this.panels) {
-      p.chart.setOptions({ yAxis: { ...yAxis, labels: p.labels } });
+      p.chart.setOptions({ yAxis: range });
       p.chart.toggleSeries(name, visible);
     }
     return this;
@@ -156,20 +168,20 @@ export class LozMultiples implements Mounted {
     this.grid.setAttribute('aria-label', this.opts.title ?? 'Small multiples');
 
     const specs = this.specs();
-    const yAxis = this.sharedYAxis(specs);
-    // Primero las celdas: así se sabe qué paneles quedan en la primera columna antes de dibujarlos.
+    const range = this.sharedRange(specs);
+    // Primero las celdas: así se sabe dónde queda cada panel antes de dibujarlo.
     const cells = specs.map(() => html('div', { class: 'lc-panel' }));
     this.grid.replaceChildren(...cells);
-    const first = this.firstColumn(cells);
+    const edges = this.edges(cells);
     this.panels = specs.map((spec, i) => {
-      const panel: Panel = { name: spec.name, el: cells[i], labels: first[i], chart: null! };
+      const panel: Panel = { name: spec.name, el: cells[i], edges: edges[i], chart: null! };
       panel.chart = new LozChart(cells[i], {
-        ...spec.options,
-        yAxis: { ...yAxis, labels: first[i] },
+        ...this.panelOptions(spec, range, edges[i]),
         onHover: (x) => this.syncHover(panel, x),
       });
       return panel;
     });
+    this.alignAxes(true);
   }
 
   /** Datos u opciones nuevas: si los paneles son los mismos, cada uno anima; si no, se rearma. */
@@ -182,20 +194,58 @@ export class LozMultiples implements Mounted {
     }
     this.renderHeader();
     this.renderLegend();
-    const yAxis = this.sharedYAxis(specs);
-    specs.forEach((spec, i) => {
-      const p = this.panels[i];
-      p.chart.setOptions({ ...spec.options, yAxis: { ...yAxis, labels: p.labels } });
-    });
+    const range = this.sharedRange(specs);
+    specs.forEach((spec, i) => this.panels[i].chart.setOptions(this.panelOptions(spec, range, this.panels[i].edges)));
+    this.alignAxes(true);
+  }
+
+  /**
+   * Opciones de un panel: las de su faceta, el eje común y las etiquetas según su lugar.
+   * Sin etiquetas X el panel se acorta lo que ellas ocupaban: el área de datos mide lo mismo en todos.
+   */
+  private panelOptions(spec: PanelSpec, range: Range, edges: Edges): LozChartOptions {
+    // Si algún panel tiene barras, todos usan banda: así cada mes cae en la misma vertical.
+    const band = this.opts.xAxis.band ?? this.opts.series.some((s) => usesBand(s.type));
+    const edge = this.edgeOptions(edges);
+    return {
+      ...spec.options,
+      height: edge.height,
+      xAxis: { ...spec.options.xAxis, band, ...edge.xAxis },
+      yAxis: { ...spec.options.yAxis, ...range, ...edge.yAxis },
+    };
+  }
+
+  /** Lo que depende del lugar del panel: etiquetas y alto (sin etiquetas X, se acorta lo que ocupaban). */
+  private edgeOptions(edges: Edges) {
+    const height = this.opts.height ?? PANEL_HEIGHT;
+    return {
+      height: edges.bottom ? height : height - (X_LABEL_SPACE - AXIS_GAP),
+      xAxis: { labels: edges.bottom },
+      yAxis: { labels: edges.left },
+    };
+  }
+
+  /**
+   * Los paneles con números en el eje Y reservan el mismo ancho (el del más ancho), así sus áreas
+   * de datos empiezan en la misma vertical aunque cada uno tenga sus unidades.
+   * @param animate false al redimensionar; true al crear o cambiar datos (no corta la animación).
+   */
+  private alignAxes(animate: boolean): void {
+    const labeled = this.panels.filter((p) => p.edges.left);
+    const width = Math.max(0, ...labeled.map((p) => p.chart.axisWidth));
+    for (const p of labeled) {
+      if (p.axisWidth === width) continue;
+      p.axisWidth = width;
+      p.chart.setOptions({ yAxis: { width } }, animate);
+    }
   }
 
   /**
    * El eje del valor común: la unión de los dominios de todos los paneles (con las series
    * visibles), redondeada a números "bonitos". Respeta min y max fijos si los hay.
    */
-  private sharedYAxis(specs: { options: LozChartOptions }[]): LozChartOptions['yAxis'] {
-    const yAxis = { ...this.opts.yAxis };
-    if (this.opts.sharedY === false) return yAxis;
+  private sharedRange(specs: PanelSpec[]): Range {
+    if (this.opts.sharedY === false) return {};
     const ticks = tickCountFor(this.opts.height ?? PANEL_HEIGHT);
     let lo = Infinity;
     let hi = -Infinity;
@@ -205,25 +255,29 @@ export class LozMultiples implements Mounted {
       lo = Math.min(lo, d[0]);
       hi = Math.max(hi, d[1]);
     }
-    if (lo > hi) return yAxis;
+    if (lo > hi) return {};
     const [d0, d1] = niceDomain(lo, hi, ticks);
-    return { ...yAxis, min: yAxis.min ?? d0, max: yAxis.max ?? d1 };
+    return { min: this.opts.yAxis?.min ?? d0, max: this.opts.yAxis?.max ?? d1 };
   }
 
-  /** ¿Qué celdas empiezan una fila? Las que están tan a la izquierda como la primera. */
-  private firstColumn(cells: HTMLElement[]): boolean[] {
+  /** Bordes de cada celda: primera columna (misma izquierda que la primera) y sin nadie debajo. */
+  private edges(cells: HTMLElement[]): Edges[] {
     const left = Math.min(...cells.map((c) => c.offsetLeft));
-    return cells.map((c) => c.offsetLeft - left < 1);
+    return cells.map((c) => ({
+      left: c.offsetLeft - left < 1,
+      bottom: !cells.some((o) => Math.abs(o.offsetLeft - c.offsetLeft) < 1 && o.offsetTop > c.offsetTop),
+    }));
   }
 
-  /** Al cambiar el ancho puede cambiar el número de columnas: solo la primera lleva números. */
+  /** Al cambiar el ancho puede cambiar el número de columnas, y con él qué panel lleva qué etiquetas. */
   private readonly onResize = () => {
-    const first = this.firstColumn(this.panels.map((p) => p.el));
+    const edges = this.edges(this.panels.map((p) => p.el));
     this.panels.forEach((p, i) => {
-      if (p.labels === first[i]) return;
-      p.labels = first[i];
-      p.chart.setOptions({ yAxis: { labels: p.labels } }, false);
+      if (p.edges.left === edges[i].left && p.edges.bottom === edges[i].bottom) return;
+      p.edges = edges[i];
+      p.chart.setOptions(this.edgeOptions(p.edges), false);
     });
+    this.alignAxes(false);
   };
 
   /** El puntero en un panel marca el mismo dato en los demás. */

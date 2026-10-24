@@ -11,13 +11,13 @@
  * se refleja sobre su diagonal; la rejilla, los ejes y el tooltip sí conocen la orientación.
  * La lógica de datos vive en core/ y es pura; esta clase maneja estado, DOM y eventos.
  */
-import type { Datum, FormatSpec, LozChartOptions, MultiplesOptions, ThemeName } from './types';
+import type { Datum, FormatSpec, LozChartOptions, LozChartUpdate, MultiplesOptions, ThemeName } from './types';
 import type { LozMultiples } from './multiples';
 import type { DrawContext, PreparedSeries, SeriesFrame, SeriesImpl, TooltipFormat, TooltipValue } from './core/series';
 import { injectStyles, LIGHT, MAX_COLORS, resolveTheme, themeVars, type Theme } from './core/theme';
 import { BandScale, ContinuousScale, LinearScale, type XScale } from './core/scales';
 import { niceDomain, niceStep, numberTicks } from './core/ticks';
-import { axisFormatter, valueFormatter, type NumberContext } from './core/format';
+import { axisFormatter, indexFormatter, valueFormatter, type NumberContext } from './core/format';
 import { prepare, type Prepared } from './core/prepare';
 import { buildFrame, collapse, interpolate, withExits, type Frame } from './core/frame';
 import { indexLabels, xLabel, xTicks, type XLabelContext } from './core/axis';
@@ -31,6 +31,12 @@ let uid = 0;
 
 const DURATION = 600;
 const FONT_SIZE = 12;
+/** Alto que ocupan las etiquetas del eje X bajo el área de datos. */
+export const X_LABEL_SPACE = FONT_SIZE + 12;
+/** Respiro mínimo del área de datos contra el borde, cuando no hay etiquetas. */
+export const AXIS_GAP = 8;
+/** El valor base de un índice: su línea se marca como referencia. */
+const INDEX_BASE = 100;
 /** Margen del recorte del área de datos: deja respirar trazos y puntos en el borde. */
 const CLIP_PAD = 6;
 /** Espacio aproximado por tick del eje del valor: vertical y horizontal. */
@@ -57,6 +63,8 @@ interface Layout {
   horizontal: boolean;
   /** Mostrar los números del eje del valor. */
   valueLabels: boolean;
+  /** Ancho natural de los números del eje Y (sin el mínimo de yAxis.width). */
+  labelWidth: number;
   /** Largo del eje del índice y del eje del valor (el plano lógico). */
   indexLen: number;
   valueLen: number;
@@ -252,7 +260,7 @@ export class LozChart {
   }
 
   /** Cambia opciones (se combinan con las actuales) y redibuja, animando salvo que se pida lo contrario. */
-  setOptions(options: Partial<LozChartOptions>, animate = true): this {
+  setOptions(options: LozChartUpdate, animate = true): this {
     const prev = this.opts;
     this.opts = normalize({
       ...prev,
@@ -279,6 +287,14 @@ export class LozChart {
     this.syncLegend();
     this.update(true);
     return this;
+  }
+
+  /**
+   * Ancho que necesitan los números del eje Y con los datos actuales (sin contar yAxis.width).
+   * Con el máximo de varios gráficos en yAxis.width, sus áreas de datos quedan alineadas.
+   */
+  get axisWidth(): number {
+    return this.computeLayout(this.width || 600)?.labelWidth ?? 0;
   }
 
   /** Nombres de las series visibles. */
@@ -341,7 +357,9 @@ export class LozChart {
 
   private prepare(): Prepared {
     const { data, xAxis, series } = this.opts;
-    return prepare({ data, xField: xAxis.field, xType: xAxis.type ?? 'category', series }, registry, this.theme.palette.length);
+    const xType = xAxis.type ?? 'category';
+    const input = { data, xField: xAxis.field, xType, series, index: this.opts.yAxis?.index, band: xAxis.band };
+    return prepare(input, registry, this.theme.palette.length);
   }
 
   private update(animate: boolean): void {
@@ -411,13 +429,17 @@ export class LozChart {
     const valueTitle = o.yAxis?.title;
     const indexTitle = o.xAxis.title;
     // Arriba a la izquierda va el título del eje vertical; abajo al centro, el del horizontal.
-    const top = ((horizontal ? indexTitle : valueTitle) ? 22 : 0) + 8;
+    const top = ((horizontal ? indexTitle : valueTitle) ? 22 : 0) + AXIS_GAP;
     const valueLabels = o.yAxis?.labels !== false;
-    const bottom = (horizontal && !valueLabels ? 8 : FONT_SIZE + 12) + ((horizontal ? valueTitle : indexTitle) ? 20 : 0);
+    // Etiquetas de abajo: en horizontal, los números del valor; en vertical, las X.
+    const bottomLabels = horizontal ? valueLabels : o.xAxis.labels !== false;
+    const bottom = (bottomLabels ? X_LABEL_SPACE : AXIS_GAP) + ((horizontal ? valueTitle : indexTitle) ? 20 : 0);
     const plotH = Math.max(10, o.height - top - bottom);
 
     let left: number;
     let right: number;
+    /** Lo que ocupan los números del eje Y sin `yAxis.width` (0 si no se ven). */
+    let labelWidth = 0;
     if (horizontal) {
       const labels = p.xRaw.map((_, i) => measure(xLabel(p, i, true, this.xContext())));
       left = Math.ceil(Math.min(Math.max(0, ...labels), width * MAX_LABEL_SHARE)) + 10;
@@ -431,7 +453,8 @@ export class LozChart {
     const valueLen0 = horizontal ? width - left : plotH;
     const step = niceStep(t.d1 - t.d0, this.valueTickCount(valueLen0));
     const valueTicks = numberTicks(t.d0, t.d1, step);
-    const valueFormat = axisFormatter(o.yAxis?.format, this.numberContext(), step, Math.max(Math.abs(t.d0), Math.abs(t.d1)));
+    const spec = o.yAxis?.index ? 'number' : o.yAxis?.format;
+    const valueFormat = axisFormatter(spec, this.numberContext(), step, Math.max(Math.abs(t.d0), Math.abs(t.d1)));
     if (!valueLabels) {
       // Sin números en el eje (small multiples fuera de la primera columna): solo un respiro.
       if (!horizontal) left = 4;
@@ -439,12 +462,15 @@ export class LozChart {
       // La última etiqueta del valor va centrada en el borde: que no se salga.
       right = Math.ceil(measure(valueFormat(valueTicks[valueTicks.length - 1] ?? 0)) / 2) + 2;
     } else {
-      left = Math.ceil(Math.max(0, ...valueTicks.map((v) => measure(valueFormat(v))))) + 10;
+      const natural = Math.ceil(Math.max(0, ...valueTicks.map((v) => measure(valueFormat(v))))) + 10;
+      labelWidth = natural;
+      left = Math.max(natural, o.yAxis?.width ?? 0);
     }
     const plotW = Math.max(10, width - left - right);
     const indexLen = horizontal ? plotH : plotW;
     const valueLen = horizontal ? plotW : plotH;
     return {
+      labelWidth,
       valueLabels,
       width,
       height: o.height,
@@ -525,7 +551,8 @@ export class LozChart {
     for (const v of L.valueTicks) {
       const pos = Math.round(vs.map(v)) + 0.5;
       if (pos < -1 || pos > L.valueLen + 1) continue;
-      const color = v === 0 ? th.zero : th.grid;
+      // La línea de referencia: el cero, o el 100 de un índice.
+      const color = v === (this.opts.yAxis?.index ? INDEX_BASE : 0) ? th.zero : th.grid;
       const text = L.valueFormat(v);
       if (L.horizontal) {
         grid += line(pos, 0, pos, L.plotH, color);
@@ -536,7 +563,7 @@ export class LozChart {
       }
     }
     // Sin el cero a la vista, una base discreta del lado del mínimo.
-    if (frame.d0 > 0 || frame.d1 < 0) {
+    if ((frame.d0 > 0 || frame.d1 < 0) && !this.opts.yAxis?.index) {
       grid += L.horizontal
         ? line(0.5, 0, 0.5, L.plotH, th.zero)
         : line(0, Math.round(L.plotH) + 0.5, L.plotW, Math.round(L.plotH) + 0.5, th.zero);
@@ -548,7 +575,7 @@ export class LozChart {
       for (const { pos, label: text } of indexLabels(this.prepared, L.x, FONT_SIZE + 6, L.left - 10, measure, ctx)) {
         axes += label(-10, pos.toFixed(1), text, { 'text-anchor': 'end', 'dominant-baseline': 'central' });
       }
-    } else {
+    } else if (this.opts.xAxis.labels !== false) {
       for (const tk of xTicks(this.prepared, L.x, L.plotW, 2 - L.left, L.width - L.left - 2, measure, ctx)) {
         axes += label(tk.px.toFixed(1), L.plotH + 10, tk.label, { 'text-anchor': tk.anchor, 'dominant-baseline': 'hanging' });
       }
@@ -598,6 +625,12 @@ export class LozChart {
   /** Lo que dice el tooltip (y la tabla) de una serie en un índice. */
   private valueText(s: PreparedSeries, i: number): TooltipValue {
     const format: TooltipFormat = { value: this.valueFormat(s), number: valueFormatter('number', this.numberContext()) };
+    if (s.raw) {
+      // Índice: el valor del eje y, debajo, el original en sus unidades.
+      const v = s.values[i];
+      if (!isFinite(v)) return { value: 'Sin dato' };
+      return { value: indexFormatter(this.opts.locale)(v), details: [['Valor', format.value(s.raw[i])]] };
+    }
     const custom = s.impl.tooltip?.(s, i, format);
     if (custom) return custom;
     return { value: isFinite(s.values[i]) ? format.value(s.values[i]) : 'Sin dato' };
@@ -689,7 +722,8 @@ export class LozChart {
       row.appendChild(html('th', { scope: 'row' }, xLabel(p, i, false, ctx)));
       for (const s of p.series) {
         const t = this.valueText(s, i);
-        row.appendChild(html('td', {}, t.details ? t.details.map(([k, v]) => `${k}: ${v}`).join('; ') : t.value));
+        const details = t.details ? ` (${t.details.map(([k, v]) => `${k}: ${v}`).join('; ')})` : '';
+        row.appendChild(html('td', {}, t.value + details));
       }
       body.appendChild(row);
     }
@@ -991,10 +1025,16 @@ export class LozChart {
  */
 export function valueDomain(options: LozChartOptions, hidden: ReadonlySet<string>, ticks: number): [number, number] | null {
   const { data, xAxis, series, yAxis } = options;
-  const p = prepare({ data, xField: xAxis.field, xType: xAxis.type ?? 'category', series }, registry, MAX_COLORS);
+  const input = { data, xField: xAxis.field, xType: xAxis.type ?? 'category', series, index: yAxis?.index };
+  const p = prepare(input, registry, MAX_COLORS);
   if (p.series.every((s) => hidden.has(s.key))) return null;
   const f = buildFrame(p, hidden, { zero: yAxis?.zero, ticks });
   return [f.d0, f.d1];
+}
+
+/** ¿El tipo de serie usa escala de banda (barras, velas)? */
+export function usesBand(type: string): boolean {
+  return !!registry.get(type)?.band;
 }
 
 /** Símbolo de leyenda de un tipo de serie registrado. */

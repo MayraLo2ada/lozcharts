@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { prep } from './helpers';
+import { prep, registry } from './helpers';
+import { prepare } from '../src/core/prepare';
 
 test('en tiempo, las filas se ordenan por fecha y se descartan las inválidas', () => {
   const p = prep(
@@ -85,4 +86,67 @@ test('un tipo no registrado se ignora con aviso', (t) => {
 test('las barras activan la escala de banda', () => {
   assert.equal(prep([{ x: 'a', v: 1 }], [{ type: 'bar', field: 'v' }]).band, true);
   assert.equal(prep([{ x: 'a', v: 1 }], [{ type: 'line', field: 'v' }]).band, false);
+});
+
+test('índice base 100: cada serie se divide por su primer valor; los originales quedan en raw', () => {
+  const p = prepare(
+    {
+      data: [
+        { x: 'a', v: 50, w: 2000 },
+        { x: 'b', v: 60, w: 1800 },
+      ],
+      xField: 'x',
+      xType: 'category',
+      series: [
+        { type: 'line', field: 'v' },
+        { type: 'line', field: 'w' },
+      ],
+      index: true,
+    },
+    registry,
+    8,
+  );
+  assert.deepEqual(p.series[0].values, [100, 120]);
+  assert.deepEqual(p.series[1].values, [100, 90]);
+  assert.deepEqual(p.series[1].raw, [2000, 1800]);
+});
+
+test('índice base 100: un hueco al inicio toma el primer valor que exista como base', () => {
+  const p = prepare(
+    {
+      data: [
+        { x: 'a', v: null },
+        { x: 'b', v: 40 },
+        { x: 'c', v: 50 },
+      ],
+      xField: 'x',
+      xType: 'category',
+      series: [{ type: 'line', field: 'v' }],
+      index: true,
+    },
+    registry,
+    8,
+  );
+  assert.ok(Number.isNaN(p.series[0].values[0]));
+  assert.deepEqual(p.series[0].values.slice(1), [100, 125]);
+});
+
+test('índice base 100: sin un primer valor positivo, la serie queda vacía con aviso', (t) => {
+  const warn = t.mock.method(console, 'warn', () => {});
+  const p = prepare(
+    {
+      data: [
+        { x: 'a', v: -5 },
+        { x: 'b', v: 10 },
+      ],
+      xField: 'x',
+      xType: 'category',
+      series: [{ type: 'line', field: 'v' }],
+      index: true,
+    },
+    registry,
+    8,
+  );
+  assert.ok(p.series[0].values.every(Number.isNaN));
+  assert.equal(warn.mock.callCount(), 1);
 });

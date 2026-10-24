@@ -27,6 +27,10 @@ export interface PrepareInput {
   xField: string;
   xType: XAxisType;
   series: SeriesOptions[];
+  /** Convertir cada serie a índice base 100 (ver yAxis.index). */
+  index?: boolean;
+  /** Usar escala de banda aunque ninguna serie la pida (ver xAxis.band). */
+  band?: boolean;
 }
 
 export const OTHERS = 'Otros';
@@ -106,6 +110,8 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
     });
   }
 
+  if (input.index) for (const s of series) toIndex(s);
+
   return {
     n: rows.length,
     xType,
@@ -113,7 +119,7 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
     xNum,
     timeUnit: xType === 'time' ? detectTimeUnit(xNum) : null,
     series,
-    band: series.some((s) => s.impl.band),
+    band: !!input.band || series.some((s) => s.impl.band),
   };
 }
 
@@ -124,6 +130,24 @@ function extraColumns(options: SeriesOptions, impl: SeriesImpl, column: (field: 
     out[name] = field ? column(field) : column(options.field).map(() => NaN);
   }
   return out;
+}
+
+/**
+ * Índice base 100: divide por el primer valor y multiplica por 100 (también las columnas en
+ * unidades del eje, como el máximo y el mínimo de una vela). Guarda los originales en `raw`.
+ */
+function toIndex(s: PreparedSeries): void {
+  const base = s.values.find((v) => isFinite(v) && v !== 0);
+  if (base === undefined || base < 0) {
+    console.warn(`LozChart: la serie "${s.name}" no tiene un primer valor positivo; no se puede convertir a índice.`);
+    s.raw = s.values;
+    s.values = s.values.map(() => NaN);
+    return;
+  }
+  const k = 100 / base;
+  s.raw = s.values;
+  s.values = s.values.map((v) => v * k);
+  for (const name of s.impl.valueColumns ?? []) if (s.columns[name]) s.columns[name] = s.columns[name].map((v) => v * k);
 }
 
 /** Las series se apilan con otras del mismo tipo y el mismo grupo. */

@@ -23,8 +23,10 @@ export interface PreparedSeries {
   /** Posición en la paleta (0 a 7), o -1 para el grupo "Otros". */
   slot: number;
   options: SeriesOptions;
-  /** Valor principal de cada índice (NaN si falta). */
+  /** Valor principal de cada índice (NaN si falta). Con yAxis.index, ya convertido a índice. */
   values: number[];
+  /** Con yAxis.index: los valores originales, antes de convertirlos. */
+  raw?: number[];
   /** Columnas extra que pidió el tipo de serie (ver SeriesImpl.columns). */
   columns: Record<string, number[]>;
   /** Grupo de apilado, o null. */

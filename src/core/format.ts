@@ -71,6 +71,11 @@ export function axisFormatter(
     nf(ctx.locale, { ...base, maximumFractionDigits: d, minimumFractionDigits: s === 'currency' ? Math.min(d, 2) : 0 }).format(v);
 }
 
+/** Índice base 100: un decimal ("112,4"). */
+export function indexFormatter(locale: string): (v: number) => string {
+  return (v) => nf(locale, { maximumFractionDigits: 1 }).format(v);
+}
+
 /** Formato exacto para el tooltip y la tabla. */
 export function valueFormatter(spec: FormatSpec | undefined, ctx: NumberContext): (v: number) => string {
   if (typeof spec === 'function') return spec;
