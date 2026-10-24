@@ -3,6 +3,13 @@
 Reglas fijas para todos los tipos de gráfico. Los valores viven en `src/core/theme.ts`
 (colores) y en cada serie (`src/series/*.ts`), no repetidos a mano.
 
+## Nombres
+
+Cada tipo tiene un nombre de la familia: LozLine, LozBar, LozArea, LozStep, LozRange, LozScatter,
+LozBubble, LozCandle, LozOHLC y LozMultiples. En la galería aparecen como etiquetas de 12 px con
+borde redondeado, en texto secundario (sin mayúsculas sostenidas). En el código, el tipo usa su
+nombre corto (`type: 'bar'`).
+
 ## Paleta categórica (orden fijo, validada para daltonismo)
 
 | Slot       | Claro     | Oscuro    |
@@ -74,11 +81,17 @@ El oscuro tiene sus propios valores; no es una inversión.
 - Leyenda solo con 2 o más series; botones con `aria-pressed`, 32 px de alto mínimo.
 - Animación 600 ms ease-out; nada si `prefers-reduced-motion`.
 
-## Un solo eje Y
+## Un eje Y, salvo que se pida el segundo con salvaguardas
 
-Nunca doble eje. Para dos medidas con distintas unidades: paneles alineados (`facet: 'series'`,
-`columns: 1`, `sharedY: false`) o índice base 100 (`yAxis.index`), con la línea de 100 marcada
-como referencia igual que el cero.
+Por defecto, un solo eje Y. Para dos medidas con distintas unidades, primero: paneles alineados
+(`facet: 'series'`, `columns: 1`, `sharedY: false`) o índice base 100 (`yAxis.index`), con la línea
+de 100 marcada como referencia igual que el cero.
+
+El doble eje (`yAxis2`, `axis: 'right'`) existe como opción explícita, con salvaguardas fijas:
+los dos ejes incluyen el cero y lo comparten a la misma altura, el eje derecho usa la misma
+cantidad de ticks que el izquierdo (rejilla compartida, paso 1, 2, 2,5 o 5 × 10ⁿ), cada eje lleva
+su título arriba y la leyenda marca "(eje derecho)". Los números van en texto secundario, nunca
+del color de la serie.
 
 ## Small multiples
 

@@ -81,17 +81,21 @@ const chart = new LozChart('#grafico', {
 
 ## Tipos de serie
 
-| Tipo          | Para qué sirve                                   | Campos                                                           |
-| ------------- | ------------------------------------------------ | ---------------------------------------------------------------- |
-| `line`        | Evolución de un valor                            | `field`; `smooth` para curva monótona                            |
-| `bar`         | Comparar cantidades; agrupadas o con `stack`     | `field`                                                          |
-| `area`        | Volumen acumulado; apilable                      | `field`; `smooth`                                                |
-| `step`        | Valores que cambian de golpe (tarifas, tasas)    | `field`; `step`: `'after'` (por defecto), `'before'`, `'middle'` |
-| `range`       | Banda entre un mínimo y un máximo                | `field` (superior) y `low` (inferior)                            |
-| `scatter`     | Relación entre dos números                       | `field` (Y); X con `xAxis.type: 'linear'`                        |
-| `bubble`      | Como dispersión, con un tercer valor como tamaño | `field`, `size`; `sizeName` para el tooltip                      |
-| `candlestick` | Precios: apertura, máximo, mínimo y cierre       | `field` (cierre), `open`, `high`, `low`                          |
-| `ohlc`        | Lo mismo que las velas, en trazos                | `field` (cierre), `open`, `high`, `low`                          |
+| Nombre       | Tipo          | Para qué sirve                                   | Campos                                                           |
+| ------------ | ------------- | ------------------------------------------------ | ---------------------------------------------------------------- |
+| LozLine      | `line`        | Evolución de un valor                            | `field`; `smooth` para curva monótona                            |
+| LozBar       | `bar`         | Comparar cantidades; agrupadas o con `stack`     | `field`                                                          |
+| LozArea      | `area`        | Volumen acumulado; apilable                      | `field`; `smooth`                                                |
+| LozStep      | `step`        | Valores que cambian de golpe (tarifas, tasas)    | `field`; `step`: `'after'` (por defecto), `'before'`, `'middle'` |
+| LozRange     | `range`       | Banda entre un mínimo y un máximo                | `field` (superior) y `low` (inferior)                            |
+| LozScatter   | `scatter`     | Relación entre dos números                       | `field` (Y); X con `xAxis.type: 'linear'`                        |
+| LozBubble    | `bubble`      | Como dispersión, con un tercer valor como tamaño | `field`, `size`; `sizeName` para el tooltip                      |
+| LozCandle    | `candlestick` | Precios: apertura, máximo, mínimo y cierre       | `field` (cierre), `open`, `high`, `low`                          |
+| LozOHLC      | `ohlc`        | Lo mismo que las velas, en trazos                | `field` (cierre), `open`, `high`, `low`                          |
+| LozMultiples | —             | Cuadrícula de gráficos pequeños                  | `LozChart.multiples(…)`; ver [Small multiples](#small-multiples) |
+
+Los nombres (LozBar, LozLine…) son los de la familia LozChart en la documentación; en el código
+cada tipo se elige con su nombre corto: `type: 'bar'`.
 
 Con `orientation: 'horizontal'` el gráfico gira: las categorías van en el eje vertical. Sirve
 sobre todo para barras con nombres largos.
@@ -148,9 +152,9 @@ LozChart.multiples('#regiones', {
 
 ## Dos medidas con distintas unidades
 
-LozChart no tiene doble eje Y, y es a propósito: con dos ejes, quien dibuja decide dónde se
-cruzan las líneas (basta mover un eje para que una medida "alcance" a la otra) y el lector saca
-conclusiones que los datos no dicen. Hay dos formas honestas de hacerlo:
+Con dos ejes Y, quien dibuja decide dónde se cruzan las líneas: basta mover un eje para que una
+medida "alcance" a la otra, y el lector saca conclusiones que los datos no dicen. Por eso LozChart
+ofrece tres caminos, del más al menos recomendable.
 
 **Paneles alineados.** Cada medida en su panel y con sus unidades; mismo eje X, áreas de datos
 alineadas al píxel y puntero sincronizado.
@@ -185,6 +189,25 @@ new LozChart('#crecimiento', {
 });
 ```
 
+**Doble eje, con salvaguardas.** Si de verdad hace falta (por ejemplo, porque el público ya lo
+espera), `axis: 'right'` lleva una serie al eje derecho y `yAxis2` lo configura. LozChart hace que
+los dos ejes empiecen en cero, que el cero quede a la misma altura, que las líneas de la rejilla
+coincidan (el paso del eje derecho se elige para eso) y que la leyenda diga "(eje derecho)". No
+aplica en modo índice ni en horizontal.
+
+```js
+new LozChart('#ventas-y-visitas', {
+  data: meses,
+  xAxis: { field: 'mes', type: 'time' },
+  yAxis: { format: 'currency', title: 'Ventas' },
+  yAxis2: { format: 'compact', title: 'Visitas' },
+  series: [
+    { type: 'bar', field: 'ventas', name: 'Ventas' },
+    { type: 'line', field: 'visitas', name: 'Visitas a la web', axis: 'right' },
+  ],
+});
+```
+
 ## Opciones
 
 | Opción                       | Tipo                                        | Por defecto     | Qué hace                                                                               |
@@ -197,6 +220,8 @@ new LozChart('#crecimiento', {
 | `xAxis.title`, `yAxis.title` | texto                                       | —               | Títulos de los ejes.                                                                   |
 | `yAxis.format`               | ver abajo                                   | `'auto'`        | Formato del eje Y y del tooltip.                                                       |
 | `yAxis.min`, `yAxis.max`     | número                                      | calculados      | Límites fijos.                                                                         |
+| `yAxis2`                     | `{ format, title, min, max }`               | —               | Eje derecho para las series con `axis: 'right'`.                                       |
+| `series[].axis`              | `'left'` `'right'`                          | `'left'`        | Eje del valor de la serie.                                                             |
 | `yAxis.index`                | booleano                                    | `false`         | Índice base 100: cada serie respecto de su primer valor.                               |
 | `yAxis.width`                | px                                          | —               | Ancho mínimo para los números del eje; alinea varios gráficos.                         |
 | `xAxis.labels`               | booleano                                    | `true`          | `false` oculta las etiquetas del eje X.                                                |

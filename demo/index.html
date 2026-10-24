@@ -200,6 +200,21 @@
       figure.wide {
         padding-top: calc(var(--space) * 3);
       }
+      .tipos {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 0 0 calc(var(--space) * 1.5);
+      }
+      .tipo {
+        padding: 4px 9px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.2;
+      }
       .fig-tools {
         margin-top: calc(var(--space) * 1.5);
       }
@@ -266,6 +281,7 @@
       </header>
 
       <section class="hero" aria-label="Ejemplo principal">
+        <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozBar</span><span class="tipo">LozLine</span></div>
         <div id="ventas"></div>
         <div class="toolbar">
           <button type="button" class="btn primary" id="ventas-anio">Ver 2025</button>
@@ -281,6 +297,7 @@
 
       <div class="grid">
         <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozLine</span></div>
           <div id="accion"></div>
           <figcaption>
             Línea sobre eje de tiempo continuo con 210 días hábiles. El eje no empieza en cero porque es un precio; las etiquetas
@@ -289,6 +306,7 @@
         </figure>
 
         <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozBar</span></div>
           <div id="canales"></div>
           <div class="fig-tools"><button type="button" class="btn" id="canales-mes">Ver septiembre</button></div>
           <figcaption>
@@ -298,6 +316,7 @@
         </figure>
 
         <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozArea</span></div>
           <div id="dispositivos"></div>
           <figcaption>
             Áreas apiladas por hora: cada capa al 10 % de opacidad con su línea encima. Oculta un dispositivo en la leyenda y los
@@ -306,6 +325,7 @@
         </figure>
 
         <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozBar</span></div>
           <div id="caja"></div>
           <figcaption>
             Valores positivos y negativos: las barras bajo cero redondean su punta hacia abajo y la línea del cero va un poco más
@@ -314,6 +334,7 @@
         </figure>
 
         <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozLine</span></div>
           <div id="temperatura"></div>
           <figcaption>
             Cuatro líneas suaves con curva monótona y formato propio (<code>°C</code>): la curva nunca dibuja un pico que no esté
@@ -322,6 +343,7 @@
         </figure>
 
         <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozBar</span></div>
           <div id="pagos"></div>
           <figcaption>
             Barras apiladas en porcentaje (<code>format: 'percent'</code>). El tooltip muestra cada segmento y el total.
@@ -335,6 +357,9 @@
       </header>
 
       <figure class="wide">
+        <div class="tipos" aria-label="Tipos de gráfico">
+          <span class="tipo">LozMultiples</span><span class="tipo">LozLine</span>
+        </div>
         <div id="ciudades"></div>
         <figcaption>
           Un panel por serie (<code>facet: 'series'</code>): ocho ciudades serían ocho líneas enredadas en un solo gráfico. Todos
@@ -344,6 +369,9 @@
       </figure>
 
       <figure class="wide">
+        <div class="tipos" aria-label="Tipos de gráfico">
+          <span class="tipo">LozMultiples</span><span class="tipo">LozArea</span>
+        </div>
         <div id="regiones"></div>
         <div class="fig-tools"><button type="button" class="btn" id="regiones-anio">Ver 2025</button></div>
         <figcaption>
@@ -354,11 +382,24 @@
 
       <header class="section-head">
         <h2>Dos medidas con distintas unidades</h2>
-        <p>En vez de un doble eje Y, que deja a quien dibuja decidir dónde se cruzan las líneas, dos formas honestas.</p>
+        <p>El doble eje, con salvaguardas, y dos alternativas que no dependen de dónde se ponga cada eje.</p>
       </header>
+
+      <figure class="wide">
+        <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozBar</span><span class="tipo">LozLine</span></div>
+        <div id="doble-eje"></div>
+        <figcaption>
+          Doble eje (<code>axis: 'right'</code> y <code>yAxis2</code>) con salvaguardas: los dos ejes empiezan en cero, el cero
+          está a la misma altura, las líneas de la rejilla coinciden y la leyenda dice qué serie va en el eje derecho. Aun así,
+          dónde se cruzan la barra y la línea depende de la escala elegida; para comparar, prefiere las dos formas de abajo.
+        </figcaption>
+      </figure>
 
       <div class="grid">
         <figure>
+          <div class="tipos" aria-label="Tipos de gráfico">
+            <span class="tipo">LozMultiples</span><span class="tipo">LozBar</span><span class="tipo">LozLine</span>
+          </div>
           <div id="alineados"></div>
           <figcaption>
             Paneles alineados: cada medida en su panel y con sus unidades, con el mismo eje X y el puntero sincronizado. Es
@@ -368,6 +409,7 @@
         </figure>
 
         <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozLine</span></div>
           <div id="indice"></div>
           <figcaption>
             Índice base 100 (<code>yAxis: { index: true }</code>): enero vale 100 para las dos series, así se compara quién creció
@@ -383,6 +425,7 @@
 
       <div class="grid">
         <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozBar</span></div>
           <div id="paginas"></div>
           <figcaption>
             Barras horizontales (<code>orientation: 'horizontal'</code>): las categorías largas se leen completas y, si no caben,
@@ -391,6 +434,7 @@
         </figure>
 
         <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozBubble</span></div>
           <div id="tiendas"></div>
           <figcaption>
             Burbujas: el área de cada círculo es proporcional a los clientes. El puntero encuentra la tienda más cercana, sin
@@ -399,6 +443,7 @@
         </figure>
 
         <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozScatter</span></div>
           <div id="envios"></div>
           <figcaption>
             Dispersión con X numérica: el eje empieza y termina en números redondos. Cada punto lleva un anillo del color del
@@ -407,6 +452,9 @@
         </figure>
 
         <figure>
+          <div class="tipos" aria-label="Tipos de gráfico">
+            <span class="tipo">LozRange</span><span class="tipo">LozLine</span>
+          </div>
           <div id="clima"></div>
           <figcaption>
             Banda de rango (<code>type: 'range'</code>) entre la mínima y la máxima, con la media encima como línea. El tooltip
@@ -415,6 +463,9 @@
         </figure>
 
         <figure>
+          <div class="tipos" aria-label="Tipos de gráfico">
+            <span class="tipo">LozCandle</span><span class="tipo">LozOHLC</span>
+          </div>
           <div id="velas"></div>
           <div class="fig-tools"><button type="button" class="btn" id="velas-tipo">Ver como OHLC</button></div>
           <figcaption>
@@ -424,6 +475,7 @@
         </figure>
 
         <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozStep</span></div>
           <div id="tasa"></div>
           <figcaption>
             Línea escalonada (<code>type: 'step'</code>): la tasa se mantiene hasta el siguiente cambio, sin pendientes que
@@ -1024,6 +1076,21 @@
             { type: 'bar', field: 'ventas', name: 'Ventas', format: 'currency' },
             { type: 'line', field: 'visitas', name: 'Visitas a la web', format: 'compact' },
           ];
+          charts.push(
+            new LozChart('#doble-eje', {
+              title: 'Ventas y visitas a la web',
+              subtitle: '2026, ventas en el eje izquierdo y visitas en el derecho',
+              data: data,
+              xAxis: { field: 'mes', type: 'time' },
+              yAxis: { format: 'currency', title: 'Ventas' },
+              yAxis2: { format: 'compact', title: 'Visitas' },
+              series: [
+                { type: 'bar', field: 'ventas', name: 'Ventas' },
+                { type: 'line', field: 'visitas', name: 'Visitas a la web', axis: 'right' },
+              ],
+              height: 320,
+            }),
+          );
           charts.push(
             LozChart.multiples('#alineados', {
               title: 'Ventas y visitas a la web',
