@@ -102,7 +102,7 @@ export function valueFormatter(spec: FormatSpec | undefined, ctx: NumberContext)
 /**
  * Convierte el valor de un campo en timestamp. Acepta Date, número (ms) o texto.
  * 'AAAA', 'AAAA-MM' y 'AAAA-MM-DD' se leen en hora LOCAL: Date.parse los leería
- * en UTC y, en Miami, '2026-01' caería el 31 de diciembre.
+ * en UTC y, en cualquier zona al oeste de Greenwich, '2026-01' caería el 31 de diciembre.
  */
 export function parseTime(v: unknown): number {
   if (v instanceof Date) return v.getTime();

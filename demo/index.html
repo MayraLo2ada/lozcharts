@@ -110,28 +110,28 @@
     </figure>
 
     <figure>
-      <div id="sitios"></div>
-      <div class="fig-tools"><button type="button" class="btn" id="sitios-hora">Ver hora pico de ayer</button></div>
-      <figcaption>Barras agrupadas por sitio de red con formato propio (<code>Gbps</code>). Barras de máximo 24 px, 2 px de aire entre vecinas y punta redondeada solo del lado del dato.</figcaption>
+      <div id="canales"></div>
+      <div class="fig-tools"><button type="button" class="btn" id="canales-mes">Ver septiembre</button></div>
+      <figcaption>Barras agrupadas por canal con formato compacto. Barras de máximo 24 px, 2 px de aire entre vecinas y punta redondeada solo del lado del dato.</figcaption>
     </figure>
 
     <figure>
-      <div id="tecnologia"></div>
-      <figcaption>Áreas apiladas por hora: cada capa al 10 % de opacidad con su línea encima. Oculta una tecnología en la leyenda y las demás se reacomodan sin cambiar de color.</figcaption>
+      <div id="dispositivos"></div>
+      <figcaption>Áreas apiladas por hora: cada capa al 10 % de opacidad con su línea encima. Oculta un dispositivo en la leyenda y los demás se reacomodan sin cambiar de color.</figcaption>
     </figure>
 
     <figure>
-      <div id="altas"></div>
+      <div id="caja"></div>
       <figcaption>Valores positivos y negativos: las barras bajo cero redondean su punta hacia abajo y la línea del cero va un poco más marcada que la rejilla.</figcaption>
     </figure>
 
     <figure>
-      <div id="latencia"></div>
-      <figcaption>Cuatro líneas suaves con curva monótona: la curva nunca dibuja un pico que no esté en los datos.</figcaption>
+      <div id="temperatura"></div>
+      <figcaption>Cuatro líneas suaves con curva monótona y formato propio (<code>°C</code>): la curva nunca dibuja un pico que no esté en los datos.</figcaption>
     </figure>
 
     <figure>
-      <div id="planes"></div>
+      <div id="pagos"></div>
       <figcaption>Barras apiladas en porcentaje (<code>format: 'percent'</code>). El tooltip muestra cada segmento y el total.</figcaption>
     </figure>
   </div>
@@ -212,7 +212,7 @@
   document.getElementById('ventas-png').addEventListener('click', function () { ventas.download('png'); });
   document.getElementById('ventas-svg').addEventListener('click', function () { ventas.download('svg'); });
 
-  // 2. Precio de una acción (línea en tiempo continuo, días hábiles).
+  // 2. Precio de una acción (línea en tiempo continuo, días hábiles). Empresa ficticia.
   (function () {
     var r = rng(42), p = 21.4, data = [], d = new Date(2026, 0, 2);
     while (data.length < 210) {
@@ -224,7 +224,7 @@
       d.setDate(d.getDate() + 1);
     }
     charts.push(new LozChart('#accion', {
-      title: 'Andina Telecom (ATL): cierre diario',
+      title: 'Alimentos Aurora (AURF): cierre diario',
       subtitle: 'Precio en dólares, enero a octubre 2026',
       data: data,
       xAxis: { field: 'fecha', type: 'time' },
@@ -234,140 +234,140 @@
     }));
   })();
 
-  // 3. Tráfico pico por sitio de red (barras agrupadas).
-  var sitiosBase = [
-    { sitio: 'MIA-DOR-03', lte: 18.4, nr: 26.1 },
-    { sitio: 'MIA-BRK-11', lte: 22.7, nr: 31.9 },
-    { sitio: 'FLL-LAS-07', lte: 14.2, nr: 17.8 },
-    { sitio: 'WPB-CTY-02', lte: 11.6, nr: 9.4 },
-    { sitio: 'HIA-WST-05', lte: 16.9, nr: 21.3 },
-    { sitio: 'KEN-SUN-09', lte: 9.8, nr: 12.6 },
+  // 3. Visitas a un sitio web por canal (barras agrupadas).
+  var canalesOct = [
+    { canal: 'Búsqueda', escritorio: 48200, movil: 61900 },
+    { canal: 'Directo', escritorio: 31500, movil: 22800 },
+    { canal: 'Redes sociales', escritorio: 9800, movil: 38400 },
+    { canal: 'Correo', escritorio: 14600, movil: 11200 },
+    { canal: 'Referidos', escritorio: 8900, movil: 6300 },
+    { canal: 'Anuncios', escritorio: 12400, movil: 19700 },
   ];
-  var gbps = new Intl.NumberFormat('es', { maximumFractionDigits: 1 });
-  var sitios = new LozChart('#sitios', {
-    title: 'Tráfico en hora pico por sitio',
-    subtitle: 'Gbps de bajada, hoy 20:00–21:00',
-    data: sitiosBase,
-    xAxis: { field: 'sitio', type: 'category' },
-    yAxis: { format: function (v) { return gbps.format(v) + ' Gbps'; } },
+  var canales = new LozChart('#canales', {
+    title: 'Visitas al sitio web por canal',
+    subtitle: 'Octubre 2026, por tipo de dispositivo',
+    data: canalesOct,
+    xAxis: { field: 'canal', type: 'category' },
+    yAxis: { format: 'compact' },
     series: [
-      { type: 'bar', field: 'lte', name: '4G LTE' },
-      { type: 'bar', field: 'nr', name: '5G NR' },
+      { type: 'bar', field: 'escritorio', name: 'Escritorio' },
+      { type: 'bar', field: 'movil', name: 'Móvil' },
     ],
     height: 280,
   });
-  charts.push(sitios);
-  var ayer = false;
-  document.getElementById('sitios-hora').addEventListener('click', function (e) {
-    ayer = !ayer;
-    var r = rng(ayer ? 99 : 1);
-    sitios.setData(ayer ? sitiosBase.map(function (s) {
-      return { sitio: s.sitio, lte: Math.round(s.lte * (0.7 + r() * 0.5) * 10) / 10, nr: Math.round(s.nr * (0.6 + r() * 0.7) * 10) / 10 };
-    }) : sitiosBase);
-    sitios.setOptions({ subtitle: ayer ? 'Gbps de bajada, ayer 20:00–21:00' : 'Gbps de bajada, hoy 20:00–21:00' });
-    e.currentTarget.textContent = ayer ? 'Ver hora pico de hoy' : 'Ver hora pico de ayer';
+  charts.push(canales);
+  var septiembre = false;
+  document.getElementById('canales-mes').addEventListener('click', function (e) {
+    septiembre = !septiembre;
+    var r = rng(99);
+    canales.setData(septiembre ? canalesOct.map(function (c) {
+      return { canal: c.canal, escritorio: Math.round(c.escritorio * (0.75 + r() * 0.4)), movil: Math.round(c.movil * (0.7 + r() * 0.45)) };
+    }) : canalesOct);
+    canales.setOptions({ subtitle: (septiembre ? 'Septiembre' : 'Octubre') + ' 2026, por tipo de dispositivo' });
+    e.currentTarget.textContent = septiembre ? 'Ver octubre' : 'Ver septiembre';
   });
 
-  // 4. Tráfico por tecnología en 24 h (áreas apiladas, eje horario).
+  // 4. Visitas por hora según dispositivo (áreas apiladas, eje horario).
   (function () {
     var r = rng(5), data = [];
-    var curva = [0.35, 0.26, 0.2, 0.17, 0.16, 0.2, 0.32, 0.5, 0.64, 0.7, 0.74, 0.78, 0.82, 0.8, 0.78, 0.8, 0.84, 0.9, 0.96, 1.0, 0.98, 0.9, 0.72, 0.52];
+    var curva = [0.22, 0.14, 0.09, 0.07, 0.07, 0.1, 0.2, 0.38, 0.55, 0.66, 0.72, 0.76, 0.84, 0.8, 0.74, 0.72, 0.74, 0.8, 0.88, 0.96, 1.0, 0.92, 0.7, 0.42];
     for (var h = 0; h < 24; h++) {
       var c = curva[h];
       data.push({
         hora: new Date(2026, 9, 23, h),
-        nr: Math.round((310 + r() * 30) * c),
-        lte: Math.round((240 + r() * 25) * c),
-        wifi: Math.round((120 + r() * 20) * c * (h > 17 || h < 2 ? 1.35 : 0.8)),
+        movil: Math.round((5200 + r() * 600) * c * (h > 18 || h < 1 ? 1.25 : 0.9)),
+        escritorio: Math.round((3900 + r() * 400) * c * (h >= 9 && h <= 17 ? 1.3 : 0.6)),
+        tableta: Math.round((900 + r() * 150) * c),
       });
     }
-    charts.push(new LozChart('#tecnologia', {
-      title: 'Tráfico de la red por tecnología',
-      subtitle: 'TB por hora, jueves 23 de octubre de 2026',
+    charts.push(new LozChart('#dispositivos', {
+      title: 'Visitas por hora y dispositivo',
+      subtitle: 'Jueves 23 de octubre de 2026',
       data: data,
       xAxis: { field: 'hora', type: 'time' },
-      yAxis: { format: function (v) { return v.toLocaleString('es') + ' TB'; } },
+      yAxis: { format: 'auto' },
       series: [
-        { type: 'area', field: 'nr', name: '5G NR', stack: true, smooth: true },
-        { type: 'area', field: 'lte', name: '4G LTE', stack: true, smooth: true },
-        { type: 'area', field: 'wifi', name: 'Descarga a Wi-Fi', stack: true, smooth: true },
+        { type: 'area', field: 'movil', name: 'Móvil', stack: true, smooth: true },
+        { type: 'area', field: 'escritorio', name: 'Escritorio', stack: true, smooth: true },
+        { type: 'area', field: 'tableta', name: 'Tableta', stack: true, smooth: true },
       ],
       height: 280,
     }));
   })();
 
-  // 5. Altas netas (positivos y negativos).
-  charts.push(new LozChart('#altas', {
-    title: 'Altas netas de líneas móviles',
-    subtitle: 'Altas menos bajas por mes, 2026',
+  // 5. Flujo de caja (positivos y negativos).
+  charts.push(new LozChart('#caja', {
+    title: 'Flujo de caja mensual',
+    subtitle: 'Dólares, enero a octubre 2026',
     data: [
-      { mes: '2026-01', pospago: 4200, prepago: -2100 },
-      { mes: '2026-02', pospago: 3100, prepago: -3400 },
-      { mes: '2026-03', pospago: 5600, prepago: 800 },
-      { mes: '2026-04', pospago: 2900, prepago: -1500 },
-      { mes: '2026-05', pospago: 6100, prepago: 2300 },
-      { mes: '2026-06', pospago: 4800, prepago: -600 },
-      { mes: '2026-07', pospago: -900, prepago: -2800 },
-      { mes: '2026-08', pospago: 3700, prepago: 1200 },
-      { mes: '2026-09', pospago: 5200, prepago: 3100 },
-      { mes: '2026-10', pospago: 6900, prepago: 1900 },
+      { mes: '2026-01', operacion: 42000, inversion: -21000 },
+      { mes: '2026-02', operacion: 31000, inversion: -34000 },
+      { mes: '2026-03', operacion: 56000, inversion: 8000 },
+      { mes: '2026-04', operacion: 29000, inversion: -15000 },
+      { mes: '2026-05', operacion: 61000, inversion: 23000 },
+      { mes: '2026-06', operacion: 48000, inversion: -6000 },
+      { mes: '2026-07', operacion: -9000, inversion: -28000 },
+      { mes: '2026-08', operacion: 37000, inversion: 12000 },
+      { mes: '2026-09', operacion: 52000, inversion: 31000 },
+      { mes: '2026-10', operacion: 69000, inversion: 19000 },
     ],
     xAxis: { field: 'mes', type: 'time' },
-    yAxis: { format: 'auto' },
+    yAxis: { format: 'currency' },
     series: [
-      { type: 'bar', field: 'pospago', name: 'Pospago' },
-      { type: 'bar', field: 'prepago', name: 'Prepago' },
+      { type: 'bar', field: 'operacion', name: 'Operación' },
+      { type: 'bar', field: 'inversion', name: 'Inversión' },
     ],
     height: 280,
   }));
 
-  // 6. Latencia por región (líneas suaves).
+  // 6. Temperatura máxima semanal por ciudad (líneas suaves).
   (function () {
-    var ms = new Intl.NumberFormat('es', { maximumFractionDigits: 1 });
-    var r = rng(11), data = [], base = { norte: 24, centro: 19, sur: 31, costa: 27 };
+    var grados = new Intl.NumberFormat('es', { maximumFractionDigits: 1 });
+    var r = rng(11), data = [];
+    var ciudades = { miami: [31, -3], madrid: [33, -15], bogota: [19, -0.5], cdmx: [26, -4] };
     for (var w = 0; w < 20; w++) {
-      var row = { semana: new Date(2026, 5, 1 + w * 7) };
-      for (var k in base) {
-        base[k] = Math.max(12, base[k] + (r() - 0.5) * 3.2 - (w === 12 && k === 'sur' ? 6 : 0));
-        row[k] = Math.round(base[k] * 10) / 10;
+      var row = { semana: new Date(2026, 5, 1 + w * 7) }, t = w / 19;
+      for (var k in ciudades) {
+        var c = ciudades[k];
+        row[k] = Math.round((c[0] + c[1] * t * t + (r() - 0.5) * 2.4) * 10) / 10;
       }
       data.push(row);
     }
-    charts.push(new LozChart('#latencia', {
-      title: 'Latencia media por región',
-      subtitle: 'Milisegundos, promedio semanal de junio a octubre 2026',
+    charts.push(new LozChart('#temperatura', {
+      title: 'Temperatura máxima por ciudad',
+      subtitle: 'Promedio semanal, junio a octubre 2026',
       data: data,
       xAxis: { field: 'semana', type: 'time' },
-      yAxis: { format: function (v) { return ms.format(v) + ' ms'; }, zero: true },
+      yAxis: { format: function (v) { return grados.format(v) + ' °C'; }, zero: true },
       series: [
-        { type: 'line', field: 'norte', name: 'Norte', smooth: true },
-        { type: 'line', field: 'centro', name: 'Centro', smooth: true },
-        { type: 'line', field: 'sur', name: 'Sur', smooth: true },
-        { type: 'line', field: 'costa', name: 'Costa', smooth: true },
+        { type: 'line', field: 'miami', name: 'Miami', smooth: true },
+        { type: 'line', field: 'madrid', name: 'Madrid', smooth: true },
+        { type: 'line', field: 'bogota', name: 'Bogotá', smooth: true },
+        { type: 'line', field: 'cdmx', name: 'Ciudad de México', smooth: true },
       ],
       height: 280,
     }));
   })();
 
-  // 7. Mezcla de planes (apilado en porcentaje).
-  charts.push(new LozChart('#planes', {
-    title: 'Mezcla de planes contratados',
+  // 7. Ventas por método de pago (apilado en porcentaje).
+  charts.push(new LozChart('#pagos', {
+    title: 'Ventas por método de pago',
     subtitle: 'Participación por trimestre',
     data: [
-      { trimestre: 'T1 2025', ilimitado: 0.38, intermedio: 0.34, basico: 0.28 },
-      { trimestre: 'T2 2025', ilimitado: 0.41, intermedio: 0.33, basico: 0.26 },
-      { trimestre: 'T3 2025', ilimitado: 0.44, intermedio: 0.32, basico: 0.24 },
-      { trimestre: 'T4 2025', ilimitado: 0.47, intermedio: 0.31, basico: 0.22 },
-      { trimestre: 'T1 2026', ilimitado: 0.5, intermedio: 0.3, basico: 0.2 },
-      { trimestre: 'T2 2026', ilimitado: 0.53, intermedio: 0.29, basico: 0.18 },
-      { trimestre: 'T3 2026', ilimitado: 0.55, intermedio: 0.29, basico: 0.16 },
+      { trimestre: 'T1 2025', tarjeta: 0.38, billetera: 0.24, efectivo: 0.38 },
+      { trimestre: 'T2 2025', tarjeta: 0.4, billetera: 0.27, efectivo: 0.33 },
+      { trimestre: 'T3 2025', tarjeta: 0.41, billetera: 0.3, efectivo: 0.29 },
+      { trimestre: 'T4 2025', tarjeta: 0.42, billetera: 0.33, efectivo: 0.25 },
+      { trimestre: 'T1 2026', tarjeta: 0.42, billetera: 0.36, efectivo: 0.22 },
+      { trimestre: 'T2 2026', tarjeta: 0.43, billetera: 0.38, efectivo: 0.19 },
+      { trimestre: 'T3 2026', tarjeta: 0.43, billetera: 0.41, efectivo: 0.16 },
     ],
     xAxis: { field: 'trimestre' },
     yAxis: { format: 'percent', max: 1 },
     series: [
-      { type: 'bar', field: 'ilimitado', name: 'Ilimitado', stack: true },
-      { type: 'bar', field: 'intermedio', name: 'Intermedio', stack: true },
-      { type: 'bar', field: 'basico', name: 'Básico', stack: true },
+      { type: 'bar', field: 'tarjeta', name: 'Tarjeta', stack: true },
+      { type: 'bar', field: 'billetera', name: 'Billetera digital', stack: true },
+      { type: 'bar', field: 'efectivo', name: 'Efectivo', stack: true },
     ],
     height: 280,
   }));
