@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DARK, LIGHT, resolveTheme } from '../src/core/theme';
 
-test('sin paleta propia se usa la de LozChart en cada modo', () => {
+test('sin paleta propia se usa la de LozCharts en cada modo', () => {
   assert.equal(resolveTheme('light'), LIGHT);
   assert.equal(resolveTheme('dark'), DARK);
 });

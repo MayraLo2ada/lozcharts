@@ -1,4 +1,4 @@
-# Sistema de diseño de LozChart
+# Sistema de diseño de LozCharts
 
 Reglas fijas para todos los tipos de gráfico. Los valores viven en `src/core/theme.ts`
 (colores) y en cada serie (`src/series/*.ts`), no repetidos a mano.

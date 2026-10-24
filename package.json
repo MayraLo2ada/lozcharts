@@ -1,16 +1,16 @@
 {
-  "name": "lozchart",
+  "name": "lozcharts",
   "version": "0.1.0",
-  "description": "Librería de gráficos SVG interactivos, accesibles y sin dependencias.",
+  "description": "LozCharts: gráficos SVG interactivos, accesibles y sin dependencias.",
   "type": "module",
-  "main": "./dist/lozchart.umd.js",
-  "module": "./dist/lozchart.js",
+  "main": "./dist/lozcharts.umd.js",
+  "module": "./dist/lozcharts.js",
   "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
-      "import": "./dist/lozchart.js",
-      "require": "./dist/lozchart.umd.js"
+      "import": "./dist/lozcharts.js",
+      "require": "./dist/lozcharts.umd.js"
     }
   },
   "files": [
@@ -38,5 +38,9 @@
     "prettier": "^3.9.10",
     "typescript": "^5.9.3",
     "vite": "^5.4.21"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MayraLo2ada/lozcharts.git"
   }
 }

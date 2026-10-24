@@ -1,6 +1,7 @@
-# LozChart
+# LozCharts
 
-Gráficos SVG interactivos, accesibles y sin dependencias, escritos en TypeScript.
+Gráficos SVG interactivos, accesibles y sin dependencias, escritos en TypeScript. La librería se
+llama LozCharts y cada gráfico que creas es un `LozChart`.
 Modo claro, oscuro y automático; tooltip, leyenda, teclado, animación y exportación a SVG/PNG.
 
 > Estado: **fase 3**: líneas, barras (verticales u horizontales, agrupadas y apiladas), áreas,
@@ -10,7 +11,7 @@ Modo claro, oscuro y automático; tooltip, leyenda, teclado, animación y export
 
 ```bash
 npm install
-npm run build   # dist/lozchart.js (ESM), dist/lozchart.umd.js (UMD) y dist/types
+npm run build   # dist/lozcharts.js (ESM), dist/lozcharts.umd.js (UMD) y dist/types
 npm test        # pruebas del núcleo (ticks, formatos, curva monótona)
 ```
 
@@ -22,7 +23,7 @@ Abre `demo/index.html` con doble clic para ver la galería (después de `npm run
 
 ```html
 <div id="grafico"></div>
-<script src="lozchart.umd.js"></script>
+<script src="lozcharts.umd.js"></script>
 <script>
   new LozChart('#grafico', {/* opciones */});
 </script>
@@ -31,7 +32,7 @@ Abre `demo/index.html` con doble clic para ver la galería (después de `npm run
 **2. Con `import` (Vite, React, Angular):**
 
 ```js
-import { LozChart } from 'lozchart';
+import { LozChart } from 'lozcharts';
 const chart = new LozChart(elemento, opciones);
 // al desmontar el componente:
 chart.destroy();
@@ -99,7 +100,7 @@ const chart = new LozChart('#grafico', {
 | LozFunnel    | `funnel`      | Pasos de un proceso y su conversión              | `xAxis.field` (paso), `field` (cantidad)                         |
 | LozMultiples | —             | Cuadrícula de gráficos pequeños                  | `LozChart.multiples(…)`; ver [Small multiples](#small-multiples) |
 
-Los nombres (LozBar, LozLine…) son los de la familia LozChart en la documentación; en el código
+Los nombres (LozBar, LozLine…) son los de la familia LozCharts en la documentación; en el código
 cada tipo se elige con su nombre corto: `type: 'bar'`.
 
 **Pie, donut, gauge y embudo** muestran una sola serie. En el pie y el donut cada categoría tiene
@@ -181,7 +182,7 @@ LozChart.multiples('#regiones', {
 ## Dos medidas con distintas unidades
 
 Con dos ejes Y, quien dibuja decide dónde se cruzan las líneas: basta mover un eje para que una
-medida "alcance" a la otra, y el lector saca conclusiones que los datos no dicen. Por eso LozChart
+medida "alcance" a la otra, y el lector saca conclusiones que los datos no dicen. Por eso LozCharts
 ofrece tres caminos, del más al menos recomendable.
 
 **Paneles alineados.** Cada medida en su panel y con sus unidades; mismo eje X, áreas de datos
@@ -218,7 +219,7 @@ new LozChart('#crecimiento', {
 ```
 
 **Doble eje, con salvaguardas.** Si de verdad hace falta (por ejemplo, porque el público ya lo
-espera), `axis: 'right'` lleva una serie al eje derecho y `yAxis2` lo configura. LozChart hace que
+espera), `axis: 'right'` lleva una serie al eje derecho y `yAxis2` lo configura. LozCharts hace que
 los dos ejes empiecen en cero, que el cero quede a la misma altura, que las líneas de la rejilla
 coincidan (el paso del eje derecho se elige para eso) y que la leyenda diga "(eje derecho)". No
 aplica en modo índice ni en horizontal.
@@ -266,7 +267,7 @@ new LozChart('#ventas-y-visitas', {
 | `series[].format`            | formato                                     | el del eje Y    | Formato propio en el tooltip.                                                          |
 | `orientation`                | `'vertical'` `'horizontal'`                 | `'vertical'`    | En horizontal, las categorías van en el eje vertical.                                  |
 | `theme`                      | `'light'` `'dark'` `'auto'`                 | `'auto'`        | `auto` sigue al sistema y cambia en vivo.                                              |
-| `palette`                    | arreglo de colores o `{ light, dark }`      | la de LozChart  | Colores propios en orden (máximo 8). Ver [Paleta propia](#paleta-propia).              |
+| `palette`                    | arreglo de colores o `{ light, dark }`      | la de LozCharts | Colores propios en orden (máximo 8). Ver [Paleta propia](#paleta-propia).              |
 | `height`                     | px                                          | `320`           | Alto del área del gráfico con sus ejes.                                                |
 | `legend`                     | `false` o `{ position: 'top' \| 'bottom' }` | abajo           | Solo aparece con 2 o más series.                                                       |
 | `tooltip`, `animate`         | booleano                                    | `true`          |                                                                                        |
@@ -281,7 +282,7 @@ new LozChart('#ventas-y-visitas', {
 
 ## Paleta propia
 
-Por defecto LozChart usa su paleta de 8 colores, validada para daltonismo y con tonos propios para
+Por defecto LozCharts usa su paleta de 8 colores, validada para daltonismo y con tonos propios para
 el modo oscuro. Para usar los colores de una marca:
 
 ```js

@@ -85,7 +85,7 @@ export function themeVars(t: Theme): Record<string, string> {
   };
 }
 
-const STYLE_ID = 'lozchart-styles';
+const STYLE_ID = 'lozcharts-styles';
 
 const CSS = `
 .lc-root{position:relative;width:100%;min-width:0;box-sizing:border-box;color:var(--lc-text);font-family:inherit;font-variant-numeric:tabular-nums;-webkit-tap-highlight-color:transparent}

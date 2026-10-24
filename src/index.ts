@@ -1,4 +1,4 @@
-/** LozChart: gráficos SVG interactivos, accesibles y sin dependencias. */
+/** LozCharts: gráficos SVG interactivos, accesibles y sin dependencias. Cada gráfico es un LozChart. */
 import { LozChart } from './chart';
 import { LozMultiples } from './multiples';
 import { line } from './series/line';
