@@ -35,12 +35,14 @@ export interface DomainOptions {
 /**
  * Cuadro destino: apila, ubica las barras en su grupo y calcula el dominio del valor.
  * Con series en el eje derecho, `rightDomain` configura ese eje (ver alignRight).
+ * `hiddenPoints`: categorías ocultas en los tipos con leyenda por categorías.
  */
 export function buildFrame(
   p: Prepared,
   hidden: ReadonlySet<string>,
   domain: DomainOptions,
   rightDomain: Omit<DomainOptions, 'ticks'> = {},
+  hiddenPoints: ReadonlySet<number> = new Set(),
 ): Frame {
   const { n } = p;
   const frames: SeriesFrame[] = p.series.map((ps) => ({
@@ -53,6 +55,11 @@ export function buildFrame(
     slots: 1,
     outer: new Array<boolean>(n).fill(true),
   }));
+  // Categorías ocultas desde la leyenda (porciones de un pie): valen cero y se encogen al animar.
+  for (const f of frames) {
+    if (f.ps.impl.legendBy !== 'points') continue;
+    for (const i of hiddenPoints) if (isFinite(f.y1[i])) f.y1[i] = 0;
+  }
   stack(frames, n);
   placeInClusters(frames);
   const leftFrames = frames.filter((f) => f.ps.axis !== 'right');

@@ -53,19 +53,47 @@ export interface SeriesFrame {
   outer: boolean[];
 }
 
+/**
+ * Plano polar (radar): el índice es un ángulo y el valor, una distancia al centro.
+ * El núcleo dibuja la rejilla (anillos y radios) y las etiquetas; la serie, sus polígonos.
+ */
+export interface PolarPlane {
+  cx: number;
+  cy: number;
+  /** Radio del anillo exterior, en px. */
+  radius: number;
+  /** Ángulo del índice i, en radianes (el primero arriba, en sentido horario). */
+  angle(i: number): number;
+  /** Punto en px del índice i con el valor v. */
+  point(i: number, v: number): [number, number];
+}
+
 export interface DrawContext {
   frame: SeriesFrame;
   /** Color de la serie en el tema actual. */
   color: string;
+  /**
+   * Color del punto i, para los tipos que colorean por categoría (legendBy: 'points', como un
+   * pie): cada porción tiene su color de la paleta en orden fijo, y "Otros" el neutro.
+   */
+  pointColor(i: number): string;
+  /** Plano polar (solo con coords: 'polar'). */
+  polar?: PolarPlane;
   /** Escala del índice (eje de categorías o tiempo). */
   x: XScale;
   /** Escala del valor. */
   y: LinearScale;
   theme: Theme;
-  /** Tamaño del plano lógico en px: largo del eje del índice y del eje del valor. */
+  /** Tamaño del plano lógico en px: largo del eje del índice y del eje del valor (en 'free', el área completa). */
   width: number;
   height: number;
   n: number;
+  /** ¿El punto i está oculto desde la leyenda (legendBy: 'points')? Su valor ya llega en cero. */
+  isHidden(i: number): boolean;
+  /** Medir el ancho de un texto con la fuente del gráfico (12 px), para ubicar etiquetas. */
+  measure(text: string): number;
+  /** Formatear un valor como en el tooltip (respeta el format de la serie o del eje). */
+  format(v: number): string;
 }
 
 /** Formateadores que recibe una serie para su tooltip, en el idioma del gráfico. */
@@ -74,6 +102,10 @@ export interface TooltipFormat {
   value: (v: number) => string;
   /** Un número simple, para lo que no está en unidades del eje (por ejemplo, un tamaño). */
   number: (v: number) => string;
+  /** Una proporción como porcentaje (0,256 → "25,6 %"). */
+  percent: (v: number) => string;
+  /** ¿El punto i está oculto desde la leyenda? Para calcular partes del total visible. */
+  isHidden: (i: number) => boolean;
 }
 
 /** Una línea del tooltip. */
@@ -85,6 +117,21 @@ export interface TooltipValue {
 }
 
 export interface SeriesImpl {
+  /**
+   * Sistema de coordenadas: 'cartesian' (ejes X e Y, por defecto), 'polar' (radar) o 'free'
+   * (sin ejes: la serie usa todo el área, como un pie, un gauge o un embudo). Todas las series
+   * de un gráfico comparten el mismo.
+   */
+  coords?: 'cartesian' | 'polar' | 'free';
+  /**
+   * Qué lista la leyenda: 'series' (por defecto) o 'points' (cada categoría con su color, como
+   * las porciones de un pie; ocultar una la deja en cero). Con 'points' solo se usa la primera serie.
+   */
+  legendBy?: 'series' | 'points';
+  /** En 'free': índice del dato bajo el punto (px, py) del área, o -1. */
+  hit?(ctx: DrawContext, px: number, py: number): number;
+  /** En 'free': dónde apoyar el tooltip del dato i (px del área). */
+  anchor?(ctx: DrawContext, i: number): [number, number];
   /** Necesita escala de banda en X (barras, velas). */
   band?: boolean;
   /** Ocupa una posición dentro del grupo de la banda (barras agrupadas). */

@@ -13,7 +13,15 @@
  */
 import type { Datum, FormatSpec, LozChartOptions, LozChartUpdate, MultiplesOptions, ThemeName } from './types';
 import type { LozMultiples } from './multiples';
-import type { DrawContext, PreparedSeries, SeriesFrame, SeriesImpl, TooltipFormat, TooltipValue } from './core/series';
+import type {
+  DrawContext,
+  PolarPlane,
+  PreparedSeries,
+  SeriesFrame,
+  SeriesImpl,
+  TooltipFormat,
+  TooltipValue,
+} from './core/series';
 import { injectStyles, LIGHT, MAX_COLORS, resolveTheme, themeVars, type Theme } from './core/theme';
 import { BandScale, ContinuousScale, LinearScale, type XScale } from './core/scales';
 import { niceDomain, niceStep, numberTicks } from './core/ticks';
@@ -74,6 +82,8 @@ interface Layout {
   /** Eje derecho (vacío si no hay). */
   rightTicks: number[];
   rightFormat: (v: number) => string;
+  /** Plano polar (radar). */
+  polar?: PolarPlane;
   font: string;
 }
 
@@ -166,6 +176,8 @@ export class LozChart {
   readonly element: HTMLElement;
   private opts: Normalized;
   private readonly hidden = new Set<string>();
+  /** Categorías ocultas en los tipos con leyenda por categorías (por su texto, sobrevive a setData). */
+  private readonly hiddenPoints = new Set<string>();
   private prepared!: Prepared;
   private target!: Frame;
   /** Cuadro en pantalla (intermedio si hay animación). */
@@ -283,10 +295,14 @@ export class LozChart {
     return this;
   }
 
-  /** Oculta o muestra una serie por su nombre. Las demás conservan su color. */
-  toggleSeries(name: string, visible = this.hidden.has(name)): this {
-    if (visible) this.hidden.delete(name);
-    else this.hidden.add(name);
+  /**
+   * Oculta o muestra una serie por su nombre (en un pie o un embudo, una categoría).
+   * Las demás conservan su color.
+   */
+  toggleSeries(name: string, visible?: boolean): this {
+    const set = this.prepared.pointLegend ? this.hiddenPoints : this.hidden;
+    if (visible ?? set.has(name)) set.delete(name);
+    else set.add(name);
     this.syncLegend();
     this.update(true);
     return this;
@@ -376,12 +392,27 @@ export class LozChart {
       this.hidden,
       { min: ya?.min, max: ya?.max, zero: ya?.zero, ticks: this.valueTickCount() },
       { min: ya2?.min, max: ya2?.max },
+      this.hiddenPointIndices(),
     );
     this.renderTable();
     this.svgEl.setAttribute('aria-label', this.ariaLabel());
     if (this.active >= this.prepared.n) this.clearActive();
     else if (this.active >= 0) this.fillTooltip(this.active);
     this.transition(animate && this.opts.animate);
+  }
+
+  private hiddenPointIndices(): Set<number> {
+    const out = new Set<number>();
+    if (!this.prepared.pointLegend) return out;
+    this.prepared.xRaw.forEach((x, i) => {
+      if (this.hiddenPoints.has(String(x))) out.add(i);
+    });
+    return out;
+  }
+
+  /** Las series cartesianas tienen ejes; las polares (radar) y libres (pie, gauge, embudo), no. */
+  private get coords(): 'cartesian' | 'polar' | 'free' {
+    return this.prepared.coords;
   }
 
   private get horizontal(): boolean {
@@ -429,6 +460,7 @@ export class LozChart {
 
   private computeLayout(width: number): Layout | null {
     if (!width) return null;
+    if (this.coords !== 'cartesian') return this.radialLayout(width);
     const { opts: o, prepared: p, target: t, horizontal } = this;
     const font = `${FONT_SIZE}px ${getComputedStyle(this.root).fontFamily || 'system-ui, sans-serif'}`;
     const measure = (s: string) => textWidth(s, font);
@@ -507,6 +539,58 @@ export class LozChart {
     };
   }
 
+  /**
+   * Layout sin ejes cartesianos: el área completa para la serie. En polar, además, el plano del
+   * radar: centrado y con margen para las etiquetas de cada radio.
+   */
+  private radialLayout(width: number): Layout {
+    const { opts: o, prepared: p, target: t } = this;
+    const font = `${FONT_SIZE}px ${getComputedStyle(this.root).fontFamily || 'system-ui, sans-serif'}`;
+    const measure = (s: string) => textWidth(s, font);
+    const plotW = width;
+    const plotH = Math.max(10, o.height - 2 * AXIS_GAP);
+    const valueTicks = numberTicks(t.d0, t.d1, t.step);
+    const valueFormat = axisFormatter(o.yAxis?.format, this.numberContext(), t.step, Math.max(Math.abs(t.d0), Math.abs(t.d1)));
+    let polar: PolarPlane | undefined;
+    if (this.coords === 'polar') {
+      const labels = p.xRaw.map((_, i) => measure(xLabel(p, i, true, this.xContext())));
+      const labelW = Math.min(width * 0.28, Math.max(0, ...labels));
+      const radius = Math.max(20, Math.min(plotW / 2 - labelW - 14, plotH / 2 - FONT_SIZE - 10));
+      const cx = plotW / 2;
+      const cy = plotH / 2;
+      const n = Math.max(1, p.n);
+      const angle = (i: number) => -Math.PI / 2 + (2 * Math.PI * i) / n;
+      const r = new LinearScale(t.d0, t.d1, 0, radius);
+      polar = {
+        cx,
+        cy,
+        radius,
+        angle,
+        point: (i, v) => [cx + r.map(v) * Math.cos(angle(i)), cy + r.map(v) * Math.sin(angle(i))],
+      };
+    }
+    return {
+      labelWidth: 0,
+      valueLabels: o.yAxis?.labels !== false,
+      width,
+      height: o.height,
+      left: 0,
+      top: AXIS_GAP,
+      plotW,
+      plotH,
+      horizontal: false,
+      indexLen: plotW,
+      valueLen: plotH,
+      x: new BandScale(p.n, plotW),
+      valueTicks,
+      valueFormat,
+      rightTicks: [],
+      rightFormat: valueFormat,
+      font,
+      polar,
+    };
+  }
+
   /** Escala del índice: banda si hay barras o velas; continua si no (números con extremos "bonitos"). */
   private indexScale(length: number): XScale {
     const p = this.prepared;
@@ -526,6 +610,7 @@ export class LozChart {
   /** Escala del valor (del eje izquierdo o del derecho): en vertical crece hacia arriba; en horizontal, a la derecha. */
   private valueScale(frame: Frame, L: Layout, axis: 'left' | 'right' = 'left'): LinearScale {
     const { d0, d1 } = axis === 'right' && frame.right ? frame.right : frame;
+    if (L.polar) return new LinearScale(d0, d1, 0, L.polar.radius);
     return L.horizontal ? new LinearScale(d0, d1, 0, L.valueLen) : new LinearScale(d0, d1, L.valueLen, 0);
   }
 
@@ -543,7 +628,7 @@ export class LozChart {
     this.clipRect.setAttribute('height', String(L.valueLen + 2 * CLIP_PAD));
     this.overlay.setAttribute('width', String(L.plotW));
     this.overlay.setAttribute('height', String(L.plotH));
-    this.overlay.style.touchAction = L.horizontal ? 'pan-x' : 'pan-y';
+    this.overlay.style.touchAction = L.horizontal ? 'pan-x' : this.coords === 'cartesian' ? 'pan-y' : 'pan-x pan-y';
 
     const parts = this.renderParts(frame, L);
     this.gGrid.innerHTML = parts.grid;
@@ -557,6 +642,10 @@ export class LozChart {
 
   /** Markup de rejilla, series (plano lógico) y ejes. Sirve para la vista en vivo y para exportar. */
   private renderParts(frame: Frame, L: Layout): { grid: string; series: string; axes: string } {
+    if (this.coords !== 'cartesian') {
+      const guides = L.polar ? this.polarGuides(frame, L) : { grid: '', axes: '' };
+      return { ...guides, series: this.renderSeries(frame, L) };
+    }
     const th = this.theme;
     const vs = this.valueScale(frame, L);
     const line = (x1: number, y1: number, x2: number, y2: number, color: string) =>
@@ -618,7 +707,11 @@ export class LozChart {
     if (bottomTitle)
       axes += label(L.plotW / 2, L.plotH + 30, bottomTitle, { 'text-anchor': 'middle', 'dominant-baseline': 'hanging' });
 
-    // Series por capa: barras abajo, líneas y puntos arriba.
+    return { grid, series: this.renderSeries(frame, L), axes };
+  }
+
+  /** Cada serie con su plugin, por capa: barras abajo, líneas y puntos arriba. */
+  private renderSeries(frame: Frame, L: Layout): string {
     let series = '';
     const layered = frame.series.slice().sort((a, b) => (a.ps.impl.layer ?? 1) - (b.ps.impl.layer ?? 1));
     for (const f of layered) {
@@ -628,21 +721,87 @@ export class LozChart {
       const opacity = f.alpha < 0.999 ? f.alpha.toFixed(3) : undefined;
       series += `<g${attrs({ opacity, 'data-series': f.ps.key })}>${body}</g>`;
     }
-    return { grid, series, axes };
+    return series;
+  }
+
+  /**
+   * Rejilla del radar: un polígono por cada tick del valor, un radio por categoría con su
+   * etiqueta afuera y los números del valor sobre el radio de arriba.
+   */
+  private polarGuides(frame: Frame, L: Layout): { grid: string; axes: string } {
+    const th = this.theme;
+    const P = L.polar!;
+    const p = this.prepared;
+    const r = this.valueScale(frame, L);
+    const n = p.n;
+    const at = (i: number, radius: number): [number, number] => [
+      P.cx + radius * Math.cos(P.angle(i)),
+      P.cy + radius * Math.sin(P.angle(i)),
+    ];
+    const ring = (radius: number) =>
+      Array.from({ length: n }, (_, i) =>
+        at(i, radius)
+          .map((v) => v.toFixed(2))
+          .join(','),
+      ).join(' ');
+    let grid = '';
+    let axes = '';
+    for (const v of L.valueTicks) {
+      const radius = r.map(v);
+      if (radius <= 0.5 || radius > P.radius + 0.5) continue;
+      grid += `<polygon${attrs({ points: ring(radius), fill: 'none', stroke: th.grid, 'stroke-width': 1 })}/>`;
+      if (L.valueLabels) {
+        const [x, y] = at(0, radius);
+        const a = { x: x + 6, y, fill: th.textMuted, 'font-size': FONT_SIZE - 1, 'dominant-baseline': 'central' };
+        axes += `<text${attrs(a)}>${esc(L.valueFormat(v))}</text>`;
+      }
+    }
+    const ctx = this.xContext();
+    for (let i = 0; i < n; i++) {
+      const [x, y] = at(i, P.radius);
+      grid += `<line${attrs({ x1: P.cx, y1: P.cy, x2: x.toFixed(2), y2: y.toFixed(2), stroke: th.grid, 'stroke-width': 1 })}/>`;
+      // Etiqueta afuera del radio, alineada según el lado en que cae.
+      const cos = Math.cos(P.angle(i));
+      const sin = Math.sin(P.angle(i));
+      const [lx, ly] = at(i, P.radius + 10);
+      const anchor = Math.abs(cos) < 0.2 ? 'middle' : cos > 0 ? 'start' : 'end';
+      const baseline = Math.abs(sin) < 0.2 ? 'central' : sin > 0 ? 'hanging' : 'auto';
+      const a = {
+        x: lx.toFixed(1),
+        y: ly.toFixed(1),
+        fill: th.textMuted,
+        'font-size': FONT_SIZE,
+        'text-anchor': anchor,
+        'dominant-baseline': baseline,
+      };
+      axes += `<text${attrs(a)}>${esc(xLabel(p, i, true, ctx))}</text>`;
+    }
+    return { grid, axes };
   }
 
   private drawContext(f: SeriesFrame, L: Layout, frame: Frame): DrawContext {
-    const y = this.valueScale(frame, L, f.ps.axis);
+    const hidden = this.hiddenPointIndices();
     return {
       frame: f,
       color: this.colorOf(f.ps),
+      pointColor: (i) => this.pointColor(i),
+      polar: L.polar,
       x: L.x,
-      y,
+      y: this.valueScale(frame, L, f.ps.axis),
       theme: this.theme,
       width: L.indexLen,
       height: L.valueLen,
       n: frame.n,
+      isHidden: (i) => hidden.has(i),
+      measure: (text) => textWidth(text, L.font),
+      format: this.valueFormat(f.ps),
     };
+  }
+
+  /** Color de la categoría i (leyenda por categorías): la paleta en orden; "Otros", neutro. */
+  private pointColor(i: number): string {
+    const slot = this.prepared.pointSlots[i] ?? i;
+    return slot < 0 ? this.theme.other : (this.theme.palette[slot] ?? this.theme.other);
   }
 
   /** El color sale del tema actual y la posición de la serie, nunca de su visibilidad. */
@@ -667,7 +826,13 @@ export class LozChart {
 
   /** Lo que dice el tooltip (y la tabla) de una serie en un índice. */
   private valueText(s: PreparedSeries, i: number): TooltipValue {
-    const format: TooltipFormat = { value: this.valueFormat(s), number: valueFormatter('number', this.numberContext()) };
+    const hidden = this.hiddenPointIndices();
+    const format: TooltipFormat = {
+      value: this.valueFormat(s),
+      number: valueFormatter('number', this.numberContext()),
+      percent: valueFormatter('percent', this.numberContext()),
+      isHidden: (i) => hidden.has(i),
+    };
     if (s.raw) {
       // Índice: el valor del eje y, debajo, el original en sus unidades.
       const v = s.values[i];
@@ -726,6 +891,15 @@ export class LozChart {
   }
 
   private legendItems(): LegendItem[] {
+    const p = this.prepared;
+    if (p.pointLegend) {
+      // Una entrada por categoría, con su color: ocultarla la deja en cero.
+      const symbol = p.series[0]?.impl.legendSymbol ?? 'square';
+      return p.xRaw.map((x, i) => {
+        const key = String(x);
+        return { key, name: key, color: this.pointColor(i), symbol, visible: !this.hiddenPoints.has(key) };
+      });
+    }
     return this.prepared.series.map((s) => ({
       key: s.key,
       // Salvaguarda del doble eje: la leyenda dice qué serie se lee en el eje derecho.
@@ -739,7 +913,8 @@ export class LozChart {
   /** Leyenda solo con 2 o más series. Los botones se crean al cambiar las series, no en cada clic. */
   private buildLegend(): void {
     const lg = this.opts.legend;
-    if (lg === false || this.prepared.series.length < 2) {
+    const entries = this.prepared.pointLegend ? this.prepared.n : this.prepared.series.length;
+    if (lg === false || entries < 2) {
       this.legend.clear();
       return;
     }
@@ -782,9 +957,12 @@ export class LozChart {
     const kinds = [...new Set(series.map((s) => s.impl.label ?? s.options.type))];
     const what = kinds.length ? 'Gráfico de ' + kinds.join(' y ') : 'Gráfico';
     const title = this.opts.title ? `${this.opts.title}. ` : '';
-    const count = `${series.length} ${series.length === 1 ? 'serie' : 'series'}`;
+    const count = this.prepared.pointLegend
+      ? `${n} ${n === 1 ? 'categoría' : 'categorías'}`
+      : `${series.length} ${series.length === 1 ? 'serie' : 'series'}`;
     const keys = this.horizontal ? 'arriba y abajo' : 'izquierda y derecha';
-    return `${title}${what} con ${count} y ${n} puntos. Usa las flechas ${keys} para recorrer los datos.`;
+    const points = this.prepared.pointLegend ? '' : ` y ${n} puntos`;
+    return `${title}${what} con ${count}${points}. Usa las flechas ${keys} para recorrer los datos.`;
   }
 
   // ------------------------------------------------------------ Hover, tooltip y teclado
@@ -801,7 +979,9 @@ export class LozChart {
       if (!L || !this.opts.tooltip || !this.prepared.n) return;
       const box = this.svgEl.getBoundingClientRect();
       this.pointer = { x: e.clientX - box.left, y: e.clientY - box.top };
-      this.setActive(this.indexAtPointer(L), false);
+      const i = this.indexAtPointer(L);
+      if (i < 0) this.clearActive();
+      else this.setActive(i, false);
     };
     this.overlay.addEventListener('pointermove', point);
     this.overlay.addEventListener('pointerdown', point);
@@ -847,6 +1027,16 @@ export class LozChart {
     const sy = this.pointer.y - L.top;
     const [li, lv] = L.horizontal ? [sy, sx] : [sx, sy];
     const frame = this.current;
+    if (frame && this.coords === 'free') {
+      const f = frame.series.find((s) => s.alpha >= 0.5 && s.ps.impl.hit);
+      return f ? f.ps.impl.hit!(this.drawContext(f, L, frame), sx, sy) : -1;
+    }
+    if (L.polar) {
+      // El radio más cercano al ángulo del puntero.
+      const turn = Math.atan2(sy - L.polar.cy, sx - L.polar.cx) + Math.PI / 2;
+      const n = this.prepared.n;
+      return ((Math.round((turn / (2 * Math.PI)) * n) % n) + n) % n;
+    }
     if (!frame || !this.nearestMode()) return L.x.indexAt(li);
     let best = 0;
     let bestDist = Infinity;
@@ -905,6 +1095,29 @@ export class LozChart {
   private drawHover(frame: Frame, L: Layout): void {
     const i = this.active;
     const th = this.theme;
+    if (this.coords !== 'cartesian') {
+      // Sin banda ni crosshair; en el radar, se resalta el radio de la categoría.
+      this.gBand.innerHTML = '';
+      let marks = '';
+      if (L.polar) {
+        const [x, y] = L.polar.point(i, frame.d1);
+        const a = {
+          x1: L.polar.cx,
+          y1: L.polar.cy,
+          x2: x.toFixed(2),
+          y2: y.toFixed(2),
+          stroke: th.textMuted,
+          'stroke-width': 1,
+          'stroke-opacity': 0.6,
+        };
+        marks += `<line${attrs(a)}/>`;
+      }
+      for (const f of frame.series) {
+        if (f.alpha >= 0.5 && f.ps.impl.hover) marks += f.ps.impl.hover(this.drawContext(f, L, frame), i);
+      }
+      this.gHover.innerHTML = marks;
+      return;
+    }
     const cx = L.x.at(i);
     const band = L.x.kind === 'band';
     const w = L.x.bandwidth;
@@ -947,7 +1160,7 @@ export class LozChart {
     for (const r of rows) {
       const row = html('div', { class: 'lc-tt-row' });
       const key = html('span', { class: 'lc-tt-key' });
-      key.style.background = this.colorOf(r.s);
+      key.style.background = this.prepared.pointLegend ? this.pointColor(i) : this.colorOf(r.s);
       row.append(key, html('span', { class: 'lc-tt-val' }, r.text.value), html('span', { class: 'lc-tt-name' }, r.s.name));
       nodes.push(row);
       for (const [label, value] of r.text.details ?? []) {
@@ -985,7 +1198,13 @@ export class LozChart {
     const gap = L.x.kind === 'band' ? L.x.bandwidth / 2 + 8 : 14;
     let x: number;
     let y: number;
-    if (this.nearestMode()) {
+    const radial = this.radialAnchor(frame, L);
+    if (radial) {
+      // Junto al punto de apoyo (la porción, el extremo del radio), del lado que quepa.
+      const [px, py] = radial;
+      x = px + 14 + w > L.width ? px - 14 - w : px + 14;
+      y = py - h / 2;
+    } else if (this.nearestMode()) {
       // Junto al punto: su posición en pantalla sale del primer valor visible en ese índice.
       const f = frame.series.find((s) => s.alpha >= 0.5 && isFinite(s.y1[this.active]));
       const v = f ? this.valueScale(frame, L, f.ps.axis).map(f.y1[this.active]) : 0;
@@ -1004,6 +1223,20 @@ export class LozChart {
     x = Math.max(0, Math.min(L.width - w, x));
     y = Math.max(0, Math.min(L.height - h, y));
     tt.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+  }
+
+  /** Punto de apoyo del tooltip en pantalla para radar y tipos libres; null en cartesiano. */
+  private radialAnchor(frame: Frame, L: Layout): [number, number] | null {
+    const i = this.active;
+    if (L.polar) {
+      const [x, y] = L.polar.point(i, frame.d1);
+      return [L.left + x, L.top + y];
+    }
+    if (this.coords !== 'free') return null;
+    const f = frame.series.find((s) => s.alpha >= 0.5);
+    const at = f?.ps.impl.anchor?.(this.drawContext(f, L, frame), i);
+    if (at) return [L.left + at[0], L.top + at[1]];
+    return this.pointer.x >= 0 ? [this.pointer.x, this.pointer.y] : [L.left + L.plotW / 2, L.top + L.plotH / 2];
   }
 
   private describe(i: number): string {

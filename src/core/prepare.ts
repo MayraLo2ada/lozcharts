@@ -20,6 +20,12 @@ export interface Prepared {
   series: PreparedSeries[];
   /** Alguna serie necesita escala de banda (barras). */
   band: boolean;
+  /** Sistema de coordenadas común a todas las series. */
+  coords: 'cartesian' | 'polar' | 'free';
+  /** La leyenda lista categorías (porciones de un pie), no series. */
+  pointLegend: boolean;
+  /** Con pointLegend: posición en la paleta de cada punto (-1 para "Otros"). */
+  pointSlots: number[];
 }
 
 export interface PrepareInput {
@@ -63,6 +69,34 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
     console.warn(`LozChart: el tipo de serie "${s.type}" no está registrado.`);
     return false;
   });
+
+  // Todas las series comparten el sistema de coordenadas de la primera.
+  const coords = (defs[0] && registry.get(defs[0].type)!.coords) ?? 'cartesian';
+  defs = defs.filter((s) => {
+    if ((registry.get(s.type)!.coords ?? 'cartesian') === coords) return true;
+    console.warn(`LozChart: "${s.name ?? s.field}" (${s.type}) no se puede mezclar con series de tipo ${defs[0].type}.`);
+    return false;
+  });
+  // Leyenda por categorías (pie, embudo…): una sola serie, y cada categoría con su color.
+  const pointLegend = !!defs[0] && registry.get(defs[0].type)!.legendBy === 'points';
+  if (pointLegend && defs.length > 1) {
+    console.warn(
+      `LozChart: un gráfico de tipo ${defs[0].type} muestra una sola serie; se usa "${defs[0].name ?? defs[0].field}".`,
+    );
+    defs = defs.slice(0, 1);
+  }
+  let pointSlots: number[] = [];
+  if (pointLegend) {
+    // Más categorías que colores: las sobrantes se suman en "Otros". Nunca se repite un color.
+    const field = defs[0].field;
+    if (rows.length > maxSeries) {
+      const tail = rows.slice(maxSeries - 1);
+      const sum = tail.reduce((acc, r) => acc + (isFinite(toNumber(r[field])) ? toNumber(r[field]) : 0), 0);
+      rows = [...rows.slice(0, maxSeries - 1), { [xField]: OTHERS, [field]: sum }];
+      if (xNum.length) xNum = [...xNum.slice(0, maxSeries - 1), NaN];
+    }
+    pointSlots = rows.map((r, i) => (r[xField] === OTHERS && i === maxSeries - 1 ? -1 : i));
+  }
 
   let folded: SeriesOptions[] = [];
   if (defs.length > maxSeries) {
@@ -131,6 +165,9 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
     timeUnit: xType === 'time' ? detectTimeUnit(xNum) : null,
     series,
     band: !!input.band || series.some((s) => s.impl.band),
+    coords,
+    pointLegend,
+    pointSlots,
   };
 }
 

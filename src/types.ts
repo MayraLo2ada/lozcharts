@@ -48,7 +48,7 @@ export interface YAxisOptions {
 export interface SeriesOptions {
   /**
    * Tipo registrado: 'line', 'bar', 'area', 'step', 'range', 'scatter', 'bubble',
-   * 'candlestick', 'ohlc' o uno propio.
+   * 'candlestick', 'ohlc', 'pie', 'donut', 'gauge', 'radar', 'funnel' o uno propio.
    */
   type: string;
   /** Campo numérico de cada fila. En velas y OHLC es el cierre; en 'range', el límite superior. */
@@ -65,6 +65,12 @@ export interface SeriesOptions {
   size?: string;
   /** Burbujas: cómo se llama el tamaño en el tooltip ("Clientes"). Por defecto, "Tamaño". */
   sizeName?: string;
+  /** Pie y donut: radio del agujero como fracción del radio (0 = pie; el donut usa 0,6). */
+  innerRadius?: number;
+  /** Gauge: valor de la meta, marcado sobre el arco. */
+  target?: number;
+  /** Pie, donut y embudo: mostrar las etiquetas junto a cada parte. Por defecto true. */
+  labels?: boolean;
   /** Velas y OHLC: campos de apertura, máximo y mínimo. 'range': `low` es el límite inferior. */
   open?: string;
   high?: string;
