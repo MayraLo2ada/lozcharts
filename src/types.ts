@@ -71,6 +71,8 @@ export interface SeriesOptions {
   low?: string;
   /** Posición en la paleta (desde 1). Por defecto, su orden en `series`. */
   color?: number;
+  /** Eje del valor: 'left' (por defecto) o 'right', configurado con `yAxis2`. */
+  axis?: 'left' | 'right';
   /** Visible al inicio. Por defecto true. */
   visible?: boolean;
   /** Formato propio para el tooltip de esta serie. */
@@ -95,6 +97,12 @@ export interface LozChartOptions {
   data: Datum[];
   xAxis: XAxisOptions;
   yAxis?: YAxisOptions;
+  /**
+   * Eje derecho, para las series con `axis: 'right'`. Con salvaguardas: los dos ejes incluyen el
+   * cero a la misma altura y comparten las líneas de la rejilla, y la leyenda dice qué serie va en
+   * cada eje. Antes de usarlo, considera paneles alineados o `yAxis.index` (ver README).
+   */
+  yAxis2?: Pick<YAxisOptions, 'format' | 'title' | 'min' | 'max'>;
   series: SeriesOptions[];
   theme?: ThemeName;
   /** Paleta propia. Por defecto, la de LozChart (validada para daltonismo). */

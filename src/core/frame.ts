@@ -7,11 +7,18 @@
  */
 import type { PreparedSeries, SeriesFrame } from './series';
 import type { Prepared } from './prepare';
-import { niceDomain } from './ticks';
+import { niceDomain, niceStep } from './ticks';
 
-export interface Frame {
+/** Extremos de un eje del valor y el paso entre sus ticks. */
+export interface AxisDomain {
   d0: number;
   d1: number;
+  step: number;
+}
+
+export interface Frame extends AxisDomain {
+  /** Eje derecho, alineado con el izquierdo; null si ninguna serie lo usa. */
+  right: AxisDomain | null;
   n: number;
   series: SeriesFrame[];
 }
@@ -25,8 +32,16 @@ export interface DomainOptions {
   ticks: number;
 }
 
-/** Cuadro destino: apila, ubica las barras en su grupo y calcula el dominio Y. */
-export function buildFrame(p: Prepared, hidden: ReadonlySet<string>, domain: DomainOptions): Frame {
+/**
+ * Cuadro destino: apila, ubica las barras en su grupo y calcula el dominio del valor.
+ * Con series en el eje derecho, `rightDomain` configura ese eje (ver alignRight).
+ */
+export function buildFrame(
+  p: Prepared,
+  hidden: ReadonlySet<string>,
+  domain: DomainOptions,
+  rightDomain: Omit<DomainOptions, 'ticks'> = {},
+): Frame {
   const { n } = p;
   const frames: SeriesFrame[] = p.series.map((ps) => ({
     ps,
@@ -40,9 +55,15 @@ export function buildFrame(p: Prepared, hidden: ReadonlySet<string>, domain: Dom
   }));
   stack(frames, n);
   placeInClusters(frames);
-  const [d0, d1] = yDomain(frames, domain);
-  settleUnstacked(frames, d0, d1);
-  return { d0, d1, n, series: frames };
+  const leftFrames = frames.filter((f) => f.ps.axis !== 'right');
+  const rightFrames = frames.filter((f) => f.ps.axis === 'right');
+  // Salvaguarda del doble eje: los dos incluyen el cero, a la misma altura.
+  const dual = rightFrames.length > 0;
+  const left = yDomain(leftFrames, { ...domain, zero: domain.zero || dual });
+  const right = dual ? alignRight(extent(rightFrames, true), left, rightDomain) : null;
+  settleUnstacked(leftFrames, left);
+  if (right) settleUnstacked(rightFrames, right);
+  return { ...left, right, n, series: frames };
 }
 
 /**
@@ -101,11 +122,10 @@ function placeInClusters(frames: SeriesFrame[]): void {
   }
 }
 
-/** Dominio "bonito" del eje Y con las series visibles. */
-function yDomain(frames: SeriesFrame[], opts: DomainOptions): [number, number] {
+/** Mínimo y máximo de las series visibles (con el cero si alguna lo pide); null si no hay datos. */
+function extent(frames: SeriesFrame[], zero: boolean): [number, number] | null {
   let lo = Infinity;
   let hi = -Infinity;
-  let zero = !!opts.zero;
   const extend = (v: number) => {
     if (v < lo) lo = v;
     if (v > hi) hi = v;
@@ -120,22 +140,54 @@ function yDomain(frames: SeriesFrame[], opts: DomainOptions): [number, number] {
       for (const col of extra) if (isFinite(col[i])) extend(col[i]);
     }
   }
-  if (lo > hi) [lo, hi] = [0, 1];
-  if (zero) {
-    lo = Math.min(lo, 0);
-    hi = Math.max(hi, 0);
-  }
+  if (lo > hi) return null;
+  return zero ? [Math.min(lo, 0), Math.max(hi, 0)] : [lo, hi];
+}
+
+/** Dominio "bonito" del eje izquierdo con las series visibles. */
+function yDomain(frames: SeriesFrame[], opts: DomainOptions): AxisDomain {
+  let [lo, hi] = extent(frames, !!opts.zero) ?? [0, 1];
   if (opts.min !== undefined) lo = opts.min;
   if (opts.max !== undefined) hi = opts.max;
-  const [d0, d1] = niceDomain(lo, hi, opts.ticks);
-  return [opts.min ?? d0, opts.max ?? d1];
+  const [d0, d1, step] = niceDomain(lo, hi, opts.ticks);
+  const fixed = opts.min !== undefined || opts.max !== undefined;
+  const out = { d0: opts.min ?? d0, d1: opts.max ?? d1, step };
+  return fixed ? { ...out, step: niceStep(out.d1 - out.d0, opts.ticks) } : out;
+}
+
+/**
+ * Eje derecho alineado con el izquierdo: misma cantidad de ticks arriba y abajo del cero, así
+ * comparten las líneas de la rejilla y el cero. Su paso es el menor "bonito" (1, 2, 2,5 o 5 × 10ⁿ)
+ * en que caben los datos. Si los signos no encajan (izquierda solo negativa y derecha positiva,
+ * por ejemplo), cada eje queda con su propio dominio desde el cero.
+ */
+export function alignRight(data: [number, number] | null, left: AxisDomain, opts: Omit<DomainOptions, 'ticks'>): AxisDomain {
+  const up = Math.round(left.d1 / left.step);
+  const down = Math.round(-left.d0 / left.step);
+  let [lo, hi] = data ?? [0, 0];
+  if (opts.min !== undefined) lo = opts.min;
+  if (opts.max !== undefined) hi = opts.max;
+  if ((hi > 0 && up <= 0) || (lo < 0 && down <= 0)) {
+    const [d0, d1, step] = niceDomain(Math.min(lo, 0), Math.max(hi, 0), Math.max(2, up + down));
+    return { d0, d1, step };
+  }
+  const raw = Math.max(up > 0 ? hi / up : 0, down > 0 ? -lo / down : 0);
+  const step = raw > 0 ? niceCeil(raw) : 1;
+  return { d0: -down * step, d1: up * step, step };
+}
+
+/** El menor 1, 2, 2,5, 5 o 10 × 10ⁿ que no sea menor que v. */
+function niceCeil(v: number): number {
+  const power = Math.pow(10, Math.floor(Math.log10(v)));
+  for (const m of [1, 2, 2.5, 5, 10]) if (m * power >= v * (1 - 1e-12)) return m * power;
+  return 10 * power;
 }
 
 /**
  * Las series sin pila se apoyan en el cero, o en el borde más cercano si el cero no se ve
  * (un precio entre 150 y 200). Ahí crecen al entrar y se encogen al ocultarse.
  */
-function settleUnstacked(frames: SeriesFrame[], d0: number, d1: number): void {
+function settleUnstacked(frames: SeriesFrame[], { d0, d1 }: AxisDomain): void {
   const base = Math.max(d0, Math.min(d1, 0));
   for (const f of frames) {
     if (f.ps.stackKey) continue;
@@ -193,6 +245,12 @@ export function interpolate(a: Frame, b: Frame, t: number): Frame {
   return {
     d0: lerp(a.d0, b.d0, t),
     d1: lerp(a.d1, b.d1, t),
+    step: b.step,
+    right: b.right && {
+      d0: lerp(a.right?.d0 ?? b.right.d0, b.right.d0, t),
+      d1: lerp(a.right?.d1 ?? b.right.d1, b.right.d1, t),
+      step: b.right.step,
+    },
     n: b.n,
     series: b.series.map((s) => {
       const from = prev.get(s.ps.key) ?? collapseSeries(s);

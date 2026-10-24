@@ -71,6 +71,9 @@ interface Layout {
   x: XScale;
   valueTicks: number[];
   valueFormat: (v: number) => string;
+  /** Eje derecho (vacío si no hay). */
+  rightTicks: number[];
+  rightFormat: (v: number) => string;
   font: string;
 }
 
@@ -358,19 +361,22 @@ export class LozChart {
   private prepare(): Prepared {
     const { data, xAxis, series } = this.opts;
     const xType = xAxis.type ?? 'category';
-    const input = { data, xField: xAxis.field, xType, series, index: this.opts.yAxis?.index, band: xAxis.band };
+    const index = this.opts.yAxis?.index;
+    const rightAxis = !index && !this.horizontal;
+    const input = { data, xField: xAxis.field, xType, series, index, band: xAxis.band, rightAxis };
     return prepare(input, registry, this.theme.palette.length);
   }
 
   private update(animate: boolean): void {
     if (this.destroyed) return;
     const ya = this.opts.yAxis;
-    this.target = buildFrame(this.prepared, this.hidden, {
-      min: ya?.min,
-      max: ya?.max,
-      zero: ya?.zero,
-      ticks: this.valueTickCount(),
-    });
+    const ya2 = this.opts.yAxis2;
+    this.target = buildFrame(
+      this.prepared,
+      this.hidden,
+      { min: ya?.min, max: ya?.max, zero: ya?.zero, ticks: this.valueTickCount() },
+      { min: ya2?.min, max: ya2?.max },
+    );
     this.renderTable();
     this.svgEl.setAttribute('aria-label', this.ariaLabel());
     if (this.active >= this.prepared.n) this.clearActive();
@@ -429,7 +435,8 @@ export class LozChart {
     const valueTitle = o.yAxis?.title;
     const indexTitle = o.xAxis.title;
     // Arriba a la izquierda va el título del eje vertical; abajo al centro, el del horizontal.
-    const top = ((horizontal ? indexTitle : valueTitle) ? 22 : 0) + AXIS_GAP;
+    const topTitle = horizontal ? indexTitle : valueTitle || (t.right && o.yAxis2?.title);
+    const top = (topTitle ? 22 : 0) + AXIS_GAP;
     const valueLabels = o.yAxis?.labels !== false;
     // Etiquetas de abajo: en horizontal, los números del valor; en vertical, las X.
     const bottomLabels = horizontal ? valueLabels : o.xAxis.labels !== false;
@@ -449,9 +456,9 @@ export class LozChart {
       right = p.band ? 0 : 8;
     }
 
-    // Ticks del valor salen del dominio destino: quedan quietos durante la animación.
-    const valueLen0 = horizontal ? width - left : plotH;
-    const step = niceStep(t.d1 - t.d0, this.valueTickCount(valueLen0));
+    // Ticks del valor salen del dominio destino: quedan quietos durante la animación. En vertical,
+    // el paso es el del cuadro (el eje derecho se alineó con él); en horizontal depende del ancho.
+    const step = horizontal ? niceStep(t.d1 - t.d0, this.valueTickCount(width - left)) : t.step;
     const valueTicks = numberTicks(t.d0, t.d1, step);
     const spec = o.yAxis?.index ? 'number' : o.yAxis?.format;
     const valueFormat = axisFormatter(spec, this.numberContext(), step, Math.max(Math.abs(t.d0), Math.abs(t.d1)));
@@ -466,6 +473,16 @@ export class LozChart {
       labelWidth = natural;
       left = Math.max(natural, o.yAxis?.width ?? 0);
     }
+    // Eje derecho: sus números a la derecha, en los mismos renglones que los del izquierdo.
+    const r = t.right;
+    const rightTicks = r ? numberTicks(r.d0, r.d1, r.step) : [];
+    const rightFormat = axisFormatter(
+      o.yAxis2?.format,
+      this.numberContext(),
+      r?.step ?? 1,
+      r ? Math.max(Math.abs(r.d0), Math.abs(r.d1)) : 0,
+    );
+    if (r) right = Math.ceil(Math.max(0, ...rightTicks.map((v) => measure(rightFormat(v))))) + 14;
     const plotW = Math.max(10, width - left - right);
     const indexLen = horizontal ? plotH : plotW;
     const valueLen = horizontal ? plotW : plotH;
@@ -484,6 +501,8 @@ export class LozChart {
       x: this.indexScale(indexLen),
       valueTicks,
       valueFormat,
+      rightTicks,
+      rightFormat,
       font,
     };
   }
@@ -504,9 +523,10 @@ export class LozChart {
     return new ContinuousScale(p.xNum, length);
   }
 
-  /** Escala del valor: en vertical crece hacia arriba; en horizontal, hacia la derecha. */
-  private valueScale(frame: Frame, L: Layout): LinearScale {
-    return L.horizontal ? new LinearScale(frame.d0, frame.d1, 0, L.valueLen) : new LinearScale(frame.d0, frame.d1, L.valueLen, 0);
+  /** Escala del valor (del eje izquierdo o del derecho): en vertical crece hacia arriba; en horizontal, a la derecha. */
+  private valueScale(frame: Frame, L: Layout, axis: 'left' | 'right' = 'left'): LinearScale {
+    const { d0, d1 } = axis === 'right' && frame.right ? frame.right : frame;
+    return L.horizontal ? new LinearScale(d0, d1, 0, L.valueLen) : new LinearScale(d0, d1, L.valueLen, 0);
   }
 
   private draw(): void {
@@ -562,6 +582,15 @@ export class LozChart {
         if (L.valueLabels) axes += label(-10, pos, text, { 'text-anchor': 'end', 'dominant-baseline': 'central' });
       }
     }
+    // Eje derecho: sus números en los mismos renglones de la rejilla (el dominio se alineó así).
+    if (frame.right) {
+      const rs = this.valueScale(frame, L, 'right');
+      for (const v of L.rightTicks) {
+        const pos = Math.round(rs.map(v)) + 0.5;
+        if (pos < -1 || pos > L.valueLen + 1) continue;
+        axes += label(L.plotW + 10, pos, L.rightFormat(v), { 'dominant-baseline': 'central' });
+      }
+    }
     // Sin el cero a la vista, una base discreta del lado del mínimo.
     if ((frame.d0 > 0 || frame.d1 < 0) && !this.opts.yAxis?.index) {
       grid += L.horizontal
@@ -583,6 +612,9 @@ export class LozChart {
     const topTitle = L.horizontal ? this.opts.xAxis.title : this.opts.yAxis?.title;
     const bottomTitle = L.horizontal ? this.opts.yAxis?.title : this.opts.xAxis.title;
     if (topTitle) axes += label(-L.left, -16, topTitle, { 'dominant-baseline': 'central' });
+    const rightTitle = frame.right && this.opts.yAxis2?.title;
+    if (rightTitle)
+      axes += label(L.width - L.left - 4, -16, rightTitle, { 'text-anchor': 'end', 'dominant-baseline': 'central' });
     if (bottomTitle)
       axes += label(L.plotW / 2, L.plotH + 30, bottomTitle, { 'text-anchor': 'middle', 'dominant-baseline': 'hanging' });
 
@@ -591,7 +623,7 @@ export class LozChart {
     const layered = frame.series.slice().sort((a, b) => (a.ps.impl.layer ?? 1) - (b.ps.impl.layer ?? 1));
     for (const f of layered) {
       if (f.alpha <= 0.001) continue;
-      const body = f.ps.impl.draw(this.drawContext(f, L, vs, frame.n));
+      const body = f.ps.impl.draw(this.drawContext(f, L, frame));
       if (!body) continue;
       const opacity = f.alpha < 0.999 ? f.alpha.toFixed(3) : undefined;
       series += `<g${attrs({ opacity, 'data-series': f.ps.key })}>${body}</g>`;
@@ -599,8 +631,18 @@ export class LozChart {
     return { grid, series, axes };
   }
 
-  private drawContext(frame: SeriesFrame, L: Layout, y: LinearScale, n: number): DrawContext {
-    return { frame, color: this.colorOf(frame.ps), x: L.x, y, theme: this.theme, width: L.indexLen, height: L.valueLen, n };
+  private drawContext(f: SeriesFrame, L: Layout, frame: Frame): DrawContext {
+    const y = this.valueScale(frame, L, f.ps.axis);
+    return {
+      frame: f,
+      color: this.colorOf(f.ps),
+      x: L.x,
+      y,
+      theme: this.theme,
+      width: L.indexLen,
+      height: L.valueLen,
+      n: frame.n,
+    };
   }
 
   /** El color sale del tema actual y la posición de la serie, nunca de su visibilidad. */
@@ -618,7 +660,8 @@ export class LozChart {
 
   /** El tooltip y la tabla muestran el valor exacto, no la versión compacta del eje. */
   private valueFormat(s: PreparedSeries): (v: number) => string {
-    const spec: FormatSpec | undefined = s.options.format ?? this.opts.yAxis?.format;
+    const axisFormat = s.axis === 'right' ? this.opts.yAxis2?.format : this.opts.yAxis?.format;
+    const spec: FormatSpec | undefined = s.options.format ?? axisFormat;
     return valueFormatter(spec === 'auto' || spec === 'compact' ? 'number' : spec, this.numberContext());
   }
 
@@ -685,7 +728,8 @@ export class LozChart {
   private legendItems(): LegendItem[] {
     return this.prepared.series.map((s) => ({
       key: s.key,
-      name: s.name,
+      // Salvaguarda del doble eje: la leyenda dice qué serie se lee en el eje derecho.
+      name: s.axis === 'right' ? `${s.name} (eje derecho)` : s.name,
       color: this.colorOf(s),
       symbol: s.impl.legendSymbol ?? 'square',
       visible: !this.hidden.has(s.key),
@@ -804,14 +848,13 @@ export class LozChart {
     const [li, lv] = L.horizontal ? [sy, sx] : [sx, sy];
     const frame = this.current;
     if (!frame || !this.nearestMode()) return L.x.indexAt(li);
-    const vs = this.valueScale(frame, L);
     let best = 0;
     let bestDist = Infinity;
     for (const f of frame.series) {
       if (f.alpha < 0.5) continue;
       for (let i = 0; i < frame.n; i++) {
         if (!isFinite(f.y1[i])) continue;
-        const d = Math.hypot(L.x.at(i) - li, vs.map(f.y1[i]) - lv);
+        const d = Math.hypot(L.x.at(i) - li, this.valueScale(frame, L, f.ps.axis).map(f.y1[i]) - lv);
         if (d < bestDist) [best, bestDist] = [i, d];
       }
     }
@@ -873,9 +916,8 @@ export class LozChart {
       const px = Math.round(cx) + 0.5;
       marks += `<line${attrs({ x1: px, x2: px, y1: 0, y2: L.valueLen, stroke: th.textMuted, 'stroke-width': 1, 'stroke-opacity': 0.6, 'shape-rendering': 'crispEdges' })}/>`;
     }
-    const vs = this.valueScale(frame, L);
     for (const f of frame.series) {
-      if (f.alpha >= 0.5 && f.ps.impl.hover) marks += f.ps.impl.hover(this.drawContext(f, L, vs, frame.n), i);
+      if (f.alpha >= 0.5 && f.ps.impl.hover) marks += f.ps.impl.hover(this.drawContext(f, L, frame), i);
     }
     this.gHover.innerHTML = marks;
   }
@@ -945,9 +987,8 @@ export class LozChart {
     let y: number;
     if (this.nearestMode()) {
       // Junto al punto: su posición en pantalla sale del primer valor visible en ese índice.
-      const vs = this.valueScale(frame, L);
       const f = frame.series.find((s) => s.alpha >= 0.5 && isFinite(s.y1[this.active]));
-      const v = f ? vs.map(f.y1[this.active]) : 0;
+      const v = f ? this.valueScale(frame, L, f.ps.axis).map(f.y1[this.active]) : 0;
       const [px, py] = L.horizontal ? [L.left + v, L.top + along] : [L.left + along, L.top + v];
       x = px + gap + w > L.width ? px - gap - w : px + gap;
       y = py - h / 2;

@@ -31,6 +31,8 @@ export interface PrepareInput {
   index?: boolean;
   /** Usar escala de banda aunque ninguna serie la pida (ver xAxis.band). */
   band?: boolean;
+  /** Se permite el eje derecho (no en índice ni en horizontal, donde no tiene sentido). */
+  rightAxis?: boolean;
 }
 
 export const OTHERS = 'Otros';
@@ -79,8 +81,15 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
   }
 
   const column = (field: string) => rows.map((r) => toNumber(r[field]));
+  const axisOf = (options: SeriesOptions): 'left' | 'right' => {
+    if (options.axis !== 'right') return 'left';
+    if (input.rightAxis) return 'right';
+    console.warn(`LozChart: "${options.name ?? options.field}" pide el eje derecho, que no aplica en índice ni en horizontal.`);
+    return 'left';
+  };
   const series: PreparedSeries[] = defs.map((options, index) => {
     const impl = registry.get(options.type)!;
+    const axis = axisOf(options);
     const slot =
       Number.isInteger(options.color) && options.color! >= 1 && options.color! <= maxSeries ? options.color! - 1 : index;
     return {
@@ -91,7 +100,8 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
       options,
       values: column(options.field),
       columns: extraColumns(options, impl, column),
-      stackKey: stackKeyOf(options, impl),
+      stackKey: stackKeyOf(options, impl, axis),
+      axis,
     };
   });
 
@@ -106,7 +116,8 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
       options: { ...first, name: OTHERS },
       values: rows.map((_, i) => parts.reduce((sum, col) => sum + (isFinite(col[i]) ? col[i] : 0), 0)),
       columns: {},
-      stackKey: stackKeyOf(first, registry.get(first.type)!),
+      stackKey: stackKeyOf(first, registry.get(first.type)!, axisOf(first)),
+      axis: axisOf(first),
     });
   }
 
@@ -150,8 +161,8 @@ function toIndex(s: PreparedSeries): void {
   for (const name of s.impl.valueColumns ?? []) if (s.columns[name]) s.columns[name] = s.columns[name].map((v) => v * k);
 }
 
-/** Las series se apilan con otras del mismo tipo y el mismo grupo. */
-function stackKeyOf(s: SeriesOptions, impl: SeriesImpl): string | null {
+/** Las series se apilan con otras del mismo tipo, el mismo grupo y el mismo eje. */
+function stackKeyOf(s: SeriesOptions, impl: SeriesImpl, axis: 'left' | 'right'): string | null {
   if (!impl.stackable || !s.stack) return null;
-  return `${s.type}:${s.stack === true ? '' : s.stack}`;
+  return `${s.type}:${axis}:${s.stack === true ? '' : s.stack}`;
 }

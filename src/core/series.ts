@@ -31,6 +31,8 @@ export interface PreparedSeries {
   columns: Record<string, number[]>;
   /** Grupo de apilado, o null. */
   stackKey: string | null;
+  /** Eje del valor: el izquierdo, o el derecho (yAxis2). */
+  axis: 'left' | 'right';
 }
 
 /** Estado de una serie en un cuadro de animación (en unidades de datos). */
