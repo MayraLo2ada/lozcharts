@@ -150,3 +150,24 @@ test('índice base 100: sin un primer valor positivo, la serie queda vacía con 
   assert.ok(p.series[0].values.every(Number.isNaN));
   assert.equal(warn.mock.callCount(), 1);
 });
+
+test('los tipos libres (pie, gauge, embudo) muestran una sola serie, con aviso', (t) => {
+  const warn = t.mock.method(console, 'warn', () => {});
+  const libre = new Map(registry);
+  libre.set('gauge', { coords: 'free', draw: () => '' });
+  const p = prepare(
+    {
+      data: [{ x: 'a', v: 1, w: 2 }],
+      xField: 'x',
+      xType: 'category',
+      series: [
+        { type: 'gauge', field: 'v' },
+        { type: 'gauge', field: 'w' },
+      ],
+    },
+    libre,
+    8,
+  );
+  assert.equal(p.series.length, 1);
+  assert.equal(warn.mock.callCount(), 1);
+});

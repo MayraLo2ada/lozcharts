@@ -140,6 +140,7 @@ function extent(frames: SeriesFrame[], zero: boolean): [number, number] | null {
   for (const f of frames) {
     if (f.alpha === 0) continue;
     if (f.ps.impl.includeZero) zero = true;
+    for (const v of f.ps.impl.domainValues?.(f.ps.options) ?? []) if (isFinite(v)) extend(v);
     const extra = (f.ps.impl.valueColumns ?? []).map((name) => f.cols[name]).filter(Boolean);
     for (let i = 0; i < f.y1.length; i++) {
       if (isFinite(f.y1[i])) extend(f.y1[i]);

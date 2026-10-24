@@ -77,9 +77,10 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
     console.warn(`LozChart: "${s.name ?? s.field}" (${s.type}) no se puede mezclar con series de tipo ${defs[0].type}.`);
     return false;
   });
-  // Leyenda por categorías (pie, embudo…): una sola serie, y cada categoría con su color.
+  // Leyenda por categorías (pie): cada categoría con su color. Los tipos libres (pie, gauge,
+  // embudo) usan toda el área: una sola serie por gráfico (para varios, small multiples).
   const pointLegend = !!defs[0] && registry.get(defs[0].type)!.legendBy === 'points';
-  if (pointLegend && defs.length > 1) {
+  if ((pointLegend || coords === 'free') && defs.length > 1) {
     console.warn(
       `LozChart: un gráfico de tipo ${defs[0].type} muestra una sola serie; se usa "${defs[0].name ?? defs[0].field}".`,
     );

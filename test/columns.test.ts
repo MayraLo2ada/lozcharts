@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { buildFrame, collapse, interpolate } from '../src/core/frame';
 import { stepPath } from '../src/core/shapes';
 import { fitText } from '../src/core/axis';
-import { prep } from './helpers';
+import { prep, registry } from './helpers';
+import { prepare } from '../src/core/prepare';
 
 const ticks = { ticks: 5 };
 const none = new Set<string>();
@@ -72,4 +73,15 @@ test('recorte de etiquetas con "…" cuando no caben', () => {
   assert.equal(fitText('Corto', 100, measure), 'Corto');
   assert.equal(fitText('Una categoría muy larga', 100, measure), 'Una categ…');
   assert.equal(fitText('Larga', 5, measure), '…');
+});
+
+test('domainValues: valores fijos de la serie (como la meta de un gauge) entran en el dominio', () => {
+  const reg = new Map(registry);
+  reg.set('meta', { domainValues: (o) => (o.target === undefined ? [] : [o.target]), draw: () => '' });
+  const p = prepare(
+    { data: [{ x: 'a', v: 72 }], xField: 'x', xType: 'category', series: [{ type: 'meta', field: 'v', target: 130 }] },
+    reg,
+    8,
+  );
+  assert.ok(buildFrame(p, new Set(), { ticks: 5 }).d1 >= 130);
 });

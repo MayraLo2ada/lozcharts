@@ -8,6 +8,10 @@ import { step } from './series/step';
 import { range } from './series/range';
 import { bubble, scatter } from './series/scatter';
 import { candlestick, ohlc } from './series/candlestick';
+import { donut, pie } from './series/pie';
+import { gauge } from './series/gauge';
+import { radar } from './series/radar';
+import { funnel } from './series/funnel';
 
 LozChart.registerSeries('line', line);
 LozChart.registerSeries('bar', bar);
@@ -18,6 +22,11 @@ LozChart.registerSeries('scatter', scatter);
 LozChart.registerSeries('bubble', bubble);
 LozChart.registerSeries('candlestick', candlestick);
 LozChart.registerSeries('ohlc', ohlc);
+LozChart.registerSeries('pie', pie);
+LozChart.registerSeries('donut', donut);
+LozChart.registerSeries('gauge', gauge);
+LozChart.registerSeries('radar', radar);
+LozChart.registerSeries('funnel', funnel);
 
 LozChart.multiples = (target, options) => new LozMultiples(target, options);
 

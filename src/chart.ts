@@ -28,7 +28,7 @@ import { niceDomain, niceStep, numberTicks } from './core/ticks';
 import { axisFormatter, indexFormatter, valueFormatter, type NumberContext } from './core/format';
 import { prepare, type Prepared } from './core/prepare';
 import { buildFrame, collapse, interpolate, withExits, type Frame } from './core/frame';
-import { indexLabels, xLabel, xTicks, type XLabelContext } from './core/axis';
+import { fitText, indexLabels, xLabel, xTicks, type XLabelContext } from './core/axis';
 import { attrs, esc, html, prefersReducedMotion, resolveElement, svg, textWidth } from './core/dom';
 import { Legend, legendSVG, type LegendItem } from './core/legend';
 import { downloadImage, slug } from './core/export';
@@ -552,9 +552,12 @@ export class LozChart {
     const valueTicks = numberTicks(t.d0, t.d1, t.step);
     const valueFormat = axisFormatter(o.yAxis?.format, this.numberContext(), t.step, Math.max(Math.abs(t.d0), Math.abs(t.d1)));
     let polar: PolarPlane | undefined;
+    /** En polar: el ancho máximo de las etiquetas de cada radio (las más largas se recortan). */
+    let labelWidth = 0;
     if (this.coords === 'polar') {
       const labels = p.xRaw.map((_, i) => measure(xLabel(p, i, true, this.xContext())));
-      const labelW = Math.min(width * 0.28, Math.max(0, ...labels));
+      labelWidth = Math.min(width * 0.28, Math.max(0, ...labels));
+      const labelW = labelWidth;
       const radius = Math.max(20, Math.min(plotW / 2 - labelW - 14, plotH / 2 - FONT_SIZE - 10));
       const cx = plotW / 2;
       const cy = plotH / 2;
@@ -570,7 +573,7 @@ export class LozChart {
       };
     }
     return {
-      labelWidth: 0,
+      labelWidth,
       valueLabels: o.yAxis?.labels !== false,
       width,
       height: o.height,
@@ -749,10 +752,26 @@ export class LozChart {
     for (const v of L.valueTicks) {
       const radius = r.map(v);
       if (radius <= 0.5 || radius > P.radius + 0.5) continue;
-      grid += `<polygon${attrs({ points: ring(radius), fill: 'none', stroke: th.grid, 'stroke-width': 1 })}/>`;
+      // El anillo del cero se marca como la línea del cero cartesiana. Con menos de 3 categorías
+      // no hay polígono posible: anillos circulares.
+      const stroke = v === 0 ? th.zero : th.grid;
+      grid +=
+        n < 3
+          ? `<circle${attrs({ cx: P.cx, cy: P.cy, r: radius.toFixed(2), fill: 'none', stroke, 'stroke-width': 1 })}/>`
+          : `<polygon${attrs({ points: ring(radius), fill: 'none', stroke, 'stroke-width': 1 })}/>`;
       if (L.valueLabels) {
+        // Halo del color del fondo: el número no pisa el radio ni los polígonos.
         const [x, y] = at(0, radius);
-        const a = { x: x + 6, y, fill: th.textMuted, 'font-size': FONT_SIZE - 1, 'dominant-baseline': 'central' };
+        const a = {
+          x: x + 6,
+          y,
+          fill: th.textMuted,
+          'font-size': FONT_SIZE - 1,
+          'dominant-baseline': 'central',
+          stroke: th.surface,
+          'stroke-width': 3,
+          'paint-order': 'stroke',
+        };
         axes += `<text${attrs(a)}>${esc(L.valueFormat(v))}</text>`;
       }
     }
@@ -774,7 +793,8 @@ export class LozChart {
         'text-anchor': anchor,
         'dominant-baseline': baseline,
       };
-      axes += `<text${attrs(a)}>${esc(xLabel(p, i, true, ctx))}</text>`;
+      const text = fitText(xLabel(p, i, true, ctx), L.labelWidth, (t) => textWidth(t, L.font));
+      axes += `<text${attrs(a)}>${esc(text)}</text>`;
     }
     return { grid, axes };
   }
@@ -785,7 +805,7 @@ export class LozChart {
       frame: f,
       color: this.colorOf(f.ps),
       pointColor: (i) => this.pointColor(i),
-      polar: L.polar,
+      polar: L.polar && this.polarPlane(L, frame),
       x: L.x,
       y: this.valueScale(frame, L, f.ps.axis),
       theme: this.theme,
@@ -793,9 +813,31 @@ export class LozChart {
       height: L.valueLen,
       n: frame.n,
       isHidden: (i) => hidden.has(i),
+      label: (i) => xLabel(this.prepared, i, true, this.xContext()),
       measure: (text) => textWidth(text, L.font),
       format: this.valueFormat(f.ps),
+      percent: valueFormatter('percent', this.numberContext()),
     };
+  }
+
+  /**
+   * El plano polar con el dominio del cuadro que se dibuja: durante la animación, los puntos de
+   * las series caen sobre los mismos anillos que la rejilla.
+   */
+  private polarPlane(L: Layout, frame: Frame): PolarPlane {
+    const P = L.polar!;
+    const r = this.valueScale(frame, L);
+    const at = (i: number, v: number): [number, number] => {
+      const d = Math.max(0, r.map(v));
+      return [P.cx + d * Math.cos(P.angle(i)), P.cy + d * Math.sin(P.angle(i))];
+    };
+    return { ...P, point: at };
+  }
+
+  /** Extremo exterior del radio de la categoría i, en px del área. */
+  private spokeEnd(L: Layout, i: number): [number, number] {
+    const P = L.polar!;
+    return [P.cx + P.radius * Math.cos(P.angle(i)), P.cy + P.radius * Math.sin(P.angle(i))];
   }
 
   /** Color de la categoría i (leyenda por categorías): la paleta en orden; "Otros", neutro. */
@@ -1032,7 +1074,8 @@ export class LozChart {
       return f ? f.ps.impl.hit!(this.drawContext(f, L, frame), sx, sy) : -1;
     }
     if (L.polar) {
-      // El radio más cercano al ángulo del puntero.
+      // Lejos del radar no hay dato activo; cerca, el radio más próximo al ángulo del puntero.
+      if (Math.hypot(sx - L.polar.cx, sy - L.polar.cy) > L.polar.radius + 24) return -1;
       const turn = Math.atan2(sy - L.polar.cy, sx - L.polar.cx) + Math.PI / 2;
       const n = this.prepared.n;
       return ((Math.round((turn / (2 * Math.PI)) * n) % n) + n) % n;
@@ -1100,7 +1143,7 @@ export class LozChart {
       this.gBand.innerHTML = '';
       let marks = '';
       if (L.polar) {
-        const [x, y] = L.polar.point(i, frame.d1);
+        const [x, y] = this.spokeEnd(L, i);
         const a = {
           x1: L.polar.cx,
           y1: L.polar.cy,
@@ -1229,7 +1272,7 @@ export class LozChart {
   private radialAnchor(frame: Frame, L: Layout): [number, number] | null {
     const i = this.active;
     if (L.polar) {
-      const [x, y] = L.polar.point(i, frame.d1);
+      const [x, y] = this.spokeEnd(L, i);
       return [L.left + x, L.top + y];
     }
     if (this.coords !== 'free') return null;

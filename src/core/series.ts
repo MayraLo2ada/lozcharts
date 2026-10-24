@@ -90,10 +90,14 @@ export interface DrawContext {
   n: number;
   /** ¿El punto i está oculto desde la leyenda (legendBy: 'points')? Su valor ya llega en cero. */
   isHidden(i: number): boolean;
+  /** Texto corto de la categoría i (la X), para etiquetas como las de un pie o un embudo. */
+  label(i: number): string;
   /** Medir el ancho de un texto con la fuente del gráfico (12 px), para ubicar etiquetas. */
   measure(text: string): number;
   /** Formatear un valor como en el tooltip (respeta el format de la serie o del eje). */
   format(v: number): string;
+  /** Formatear una proporción como porcentaje, en el idioma del gráfico (0,42 → "42 %"). */
+  percent(v: number): string;
 }
 
 /** Formateadores que recibe una serie para su tooltip, en el idioma del gráfico. */
@@ -156,6 +160,8 @@ export interface SeriesImpl {
    * pide { open: o.open, high: o.high, low: o.low }. Quedan en `ps.columns` y `frame.cols`.
    */
   columns?(options: SeriesOptions): Record<string, string | undefined>;
+  /** Valores fijos que también deben caber en el eje (por ejemplo, la meta de un gauge). */
+  domainValues?(options: SeriesOptions): number[];
   /** Columnas que están en unidades del eje Y: cuentan para el dominio y se encogen al ocultarse. */
   valueColumns?: readonly string[];
   /** Markup SVG de la serie. */
