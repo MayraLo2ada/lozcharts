@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="es" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LozChart · Galería</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --surface: #fcfcfb;
+    --text: #0b0b0b;
+    --muted: #52514e;
+    --line: #e7e6e1;
+    --control: #f1f0ec;
+    --control-hover: #e7e6e1;
+    --accent: #2a78d6;
+    --code-bg: #f3f2ee;
+    --space: 8px;
+    --radius: 6px;
+    --font: 'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --surface: #1a1a19; --text: #f0efec; --muted: #c3c2b7; --line: #2f2f2d;
+      --control: #252523; --control-hover: #2f2f2d; --accent: #3987e5; --code-bg: #222220;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --surface: #1a1a19; --text: #f0efec; --muted: #c3c2b7; --line: #2f2f2d;
+    --control: #252523; --control-hover: #2f2f2d; --accent: #3987e5; --code-bg: #222220;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--surface); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.5; }
+  .page { max-width: 1240px; margin: 0 auto; padding: calc(var(--space) * 5) calc(var(--space) * 5) calc(var(--space) * 10); }
+
+  header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: calc(var(--space) * 3); padding-bottom: calc(var(--space) * 4); border-bottom: 1px solid var(--line); }
+  .brand h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; }
+  .brand p { margin: var(--space) 0 0; max-width: 62ch; color: var(--muted); }
+
+  .seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--control); border-radius: 8px; }
+  .seg button { min-height: 32px; padding: 0 14px; border: 0; border-radius: var(--radius); background: transparent; color: var(--muted); font: inherit; font-size: 14px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  .seg-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn { min-height: 34px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); font: inherit; font-size: 14px; cursor: pointer; }
+  .btn:hover { background: var(--control); }
+  .btn.primary { background: var(--text); color: var(--surface); border-color: var(--text); font-weight: 600; }
+  .btn.primary:hover { opacity: .88; }
+
+  .hero { padding: calc(var(--space) * 5) 0; border-bottom: 1px solid var(--line); }
+  .toolbar { display: flex; flex-wrap: wrap; gap: var(--space); margin-top: calc(var(--space) * 2); }
+
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: calc(var(--space) * 6); }
+  figure { margin: 0; padding: calc(var(--space) * 4) 0; border-bottom: 1px solid var(--line); min-width: 0; }
+  figcaption { margin-top: calc(var(--space) * 1.5); color: var(--muted); font-size: 13px; max-width: 64ch; }
+  figcaption code, .usage code { font-family: var(--mono); font-size: 12px; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+  .fig-tools { margin-top: calc(var(--space) * 1.5); }
+
+  .usage { padding-top: calc(var(--space) * 5); max-width: 860px; }
+  .usage h2 { margin: 0 0 var(--space); font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+  .usage p { color: var(--muted); margin: 0 0 calc(var(--space) * 2); }
+  pre { margin: 0; padding: calc(var(--space) * 2); background: var(--code-bg); border-radius: 8px; overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.55; }
+
+  @media (max-width: 860px) {
+    .page { padding: calc(var(--space) * 3) 16px calc(var(--space) * 8); }
+    .grid { grid-template-columns: minmax(0, 1fr); }
+    .brand h1 { font-size: 26px; }
+    .hero { padding: calc(var(--space) * 4) 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <div class="brand">
+      <h1>LozChart</h1>
+      <p>Gráficos SVG interactivos, accesibles y sin dependencias. Pasa el puntero o usa las flechas del teclado sobre cada gráfico; pulsa la leyenda para ocultar series.</p>
+    </div>
+    <div>
+      <span class="seg-label" id="tema-label">Tema</span>
+      <div class="seg" role="group" aria-labelledby="tema-label">
+        <button type="button" data-theme-btn="auto" aria-pressed="true">Automático</button>
+        <button type="button" data-theme-btn="light" aria-pressed="false">Claro</button>
+        <button type="button" data-theme-btn="dark" aria-pressed="false">Oscuro</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero" aria-label="Ejemplo principal">
+    <div id="ventas"></div>
+    <div class="toolbar">
+      <button type="button" class="btn primary" id="ventas-anio">Ver 2025</button>
+      <button type="button" class="btn" id="ventas-png">Descargar PNG</button>
+      <button type="button" class="btn" id="ventas-svg">Descargar SVG</button>
+    </div>
+  </section>
+
+  <div class="grid">
+    <figure>
+      <div id="accion"></div>
+      <figcaption>Línea sobre eje de tiempo continuo con 210 días hábiles. El eje no empieza en cero porque es un precio; las etiquetas del eje X marcan meses y se saltan si no caben.</figcaption>
+    </figure>
+
+    <figure>
+      <div id="sitios"></div>
+      <div class="fig-tools"><button type="button" class="btn" id="sitios-hora">Ver hora pico de ayer</button></div>
+      <figcaption>Barras agrupadas por sitio de red con formato propio (<code>Gbps</code>). Barras de máximo 24 px, 2 px de aire entre vecinas y punta redondeada solo del lado del dato.</figcaption>
+    </figure>
+
+    <figure>
+      <div id="tecnologia"></div>
+      <figcaption>Áreas apiladas por hora: cada capa al 10 % de opacidad con su línea encima. Oculta una tecnología en la leyenda y las demás se reacomodan sin cambiar de color.</figcaption>
+    </figure>
+
+    <figure>
+      <div id="altas"></div>
+      <figcaption>Valores positivos y negativos: las barras bajo cero redondean su punta hacia abajo y la línea del cero va un poco más marcada que la rejilla.</figcaption>
+    </figure>
+
+    <figure>
+      <div id="latencia"></div>
+      <figcaption>Cuatro líneas suaves con curva monótona: la curva nunca dibuja un pico que no esté en los datos.</figcaption>
+    </figure>
+
+    <figure>
+      <div id="planes"></div>
+      <figcaption>Barras apiladas en porcentaje (<code>format: 'percent'</code>). El tooltip muestra cada segmento y el total.</figcaption>
+    </figure>
+  </div>
+
+  <section class="usage">
+    <h2>Cómo se usa</h2>
+    <p>Abre este archivo con doble clic: carga <code>dist/lozchart.umd.js</code> y expone <code>window.LozChart</code>. En proyectos con Vite, React o Angular usa <code>import { LozChart } from 'lozchart'</code>.</p>
+<pre><code>&lt;div id="grafico"&gt;&lt;/div&gt;
+&lt;script src="lozchart.umd.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  const chart = new LozChart('#grafico', {
+    title: 'Ventas por mes',
+    data: ventas,
+    xAxis: { field: 'mes', type: 'time' },
+    yAxis: { format: 'currency' },
+    series: [
+      { type: 'bar',  field: 'online', name: 'Online', stack: true },
+      { type: 'bar',  field: 'tienda', name: 'Tienda', stack: true },
+      { type: 'line', field: 'meta',   name: 'Meta', smooth: true },
+    ],
+  });
+  chart.setData(nuevosDatos); // anima del estado anterior al nuevo
+&lt;/script&gt;</code></pre>
+  </section>
+</div>
+
+<script src="../dist/lozchart.umd.js"></script>
+<script>
+(function () {
+  // Generador pseudoaleatorio con semilla: los datos de ejemplo salen iguales cada vez.
+  function rng(seed) {
+    return function () {
+      seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  var charts = [];
+
+  // 1. Ventas por mes: barras apiladas + línea de meta.
+  function ventasDe(anio, seed) {
+    var r = rng(seed), out = [];
+    var estacional = [0.82, 0.78, 0.9, 0.94, 1.0, 0.97, 0.95, 1.02, 0.98, 1.06, 1.24, 1.42];
+    for (var m = 0; m < 12; m++) {
+      var k = estacional[m] * (anio === 2026 ? 1.12 : 1);
+      out.push({
+        mes: anio + '-' + String(m + 1).padStart(2, '0'),
+        online: Math.round((41000 + m * 1900 + r() * 6000) * k),
+        tienda: Math.round((33000 + r() * 5000) * k),
+        meta: Math.round((74000 + m * 2600) * (anio === 2026 ? 1.12 : 1) * (m > 9 ? 1.18 : 1)),
+      });
+    }
+    return out;
+  }
+  var anio = 2026;
+  var ventas = new LozChart('#ventas', {
+    title: 'Ventas por mes',
+    subtitle: 'Enero a diciembre 2026 · tienda física y canal online frente a la meta mensual',
+    data: ventasDe(2026, 7),
+    xAxis: { field: 'mes', type: 'time' },
+    yAxis: { format: 'currency' },
+    series: [
+      { type: 'bar', field: 'online', name: 'Online', stack: true },
+      { type: 'bar', field: 'tienda', name: 'Tienda', stack: true },
+      { type: 'line', field: 'meta', name: 'Meta', smooth: true },
+    ],
+    height: 340,
+    currency: 'USD',
+  });
+  charts.push(ventas);
+  document.getElementById('ventas-anio').addEventListener('click', function (e) {
+    anio = anio === 2026 ? 2025 : 2026;
+    ventas.setData(ventasDe(anio, anio === 2026 ? 7 : 3));
+    ventas.setOptions({ subtitle: 'Enero a diciembre ' + anio + ' · tienda física y canal online frente a la meta mensual' });
+    e.currentTarget.textContent = anio === 2026 ? 'Ver 2025' : 'Ver 2026';
+  });
+  document.getElementById('ventas-png').addEventListener('click', function () { ventas.download('png'); });
+  document.getElementById('ventas-svg').addEventListener('click', function () { ventas.download('svg'); });
+
+  // 2. Precio de una acción (línea en tiempo continuo, días hábiles).
+  (function () {
+    var r = rng(42), p = 21.4, data = [], d = new Date(2026, 0, 2);
+    while (data.length < 210) {
+      var dow = d.getDay();
+      if (dow !== 0 && dow !== 6) {
+        p = Math.max(12, p * (1 + (r() - 0.48) * 0.032));
+        data.push({ fecha: new Date(d), cierre: Math.round(p * 100) / 100 });
+      }
+      d.setDate(d.getDate() + 1);
+    }
+    charts.push(new LozChart('#accion', {
+      title: 'Andina Telecom (ATL): cierre diario',
+      subtitle: 'Precio en dólares, enero a octubre 2026',
+      data: data,
+      xAxis: { field: 'fecha', type: 'time' },
+      yAxis: { format: 'currency' },
+      series: [{ type: 'line', field: 'cierre', name: 'Cierre' }],
+      height: 280,
+    }));
+  })();
+
+  // 3. Tráfico pico por sitio de red (barras agrupadas).
+  var sitiosBase = [
+    { sitio: 'MIA-DOR-03', lte: 18.4, nr: 26.1 },
+    { sitio: 'MIA-BRK-11', lte: 22.7, nr: 31.9 },
+    { sitio: 'FLL-LAS-07', lte: 14.2, nr: 17.8 },
+    { sitio: 'WPB-CTY-02', lte: 11.6, nr: 9.4 },
+    { sitio: 'HIA-WST-05', lte: 16.9, nr: 21.3 },
+    { sitio: 'KEN-SUN-09', lte: 9.8, nr: 12.6 },
+  ];
+  var gbps = new Intl.NumberFormat('es', { maximumFractionDigits: 1 });
+  var sitios = new LozChart('#sitios', {
+    title: 'Tráfico en hora pico por sitio',
+    subtitle: 'Gbps de bajada, hoy 20:00–21:00',
+    data: sitiosBase,
+    xAxis: { field: 'sitio', type: 'category' },
+    yAxis: { format: function (v) { return gbps.format(v) + ' Gbps'; } },
+    series: [
+      { type: 'bar', field: 'lte', name: '4G LTE' },
+      { type: 'bar', field: 'nr', name: '5G NR' },
+    ],
+    height: 280,
+  });
+  charts.push(sitios);
+  var ayer = false;
+  document.getElementById('sitios-hora').addEventListener('click', function (e) {
+    ayer = !ayer;
+    var r = rng(ayer ? 99 : 1);
+    sitios.setData(ayer ? sitiosBase.map(function (s) {
+      return { sitio: s.sitio, lte: Math.round(s.lte * (0.7 + r() * 0.5) * 10) / 10, nr: Math.round(s.nr * (0.6 + r() * 0.7) * 10) / 10 };
+    }) : sitiosBase);
+    sitios.setOptions({ subtitle: ayer ? 'Gbps de bajada, ayer 20:00–21:00' : 'Gbps de bajada, hoy 20:00–21:00' });
+    e.currentTarget.textContent = ayer ? 'Ver hora pico de hoy' : 'Ver hora pico de ayer';
+  });
+
+  // 4. Tráfico por tecnología en 24 h (áreas apiladas, eje horario).
+  (function () {
+    var r = rng(5), data = [];
+    var curva = [0.35, 0.26, 0.2, 0.17, 0.16, 0.2, 0.32, 0.5, 0.64, 0.7, 0.74, 0.78, 0.82, 0.8, 0.78, 0.8, 0.84, 0.9, 0.96, 1.0, 0.98, 0.9, 0.72, 0.52];
+    for (var h = 0; h < 24; h++) {
+      var c = curva[h];
+      data.push({
+        hora: new Date(2026, 9, 23, h),
+        nr: Math.round((310 + r() * 30) * c),
+        lte: Math.round((240 + r() * 25) * c),
+        wifi: Math.round((120 + r() * 20) * c * (h > 17 || h < 2 ? 1.35 : 0.8)),
+      });
+    }
+    charts.push(new LozChart('#tecnologia', {
+      title: 'Tráfico de la red por tecnología',
+      subtitle: 'TB por hora, jueves 23 de octubre de 2026',
+      data: data,
+      xAxis: { field: 'hora', type: 'time' },
+      yAxis: { format: function (v) { return v.toLocaleString('es') + ' TB'; } },
+      series: [
+        { type: 'area', field: 'nr', name: '5G NR', stack: true, smooth: true },
+        { type: 'area', field: 'lte', name: '4G LTE', stack: true, smooth: true },
+        { type: 'area', field: 'wifi', name: 'Descarga a Wi-Fi', stack: true, smooth: true },
+      ],
+      height: 280,
+    }));
+  })();
+
+  // 5. Altas netas (positivos y negativos).
+  charts.push(new LozChart('#altas', {
+    title: 'Altas netas de líneas móviles',
+    subtitle: 'Altas menos bajas por mes, 2026',
+    data: [
+      { mes: '2026-01', pospago: 4200, prepago: -2100 },
+      { mes: '2026-02', pospago: 3100, prepago: -3400 },
+      { mes: '2026-03', pospago: 5600, prepago: 800 },
+      { mes: '2026-04', pospago: 2900, prepago: -1500 },
+      { mes: '2026-05', pospago: 6100, prepago: 2300 },
+      { mes: '2026-06', pospago: 4800, prepago: -600 },
+      { mes: '2026-07', pospago: -900, prepago: -2800 },
+      { mes: '2026-08', pospago: 3700, prepago: 1200 },
+      { mes: '2026-09', pospago: 5200, prepago: 3100 },
+      { mes: '2026-10', pospago: 6900, prepago: 1900 },
+    ],
+    xAxis: { field: 'mes', type: 'time' },
+    yAxis: { format: 'auto' },
+    series: [
+      { type: 'bar', field: 'pospago', name: 'Pospago' },
+      { type: 'bar', field: 'prepago', name: 'Prepago' },
+    ],
+    height: 280,
+  }));
+
+  // 6. Latencia por región (líneas suaves).
+  (function () {
+    var ms = new Intl.NumberFormat('es', { maximumFractionDigits: 1 });
+    var r = rng(11), data = [], base = { norte: 24, centro: 19, sur: 31, costa: 27 };
+    for (var w = 0; w < 20; w++) {
+      var row = { semana: new Date(2026, 5, 1 + w * 7) };
+      for (var k in base) {
+        base[k] = Math.max(12, base[k] + (r() - 0.5) * 3.2 - (w === 12 && k === 'sur' ? 6 : 0));
+        row[k] = Math.round(base[k] * 10) / 10;
+      }
+      data.push(row);
+    }
+    charts.push(new LozChart('#latencia', {
+      title: 'Latencia media por región',
+      subtitle: 'Milisegundos, promedio semanal de junio a octubre 2026',
+      data: data,
+      xAxis: { field: 'semana', type: 'time' },
+      yAxis: { format: function (v) { return ms.format(v) + ' ms'; }, zero: true },
+      series: [
+        { type: 'line', field: 'norte', name: 'Norte', smooth: true },
+        { type: 'line', field: 'centro', name: 'Centro', smooth: true },
+        { type: 'line', field: 'sur', name: 'Sur', smooth: true },
+        { type: 'line', field: 'costa', name: 'Costa', smooth: true },
+      ],
+      height: 280,
+    }));
+  })();
+
+  // 7. Mezcla de planes (apilado en porcentaje).
+  charts.push(new LozChart('#planes', {
+    title: 'Mezcla de planes contratados',
+    subtitle: 'Participación por trimestre',
+    data: [
+      { trimestre: 'T1 2025', ilimitado: 0.38, intermedio: 0.34, basico: 0.28 },
+      { trimestre: 'T2 2025', ilimitado: 0.41, intermedio: 0.33, basico: 0.26 },
+      { trimestre: 'T3 2025', ilimitado: 0.44, intermedio: 0.32, basico: 0.24 },
+      { trimestre: 'T4 2025', ilimitado: 0.47, intermedio: 0.31, basico: 0.22 },
+      { trimestre: 'T1 2026', ilimitado: 0.5, intermedio: 0.3, basico: 0.2 },
+      { trimestre: 'T2 2026', ilimitado: 0.53, intermedio: 0.29, basico: 0.18 },
+      { trimestre: 'T3 2026', ilimitado: 0.55, intermedio: 0.29, basico: 0.16 },
+    ],
+    xAxis: { field: 'trimestre' },
+    yAxis: { format: 'percent', max: 1 },
+    series: [
+      { type: 'bar', field: 'ilimitado', name: 'Ilimitado', stack: true },
+      { type: 'bar', field: 'intermedio', name: 'Intermedio', stack: true },
+      { type: 'bar', field: 'basico', name: 'Básico', stack: true },
+    ],
+    height: 280,
+  }));
+
+  // Selector de tema de la página: aplica el mismo tema a todos los gráficos.
+  var botones = document.querySelectorAll('[data-theme-btn]');
+  botones.forEach(function (b) {
+    b.addEventListener('click', function () {
+      var t = b.getAttribute('data-theme-btn');
+      document.documentElement.setAttribute('data-theme', t);
+      botones.forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
+      charts.forEach(function (c) { c.setTheme(t); });
+    });
+  });
+  window.demoCharts = charts;
+})();
+</script>
+</body>
+</html>
