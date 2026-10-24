@@ -74,6 +74,16 @@ El oscuro tiene sus propios valores; no es una inversión.
 - Leyenda solo con 2 o más series; botones con `aria-pressed`, 32 px de alto mínimo.
 - Animación 600 ms ease-out; nada si `prefers-reduced-motion`.
 
+## Small multiples
+
+- Mismo eje del valor y mismas X en todos los paneles: comparar formas solo es honesto con la
+  misma escala.
+- Números del eje solo en la primera columna (como en ggplot); la rejilla sí va en todos.
+- Título del panel de 13 px; paneles de 180 px de alto por defecto, columnas de 240 px como mínimo.
+- El color sigue a la serie también aquí: por serie, cada panel conserva el color de su posición.
+- Una sola leyenda arriba de la cuadrícula; el puntero marca el mismo dato en todos los paneles y
+  el tooltip solo aparece en el panel bajo el puntero.
+
 ## Demo (`demo/index.html`)
 
 Hanken Grotesk con la fuente del sistema como respaldo. Separadores de 1 px en vez de tarjetas.

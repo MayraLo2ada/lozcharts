@@ -197,6 +197,9 @@
         margin: calc(var(--space) / 2) 0 0;
         color: var(--muted);
       }
+      figure.wide {
+        padding-top: calc(var(--space) * 3);
+      }
       .fig-tools {
         margin-top: calc(var(--space) * 1.5);
       }
@@ -325,6 +328,29 @@
           </figcaption>
         </figure>
       </div>
+
+      <header class="section-head">
+        <h2>Small multiples</h2>
+        <p>Muchos gráficos pequeños con la misma escala: se comparan formas de un vistazo, sin enredar líneas.</p>
+      </header>
+
+      <figure class="wide">
+        <div id="ciudades"></div>
+        <figcaption>
+          Un panel por serie (<code>facet: 'series'</code>): ocho ciudades serían ocho líneas enredadas en un solo gráfico. Todos
+          los paneles comparten el eje, los números solo van en la primera columna y, al pasar el puntero por un mes, los demás
+          paneles lo marcan también.
+        </figcaption>
+      </figure>
+
+      <figure class="wide">
+        <div id="regiones"></div>
+        <div class="fig-tools"><button type="button" class="btn" id="regiones-anio">Ver 2025</button></div>
+        <figcaption>
+          Un panel por valor de un campo (<code>facet: { field: 'region' }</code>), con una sola leyenda para todos: ocultar una
+          serie la oculta en cada panel y el eje común se recalcula.
+        </figcaption>
+      </figure>
 
       <header class="section-head">
         <h2>Dispersión, rangos y precios</h2>
@@ -857,6 +883,103 @@
             height: 300,
           }),
         );
+
+        var grados = new Intl.NumberFormat('es', { maximumFractionDigits: 1 });
+
+        // 14. Small multiples por serie: temperatura máxima media mensual (datos de ejemplo).
+        (function () {
+          var normales = {
+            miami: [24.6, 25.4, 26.6, 28.1, 30.1, 31.6, 32.3, 32.4, 31.6, 29.9, 27.6, 25.6],
+            madrid: [10.2, 12.4, 16.2, 18.4, 22.6, 28.4, 32.1, 31.5, 26.4, 19.8, 13.9, 10.6],
+            bogota: [19.6, 19.9, 19.8, 19.5, 19.2, 18.7, 18.6, 18.9, 19.2, 19.0, 19.1, 19.3],
+            cdmx: [21.4, 23.1, 25.2, 26.4, 26.2, 24.6, 23.2, 23.4, 22.8, 22.4, 21.9, 21.2],
+            buenosAires: [30.1, 28.7, 26.8, 22.9, 19.3, 16.1, 15.4, 17.5, 19.3, 22.6, 25.6, 28.5],
+            santiago: [29.9, 29.4, 27.0, 22.8, 18.3, 15.0, 14.8, 16.9, 19.3, 22.6, 25.8, 28.6],
+            lima: [26.4, 27.3, 26.9, 25.1, 22.6, 20.6, 19.4, 19.1, 19.6, 20.8, 22.5, 24.6],
+            nuevaYork: [3.9, 5.3, 9.8, 16.2, 21.6, 26.3, 29.4, 28.4, 24.6, 18.5, 12.4, 6.6],
+          };
+          var data = normales.miami.map(function (_, m) {
+            var row = { mes: '2026-' + String(m + 1).padStart(2, '0') };
+            for (var k in normales) row[k] = normales[k][m];
+            return row;
+          });
+          var nombres = {
+            miami: 'Miami',
+            madrid: 'Madrid',
+            bogota: 'Bogotá',
+            cdmx: 'Ciudad de México',
+            buenosAires: 'Buenos Aires',
+            santiago: 'Santiago',
+            lima: 'Lima',
+            nuevaYork: 'Nueva York',
+          };
+          charts.push(
+            LozChart.multiples('#ciudades', {
+              title: 'Temperatura máxima media por mes',
+              subtitle: 'Ocho ciudades, en °C (datos de ejemplo)',
+              facet: 'series',
+              data: data,
+              xAxis: { field: 'mes', type: 'time' },
+              yAxis: {
+                format: function (v) {
+                  return grados.format(v) + ' °C';
+                },
+              },
+              series: Object.keys(nombres).map(function (k) {
+                return { type: 'line', field: k, name: nombres[k], smooth: true };
+              }),
+              height: 150,
+              minWidth: 220,
+            }),
+          );
+        })();
+
+        // 15. Small multiples por campo: ventas por región.
+        (function () {
+          var regiones = ['Norte', 'Centro', 'Sur', 'Costa', 'Andina', 'Insular'];
+          var peso = [1.3, 1.0, 0.8, 1.1, 0.6, 0.4];
+          function ventasRegion(anio, seed) {
+            var r = rng(seed),
+              out = [];
+            regiones.forEach(function (region, k) {
+              for (var m = 0; m < 12; m++) {
+                var temporada = 1 + 0.35 * Math.sin(((m - 2) / 12) * Math.PI * 2) * (k % 2 ? 1 : -0.6);
+                var crecimiento = 1 + (anio === 2026 ? 0.012 : 0.004) * m * (k + 1);
+                out.push({
+                  mes: anio + '-' + String(m + 1).padStart(2, '0'),
+                  region: region,
+                  online: Math.round(18000 * peso[k] * temporada * crecimiento * (0.9 + r() * 0.2)),
+                  tienda: Math.round(14000 * peso[k] * (0.95 + r() * 0.1)),
+                });
+              }
+            });
+            return out;
+          }
+          var anioRegion = 2026;
+          var regionesChart = LozChart.multiples('#regiones', {
+            title: 'Ventas mensuales por región',
+            subtitle: '2026, en dólares',
+            facet: { field: 'region' },
+            data: ventasRegion(2026, 41),
+            xAxis: { field: 'mes', type: 'time' },
+            yAxis: { format: 'currency' },
+            series: [
+              { type: 'area', field: 'online', name: 'Online', stack: true },
+              { type: 'area', field: 'tienda', name: 'Tienda', stack: true },
+            ],
+            height: 170,
+            minWidth: 260,
+          });
+          charts.push(regionesChart);
+          document.getElementById('regiones-anio').addEventListener('click', function (e) {
+            anioRegion = anioRegion === 2026 ? 2025 : 2026;
+            regionesChart.setOptions({
+              subtitle: anioRegion + ', en dólares',
+              data: ventasRegion(anioRegion, anioRegion === 2026 ? 41 : 12),
+            });
+            e.currentTarget.textContent = anioRegion === 2026 ? 'Ver 2025' : 'Ver 2026';
+          });
+        })();
 
         // Selector de tema de la página: aplica el mismo tema a todos los gráficos.
         var botones = document.querySelectorAll('[data-theme-btn]');
