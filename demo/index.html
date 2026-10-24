@@ -184,6 +184,19 @@
         padding: 1px 5px;
         border-radius: 4px;
       }
+      .section-head {
+        padding-top: calc(var(--space) * 6);
+      }
+      .section-head h2 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .section-head p {
+        margin: calc(var(--space) / 2) 0 0;
+        color: var(--muted);
+      }
       .fig-tools {
         margin-top: calc(var(--space) * 1.5);
       }
@@ -258,6 +271,11 @@
         </div>
       </section>
 
+      <header class="section-head">
+        <h2>Barras, líneas y áreas</h2>
+        <p>Apiladas y agrupadas, con valores negativos, en tiempo continuo y en porcentaje.</p>
+      </header>
+
       <div class="grid">
         <figure>
           <div id="accion"></div>
@@ -304,6 +322,62 @@
           <div id="pagos"></div>
           <figcaption>
             Barras apiladas en porcentaje (<code>format: 'percent'</code>). El tooltip muestra cada segmento y el total.
+          </figcaption>
+        </figure>
+      </div>
+
+      <header class="section-head">
+        <h2>Dispersión, rangos y precios</h2>
+        <p>Barras horizontales, puntos y burbujas, bandas, escalones y velas.</p>
+      </header>
+
+      <div class="grid">
+        <figure>
+          <div id="paginas"></div>
+          <figcaption>
+            Barras horizontales (<code>orientation: 'horizontal'</code>): las categorías largas se leen completas y, si no caben,
+            se recortan con "…". Con el teclado se recorren con ↑ ↓.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div id="tiendas"></div>
+          <figcaption>
+            Burbujas: el área de cada círculo es proporcional a los clientes. El puntero encuentra la tienda más cercana, sin
+            crosshair.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div id="envios"></div>
+          <figcaption>
+            Dispersión con X numérica: el eje empieza y termina en números redondos. Cada punto lleva un anillo del color del
+            fondo para separarse de sus vecinos.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div id="clima"></div>
+          <figcaption>
+            Banda de rango (<code>type: 'range'</code>) entre la mínima y la máxima, con la media encima como línea. El tooltip
+            muestra el intervalo.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div id="velas"></div>
+          <div class="fig-tools"><button type="button" class="btn" id="velas-tipo">Ver como OHLC</button></div>
+          <figcaption>
+            Velas diarias: una vela hueca sube y una rellena baja, así la dirección no depende del color. El tooltip muestra
+            apertura, máximo, mínimo y cierre.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div id="tasa"></div>
+          <figcaption>
+            Línea escalonada (<code>type: 'step'</code>): la tasa se mantiene hasta el siguiente cambio, sin pendientes que
+            sugieran valores intermedios.
           </figcaption>
         </figure>
       </div>
@@ -584,6 +658,203 @@
               { type: 'bar', field: 'efectivo', name: 'Efectivo', stack: true },
             ],
             height: 280,
+          }),
+        );
+
+        var pct = new Intl.NumberFormat('es', { maximumFractionDigits: 1 });
+        var dias1 = new Intl.NumberFormat('es', { maximumFractionDigits: 1 });
+
+        // 8. Visitas por página (barras horizontales).
+        charts.push(
+          new LozChart('#paginas', {
+            title: 'Páginas más visitadas',
+            subtitle: 'Visitas únicas, octubre 2026',
+            orientation: 'horizontal',
+            data: [
+              { pagina: 'Inicio', visitas: 48210 },
+              { pagina: 'Catálogo de productos', visitas: 31940 },
+              { pagina: 'Ofertas de temporada', visitas: 27380 },
+              { pagina: 'Preguntas frecuentes sobre envíos y devoluciones', visitas: 15620 },
+              { pagina: 'Carrito', visitas: 12890 },
+              { pagina: 'Blog', visitas: 9410 },
+              { pagina: 'Contacto', visitas: 4170 },
+            ],
+            xAxis: { field: 'pagina' },
+            yAxis: { format: 'compact' },
+            series: [{ type: 'bar', field: 'visitas', name: 'Visitas' }],
+            height: 300,
+          }),
+        );
+
+        // 9. Tiendas: ventas frente a margen, tamaño = clientes (burbujas).
+        charts.push(
+          new LozChart('#tiendas', {
+            title: 'Tiendas: ventas y margen',
+            subtitle: 'Ventas anuales y margen bruto; el tamaño es la cantidad de clientes',
+            data: [
+              { ventas: 1.2, centro: 31.5, clientes: 18200 },
+              { ventas: 2.8, centro: 27.9, clientes: 41300 },
+              { ventas: 0.9, centro: 35.2, clientes: 9600 },
+              { ventas: 3.6, norte: 24.1, clientes: 52800 },
+              { ventas: 1.7, norte: 29.4, clientes: 21700 },
+              { ventas: 2.2, norte: 33.8, clientes: 26400 },
+              { ventas: 0.6, sur: 38.6, clientes: 6100 },
+              { ventas: 1.4, sur: 26.2, clientes: 15900 },
+              { ventas: 3.1, sur: 30.7, clientes: 37500 },
+            ],
+            xAxis: { field: 'ventas', type: 'linear', title: 'Ventas (millones de dólares)' },
+            yAxis: {
+              format: function (v) {
+                return pct.format(v) + ' %';
+              },
+              title: 'Margen bruto',
+            },
+            series: [
+              { type: 'bubble', field: 'centro', name: 'Zona centro', size: 'clientes', sizeName: 'Clientes' },
+              { type: 'bubble', field: 'norte', name: 'Zona norte', size: 'clientes', sizeName: 'Clientes' },
+              { type: 'bubble', field: 'sur', name: 'Zona sur', size: 'clientes', sizeName: 'Clientes' },
+            ],
+            height: 300,
+          }),
+        );
+
+        // 10. Envíos: distancia frente a días de entrega (dispersión).
+        (function () {
+          var r = rng(23),
+            data = [];
+          for (var k = 0; k < 60; k++) {
+            var km = Math.round(20 + r() * 1180);
+            var express = r() < 0.4;
+            var dias = Math.max(0.5, Math.round((km / (express ? 900 : 380) + 0.6 + r() * (express ? 0.8 : 1.6)) * 10) / 10);
+            var row = { km: km };
+            row[express ? 'express' : 'estandar'] = dias;
+            data.push(row);
+          }
+          charts.push(
+            new LozChart('#envios', {
+              title: 'Distancia y tiempo de entrega',
+              subtitle: '60 pedidos de octubre 2026',
+              data: data,
+              xAxis: { field: 'km', type: 'linear', title: 'Distancia (km)' },
+              yAxis: {
+                format: function (v) {
+                  return dias1.format(v) + ' d';
+                },
+                zero: true,
+                title: 'Días hasta la entrega',
+              },
+              series: [
+                { type: 'scatter', field: 'estandar', name: 'Envío estándar' },
+                { type: 'scatter', field: 'express', name: 'Envío exprés' },
+              ],
+              height: 300,
+            }),
+          );
+        })();
+
+        // 11. Temperatura diaria: banda mínima–máxima y media.
+        (function () {
+          var r = rng(31),
+            data = [];
+          for (var d = 1; d <= 31; d++) {
+            var base = 22 - d * 0.22 + Math.sin(d / 3) * 1.6;
+            var amp = 5 + r() * 4;
+            var min = Math.round((base - amp / 2) * 10) / 10;
+            var max = Math.round((base + amp / 2) * 10) / 10;
+            data.push({ dia: new Date(2026, 9, d), min: min, max: max, media: Math.round(((min + max) / 2) * 10) / 10 });
+          }
+          var grados = new Intl.NumberFormat('es', { maximumFractionDigits: 1 });
+          charts.push(
+            new LozChart('#clima', {
+              title: 'Temperatura diaria en Madrid',
+              subtitle: 'Octubre 2026 (datos de ejemplo)',
+              data: data,
+              xAxis: { field: 'dia', type: 'time' },
+              yAxis: {
+                format: function (v) {
+                  return grados.format(v) + ' °C';
+                },
+              },
+              series: [
+                { type: 'range', field: 'max', low: 'min', name: 'Mínima y máxima', smooth: true },
+                { type: 'line', field: 'media', name: 'Media', smooth: true },
+              ],
+              height: 300,
+            }),
+          );
+        })();
+
+        // 12. Velas diarias (y su versión OHLC).
+        (function () {
+          var r = rng(77),
+            data = [],
+            p = 21.8,
+            d = new Date(2026, 7, 31);
+          while (data.length < 44) {
+            d.setDate(d.getDate() + 1);
+            if (d.getDay() === 0 || d.getDay() === 6) continue;
+            var open = p;
+            var close = Math.max(12, open * (1 + (r() - 0.47) * 0.04));
+            var high = Math.max(open, close) * (1 + r() * 0.014);
+            var low = Math.min(open, close) * (1 - r() * 0.014);
+            var round2 = function (v) {
+              return Math.round(v * 100) / 100;
+            };
+            data.push({
+              fecha: new Date(d),
+              apertura: round2(open),
+              maximo: round2(high),
+              minimo: round2(low),
+              cierre: round2(close),
+            });
+            p = close;
+          }
+          var serie = function (tipo) {
+            return [{ type: tipo, field: 'cierre', open: 'apertura', high: 'maximo', low: 'minimo', name: 'AURF' }];
+          };
+          var velas = new LozChart('#velas', {
+            title: 'Alimentos Aurora (AURF): sesiones diarias',
+            subtitle: 'Septiembre y octubre 2026, en dólares',
+            data: data,
+            xAxis: { field: 'fecha', type: 'time' },
+            yAxis: { format: 'currency' },
+            series: serie('candlestick'),
+            height: 300,
+          });
+          charts.push(velas);
+          var esOhlc = false;
+          document.getElementById('velas-tipo').addEventListener('click', function (e) {
+            esOhlc = !esOhlc;
+            velas.setOptions({ series: serie(esOhlc ? 'ohlc' : 'candlestick') });
+            e.currentTarget.textContent = esOhlc ? 'Ver como velas' : 'Ver como OHLC';
+          });
+        })();
+
+        // 13. Tasa de interés de referencia (línea escalonada).
+        charts.push(
+          new LozChart('#tasa', {
+            title: 'Tasa de interés de referencia',
+            subtitle: 'Cambia solo en las reuniones del banco central, 2024–2026 (datos de ejemplo)',
+            data: [
+              { fecha: '2024-01-01', tasa: 0.0525 },
+              { fecha: '2024-03-20', tasa: 0.0525 },
+              { fecha: '2024-06-12', tasa: 0.05 },
+              { fecha: '2024-09-18', tasa: 0.0475 },
+              { fecha: '2024-11-07', tasa: 0.045 },
+              { fecha: '2024-12-18', tasa: 0.0425 },
+              { fecha: '2025-03-19', tasa: 0.0425 },
+              { fecha: '2025-06-18', tasa: 0.04 },
+              { fecha: '2025-09-17', tasa: 0.0375 },
+              { fecha: '2025-12-10', tasa: 0.035 },
+              { fecha: '2026-03-18', tasa: 0.035 },
+              { fecha: '2026-06-17', tasa: 0.0325 },
+              { fecha: '2026-09-16', tasa: 0.0325 },
+              { fecha: '2026-10-28', tasa: 0.03 },
+            ],
+            xAxis: { field: 'fecha', type: 'time' },
+            yAxis: { format: 'percent', zero: true },
+            series: [{ type: 'step', field: 'tasa', name: 'Tasa' }],
+            height: 300,
           }),
         );
 

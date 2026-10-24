@@ -3,7 +3,8 @@
 Gráficos SVG interactivos, accesibles y sin dependencias, escritos en TypeScript.
 Modo claro, oscuro y automático; tooltip, leyenda, teclado, animación y exportación a SVG/PNG.
 
-> Estado: **fase 1** — líneas, barras (agrupadas y apiladas) y áreas.
+> Estado: **fase 2**: líneas, barras (verticales u horizontales, agrupadas y apiladas), áreas,
+> líneas escalonadas, bandas de rango, dispersión, burbujas, velas y OHLC.
 
 ## Instalación y build
 
@@ -78,6 +79,32 @@ const chart = new LozChart('#grafico', {
 });
 ```
 
+## Tipos de serie
+
+| Tipo          | Para qué sirve                                   | Campos                                                           |
+| ------------- | ------------------------------------------------ | ---------------------------------------------------------------- |
+| `line`        | Evolución de un valor                            | `field`; `smooth` para curva monótona                            |
+| `bar`         | Comparar cantidades; agrupadas o con `stack`     | `field`                                                          |
+| `area`        | Volumen acumulado; apilable                      | `field`; `smooth`                                                |
+| `step`        | Valores que cambian de golpe (tarifas, tasas)    | `field`; `step`: `'after'` (por defecto), `'before'`, `'middle'` |
+| `range`       | Banda entre un mínimo y un máximo                | `field` (superior) y `low` (inferior)                            |
+| `scatter`     | Relación entre dos números                       | `field` (Y); X con `xAxis.type: 'linear'`                        |
+| `bubble`      | Como dispersión, con un tercer valor como tamaño | `field`, `size`; `sizeName` para el tooltip                      |
+| `candlestick` | Precios: apertura, máximo, mínimo y cierre       | `field` (cierre), `open`, `high`, `low`                          |
+| `ohlc`        | Lo mismo que las velas, en trazos                | `field` (cierre), `open`, `high`, `low`                          |
+
+Con `orientation: 'horizontal'` el gráfico gira: las categorías van en el eje vertical. Sirve
+sobre todo para barras con nombres largos.
+
+```js
+new LozChart('#precios', {
+  data: sesiones, // { fecha, apertura, maximo, minimo, cierre }
+  xAxis: { field: 'fecha', type: 'time' },
+  yAxis: { format: 'currency' },
+  series: [{ type: 'candlestick', field: 'cierre', open: 'apertura', high: 'maximo', low: 'minimo', name: 'AURF' }],
+});
+```
+
 ## Opciones
 
 | Opción                       | Tipo                                        | Por defecto     | Qué hace                                                                            |
@@ -91,7 +118,7 @@ const chart = new LozChart('#grafico', {
 | `yAxis.format`               | ver abajo                                   | `'auto'`        | Formato del eje Y y del tooltip.                                                    |
 | `yAxis.min`, `yAxis.max`     | número                                      | calculados      | Límites fijos.                                                                      |
 | `yAxis.zero`                 | booleano                                    | `false`         | Fuerza el cero (barras y áreas ya lo incluyen).                                     |
-| `series[].type`              | `'line'` `'bar'` `'area'` o propio          | —               | Tipo registrado.                                                                    |
+| `series[].type`              | ver [Tipos de serie](#tipos-de-serie)       | —               | Tipo registrado.                                                                    |
 | `series[].field`             | texto                                       | —               | Campo numérico.                                                                     |
 | `series[].name`              | texto                                       | el campo        | Nombre visible; debe ser único.                                                     |
 | `series[].stack`             | `true` o texto                              | —               | Apila barras o áreas del mismo grupo. Positivos y negativos se apilan por separado. |
@@ -99,6 +126,7 @@ const chart = new LozChart('#grafico', {
 | `series[].color`             | 1 a 8                                       | su posición     | Slot de la paleta.                                                                  |
 | `series[].visible`           | booleano                                    | `true`          | Visible al inicio.                                                                  |
 | `series[].format`            | formato                                     | el del eje Y    | Formato propio en el tooltip.                                                       |
+| `orientation`                | `'vertical'` `'horizontal'`                 | `'vertical'`    | En horizontal, las categorías van en el eje vertical.                               |
 | `theme`                      | `'light'` `'dark'` `'auto'`                 | `'auto'`        | `auto` sigue al sistema y cambia en vivo.                                           |
 | `palette`                    | arreglo de colores o `{ light, dark }`      | la de LozChart  | Colores propios en orden (máximo 8). Ver [Paleta propia](#paleta-propia).           |
 | `height`                     | px                                          | `320`           | Alto del área del gráfico con sus ejes.                                             |
@@ -150,7 +178,7 @@ new LozChart('#grafico', {
 ## Accesibilidad
 
 - El SVG tiene `role="img"` y una descripción (`aria-label`).
-- Con el foco en el gráfico, ← → recorren los datos, Inicio/Fin van a los extremos y Escape cierra el tooltip.
+- Con el foco en el gráfico, ← → (↑ ↓ en horizontal) recorren los datos, Inicio/Fin van a los extremos y Escape cierra el tooltip.
   Cada movimiento se anuncia a los lectores de pantalla.
 - Una tabla oculta con todos los datos acompaña a cada gráfico.
 - La leyenda son botones con `aria-pressed`.
@@ -174,7 +202,7 @@ new LozChart('#grafico', {
 
 ```js
 LozChart.registerSeries('puntos', {
-  legendSymbol: 'square',
+  legendSymbol: 'dot',
   draw({ frame, color, x, y, n }) {
     let s = '';
     for (let i = 0; i < n; i++) {
@@ -184,6 +212,14 @@ LozChart.registerSeries('puntos', {
   },
 });
 ```
+
+Un tipo puede pedir columnas extra con `columns: (o) => ({ low: o.low })`: llegan animadas en
+`frame.cols.low`. Si están en unidades del eje, nómbralas en `valueColumns` para que cuenten en el
+dominio y se encojan al ocultar la serie. `pointer: 'nearest'` cambia el crosshair por "el punto más
+cercano", y `tooltip(ps, i, format)` personaliza el texto del tooltip y de la tabla.
+
+Las series dibujan siempre en un plano lógico (índice en X, valor en Y). En horizontal, el núcleo
+lo refleja sobre su diagonal, así que un tipo nuevo funciona en las dos orientaciones sin cambios.
 
 ## Reglas de diseño
 

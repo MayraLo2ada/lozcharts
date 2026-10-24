@@ -47,6 +47,15 @@ El oscuro tiene sus propios valores; no es una inversión.
 - Áreas: relleno al 10 % del color de la serie y su línea encima.
 - Puntos de hover: radio 4,5 px con anillo de 2 px del color de la superficie.
 - Rejilla: 1 px sólida y discreta; la línea del cero un poco más marcada.
+- Línea escalonada: mismo trazo que la línea; cambia de nivel en ángulo recto.
+- Banda de rango: relleno al 16 %, sin borde; es contexto, no protagonista.
+- Dispersión: puntos de 8 px con anillo exterior de 2 px del color de la superficie.
+- Burbujas: el área (no el radio) es proporcional al valor; la mayor mide hasta 32 px de radio,
+  al 75 % de opacidad; las grandes se dibujan primero para que las pequeñas queden encima.
+- Velas: cuerpo de hasta 14 px; la vela que sube es hueca y la que baja es rellena, siempre del
+  color de su serie (la dirección no depende de verde y rojo). Mecha de 1 px.
+- OHLC: trazo de 1,5 px; marca de apertura a la izquierda y de cierre a la derecha.
+- Barras horizontales: las categorías ocupan como máximo el 40 % del ancho y se recortan con "…".
 
 ## Texto
 
@@ -58,8 +67,9 @@ El oscuro tiene sus propios valores; no es una inversión.
 
 ## Interacción
 
-- Tooltip en todo gráfico: crosshair en línea/área, banda resaltada en barras. Muestra la fecha o
-  categoría completa, el valor exacto de cada serie (valor en negrita, nombre después) y el total si hay pila.
+- Tooltip en todo gráfico: crosshair en línea y área, banda resaltada en barras y velas, punto más
+  cercano en dispersión y burbujas. Muestra la fecha o categoría completa, el valor exacto de cada
+  serie (valor en negrita, nombre después), el total si hay pila y el detalle de las velas.
 - El tooltip se construye con `textContent`, nunca con `innerHTML` de datos del usuario.
 - Leyenda solo con 2 o más series; botones con `aria-pressed`, 32 px de alto mínimo.
 - Animación 600 ms ease-out; nada si `prefers-reduced-motion`.
