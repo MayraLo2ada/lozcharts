@@ -96,7 +96,13 @@ function stack(frames: SeriesFrame[], n: number): void {
         const v = f.ps.values[i];
         const acc = v < 0 ? neg : pos;
         f.y0[i] = acc[i];
-        if (f.alpha === 0 || !isFinite(v) || v === 0) {
+        // Un dato que falta es un hueco en su capa, no un cero: la capa se corta ahí. Oculta o en
+        // cero, en cambio, queda con altura cero en su lugar de la pila.
+        if (!isFinite(v)) {
+          f.y1[i] = NaN;
+          continue;
+        }
+        if (f.alpha === 0 || v === 0) {
           f.y1[i] = acc[i];
           continue;
         }

@@ -188,3 +188,19 @@ test('más datos que antes: los índices nuevos crecen desde la base', () => {
   );
   assert.deepEqual(interpolate(corto, largo, 0.5).series[0].y1, [4, 4]);
 });
+
+test('apilado: un dato que falta es un hueco en su capa, no un cero', () => {
+  const p = prep(
+    [
+      { x: 'a', a: 10, b: 5 },
+      { x: 'b', a: null, b: 6 },
+    ],
+    [
+      { type: 'area', field: 'a', stack: true },
+      { type: 'area', field: 'b', stack: true },
+    ],
+  );
+  const [a, b] = buildFrame(p, none, ticks).series;
+  assert.ok(Number.isNaN(a.y1[1]));
+  assert.deepEqual([b.y0[1], b.y1[1]], [0, 6]);
+});

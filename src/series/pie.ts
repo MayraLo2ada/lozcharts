@@ -304,10 +304,12 @@ function centerTotal(ctx: DrawContext, g: Geometry): string {
   if (g.inner < HOLE_MIN_FOR_TOTAL) return '';
   let total = 0;
   for (const v of ctx.frame.y1) if (isFinite(v) && v > 0) total += v;
-  const text = ctx.format(total);
   // measure() mide a 12 px: el tamaño se escala para que el número quepa en el 80 % del agujero.
-  const fit = (g.inner * 2 * 0.8 * FONT) / Math.max(1, ctx.measure(text));
-  const size = Math.min(TOTAL_MAX, fit, g.inner * 0.5);
+  // Si el exacto no cabe ni al tamaño mínimo, va en forma compacta ("506 mil M").
+  const sizeFor = (t: string) => Math.min(TOTAL_MAX, (g.inner * 2 * 0.8 * FONT) / Math.max(1, ctx.measure(t)), g.inner * 0.5);
+  let text = ctx.format(total);
+  if (sizeFor(text) < TOTAL_MIN) text = ctx.compact(total);
+  const size = sizeFor(text);
   if (size < TOTAL_MIN) return '';
   const th = ctx.theme;
   const common = { x: r2(g.cx), 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-variant-numeric': 'tabular-nums' };

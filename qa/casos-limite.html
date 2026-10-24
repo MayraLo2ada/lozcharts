@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Casos límite</title>
+    <style>
+      :root {
+        --surface: #fcfcfb;
+        --text: #0b0b0b;
+        --muted: #52514e;
+        --line: #e7e6e1;
+      }
+      :root[data-theme='dark'] {
+        --surface: #1a1a19;
+        --text: #f0efec;
+        --muted: #c3c2b7;
+        --line: #2f2f2d;
+      }
+      body {
+        margin: 0;
+        padding: 16px;
+        background: var(--surface);
+        color: var(--text);
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+      }
+      h2 {
+        margin: 32px 0 8px;
+        font-size: 18px;
+      }
+      .fila {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+        gap: 16px;
+      }
+      .caso {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 8px;
+        min-width: 0;
+      }
+      .caso > p {
+        margin: 0 0 6px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Casos límite de LozCharts</h1>
+    <p>
+      Cada tipo de gráfico con los datos que suelen romper una librería: vacío, una fila, huecos, ceros, negativos, números
+      enormes y diminutos, y etiquetas larguísimas. Los gráficos quedan en <code>window.qa</code> para revisarlos desde la
+      consola.
+    </p>
+    <div id="casos"></div>
+
+    <script src="../dist/lozcharts.umd.js"></script>
+    <script>
+      (function () {
+        var meses = ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08'];
+        var largo = 'Una categoría con un nombre larguísimo que no debería romper nada';
+
+        // Datos por variante. Cada fila trae todos los campos que usan los tipos.
+        function datos(variante) {
+          var n = { vacio: 0, uno: 1 }[variante];
+          var filas = [];
+          var total = n === undefined ? meses.length : n;
+          for (var i = 0; i < total; i++) {
+            var v = 40 + ((i * 37) % 50);
+            var w = 20 + ((i * 23) % 40);
+            var f = {
+              mes: meses[i],
+              cat:
+                variante === 'largas'
+                  ? largo + ' ' + (i + 1)
+                  : ['Norte', 'Sur', 'Este', 'Oeste', 'Centro', 'Costa', 'Andina', 'Insular'][i],
+              x: i * 1.5 + 2,
+              a: v,
+              b: w,
+              c: w / 2,
+              hi: v + 10,
+              lo: v - 10,
+              open: v,
+              close: v + (i % 2 ? 6 : -5),
+              high: v + 12,
+              low: v - 9,
+              size: 100 + i * 80,
+            };
+            if (variante === 'huecos' && i % 3 === 1) f.a = f.b = f.close = f.hi = null;
+            if (variante === 'ceros') f.a = f.b = f.c = f.hi = f.lo = f.size = 0;
+            if (variante === 'negativos') {
+              f.a = i % 2 ? -v : v;
+              f.b = -w;
+              f.c = i % 3 ? w : -w;
+            }
+            if (variante === 'grandes') {
+              f.a = v * 1e9;
+              f.b = w * 1e9;
+              f.c = w * 0.5e9;
+              f.hi = (v + 10) * 1e9;
+              f.lo = (v - 10) * 1e9;
+            }
+            if (variante === 'decimales') {
+              f.a = v / 10000;
+              f.b = w / 10000;
+              f.c = w / 20000;
+            }
+            filas.push(f);
+          }
+          return filas;
+        }
+
+        var base = { xAxis: { field: 'mes', type: 'time' } };
+        var cat = { xAxis: { field: 'cat' } };
+        var tipos = {
+          'line (2 series, suave)': Object.assign({}, base, {
+            series: [
+              { type: 'line', field: 'a', name: 'Ventas' },
+              { type: 'line', field: 'b', name: 'Costos', smooth: true },
+            ],
+          }),
+          'bar agrupadas': Object.assign({}, cat, {
+            series: [
+              { type: 'bar', field: 'a', name: 'Ventas' },
+              { type: 'bar', field: 'b', name: 'Costos' },
+            ],
+          }),
+          'bar apiladas + line': Object.assign({}, base, {
+            series: [
+              { type: 'bar', field: 'a', name: 'Online', stack: true },
+              { type: 'bar', field: 'b', name: 'Tienda', stack: true },
+              { type: 'line', field: 'c', name: 'Meta' },
+            ],
+          }),
+          'bar horizontal': Object.assign({}, cat, {
+            orientation: 'horizontal',
+            series: [{ type: 'bar', field: 'a', name: 'Visitas' }],
+          }),
+          'area apiladas': Object.assign({}, base, {
+            series: [
+              { type: 'area', field: 'a', name: 'Móvil', stack: true, smooth: true },
+              { type: 'area', field: 'b', name: 'Escritorio', stack: true, smooth: true },
+            ],
+          }),
+          step: Object.assign({}, base, { series: [{ type: 'step', field: 'a', name: 'Tasa' }] }),
+          'range + line': Object.assign({}, base, {
+            series: [
+              { type: 'range', field: 'hi', low: 'lo', name: 'Rango' },
+              { type: 'line', field: 'a', name: 'Media' },
+            ],
+          }),
+          scatter: {
+            xAxis: { field: 'x', type: 'linear' },
+            series: [
+              { type: 'scatter', field: 'a', name: 'Pedidos' },
+              { type: 'scatter', field: 'b', name: 'Devoluciones' },
+            ],
+          },
+          bubble: {
+            xAxis: { field: 'x', type: 'linear' },
+            series: [{ type: 'bubble', field: 'a', name: 'Tiendas', size: 'size', sizeName: 'Clientes' }],
+          },
+          candlestick: Object.assign({}, base, {
+            series: [{ type: 'candlestick', field: 'close', open: 'open', high: 'high', low: 'low', name: 'AURF' }],
+          }),
+          ohlc: Object.assign({}, base, {
+            series: [{ type: 'ohlc', field: 'close', open: 'open', high: 'high', low: 'low', name: 'AURF' }],
+          }),
+          pie: Object.assign({}, cat, { series: [{ type: 'pie', field: 'a', name: 'Ventas' }] }),
+          donut: Object.assign({}, cat, { series: [{ type: 'donut', field: 'a', name: 'Ventas' }] }),
+          gauge: Object.assign({}, cat, {
+            yAxis: { min: 0, max: 100 },
+            series: [{ type: 'gauge', field: 'a', name: 'Avance', target: 80 }],
+          }),
+          radar: Object.assign({}, cat, {
+            series: [
+              { type: 'radar', field: 'a', name: 'Modelo A' },
+              { type: 'radar', field: 'b', name: 'Modelo B' },
+            ],
+          }),
+          funnel: Object.assign({}, cat, { series: [{ type: 'funnel', field: 'a', name: 'Sesiones' }] }),
+          'doble eje': Object.assign({}, base, {
+            yAxis: { title: 'Ventas' },
+            yAxis2: { title: 'Visitas' },
+            series: [
+              { type: 'bar', field: 'a', name: 'Ventas' },
+              { type: 'line', field: 'b', name: 'Visitas', axis: 'right' },
+            ],
+          }),
+          'índice 100': Object.assign({}, base, {
+            yAxis: { index: true },
+            series: [
+              { type: 'line', field: 'a', name: 'Ventas' },
+              { type: 'line', field: 'b', name: 'Visitas' },
+            ],
+          }),
+        };
+        var variantes = ['normal', 'vacio', 'uno', 'huecos', 'ceros', 'negativos', 'grandes', 'decimales', 'largas'];
+
+        var cont = document.getElementById('casos');
+        var charts = [];
+        Object.keys(tipos).forEach(function (tipo) {
+          var h = document.createElement('h2');
+          h.textContent = tipo;
+          cont.appendChild(h);
+          var fila = document.createElement('div');
+          fila.className = 'fila';
+          cont.appendChild(fila);
+          variantes.forEach(function (v) {
+            var caja = document.createElement('div');
+            caja.className = 'caso';
+            caja.dataset.tipo = tipo;
+            caja.dataset.variante = v;
+            var p = document.createElement('p');
+            p.textContent = v;
+            var el = document.createElement('div');
+            caja.append(p, el);
+            fila.appendChild(caja);
+            var opciones = Object.assign({ title: tipo + ' · ' + v, data: datos(v), height: 240 }, tipos[tipo]);
+            try {
+              charts.push({ tipo: tipo, variante: v, el: caja, chart: new LozChart(el, opciones), opciones: opciones });
+            } catch (err) {
+              charts.push({ tipo: tipo, variante: v, el: caja, error: String(err) });
+            }
+          });
+        });
+
+        // Small multiples aparte: por serie y por campo.
+        var h = document.createElement('h2');
+        h.textContent = 'small multiples';
+        cont.appendChild(h);
+        var sm = document.createElement('div');
+        cont.appendChild(sm);
+        var smData = [];
+        ['Norte', 'Sur', 'Este'].forEach(function (r, k) {
+          meses.forEach(function (m, i) {
+            if (!(r === 'Este' && i === 3)) smData.push({ mes: m, region: r, a: 30 + i * 4 + k * 9, b: 20 + i * 2 });
+          });
+        });
+        var multiples = LozChart.multiples(sm, {
+          title: 'Small multiples por campo (a Este le falta abril)',
+          facet: { field: 'region' },
+          data: smData,
+          xAxis: { field: 'mes', type: 'time' },
+          series: [
+            { type: 'bar', field: 'a', name: 'Online', stack: true },
+            { type: 'bar', field: 'b', name: 'Tienda', stack: true },
+          ],
+          height: 170,
+        });
+
+        window.qa = { charts: charts, multiples: multiples };
+      })();
+    </script>
+  </body>
+</html>

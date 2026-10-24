@@ -67,6 +67,7 @@ function context(
     label: (i) => `Categoría ${i + 1}`,
     measure: (s) => s.length * 12 * 0.58,
     format: (v) => v.toLocaleString('es-ES', { maximumFractionDigits: 2 }),
+    compact: (v: number) => String(Math.round(v)),
     percent: (v: number) => `${Math.round(v * 1000) / 10} %`,
   };
   return ctx;

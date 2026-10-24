@@ -81,6 +81,21 @@ export function indexFormatter(locale: string): (v: number) => string {
   return (v) => nf(locale, { maximumFractionDigits: 1 }).format(v);
 }
 
+/**
+ * Decimales para mostrar un valor sin borrarlo: 2 para números normales, y los necesarios para
+ * números chicos (0,0049 no debe leerse "0").
+ */
+export function exactDecimals(v: number): number {
+  const a = Math.abs(v);
+  if (!(a > 0) || a >= 1) return 2;
+  return Math.min(10, Math.max(2, Math.ceil(-Math.log10(a)) + 1));
+}
+
+/** Formato compacto ("506 mil M"): para totales grandes donde el espacio es poco. */
+export function compactFormatter(ctx: NumberContext): (v: number) => string {
+  return (v) => nf(ctx.locale, { notation: 'compact', maximumFractionDigits: 1 }).format(v);
+}
+
 /** Formato exacto para el tooltip y la tabla. */
 export function valueFormatter(spec: FormatSpec | undefined, ctx: NumberContext): (v: number) => string {
   if (typeof spec === 'function') return spec;
@@ -98,9 +113,9 @@ export function valueFormatter(spec: FormatSpec | undefined, ctx: NumberContext)
           maximumFractionDigits: Number.isInteger(v) ? 0 : 2,
         }).format(v);
     case 'compact':
-      return (v) => nf(ctx.locale, { notation: 'compact', maximumFractionDigits: 1 }).format(v);
+      return compactFormatter(ctx);
     default:
-      return (v) => nf(ctx.locale, { maximumFractionDigits: 2 }).format(v);
+      return (v) => nf(ctx.locale, { maximumFractionDigits: exactDecimals(v) }).format(v);
   }
 }
 

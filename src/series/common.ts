@@ -28,3 +28,19 @@ export function hoverDot(ctx: DrawContext, i: number): string {
     'stroke-width': 2,
   })}/>`;
 }
+
+/** Radio del punto que marca un dato aislado. */
+const ISOLATED_RADIUS = 3;
+
+/**
+ * Datos aislados (entre huecos, o una serie de una sola fila): una línea no los puede unir con
+ * nada, así que se marcan con un punto visible en vez de un trazo de largo cero.
+ */
+export function isolatedDots(ctx: DrawContext, values: number[]): string {
+  let s = '';
+  for (let i = 0; i < ctx.n; i++) {
+    if (!isFinite(values[i]) || isFinite(values[i - 1]) || isFinite(values[i + 1])) continue;
+    s += `<circle${attrs({ cx: ctx.x.at(i).toFixed(2), cy: ctx.y.map(values[i]).toFixed(2), r: ISOLATED_RADIUS, fill: ctx.color })}/>`;
+  }
+  return s;
+}

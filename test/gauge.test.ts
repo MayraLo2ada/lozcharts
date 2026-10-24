@@ -113,6 +113,7 @@ test('gauge: se dibuja en cualquier cuadro de la animación y el número no usa 
       height: 300,
       measure: (s: string) => s.length * 7,
       format: (x: number) => String(Math.round(x)),
+      compact: (v: number) => String(Math.round(v)),
       percent: (v: number) => `${Math.round(v * 1000) / 10} %`,
     }) as unknown as Parameters<typeof gauge.draw>[0];
   for (const v of [0, 0.01, 36, 72, 150, NaN]) {

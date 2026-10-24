@@ -100,7 +100,7 @@ const CSS = `
 .lc-svg:focus-visible{outline:2px solid var(--lc-focus);outline-offset:4px}
 .lc-legend{display:flex;flex-wrap:wrap;gap:4px 4px;margin:10px 0 0;padding:0;list-style:none}
 .lc-legend.lc-top{margin:0 0 10px}
-.lc-legend-btn{display:inline-flex;align-items:center;gap:8px;min-height:32px;padding:4px 10px 4px 8px;border:0;border-radius:6px;background:transparent;color:var(--lc-text);font:inherit;font-size:13px;line-height:1.2;cursor:pointer;transition:opacity .15s}
+.lc-legend-btn{display:inline-flex;align-items:center;gap:8px;text-align:left;min-height:32px;padding:4px 10px 4px 8px;border:0;border-radius:6px;background:transparent;color:var(--lc-text);font:inherit;font-size:13px;line-height:1.2;cursor:pointer;transition:opacity .15s}
 .lc-legend-btn:hover{background:var(--lc-grid)}
 .lc-legend-btn:focus-visible{outline:2px solid var(--lc-focus);outline-offset:1px}
 .lc-legend-btn[aria-pressed="false"]{color:var(--lc-text-muted)}

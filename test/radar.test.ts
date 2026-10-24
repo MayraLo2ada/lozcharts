@@ -99,6 +99,7 @@ function context(values: number[]): DrawContext {
     label: (i) => String(i),
     measure: (t) => t.length * 7,
     format: (v) => String(v),
+    compact: (v: number) => String(Math.round(v)),
     percent: (v: number) => `${Math.round(v * 1000) / 10} %`,
   };
 }

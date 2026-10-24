@@ -19,6 +19,9 @@ export interface XLabelContext extends NumberContext {
 
 /** Separación mínima entre dos etiquetas, en px. */
 const LABEL_GAP = 12;
+/** Una etiqueta de categoría ocupa como máximo esta fracción del eje (y nunca menos de MIN_LABEL px). */
+const MAX_LABEL_SHARE = 0.35;
+const MIN_LABEL = 48;
 
 /** Texto de la X en el índice i: corto para el eje, completo para el tooltip y la tabla. */
 export function xLabel(p: Prepared, i: number, short: boolean, ctx: XLabelContext): string {
@@ -62,7 +65,9 @@ export function xTicks(
   const ticks: XTick[] = [];
 
   if (x.kind === 'band' || p.xType === 'category') {
-    const labels = p.xRaw.map((_, i) => xLabel(p, i, true, ctx));
+    // Categorías larguísimas se recortan con "…" (el tooltip y la tabla las dan completas).
+    const maxLabel = Math.max(MIN_LABEL, plotW * MAX_LABEL_SHARE);
+    const labels = p.xRaw.map((_, i) => fitText(xLabel(p, i, true, ctx), maxLabel, measure));
     const widest = Math.max(...labels.map(measure));
     const every = Math.max(1, Math.ceil((widest + LABEL_GAP) / Math.max(1, x.step)));
     for (let i = 0; i < p.n; i += every) ticks.push({ px: x.at(i), label: labels[i], anchor: 'middle' });

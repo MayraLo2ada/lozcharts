@@ -98,6 +98,8 @@ export interface DrawContext {
   format(v: number): string;
   /** Formatear una proporción como porcentaje, en el idioma del gráfico (0,42 → "42 %"). */
   percent(v: number): string;
+  /** Formatear un valor en forma compacta ("506 mil M"), para cuando el exacto no cabe. */
+  compact(v: number): string;
 }
 
 /** Formateadores que recibe una serie para su tooltip, en el idioma del gráfico. */

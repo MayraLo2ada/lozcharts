@@ -2,7 +2,7 @@
 import type { SeriesImpl } from '../core/series';
 import { areaPath, linePath } from '../core/shapes';
 import { attrs } from '../core/dom';
-import { hoverDot, points, stroke } from './common';
+import { hoverDot, isolatedDots, points, stroke } from './common';
 
 export const area: SeriesImpl = {
   layer: 1,
@@ -16,7 +16,11 @@ export const area: SeriesImpl = {
     const top = points(ctx, frame.y1);
     const fill = areaPath(top, points(ctx, frame.y0), smooth);
     const edge = linePath(top, smooth);
-    return (fill ? `<path${attrs({ d: fill, fill: color, 'fill-opacity': 0.1 })}/>` : '') + (edge ? stroke(edge, color) : '');
+    return (
+      (fill ? `<path${attrs({ d: fill, fill: color, 'fill-opacity': 0.1 })}/>` : '') +
+      (edge ? stroke(edge, color) : '') +
+      isolatedDots(ctx, frame.y1)
+    );
   },
   hover: hoverDot,
 };

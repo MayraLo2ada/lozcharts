@@ -80,3 +80,9 @@ test('un hueco en los datos corta la línea', () => {
   );
   assert.equal(d.match(/M/g)?.length, 2);
 });
+
+test('los números chicos conservan sus cifras: 0,0049 no se lee "0"', () => {
+  assert.equal(valueFormatter('number', es)(0.0049), '0,0049');
+  assert.equal(valueFormatter('number', es)(0.25), '0,25');
+  assert.equal(valueFormatter('number', es)(1234.5678), '1.234,57');
+});

@@ -90,6 +90,16 @@ interface Layout {
 
 type PolarFrame = Omit<PolarPlane, 'point'>;
 
+/** Recuadro de un texto en px, para evitar que dos etiquetas se encimen. */
+interface Box {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+const overlaps = (a: Box, b: Box) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+
 interface Row {
   s: PreparedSeries;
   v: number;
@@ -770,6 +780,34 @@ export class LozChart {
       ).join(' ');
     let grid = '';
     let axes = '';
+    // Etiquetas de cada categoría afuera de su radio, alineadas según el lado en que caen. Sus
+    // recuadros se guardan para que ningún número del eje se les encime.
+    const measure = (t: string) => textWidth(t, L.font);
+    const taken: Box[] = [];
+    const ctx = this.xContext();
+    for (let i = 0; i < n; i++) {
+      const [x, y] = at(i, P.radius);
+      grid += `<line${attrs({ x1: P.cx, y1: P.cy, x2: x.toFixed(2), y2: y.toFixed(2), stroke: th.grid, 'stroke-width': 1 })}/>`;
+      const cos = Math.cos(P.angle(i));
+      const sin = Math.sin(P.angle(i));
+      const [lx, ly] = at(i, P.radius + 10);
+      const anchor = Math.abs(cos) < 0.2 ? 'middle' : cos > 0 ? 'start' : 'end';
+      const baseline = Math.abs(sin) < 0.2 ? 'central' : sin > 0 ? 'hanging' : 'auto';
+      const text = fitText(xLabel(p, i, true, ctx), L.labelWidth, measure);
+      const w = measure(text);
+      const left = anchor === 'middle' ? lx - w / 2 : anchor === 'start' ? lx : lx - w;
+      const top = baseline === 'central' ? ly - FONT_SIZE / 2 : baseline === 'hanging' ? ly : ly - FONT_SIZE;
+      taken.push({ left, top, right: left + w, bottom: top + FONT_SIZE });
+      const a = {
+        x: lx.toFixed(1),
+        y: ly.toFixed(1),
+        fill: th.textMuted,
+        'font-size': FONT_SIZE,
+        'text-anchor': anchor,
+        'dominant-baseline': baseline,
+      };
+      axes += `<text${attrs(a)}>${esc(text)}</text>`;
+    }
     for (const v of L.valueTicks) {
       const radius = r.map(v);
       if (radius <= 0.5 || radius > P.radius + 0.5) continue;
@@ -780,9 +818,13 @@ export class LozChart {
         n < 3
           ? `<circle${attrs({ cx: P.cx, cy: P.cy, r: radius.toFixed(2), fill: 'none', stroke, 'stroke-width': 1 })}/>`
           : `<polygon${attrs({ points: ring(radius), fill: 'none', stroke, 'stroke-width': 1 })}/>`;
-      if (L.valueLabels) {
+      const label = L.valueFormat(v);
+      const [x, y] = polarPoint(P.cx, P.cy, radius, between);
+      const box: Box = { left: x + 2, top: y - FONT_SIZE / 2, right: x + 6 + measure(label), bottom: y + FONT_SIZE / 2 };
+      // Se omite el número que chocaría con una etiqueta o con otro número (pasa con cifras largas).
+      if (L.valueLabels && !taken.some((b) => overlaps(b, box))) {
+        taken.push(box);
         // Halo del color del fondo: el número no pisa el radio ni los polígonos.
-        const [x, y] = polarPoint(P.cx, P.cy, radius, between);
         const a = {
           x: x + 4,
           y,
@@ -793,29 +835,8 @@ export class LozChart {
           'stroke-width': 3,
           'paint-order': 'stroke',
         };
-        axes += `<text${attrs(a)}>${esc(L.valueFormat(v))}</text>`;
+        axes += `<text${attrs(a)}>${esc(label)}</text>`;
       }
-    }
-    const ctx = this.xContext();
-    for (let i = 0; i < n; i++) {
-      const [x, y] = at(i, P.radius);
-      grid += `<line${attrs({ x1: P.cx, y1: P.cy, x2: x.toFixed(2), y2: y.toFixed(2), stroke: th.grid, 'stroke-width': 1 })}/>`;
-      // Etiqueta afuera del radio, alineada según el lado en que cae.
-      const cos = Math.cos(P.angle(i));
-      const sin = Math.sin(P.angle(i));
-      const [lx, ly] = at(i, P.radius + 10);
-      const anchor = Math.abs(cos) < 0.2 ? 'middle' : cos > 0 ? 'start' : 'end';
-      const baseline = Math.abs(sin) < 0.2 ? 'central' : sin > 0 ? 'hanging' : 'auto';
-      const a = {
-        x: lx.toFixed(1),
-        y: ly.toFixed(1),
-        fill: th.textMuted,
-        'font-size': FONT_SIZE,
-        'text-anchor': anchor,
-        'dominant-baseline': baseline,
-      };
-      const text = fitText(xLabel(p, i, true, ctx), L.labelWidth, (t) => textWidth(t, L.font));
-      axes += `<text${attrs(a)}>${esc(text)}</text>`;
     }
     return { grid, axes };
   }
@@ -838,7 +859,16 @@ export class LozChart {
       measure: (text) => textWidth(text, L.font),
       format: this.valueFormat(f.ps),
       percent: valueFormatter('percent', this.numberContext()),
+      compact: (v) => this.compactFormat(f.ps)(v),
     };
+  }
+
+  /** Compacto respetando el formato de la serie: moneda en moneda, porcentaje en porcentaje. */
+  private compactFormat(s: PreparedSeries): (v: number) => string {
+    const spec = s.options.format ?? (s.axis === 'right' ? this.opts.yAxis2?.format : this.opts.yAxis?.format);
+    if (typeof spec === 'function') return spec;
+    const kind = spec === 'currency' || spec === 'percent' ? spec : 'compact';
+    return (v) => axisFormatter(kind, this.numberContext(), Math.abs(v) / 100, Math.abs(v))(v);
   }
 
   /**

@@ -50,6 +50,7 @@ function context(values: number[], width = 390, height = 240, labels?: boolean, 
     label: (i) => STAGES[i] ?? '',
     measure,
     format: (v) => String(v),
+    compact: (v: number) => String(Math.round(v)),
     percent: (v: number) => `${Math.round(v * 1000) / 10} %`,
   };
 }
