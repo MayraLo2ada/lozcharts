@@ -353,6 +353,30 @@
       </figure>
 
       <header class="section-head">
+        <h2>Dos medidas con distintas unidades</h2>
+        <p>En vez de un doble eje Y, que deja a quien dibuja decidir dónde se cruzan las líneas, dos formas honestas.</p>
+      </header>
+
+      <div class="grid">
+        <figure>
+          <div id="alineados"></div>
+          <figcaption>
+            Paneles alineados: cada medida en su panel y con sus unidades, con el mismo eje X y el puntero sincronizado. Es
+            <code>LozChart.multiples</code> con <code>facet: 'series'</code>, <code>columns: 1</code> y
+            <code>sharedY: false</code>.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div id="indice"></div>
+          <figcaption>
+            Índice base 100 (<code>yAxis: { index: true }</code>): enero vale 100 para las dos series, así se compara quién creció
+            más en un solo eje. El tooltip muestra también el valor original.
+          </figcaption>
+        </figure>
+      </div>
+
+      <header class="section-head">
         <h2>Dispersión, rangos y precios</h2>
         <p>Barras horizontales, puntos y burbujas, bandas, escalones y velas.</p>
       </header>
@@ -979,6 +1003,54 @@
             });
             e.currentTarget.textContent = anioRegion === 2026 ? 'Ver 2025' : 'Ver 2026';
           });
+        })();
+
+        // 16 y 17. Ventas y visitas: paneles alineados e índice base 100.
+        (function () {
+          var r = rng(64),
+            data = [];
+          var ventasMes = 92000,
+            visitasMes = 41000;
+          for (var m = 0; m < 12; m++) {
+            ventasMes *= 1 + 0.018 + (r() - 0.5) * 0.06 + (m === 10 ? 0.12 : 0);
+            visitasMes *= 1 + 0.035 + (r() - 0.5) * 0.08 + (m === 6 ? -0.09 : 0);
+            data.push({
+              mes: '2026-' + String(m + 1).padStart(2, '0'),
+              ventas: Math.round(ventasMes),
+              visitas: Math.round(visitasMes),
+            });
+          }
+          var series = [
+            { type: 'bar', field: 'ventas', name: 'Ventas', format: 'currency' },
+            { type: 'line', field: 'visitas', name: 'Visitas a la web', format: 'compact' },
+          ];
+          charts.push(
+            LozChart.multiples('#alineados', {
+              title: 'Ventas y visitas a la web',
+              subtitle: '2026, cada una en sus unidades',
+              facet: 'series',
+              columns: 1,
+              sharedY: false,
+              data: data,
+              xAxis: { field: 'mes', type: 'time' },
+              series: series,
+              height: 150,
+            }),
+          );
+          charts.push(
+            new LozChart('#indice', {
+              title: 'Crecimiento comparado',
+              subtitle: 'Índice: enero de 2026 = 100',
+              data: data,
+              xAxis: { field: 'mes', type: 'time' },
+              yAxis: { index: true },
+              series: [
+                { type: 'line', field: 'ventas', name: 'Ventas', format: 'currency' },
+                { type: 'line', field: 'visitas', name: 'Visitas a la web' },
+              ],
+              height: 340,
+            }),
+          );
         })();
 
         // Selector de tema de la página: aplica el mismo tema a todos los gráficos.

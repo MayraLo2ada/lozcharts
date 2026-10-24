@@ -74,11 +74,20 @@ El oscuro tiene sus propios valores; no es una inversión.
 - Leyenda solo con 2 o más series; botones con `aria-pressed`, 32 px de alto mínimo.
 - Animación 600 ms ease-out; nada si `prefers-reduced-motion`.
 
+## Un solo eje Y
+
+Nunca doble eje. Para dos medidas con distintas unidades: paneles alineados (`facet: 'series'`,
+`columns: 1`, `sharedY: false`) o índice base 100 (`yAxis.index`), con la línea de 100 marcada
+como referencia igual que el cero.
+
 ## Small multiples
 
 - Mismo eje del valor y mismas X en todos los paneles: comparar formas solo es honesto con la
   misma escala.
-- Números del eje solo en la primera columna (como en ggplot); la rejilla sí va en todos.
+- Números del eje solo en la primera columna y etiquetas X solo al pie de cada columna (como en
+  ggplot); la rejilla sí va en todos. El área de datos mide lo mismo en todos los paneles.
+- Paneles alineados al píxel: misma escala X (banda si alguno tiene barras) y mismo ancho
+  reservado para los números del eje.
 - Título del panel de 13 px; paneles de 180 px de alto por defecto, columnas de 240 px como mínimo.
 - El color sigue a la serie también aquí: por serie, cada panel conserva el color de su posición.
 - Una sola leyenda arriba de la cuadrícula; el puntero marca el mismo dato en todos los paneles y

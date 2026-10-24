@@ -136,12 +136,54 @@ LozChart.multiples('#regiones', {
 
 - Todos los paneles comparten el eje del valor (`sharedY: false` lo desactiva) y las mismas X: si a
   un panel le falta un mes, ese mes queda como hueco.
-- Los números del eje solo aparecen en la primera columna; se recalcula al cambiar el ancho.
+- Los números del eje solo aparecen en la primera columna y las etiquetas X solo en el último panel
+  de cada columna; se recalcula al cambiar el ancho. El área de datos mide lo mismo en todos.
+- Si un panel tiene barras, todos usan escala de banda y los números del eje reservan el mismo
+  ancho: cada fecha cae en la misma vertical en todos los paneles.
 - El puntero sobre un panel marca el mismo dato en todos. La leyenda es una sola (solo al facetar
   por campo) y oculta la serie en todos los paneles.
 - `columns` fija las columnas; si no, caben las que permita `minWidth` (240 px por defecto).
 - Métodos: `setData`, `setOptions`, `setTheme`, `toggleSeries`, `toSVG`, `download`, `destroy` y
   `charts` (los gráficos de cada panel). En HTMX, `initAll` los crea si el JSON trae `facet`.
+
+## Dos medidas con distintas unidades
+
+LozChart no tiene doble eje Y, y es a propósito: con dos ejes, quien dibuja decide dónde se
+cruzan las líneas (basta mover un eje para que una medida "alcance" a la otra) y el lector saca
+conclusiones que los datos no dicen. Hay dos formas honestas de hacerlo:
+
+**Paneles alineados.** Cada medida en su panel y con sus unidades; mismo eje X, áreas de datos
+alineadas al píxel y puntero sincronizado.
+
+```js
+LozChart.multiples('#ventas-y-visitas', {
+  facet: 'series',
+  columns: 1,
+  sharedY: false, // cada panel con su propio eje
+  data: meses,
+  xAxis: { field: 'mes', type: 'time' },
+  series: [
+    { type: 'bar', field: 'ventas', name: 'Ventas', format: 'currency' },
+    { type: 'line', field: 'visitas', name: 'Visitas a la web', format: 'compact' },
+  ],
+});
+```
+
+**Índice base 100.** Para comparar cuál creció más: cada serie se divide por su primer valor y se
+multiplica por 100, así comparten un eje con la misma unidad. El tooltip muestra el índice y el
+valor original.
+
+```js
+new LozChart('#crecimiento', {
+  data: meses,
+  xAxis: { field: 'mes', type: 'time' },
+  yAxis: { index: true },
+  series: [
+    { type: 'line', field: 'ventas', name: 'Ventas', format: 'currency' },
+    { type: 'line', field: 'visitas', name: 'Visitas a la web' },
+  ],
+});
+```
 
 ## Opciones
 
@@ -155,6 +197,10 @@ LozChart.multiples('#regiones', {
 | `xAxis.title`, `yAxis.title` | texto                                       | —               | Títulos de los ejes.                                                                   |
 | `yAxis.format`               | ver abajo                                   | `'auto'`        | Formato del eje Y y del tooltip.                                                       |
 | `yAxis.min`, `yAxis.max`     | número                                      | calculados      | Límites fijos.                                                                         |
+| `yAxis.index`                | booleano                                    | `false`         | Índice base 100: cada serie respecto de su primer valor.                               |
+| `yAxis.width`                | px                                          | —               | Ancho mínimo para los números del eje; alinea varios gráficos.                         |
+| `xAxis.labels`               | booleano                                    | `true`          | `false` oculta las etiquetas del eje X.                                                |
+| `xAxis.band`                 | booleano                                    | `false`         | Fuerza la escala de banda (puntos al centro de su franja), para alinear con barras.    |
 | `yAxis.labels`               | booleano                                    | `true`          | `false` oculta los números del eje (la rejilla queda).                                 |
 | `yAxis.zero`                 | booleano                                    | `false`         | Fuerza el cero (barras y áreas ya lo incluyen).                                        |
 | `series[].type`              | ver [Tipos de serie](#tipos-de-serie)       | —               | Tipo registrado.                                                                       |
@@ -203,18 +249,19 @@ new LozChart('#grafico', {
 
 ## Métodos
 
-| Método                                                    | Qué hace                                                                              |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `setData(datos)`                                          | Cambia los datos y anima desde el estado actual (aunque haya una animación a medias). |
-| `setOptions({...}, animar?)`                              | Combina opciones nuevas con las actuales y redibuja.                                  |
-| `highlight(x)`                                            | Marca el dato con esa X, sin tooltip; `null` limpia.                                  |
-| `setTheme('dark')`                                        | Cambia el tema.                                                                       |
-| `toggleSeries('Online', visible?)`                        | Oculta o muestra una serie; las demás conservan su color.                             |
-| `toSVG()`                                                 | SVG completo como texto, con título y leyenda.                                        |
-| `download('png' \| 'svg', nombre?)`                       | Descarga la imagen (PNG al doble de resolución).                                      |
-| `destroy()`                                               | Quita el gráfico y sus listeners.                                                     |
-| `LozChart.initAll(raíz)`, `destroyAll(raíz)`, `cleanup()` | Montaje automático para HTMX.                                                         |
-| `LozChart.registerSeries(nombre, impl)`                   | Agrega un tipo de serie.                                                              |
+| Método                                                    | Qué hace                                                                                 |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `setData(datos)`                                          | Cambia los datos y anima desde el estado actual (aunque haya una animación a medias).    |
+| `setOptions({...}, animar?)`                              | Combina opciones nuevas con las actuales y redibuja.                                     |
+| `axisWidth`                                               | Ancho que necesitan hoy los números del eje Y (para alinear gráficos con `yAxis.width`). |
+| `highlight(x)`                                            | Marca el dato con esa X, sin tooltip; `null` limpia.                                     |
+| `setTheme('dark')`                                        | Cambia el tema.                                                                          |
+| `toggleSeries('Online', visible?)`                        | Oculta o muestra una serie; las demás conservan su color.                                |
+| `toSVG()`                                                 | SVG completo como texto, con título y leyenda.                                           |
+| `download('png' \| 'svg', nombre?)`                       | Descarga la imagen (PNG al doble de resolución).                                         |
+| `destroy()`                                               | Quita el gráfico y sus listeners.                                                        |
+| `LozChart.initAll(raíz)`, `destroyAll(raíz)`, `cleanup()` | Montaje automático para HTMX.                                                            |
+| `LozChart.registerSeries(nombre, impl)`                   | Agrega un tipo de serie.                                                                 |
 
 ## Accesibilidad
 
