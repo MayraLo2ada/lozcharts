@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Paletas candidatas</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+        background: #f3f2ee;
+        color: #0b0b0b;
+      }
+      h1 {
+        margin: 0 0 4px;
+        font-size: 22px;
+      }
+      section {
+        margin: 24px 0 40px;
+      }
+      section > h2 {
+        margin: 0 0 4px;
+        font-size: 18px;
+      }
+      section > p {
+        margin: 0 0 12px;
+        color: #52514e;
+        max-width: 80ch;
+      }
+      .muestras {
+        display: flex;
+        gap: 6px;
+        margin: 0 0 12px;
+        flex-wrap: wrap;
+      }
+      .muestras span {
+        width: 34px;
+        height: 22px;
+        border-radius: 4px;
+      }
+      .temas {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+      .tema {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        padding: 12px;
+        border-radius: 8px;
+      }
+      .tema > div {
+        min-width: 0;
+      }
+      @media (max-width: 900px) {
+        .temas,
+        .tema {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Paletas candidatas para LozCharts</h1>
+    <p>Los mismos cuatro gráficos con cada paleta, en tema claro y oscuro.</p>
+    <div id="paletas"></div>
+
+    <script>
+      window.CANDIDATAS = [
+        {
+          nombre: 'Actual (azul primero)',
+          idea: 'La de hoy, como referencia. Separación mínima para daltonismo: 9,1 en claro y 8,4 en oscuro.',
+          light: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948'],
+          dark: ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767'],
+        },
+        {
+          nombre: 'Lozana (verde primero)',
+          idea: 'Un verde esmeralda fresco como color de marca: "lozana" es lo que florece. Separación mínima: 9,5.',
+          light: ['#008a63', '#e2a504', '#c53c8e', '#669014', '#5556cd', '#e6653c', '#1e97d0', '#c43e45'],
+          dark: ['#17a478', '#bb8800', '#d64d9d', '#669014', '#7075ef', '#db5b32', '#1e97d0', '#d24c50'],
+        },
+        {
+          nombre: 'Sierra (índigo primero)',
+          idea: 'Un índigo profundo, como una sierra al atardecer (de Serrano), con verde azulado y coral. Separación mínima: 12,6.',
+          light: ['#5e48c8', '#099b8f', '#e05d3d', '#3394d4', '#449d2e', '#d582ce', '#ee9e10', '#c3337a'],
+          dark: ['#7968eb', '#079e92', '#d95737', '#3394d4', '#449d2e', '#c170bb', '#c68206', '#d8488c'],
+        },
+        {
+          nombre: 'Coral (la escogida)',
+          idea: 'Coral, petróleo, violeta y vino primero: los cuatro colores más usados se distinguen todos entre sí, también con daltonismo.',
+          light: ['#e45934', '#009298', '#5e2dad', '#9c1854', '#4c99f8', '#31983d', '#db6ea5', '#e2aa00'],
+          dark: ['#e05630', '#0a999f', '#8b61e3', '#9d4e6b', '#4996f5', '#399e43', '#d1649c', '#b88a06'],
+        },
+      ];
+    </script>
+    <script src="../dist/lozcharts.umd.js"></script>
+    <script>
+      // Se completa con las candidatas: { nombre, idea, light: [...8], dark: [...8] }.
+      var candidatas = window.CANDIDATAS || [];
+
+      var meses = ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10'];
+      var ventas = meses.map(function (m, i) {
+        return { mes: m, a: 40 + i * 4, b: 32 + (i % 3) * 6, c: 22 + i * 2, d: 18 + (i % 4) * 5 };
+      });
+      var canales = ['Búsqueda', 'Directo', 'Redes', 'Anuncios', 'Correo', 'Referidos', 'Afiliados', 'Otros'].map(
+        function (c, i) {
+          return { canal: c, v: [41, 20, 18, 12, 9, 6, 4, 3][i] };
+        },
+      );
+      var regiones = ['Norte', 'Centro', 'Sur', 'Costa', 'Andina', 'Insular', 'Oriente', 'Valle'].map(function (r, i) {
+        var row = { region: r };
+        ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8'].forEach(function (k, j) {
+          row[k] = 10 + ((i * 7 + j * 5) % 13);
+        });
+        return row;
+      });
+
+      var cont = document.getElementById('paletas');
+      candidatas.forEach(function (p) {
+        var sec = document.createElement('section');
+        sec.innerHTML = '<h2></h2><p></p><div class="muestras"></div><div class="temas"></div>';
+        sec.querySelector('h2').textContent = p.nombre;
+        sec.querySelector('p').textContent = p.idea;
+        var muestras = sec.querySelector('.muestras');
+        p.light.forEach(function (c) {
+          var s = document.createElement('span');
+          s.style.background = c;
+          muestras.appendChild(s);
+        });
+        cont.appendChild(sec);
+        ['light', 'dark'].forEach(function (tema) {
+          var t = document.createElement('div');
+          t.className = 'tema';
+          t.style.background = tema === 'dark' ? '#1a1a19' : '#fcfcfb';
+          sec.querySelector('.temas').appendChild(t);
+          var comun = { theme: tema, palette: { light: p.light, dark: p.dark }, height: 200, animate: false };
+          var graficos = [
+            {
+              title: 'Una serie',
+              data: ventas,
+              xAxis: { field: 'mes', type: 'time' },
+              series: [{ type: 'bar', field: 'a', name: 'Ventas' }],
+            },
+            {
+              title: 'Cuatro líneas',
+              data: ventas,
+              xAxis: { field: 'mes', type: 'time' },
+              series: ['a', 'b', 'c', 'd'].map(function (f, i) {
+                return { type: 'line', field: f, name: ['Norte', 'Centro', 'Sur', 'Costa'][i] };
+              }),
+            },
+            {
+              title: 'Ocho categorías',
+              data: canales,
+              xAxis: { field: 'canal' },
+              series: [{ type: 'donut', field: 'v', name: 'Visitas' }],
+            },
+            {
+              title: 'Ocho series apiladas',
+              data: regiones,
+              xAxis: { field: 'region' },
+              series: ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8'].map(function (f, i) {
+                return { type: 'bar', field: f, name: 'Serie ' + (i + 1), stack: true };
+              }),
+              legend: false,
+            },
+          ];
+          graficos.forEach(function (g) {
+            var el = document.createElement('div');
+            t.appendChild(el);
+            new LozChart(el, Object.assign({}, comun, g));
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

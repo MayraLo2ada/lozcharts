@@ -10,23 +10,33 @@ LozBubble, LozCandle, LozOHLC, LozPie, LozDonut, LozGauge, LozRadar, LozFunnel y
 borde redondeado, en texto secundario (sin mayúsculas sostenidas). En el código, el tipo usa su
 nombre corto (`type: 'bar'`).
 
-## Paleta categórica (orden fijo, validada para daltonismo)
+## Paleta categórica "Coral" (orden fijo, validada para daltonismo)
 
 | Slot       | Claro     | Oscuro    |
 | ---------- | --------- | --------- |
-| 1 azul     | `#2a78d6` | `#3987e5` |
-| 2 naranja  | `#eb6834` | `#d95926` |
-| 3 aqua     | `#1baf7a` | `#199e70` |
-| 4 amarillo | `#eda100` | `#c98500` |
-| 5 magenta  | `#e87ba4` | `#d55181` |
-| 6 verde    | `#008300` | `#008300` |
-| 7 violeta  | `#6250d6` | `#9085e9` |
-| 8 rojo     | `#e34948` | `#e66767` |
+| 1 coral    | `#e45934` | `#e05630` |
+| 2 petróleo | `#009298` | `#0a999f` |
+| 3 violeta  | `#5e2dad` | `#8b61e3` |
+| 4 vino     | `#9c1854` | `#9d4e6b` |
+| 5 cielo    | `#4c99f8` | `#4996f5` |
+| 6 verde    | `#31983d` | `#399e43` |
+| 7 rosa     | `#db6ea5` | `#d1649c` |
+| 8 ocre     | `#e2aa00` | `#b88a06` |
 
-Validación (24 oct 2026): las dos paletas pasan el rango de luminosidad, el croma mínimo, la
-separación para daltonismo (peor par vecino ΔE 9,1 en claro y 8,4 en oscuro) y la distinción
-normal. En claro, aqua, amarillo y magenta tienen menos de 3:1 de contraste con la superficie:
-por eso el tooltip con valores exactos y la tabla de datos son obligatorios, no opcionales.
+Se diseñó en OKLCH y el orden se escogió con una búsqueda sobre todas las permutaciones:
+primero importa que los colores que más se usan juntos (los primeros) se distingan entre todos,
+no solo con su vecino. Validación (25 oct 2026, `validate_palette.js` de la skill dataviz):
+
+- Las 8, par vecino: pasan luminosidad, croma, daltonismo (peor ΔE 12,7 en claro y 10,2 en
+  oscuro; la anterior daba 9,1 y 8,4) y distinción normal.
+- Los primeros 4, todos contra todos: pasan en los dos temas (daltonismo ΔE ≥ 9,5). Coral y
+  verde, el par clásico que se confunde, quedan lejos: el verde va sexto.
+- Con 5 o más series ninguna paleta de 8 separa todos los pares (tampoco la de amCharts ni la
+  anterior). En oscuro, cielo y violeta quedan a ΔE 7 para daltonismo: por eso la leyenda, las
+  etiquetas directas y la tabla son obligatorias, no adorno.
+- En claro, cielo (2,83:1) y ocre (2,05:1) no llegan a 3:1 contra la superficie: van con el
+  tooltip de valores exactos y la tabla de datos. En oscuro, las 8 pasan 3:1.
+- El coral, primer color, es también el anillo de foco: 3,5:1 en claro.
 
 - Nunca ciclar: con más de 8 series apiladas del mismo grupo, las sobrantes se agrupan en
   "Otros" (gris neutro); si no se pueden agrupar, se muestran 8 y se avisa en consola.
