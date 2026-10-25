@@ -1,4 +1,4 @@
-# Publica la galería de LozCharts en GitHub Pages en cada push a main.
+# Publica el sitio de LozCharts (portada, galería y documentación) en GitHub Pages en cada push a main.
 # Mientras el repositorio sea privado (plan gratis), el trabajo se salta sin error.
 # Al hacerlo público: Settings → Pages → Source: "GitHub Actions" (una sola vez).
 name: Página de LozCharts
@@ -31,14 +31,15 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build
       - run: npm test
+      # Compila, copia la librería a site/lib y genera la documentación desde el README.
+      - run: npm run site
       - name: Armar el sitio
         run: |
-          mkdir -p _site/demo
-          cp -r dist _site/dist
+          cp -r site _site
+          mkdir -p _site/demo _site/dist
           cp demo/index.html _site/demo/index.html
-          printf '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=demo/"><title>LozCharts</title><a href="demo/">Ir a la galería de LozCharts</a>\n' > _site/index.html
+          cp -r dist/* _site/dist/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
       - id: deploy

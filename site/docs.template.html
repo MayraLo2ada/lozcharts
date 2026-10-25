@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Documentación · LozCharts</title>
+    <meta
+      name="description"
+      content="Cómo instalar y usar LozCharts: opciones, tipos de gráfico, React, Angular, HTMX y mapas."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/site.css" />
+    <style>
+      .docs {
+        display: grid;
+        grid-template-columns: 240px minmax(0, 1fr);
+        gap: var(--s7);
+        padding-top: var(--s6);
+      }
+      .toc {
+        position: sticky;
+        top: 88px;
+        align-self: start;
+        max-height: calc(100vh - 110px);
+        overflow-y: auto;
+      }
+      .toc ol {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        border-left: 1px solid var(--line);
+      }
+      .toc a {
+        display: block;
+        padding: 5px 0 5px var(--s4);
+        margin-left: -1px;
+        border-left: 2px solid transparent;
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 14px;
+        line-height: 1.35;
+      }
+      .toc a:hover {
+        color: var(--ink);
+      }
+      .toc a.on {
+        color: var(--ink);
+        border-left-color: var(--coral);
+        font-weight: 600;
+      }
+      .toc code {
+        font-size: 12px;
+      }
+      .prose {
+        max-width: 760px;
+      }
+      .prose h2 {
+        font-size: 32px;
+        margin: var(--s8) 0 var(--s4);
+        padding-top: var(--s2);
+      }
+      .prose h2:first-of-type {
+        margin-top: 0;
+      }
+      .prose h3 {
+        margin: var(--s6) 0 var(--s3);
+      }
+      .prose p,
+      .prose li {
+        line-height: 1.65;
+      }
+      .prose ul {
+        padding-left: 1.2em;
+      }
+      .prose li + li {
+        margin-top: var(--s2);
+      }
+      .prose blockquote {
+        margin: var(--s5) 0;
+        padding: var(--s3) var(--s4);
+        border-left: 3px solid var(--coral);
+        background: var(--sunken);
+        border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      }
+      .prose a {
+        color: var(--coral-ink);
+      }
+      .prose .code {
+        margin: var(--s4) 0;
+      }
+      .table {
+        overflow-x: auto;
+        margin: var(--s4) 0;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 14px;
+      }
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--line);
+      }
+      th {
+        background: var(--sunken);
+        font-weight: 600;
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      td code,
+      th code {
+        white-space: nowrap;
+      }
+      .menu-toc {
+        display: none;
+      }
+      @media (max-width: 900px) {
+        .docs {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .toc {
+          display: none;
+        }
+        .menu-toc {
+          display: block;
+          margin-bottom: var(--s5);
+        }
+        .menu-toc select {
+          width: 100%;
+          min-height: 44px;
+          padding: 8px 10px;
+          border: 1px solid var(--line-strong);
+          border-radius: var(--radius-sm);
+          background: var(--raised);
+          color: var(--ink);
+          font: 500 15px/1.2 var(--font);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="sr-only" href="#contenido">Saltar al contenido</a>
+    <header class="top">
+      <div class="wrap">
+        <a class="wordmark" href="./">Loz<span>Charts</span></a>
+        <nav class="nav" aria-label="Principal">
+          <a href="galeria.html">Galería</a>
+          <a href="docs.html" aria-current="page">Documentación</a>
+          <a class="github" href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+          <div class="theme" role="group" aria-label="Tema">
+            <button type="button" data-theme-btn="auto" aria-pressed="true">Auto</button>
+            <button type="button" data-theme-btn="light" aria-pressed="false">Claro</button>
+            <button type="button" data-theme-btn="dark" aria-pressed="false">Oscuro</button>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <div class="docs wrap">
+      <nav class="toc" aria-label="En esta página">
+        <ol>
+          <!--INDICE-->
+        </ol>
+      </nav>
+      <main id="contenido" class="prose">
+        <label class="menu-toc"
+          ><span class="sr-only">Ir a la sección</span
+          ><select id="ir"></select
+        ></label>
+        <h1>Documentación</h1>
+        <!--CONTENIDO-->
+      </main>
+    </div>
+
+    <footer class="foot">
+      <div class="wrap">
+        <span>LozCharts · por Mayra Lozada</span>
+        <nav aria-label="Pie">
+          <a href="./">Inicio</a>
+          <a href="galeria.html">Galería</a>
+          <a href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script src="assets/site.js"></script>
+    <script>
+      (function () {
+        // Índice: marca la sección que se está leyendo; en móvil, un selector para saltar.
+        var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+        var select = document.getElementById('ir');
+        links.forEach(function (a) {
+          var o = document.createElement('option');
+          o.value = a.getAttribute('href');
+          o.textContent = a.textContent;
+          select.appendChild(o);
+        });
+        select.addEventListener('change', function () {
+          location.hash = select.value;
+        });
+        var heads = links.map(function (a) {
+          return document.getElementById(decodeURIComponent(a.getAttribute('href').slice(1)));
+        });
+        var marcar = function () {
+          var y = window.scrollY + 120;
+          var k = 0;
+          heads.forEach(function (h, i) {
+            if (h && h.offsetTop <= y) k = i;
+          });
+          links.forEach(function (a, i) {
+            a.classList.toggle('on', i === k);
+          });
+        };
+        window.addEventListener('scroll', marcar, { passive: true });
+        marcar();
+      })();
+    </script>
+  </body>
+</html>

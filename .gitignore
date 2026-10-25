@@ -4,3 +4,5 @@ node_modules
 capturas/
 dist/
 .pruebas/
+site/lib/
+site/docs.html

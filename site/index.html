@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Gráficos que se entienden a la primera</title>
+    <meta
+      name="description"
+      content="Librería de gráficos en SVG, accesible y sin dependencias: 19 tipos, zoom, mapas y componentes para React, Angular y HTMX."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/site.css" />
+    <link rel="stylesheet" href="assets/portada.css" />
+  </head>
+  <body>
+    <a class="sr-only" href="#contenido">Saltar al contenido</a>
+    <header class="top">
+      <div class="wrap">
+        <a class="wordmark" href="./">Loz<span>Charts</span></a>
+        <nav class="nav" aria-label="Principal">
+          <a href="galeria.html">Galería</a>
+          <a href="docs.html">Documentación</a>
+          <a class="github" href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+          <div class="theme" role="group" aria-label="Tema">
+            <button type="button" data-theme-btn="auto" aria-pressed="true">Auto</button>
+            <button type="button" data-theme-btn="light" aria-pressed="false">Claro</button>
+            <button type="button" data-theme-btn="dark" aria-pressed="false">Oscuro</button>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main id="contenido">
+      <!-- Portada: el gráfico es la demostración. -->
+      <section class="hero wrap">
+        <div class="hero-text">
+          <h1>Gráficos que se entienden a la primera.</h1>
+          <p class="lead">
+            LozCharts es una librería de gráficos en SVG, accesible y sin dependencias. Diecinueve tipos, zoom, mapas, y
+            componentes para React, Angular y Django con HTMX.
+          </p>
+          <div class="hero-cta">
+            <a class="btn primary" href="galeria.html">Ver la galería</a>
+            <a class="btn" href="docs.html#instalación-y-build">Empezar</a>
+          </div>
+        </div>
+        <figure class="stage">
+          <div class="stage-bar">
+            <div class="tabs" role="tablist" aria-label="Forma del gráfico" data-tabs="forma">
+              <button type="button" role="tab" data-tab="barras" aria-selected="true">Barras</button>
+              <button type="button" role="tab" data-tab="lineas">Líneas</button>
+              <button type="button" role="tab" data-tab="areas">Áreas</button>
+              <button type="button" role="tab" data-tab="proporcion">Proporción</button>
+            </div>
+          </div>
+          <div id="hero-chart" class="stage-chart"></div>
+          <pre class="code stage-code" aria-label="Código del gráfico"><code id="hero-code"></code></pre>
+          <figcaption class="sr-only">
+            Los mismos datos de ventas en cuatro formas; el gráfico se transforma al cambiar de pestaña.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="facts wrap" aria-label="En cifras">
+        <div><strong>19</strong><span>tipos de gráfico</span></div>
+        <div><strong>0</strong><span>dependencias</span></div>
+        <div><strong>51 KB</strong><span>comprimida, todo incluido</span></div>
+        <div><strong>199</strong><span>pruebas automáticas</span></div>
+      </section>
+
+      <!-- Tres pruebas en vivo, no promesas. -->
+      <section class="proof wrap">
+        <article class="proof-row">
+          <div class="proof-text">
+            <h2>Cien mil puntos, sin esperar.</h2>
+            <p class="muted">
+              Solo se dibuja lo que se ve: por cada columna de píxeles, el primero, el mínimo, el máximo y el último. El trazo es
+              el mismo y ningún pico se pierde. Pruébalo y mira el tiempo.
+            </p>
+            <button type="button" class="btn" id="mucho-btn">Dibujar 100 000 puntos</button>
+            <p class="proof-result" id="mucho-res" aria-live="polite"></p>
+          </div>
+          <div class="proof-demo" id="mucho-chart"></div>
+        </article>
+
+        <article class="proof-row reverse">
+          <div class="proof-text">
+            <h2>Colores que se distinguen siempre.</h2>
+            <p class="muted">
+              La paleta Coral está validada para daltonismo: los colores que más se usan juntos se distinguen también para quien
+              no ve el rojo y el verde. Míralo con sus ojos.
+            </p>
+            <label class="switch">
+              <input type="checkbox" id="cvd" />
+              <span>Ver como con deuteranopía</span>
+            </label>
+            <div class="swatches" aria-label="Paleta Coral">
+              <i style="background: #e45934"></i><i style="background: #009298"></i><i style="background: #5e2dad"></i
+              ><i style="background: #9c1854"></i><i style="background: #4c99f8"></i><i style="background: #31983d"></i
+              ><i style="background: #db6ea5"></i><i style="background: #e2aa00"></i>
+            </div>
+          </div>
+          <div class="proof-demo" id="cvd-chart"></div>
+        </article>
+
+        <article class="proof-row">
+          <div class="proof-text">
+            <h2>Se escuchan, no solo se ven.</h2>
+            <p class="muted">
+              Cada gráfico se describe a los lectores de pantalla, trae su tabla de datos y se recorre con el teclado. Haz clic en
+              el gráfico y usa las flechas.
+            </p>
+            <div class="voice" aria-hidden="true">
+              <span>Lo que escucha un lector de pantalla</span>
+              <p id="voz"></p>
+            </div>
+          </div>
+          <div class="proof-demo" id="voz-chart"></div>
+        </article>
+      </section>
+
+      <section class="preview wrap">
+        <div class="section-head">
+          <h2>Del día a día a lo difícil.</h2>
+          <a class="btn" href="galeria.html">Ver los 19 tipos</a>
+        </div>
+        <div class="preview-grid" id="preview"></div>
+      </section>
+
+      <section class="fits wrap">
+        <div class="section-head">
+          <h2>Funciona donde ya trabajas.</h2>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Forma de uso" data-tabs="uso">
+          <button type="button" role="tab" data-tab="html" aria-selected="true">HTML</button>
+          <button type="button" role="tab" data-tab="react">React</button>
+          <button type="button" role="tab" data-tab="angular">Angular y Vue</button>
+          <button type="button" role="tab" data-tab="htmx">Django + HTMX</button>
+        </div>
+        <div data-panel="uso:html">
+          <pre class="code"><code>&lt;script src="lozcharts.umd.js"&gt;&lt;/script&gt;
+&lt;div id="ventas"&gt;&lt;/div&gt;
+&lt;script&gt;
+  new LozChart('#ventas', {
+    data: [{ mes: '2026-01', ventas: 42000 }, { mes: '2026-02', ventas: 45500 }],
+    xAxis: { field: 'mes', type: 'time' },
+    series: [{ type: 'bar', field: 'ventas', name: 'Ventas' }],
+  });
+&lt;/script&gt;</code></pre>
+        </div>
+        <div data-panel="uso:react" hidden>
+          <pre class="code"><code>import { Chart } from 'lozcharts/react';
+
+export function Ventas({ filas }) {
+  return (
+    &lt;Chart
+      title="Ventas"
+      data={filas}
+      xAxis={{ field: 'mes', type: 'time' }}
+      series={[{ type: 'bar', field: 'ventas', name: 'Ventas' }]}
+      zoom
+    /&gt;
+  );
+}</code></pre>
+        </div>
+        <div data-panel="uso:angular" hidden>
+          <pre class="code"><code>// Un elemento HTML estándar: sirve en Angular, Vue, Svelte o sin framework.
+import 'lozcharts/element';
+
+// Angular: schemas: [CUSTOM_ELEMENTS_SCHEMA]
+&lt;loz-chart [options]="opciones" (lozzoom)="alHacerZoom($event)"&gt;&lt;/loz-chart&gt;
+
+// Vue
+&lt;loz-chart :options="opciones" @lozhover="marcar" /&gt;</code></pre>
+        </div>
+        <div data-panel="uso:htmx" hidden>
+          <pre class="code"><code>{# La vista arma las opciones en Python; json_script las escapa. #}
+&lt;div data-lozchart="#opciones"&gt;&lt;/div&gt;
+{{ opciones|json_script:"opciones" }}
+
+&lt;script&gt;
+  htmx.onLoad((el) =&gt; LozChart.initAll(el));
+  document.body.addEventListener('htmx:beforeSwap', (e) =&gt; LozChart.destroyAll(e.detail.target));
+&lt;/script&gt;</code></pre>
+        </div>
+      </section>
+
+      <section class="start wrap">
+        <h2>Empieza en un minuto.</h2>
+        <pre class="code"><code>npm install lozcharts</code></pre>
+        <p class="muted">
+          Licencia MIT: úsala gratis, también en proyectos comerciales. Hecha en TypeScript, con tipos incluidos.
+        </p>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap">
+        <span>LozCharts · por Mayra Lozada</span>
+        <nav aria-label="Pie">
+          <a href="galeria.html">Galería</a>
+          <a href="docs.html">Documentación</a>
+          <a href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+        </nav>
+      </div>
+    </footer>
+
+    <!-- Filtro de deuteranopía (Machado, Oliveira y Fernandes, 2009, severidad completa). -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <filter id="deuteranopia" color-interpolation-filters="linearRGB">
+        <feColorMatrix
+          type="matrix"
+          values="0.367322 0.860646 -0.227968 0 0  0.280085 0.672501 0.047413 0 0  -0.011820 0.042940 0.968881 0 0  0 0 0 1 0"
+        />
+      </filter>
+    </svg>
+
+    <script src="lib/lozcharts.umd.js"></script>
+    <script src="lib/maps/world.umd.js"></script>
+    <script src="assets/site.js"></script>
+    <script src="assets/ejemplos.js"></script>
+    <script src="assets/portada.js"></script>
+  </body>
+</html>

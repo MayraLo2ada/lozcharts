@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Galería · LozCharts</title>
+    <meta name="description" content="Todos los tipos de gráfico de LozCharts, en vivo y con su código." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/site.css" />
+    <style>
+      .head {
+        padding: var(--s7) 0 var(--s5);
+      }
+      .filters {
+        position: sticky;
+        top: 64px;
+        z-index: 10;
+        background: var(--surface);
+        padding: var(--s3) 0;
+        border-bottom: 1px solid var(--line);
+        margin-bottom: var(--s6);
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--s7) var(--s6);
+      }
+      .card {
+        min-width: 0;
+        scroll-margin-top: 140px;
+      }
+      .card[hidden] {
+        display: none;
+      }
+      .card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--s3);
+        margin-bottom: var(--s3);
+      }
+      .card-tipo {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--muted);
+      }
+      .card-tools {
+        display: flex;
+        gap: var(--s2);
+      }
+      .card-tools button {
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--muted);
+        font: 500 13px/1 var(--font);
+        padding: 8px 12px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+      }
+      .card-tools button:hover,
+      .card-tools button[aria-expanded='true'] {
+        color: var(--ink);
+        border-color: var(--line-strong);
+      }
+      .card .code {
+        margin-top: var(--s4);
+        max-height: 360px;
+        font-size: 12.5px;
+      }
+      .card-wide {
+        grid-column: 1 / -1;
+      }
+      @media (max-width: 900px) {
+        .cards {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="sr-only" href="#contenido">Saltar al contenido</a>
+    <header class="top">
+      <div class="wrap">
+        <a class="wordmark" href="./">Loz<span>Charts</span></a>
+        <nav class="nav" aria-label="Principal">
+          <a href="galeria.html" aria-current="page">Galería</a>
+          <a href="docs.html">Documentación</a>
+          <a class="github" href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+          <div class="theme" role="group" aria-label="Tema">
+            <button type="button" data-theme-btn="auto" aria-pressed="true">Auto</button>
+            <button type="button" data-theme-btn="light" aria-pressed="false">Claro</button>
+            <button type="button" data-theme-btn="dark" aria-pressed="false">Oscuro</button>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main id="contenido" class="wrap">
+      <div class="head">
+        <h1>Galería</h1>
+        <p class="lead">Cada ejemplo está vivo: pasa el puntero, usa el teclado y mira el código que lo crea.</p>
+      </div>
+      <div class="filters">
+        <div class="tabs" role="group" aria-label="Filtrar por familia" id="familias"></div>
+      </div>
+      <div class="cards" id="cards"></div>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap">
+        <span>LozCharts · por Mayra Lozada</span>
+        <nav aria-label="Pie">
+          <a href="./">Inicio</a>
+          <a href="docs.html">Documentación</a>
+          <a href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script src="lib/lozcharts.umd.js"></script>
+    <script src="lib/maps/world.umd.js"></script>
+    <script src="assets/site.js"></script>
+    <script src="assets/ejemplos.js"></script>
+    <script>
+      (function () {
+        var cards = document.getElementById('cards');
+        var familias = ['Todos'];
+        EJEMPLOS.forEach(function (ej) {
+          if (familias.indexOf(ej.familia) < 0) familias.push(ej.familia);
+          var card = document.createElement('article');
+          card.className = 'card' + (ej.multiples || ej.id === 'visitas-dia' ? ' card-wide' : '');
+          card.id = ej.id;
+          card.dataset.familia = ej.familia;
+          var head = document.createElement('div');
+          head.className = 'card-head';
+          var tipo = document.createElement('span');
+          tipo.className = 'card-tipo';
+          tipo.textContent = ej.tipo;
+          var tools = document.createElement('div');
+          tools.className = 'card-tools';
+          var ver = document.createElement('button');
+          ver.type = 'button';
+          ver.textContent = 'Ver código';
+          ver.setAttribute('aria-expanded', 'false');
+          var bajar = document.createElement('button');
+          bajar.type = 'button';
+          bajar.textContent = 'Descargar PNG';
+          tools.append(ver, bajar);
+          head.append(tipo, tools);
+          var box = document.createElement('div');
+          var pre = document.createElement('pre');
+          pre.className = 'code';
+          pre.hidden = true;
+          var code = document.createElement('code');
+          code.innerHTML = siteHighlight(codigoEjemplo(ej));
+          pre.appendChild(code);
+          ver.setAttribute('aria-controls', (pre.id = 'codigo-' + ej.id));
+          card.append(head, box, pre);
+          cards.appendChild(card);
+          var chart = crearEjemplo(ej, box);
+          ver.addEventListener('click', function () {
+            pre.hidden = !pre.hidden;
+            ver.setAttribute('aria-expanded', String(!pre.hidden));
+            ver.textContent = pre.hidden ? 'Ver código' : 'Ocultar código';
+          });
+          bajar.addEventListener('click', function () {
+            chart.download('png');
+          });
+        });
+        var bar = document.getElementById('familias');
+        familias.forEach(function (f, i) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.textContent = f;
+          b.setAttribute('aria-pressed', String(i === 0));
+          b.addEventListener('click', function () {
+            bar.querySelectorAll('button').forEach(function (o) {
+              o.setAttribute('aria-pressed', String(o === b));
+            });
+            cards.querySelectorAll('.card').forEach(function (c) {
+              c.hidden = f !== 'Todos' && c.dataset.familia !== f;
+            });
+          });
+          bar.appendChild(b);
+        });
+      })();
+    </script>
+  </body>
+</html>

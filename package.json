@@ -39,7 +39,8 @@
     "format": "prettier --write .",
     "check": "prettier --check . && tsc --noEmit && npm test",
     "example:react": "esbuild examples/react/App.tsx --bundle --jsx=automatic --alias:lozcharts/react=./src/react.ts --alias:lozcharts=./src/index.ts --define:process.env.NODE_ENV=\\\"production\\\" --minify --outfile=examples/react/dist/app.js",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "site": "npm run build && node scripts/sitio.mjs"
   },
   "keywords": [
     "charts",
