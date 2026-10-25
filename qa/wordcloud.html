@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Nube de palabras</title>
+    <style>
+      :root {
+        --surface: #fcfcfb;
+        --text: #0b0b0b;
+        --muted: #52514e;
+        --line: #e7e6e1;
+        color-scheme: light;
+      }
+      :root[data-theme='dark'] {
+        --surface: #1a1a19;
+        --text: #f0efec;
+        --muted: #c3c2b7;
+        --line: #2f2f2d;
+        color-scheme: dark;
+      }
+      body {
+        margin: 0;
+        padding: 16px clamp(16px, 2.5vw, 48px) 48px;
+        background: var(--surface);
+        color: var(--text);
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px 24px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--line);
+      }
+      h1 {
+        margin: 0;
+        font-size: 22px;
+      }
+      header p {
+        margin: 4px 0 0;
+        color: var(--muted);
+      }
+      .tema {
+        display: inline-flex;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .tema button {
+        min-height: 32px;
+        padding: 0 14px;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        cursor: pointer;
+      }
+      .tema button[aria-pressed='true'] {
+        background: var(--line);
+        color: var(--text);
+      }
+      h2 {
+        margin: 32px 0 12px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--muted);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(520px, 100%), 1fr));
+        gap: 40px 32px;
+      }
+      .limites {
+        grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr));
+      }
+      .wide {
+        grid-column: 1 / -1;
+      }
+      .grid > div {
+        min-width: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>LozWordcloud</h1>
+        <p>
+          Nube de palabras: tamaño por peso, espiral desde el centro, todas horizontales. Los gráficos quedan en
+          <code>window.qa</code>.
+        </p>
+      </div>
+      <div class="tema" role="group" aria-label="Tema">
+        <button type="button" data-tema="light" aria-pressed="true">Claro</button>
+        <button type="button" data-tema="dark" aria-pressed="false">Oscuro</button>
+      </div>
+    </header>
+
+    <h2>Casos realistas</h2>
+    <div class="grid">
+      <div id="encuesta" class="wide"></div>
+      <div id="temas"></div>
+      <div id="habilidades"></div>
+      <div id="vocabulario" class="wide"></div>
+    </div>
+
+    <h2>Casos límite</h2>
+    <div class="grid limites">
+      <div id="quinientas"></div>
+      <div id="una"></div>
+      <div id="sucios"></div>
+      <div id="largas"></div>
+      <div id="emojis"></div>
+      <div id="otros"></div>
+      <div id="vacia"></div>
+    </div>
+
+    <script src="../dist/lozcharts.umd.js"></script>
+    <script>
+      var charts = {};
+      var tema = 'light';
+      var nube = function (title, subtitle, data, extra) {
+        return Object.assign(
+          {
+            title: title,
+            subtitle: subtitle,
+            data: data,
+            height: 360,
+            theme: tema,
+            xAxis: { field: 'palabra' },
+            series: [{ type: 'wordcloud', field: 'peso', name: 'Menciones' }],
+          },
+          extra || {},
+        );
+      };
+      var p = function (palabra, peso, grupo) {
+        return { palabra: palabra, peso: peso, grupo: grupo };
+      };
+      var lista = function (texto) {
+        // "palabra:peso palabra:peso …"
+        return texto
+          .trim()
+          .split(/\s+/)
+          .map(function (par) {
+            var k = par.lastIndexOf(':');
+            return p(par.slice(0, k).replace(/_/g, ' '), Number(par.slice(k + 1)));
+          });
+      };
+
+      // Respuestas abiertas de una encuesta de satisfacción (menciones por tema).
+      charts.encuesta = new LozChart(
+        '#encuesta',
+        nube(
+          '¿Qué destacan los clientes?',
+          'Menciones en 2.140 respuestas abiertas, septiembre 2026',
+          lista(
+            'atención:412 rapidez:318 precio:296 calidad:274 amabilidad:221 envío:198 variedad:176 confianza:152 ' +
+              'puntualidad:141 garantía:128 asesoría:117 empaque:104 descuentos:98 facilidad:91 seguimiento:86 ' +
+              'devoluciones:79 recomendación:74 app:71 pago_en_línea:66 tienda_física:62 ofertas:58 stock:55 ' +
+              'paciencia:51 soporte:48 claridad:46 promociones:43 horario:41 chat:39 respuesta:37 frescura:35 ' +
+              'presentación:33 trato:31 eficacia:29 rastreo:28 cupones:26 cercanía:25 orden:24 limpieza:23 ' +
+              'disponibilidad:22 compromiso:21 resolución:20 transparencia:19 fidelidad:18 diseño:17 ' +
+              'instalación:16 comodidad:15 sencillez:14 personal:14 catálogo:13 cambio:12 factura:12 ' +
+              'estacionamiento:11 regalo:10 sorpresa:10 tarjeta:9 pedido:9 reclamo:8 sucursal:8 encuesta:7 ' +
+              'correo:7 llamada:6 cita:6 producto:6 marca:5 cuota:5 aviso:4 saludo:4 rapidez_de_entrega:4 ' +
+              'paquete:3 nota:3 recibo:3 caja:2 bolsa:2 etiqueta:2',
+          ),
+          { height: 440 },
+        ),
+      );
+
+      // Con grupos: cada tema de la encuesta en su categoría.
+      charts.temas = new LozChart(
+        '#temas',
+        nube(
+          'Temas por categoría',
+          'Cuatro categorías, un color cada una',
+          [
+            p('atención', 412, 'Servicio'),
+            p('precio', 296, 'Precio'),
+            p('envío', 198, 'Logística'),
+            p('calidad', 274, 'Producto'),
+            p('rapidez', 318, 'Servicio'),
+            p('descuentos', 98, 'Precio'),
+            p('empaque', 104, 'Logística'),
+            p('variedad', 176, 'Producto'),
+            p('amabilidad', 221, 'Servicio'),
+            p('ofertas', 58, 'Precio'),
+            p('rastreo', 28, 'Logística'),
+            p('garantía', 128, 'Producto'),
+            p('asesoría', 117, 'Servicio'),
+            p('cupones', 26, 'Precio'),
+            p('puntualidad', 141, 'Logística'),
+            p('frescura', 35, 'Producto'),
+            p('soporte', 48, 'Servicio'),
+            p('cuotas', 22, 'Precio'),
+            p('devoluciones', 79, 'Logística'),
+            p('diseño', 17, 'Producto'),
+            p('paciencia', 51, 'Servicio'),
+            p('promociones', 43, 'Precio'),
+            p('stock', 55, 'Logística'),
+            p('presentación', 33, 'Producto'),
+          ],
+          { series: [{ type: 'wordcloud', field: 'peso', name: 'Menciones', group: 'grupo' }] },
+        ),
+      );
+
+      // Moneda: el tooltip formatea el peso como en el resto de la librería.
+      charts.habilidades = new LozChart(
+        '#habilidades',
+        nube(
+          'Habilidades mejor pagadas',
+          'Salario medio anual ofrecido (USD), avisos de empleo 2026',
+          lista(
+            'Kubernetes:148000 Rust:142000 Go:139000 Terraform:131000 TypeScript:118000 Python:121000 ' +
+              'SQL:96000 React:112000 Django:104000 Angular:101000 Figma:88000 Excel:61000 Scala:136000 ' +
+              'Swift:126000 Kotlin:124000 GraphQL:115000 Docker:117000 PostgreSQL:109000 Redis:113000 ' +
+              'Spark:133000 Tableau:84000 Power_BI:79000 Linux:98000 Bash:91000 HTMX:93000 Svelte:99000',
+          ),
+          {
+            currency: 'USD',
+            series: [{ type: 'wordcloud', field: 'peso', name: 'Salario medio', format: 'currency' }],
+          },
+        ),
+      );
+
+      // 300 palabras de un texto (frecuencias de Zipf): se colocan en milisegundos.
+      var raices =
+        'casa tiempo vida mundo día año hombre parte país forma caso ciudad mujer trabajo gobierno historia noche ' +
+        'momento agua lugar punto camino tierra familia ley guerra idea razón fuerza nombre voz cuerpo libro ' +
+        'escuela música fuego mar luz palabra ventana puerta calle río árbol piedra viento sol luna estrella ' +
+        'madre padre hijo amigo pueblo mesa silla papel carta mano ojo boca cabeza corazón alma sueño miedo';
+      raices = raices.split(' ');
+      var sufijos = ['', 's', 'cito', 'al', 'ero', 'ista'];
+      var vocabulario = [];
+      for (var k = 0; k < 300; k++) {
+        var palabra =
+          raices[k % raices.length] + (k < raices.length ? '' : sufijos[Math.floor(k / raices.length) % sufijos.length]);
+        vocabulario.push(p(palabra, Math.round(9000 / Math.pow(k + 1, 0.9))));
+      }
+      var t0 = performance.now();
+      charts.vocabulario = new LozChart(
+        '#vocabulario',
+        nube('Trescientas palabras', 'Frecuencias de un corpus de cuentos; colocadas en el primer dibujo', vocabulario, {
+          height: 480,
+          animate: false,
+        }),
+      );
+      console.log('300 palabras: ' + Math.round(performance.now() - t0) + ' ms (incluye el gráfico)');
+
+      // 500 palabras en un área chica: las más livianas no caben y se avisa una vez en consola.
+      var quinientas = [];
+      for (var j = 0; j < 500; j++) quinientas.push(p('término' + (j + 1), Math.round(5000 / (j + 1))));
+      charts.quinientas = new LozChart(
+        '#quinientas',
+        nube('Quinientas palabras', 'Las más livianas quedan fuera (ver consola); siguen en la tabla', quinientas, {
+          height: 300,
+        }),
+      );
+
+      charts.una = new LozChart('#una', nube('Una sola palabra', 'Al centro', [p('Gracias', 42)], { height: 220 }));
+
+      charts.sucios = new LozChart(
+        '#sucios',
+        nube('Datos sucios', 'Repetidas se suman; vacías, ceros, negativos y huecos no se dibujan', [
+          p('calidad', 30),
+          p('  calidad ', 25),
+          p('precio', 40),
+          p('', 60),
+          p('envío', 0),
+          p('demora', -10),
+          p('soporte', null),
+          p('garantía', 12),
+          p('café', 8),
+          p('café', 7),
+        ]),
+      );
+
+      charts.largas = new LozChart(
+        '#largas',
+        nube('Palabras larguísimas', 'Se achican y, si no caben, se recortan con "…"', [
+          p('Electroencefalografistas', 50),
+          p('Esternocleidomastoideo', 34),
+          p('Otorrinolaringológico', 22),
+          p('Contrarrevolucionariamente-interdisciplinario-y-transnacional-por-excelencia', 15),
+          p('breve', 12),
+          p('sí', 9),
+        ]),
+      );
+
+      charts.emojis = new LozChart(
+        '#emojis',
+        nube('Acentos y emojis', 'Reacciones a un lanzamiento', [
+          p('🚀 lanzamiento', 64),
+          p('¡increíble!', 52),
+          p('❤️', 40),
+          p('pingüino', 30),
+          p('niño', 24),
+          p('👩‍💻 código', 20),
+          p('São Paulo', 18),
+          p('Ålesund', 15),
+          p('Zürich', 13),
+          p('<script>', 11),
+          p('"comillas" & más', 9),
+        ]),
+      );
+
+      var once = [];
+      'Uno Dos Tres Cuatro Cinco Seis Siete Ocho Nueve Diez Once'.split(' ').forEach(function (g, k) {
+        once.push(p('tema' + (k + 1) + 'a', 60 - k * 4, 'Grupo ' + g), p('tema' + (k + 1) + 'b', 30 - k * 2, 'Grupo ' + g));
+      });
+      charts.otros = new LozChart(
+        '#otros',
+        nube('Once grupos', 'Ocho colores; del noveno en adelante, gris "Otros" (nunca se repite un color)', once, {
+          series: [{ type: 'wordcloud', field: 'peso', name: 'Menciones', group: 'grupo' }],
+        }),
+      );
+
+      charts.vacia = new LozChart(
+        '#vacia',
+        nube('Sin palabras válidas', 'Todo vacío o en cero', [p('', 3), p('cero', 0)], { height: 200 }),
+      );
+
+      document.querySelectorAll('.tema button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          tema = b.dataset.tema;
+          document.documentElement.dataset.theme = tema;
+          document.querySelectorAll('.tema button').forEach(function (o) {
+            o.setAttribute('aria-pressed', String(o === b));
+          });
+          Object.keys(charts).forEach(function (k) {
+            charts[k].setTheme(tema);
+          });
+        });
+      });
+      window.qa = charts;
+    </script>
+  </body>
+</html>
