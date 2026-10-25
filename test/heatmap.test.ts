@@ -228,7 +228,8 @@ test('contraste del valor: texto oscuro en rellenos claros y claro en oscuros (â
     const ramp = makeRamp('sequential', th, th.palette[0]);
     for (const p of [0, 0.3, 0.6, 1]) {
       const fill = paint(ramp, p).rgb!;
-      const best = textOn(fill, [th.text, th.surface]);
+      // El texto del tema o la superficie; si ninguno llega, negro o blanco puros.
+      const best = textOn(fill, [th.text, th.surface, '#000000', '#ffffff']);
       assert.ok(contrast(fill, parseColor(best)!) >= 4.5, `${th.name} p=${p}`);
     }
   }

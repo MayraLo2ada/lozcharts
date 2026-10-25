@@ -215,13 +215,12 @@ const contrast = (a: string, b: string) => wcag(parseColor(a)!, parseColor(b)!);
 test('contraste: tinta del tema de mayor contraste, ≥ 4,5:1 en la paleta', () => {
   assert.equal(inkFor('#5e2dad', LIGHT), LIGHT.surface, 'violeta oscuro: tinta clara');
   assert.equal(inkFor('#e2aa00', LIGHT), LIGHT.text, 'ocre claro: tinta oscura');
-  assert.equal(inkFor('#8b61e3', DARK), DARK.surface, 'violeta del oscuro: tinta oscura');
+  assert.equal(inkFor('#8b61e3', DARK), '#000000', 'violeta del oscuro: negro puro (la superficie no llega a 4,5:1)');
   for (const th of [LIGHT, DARK])
     for (const c of [...th.palette, th.other]) {
       const best = contrast(inkFor(c, th), c);
-      assert.equal(best, Math.max(contrast(th.text, c), contrast(th.surface, c)), 'siempre la de mayor contraste');
-      // Todas llegan a 4,5:1 salvo el violeta del oscuro, el más medio de la paleta (4,1:1).
-      assert.ok(best >= (c === '#8b61e3' ? 4 : 4.5), `${c} en ${th.name}: ${best.toFixed(2)}`);
+      // Con el negro o el blanco puros de respaldo, toda la paleta llega a 4,5:1.
+      assert.ok(best >= 4.5, `${c} en ${th.name}: ${best.toFixed(2)}`);
     }
   // Un color que no se reconoce cae en el texto del tema.
   assert.equal(inkFor('coral', LIGHT), LIGHT.text);

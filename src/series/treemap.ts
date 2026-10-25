@@ -270,7 +270,8 @@ export function hitCell(cells: readonly (Rect | null)[], px: number, py: number)
  * otro claro), la de mayor contraste. Con un color que no se puede leer, el texto del tema.
  */
 export function inkFor(fill: string, theme: Pick<Theme, 'text' | 'surface'>): string {
-  return textOn(parseColor(fill), [theme.text, theme.surface]);
+  // Si ni el texto ni la superficie del tema llegan a 4,5:1, negro o blanco puros.
+  return textOn(parseColor(fill), [theme.text, theme.surface, '#000000', '#ffffff']);
 }
 
 // ------------------------------------------------------------ Etiquetas

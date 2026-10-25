@@ -63,6 +63,8 @@
       background: false,
       animate: false,
       legend: false,
+      // Los países, en el violeta de la marca: de tenue (pocos usuarios) a intenso.
+      palette: { light: ['#a58bff'], dark: ['#a58bff'] },
     }),
     true,
   );

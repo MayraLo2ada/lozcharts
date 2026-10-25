@@ -9,11 +9,11 @@
   --faint: #8a8984;
   --line: #e7e6e1;
   --line-strong: #d6d4cd;
-  /* Coral de la marca. El oscuro es para texto y botones (4,6:1 con blanco). */
-  --coral: #e45934;
-  --coral-ink: #b8401b;
-  --on-coral: #ffffff;
-  --focus: #e45934;
+  /* Marca: violeta para botones y enlaces (6,6:1 con blanco), rosa como acento. */
+  --brand: #5b3be6;
+  --accent: #e8478f;
+  --on-brand: #ffffff;
+  --focus: #5b3be6;
   --code-bg: #f3f2ee;
   --code-ink: #2b2a27;
   --code-key: #9c1854;
@@ -36,25 +36,26 @@
   --s9: 112px;
   --radius: 8px;
   --radius-sm: 6px;
-  --page: 1200px;
+  /* Márgenes que crecen con la pantalla: el sitio llena 1440, 1920 y 2560 px. */
+  --margen: clamp(16px, 4.5vw, 112px);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --surface: #161615;
-    --raised: #1d1d1c;
-    --sunken: #121211;
+    --surface: #110e17;
+    --raised: #18141f;
+    --sunken: #0d0a12;
     --ink: #f0efec;
     --muted: #c3c2b7;
     --faint: #8e8d86;
-    --line: #2a2a28;
-    --line-strong: #3b3b38;
-    --coral: #e05630;
-    --coral-ink: #f07a55;
-    --on-coral: #161615;
-    --focus: #f07a55;
-    --code-bg: #1d1d1c;
+    --line: #2a2533;
+    --line-strong: #3d3648;
+    --brand: #a58bff;
+    --accent: #ff6aab;
+    --on-brand: #0d0a14;
+    --focus: #a58bff;
+    --code-bg: #18141f;
     --code-ink: #e6e5e0;
     --code-key: #e48ab1;
     --code-str: #5cc8cc;
@@ -64,19 +65,19 @@
   }
 }
 :root[data-theme='dark'] {
-  --surface: #161615;
-  --raised: #1d1d1c;
-  --sunken: #121211;
+  --surface: #110e17;
+  --raised: #18141f;
+  --sunken: #0d0a12;
   --ink: #f0efec;
   --muted: #c3c2b7;
   --faint: #8e8d86;
-  --line: #2a2a28;
-  --line-strong: #3b3b38;
-  --coral: #e05630;
-  --coral-ink: #f07a55;
-  --on-coral: #161615;
-  --focus: #f07a55;
-  --code-bg: #1d1d1c;
+  --line: #2a2533;
+  --line-strong: #3d3648;
+  --brand: #a58bff;
+  --accent: #ff6aab;
+  --on-brand: #0d0a14;
+  --focus: #a58bff;
+  --code-bg: #18141f;
   --code-ink: #e6e5e0;
   --code-key: #e48ab1;
   --code-str: #5cc8cc;
@@ -96,7 +97,7 @@ body {
   margin: 0;
   background: var(--surface);
   color: var(--ink);
-  font: 400 16px/1.55 var(--font);
+  font: 400 clamp(16px, 0.35vw + 11px, 20px) / 1.55 var(--font);
   -webkit-font-smoothing: antialiased;
 }
 a {
@@ -112,7 +113,7 @@ svg {
   border-radius: 4px;
 }
 .wrap {
-  width: min(var(--page), 100% - 2 * var(--s4));
+  width: min(100% - 2 * var(--margen), 2400px);
   margin-inline: auto;
 }
 .sr-only {
@@ -138,10 +139,10 @@ svg {
   display: flex;
   align-items: center;
   gap: var(--s5);
-  min-height: 64px;
+  min-height: clamp(64px, 3.4vw, 88px);
 }
 .wordmark {
-  font: 700 21px/1 var(--display);
+  font: 700 clamp(19px, 0.9vw, 26px) / 1 var(--display);
   letter-spacing: -0.02em;
   text-decoration: none;
   display: inline-flex;
@@ -157,10 +158,10 @@ svg {
   height: 26px;
 }
 .mark rect {
-  fill: var(--coral);
+  fill: #7b5cff;
 }
 .mark rect:nth-child(2) {
-  fill: #009298;
+  fill: #ff4f9a;
 }
 .mark rect:nth-child(3) {
   fill: var(--ink);
@@ -177,7 +178,7 @@ svg {
   color: var(--muted);
   text-decoration: none;
   font-weight: 500;
-  font-size: 15px;
+  font-size: clamp(15px, 0.6vw + 6px, 19px);
 }
 .nav a:hover,
 .nav a[aria-current='page'] {
@@ -245,9 +246,9 @@ svg {
   border-color: var(--ink);
 }
 .btn.primary {
-  background: var(--coral-ink);
-  border-color: var(--coral-ink);
-  color: var(--on-coral);
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--on-brand);
 }
 .btn.primary:hover {
   filter: brightness(1.08);
@@ -264,11 +265,11 @@ h3 {
   margin: 0;
 }
 h1 {
-  font-size: clamp(40px, 6.2vw, 76px);
+  font-size: clamp(40px, 5.6vw, 150px);
   font-weight: 700;
 }
 h2 {
-  font-size: clamp(28px, 3.6vw, 44px);
+  font-size: clamp(28px, 3.2vw, 84px);
   font-weight: 700;
 }
 h3 {
@@ -303,7 +304,7 @@ code {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: var(--s4) var(--s5);
-  font: 400 13.5px/1.65 var(--mono);
+  font: 400 clamp(13.5px, 0.35vw + 8.5px, 17px) / 1.65 var(--mono);
   overflow-x: auto;
   tab-size: 2;
 }

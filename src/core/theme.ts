@@ -27,7 +27,7 @@ export interface Theme {
 
 export const LIGHT: Theme = {
   name: 'light',
-  palette: ['#e45934', '#009298', '#5e2dad', '#9c1854', '#4c99f8', '#31983d', '#db6ea5', '#e2aa00'],
+  palette: ['#5e2dad', '#db6ea5', '#e2aa00', '#9c1854', '#31983d', '#4c99f8', '#e45934', '#009298'],
   surface: '#fcfcfb',
   text: '#0b0b0b',
   textMuted: '#52514e',
@@ -43,7 +43,7 @@ export const LIGHT: Theme = {
 
 export const DARK: Theme = {
   name: 'dark',
-  palette: ['#e05630', '#0a999f', '#8b61e3', '#9d4e6b', '#4996f5', '#399e43', '#d1649c', '#b88a06'],
+  palette: ['#8b61e3', '#d1649c', '#b88a06', '#9d4e6b', '#399e43', '#4996f5', '#e05630', '#0a999f'],
   surface: '#1a1a19',
   text: '#f0efec',
   textMuted: '#c3c2b7',

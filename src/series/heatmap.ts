@@ -395,7 +395,7 @@ export const heatmap: SeriesImpl = {
         cells += rect(b.x, b.y, b.w, b.h, { rx: r2(radius), fill: p.fill, 'fill-opacity': p.opacity });
         const v = S.values?.[i];
         if (v) {
-          const fill = textOn(p.rgb, [th.text, th.surface]);
+          const fill = textOn(p.rgb, [th.text, th.surface, '#000000', '#ffffff']);
           labels += text(b.x + b.w / 2, b.y + b.h / 2, v, fill, { 'text-anchor': 'middle' });
         }
       }

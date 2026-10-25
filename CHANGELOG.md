@@ -20,4 +20,5 @@ Primera versión completa.
   `<loz-chart>` para Angular, Vue o Svelte (`lozcharts/element`) y Django + HTMX (`initAll`).
 - **Mapas:** mapa del mundo aparte (`lozcharts/maps/world`), con proyecciones Equal Earth y
   Mercator; cualquier TopoJSON o GeoJSON con `registerMap`.
-- **Paleta Coral** por defecto, con tonos propios para el modo oscuro.
+- **Paleta Violeta** por defecto (violeta, rosa, ocre, vino, verde, cielo, coral, petróleo), validada para daltonismo y con tonos propios para el modo oscuro.
+- **Globo terráqueo** (`projection: 'orthographic'`, `rotate`).
