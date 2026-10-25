@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Sunburst</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+        background: #fcfcfb;
+        color: #0b0b0b;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #1a1a19;
+          color: #f0efec;
+        }
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(440px, 100%), 1fr));
+        gap: 40px 32px;
+      }
+      .wide {
+        grid-column: 1 / -1;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>LozSunburst</h1>
+    <div class="grid">
+      <div id="ventas" class="wide"></div>
+      <div id="presupuesto"></div>
+      <div id="donut"></div>
+      <div id="muchas"></div>
+      <div id="disco"></div>
+      <div id="huecos"></div>
+      <div id="cola"></div>
+      <div id="largos"></div>
+      <div id="sin-etiquetas"></div>
+      <div id="vacio"></div>
+    </div>
+
+    <script src="../dist/lozcharts.umd.js"></script>
+    <script>
+      var qa = (window.qa = {});
+      function row(r) {
+        return { region: r[0], pais: r[1], ciudad: r[2], ventas: r[3] };
+      }
+
+      var ventas = [
+        ['América', 'México', 'Monterrey', 182000],
+        ['América', 'México', 'Ciudad de México', 412000],
+        ['América', 'México', 'Guadalajara', 156000],
+        ['América', 'México', 'Puebla', 61000],
+        ['América', 'Colombia', 'Bogotá', 228000],
+        ['América', 'Colombia', 'Medellín', 119000],
+        ['América', 'Colombia', 'Cali', 54000],
+        ['América', 'Argentina', 'Buenos Aires', 205000],
+        ['América', 'Argentina', 'Córdoba', 48000],
+        ['América', 'Chile', 'Santiago', 141000],
+        ['América', 'Perú', 'Lima', 133000],
+        ['Europa', 'España', 'Madrid', 264000],
+        ['Europa', 'España', 'Barcelona', 231000],
+        ['Europa', 'España', 'Valencia', 72000],
+        ['Europa', 'España', 'Sevilla', 58000],
+        ['Europa', 'Portugal', 'Lisboa', 96000],
+        ['Europa', 'Portugal', 'Oporto', 41000],
+        ['Europa', 'Francia', 'París', 118000],
+        ['Europa', 'Alemania', 'Berlín', 87000],
+        ['Asia', 'Japón', 'Tokio', 174000],
+        ['Asia', 'Japón', 'Osaka', 66000],
+        ['Asia', 'Corea del Sur', 'Seúl', 92000],
+        ['Asia', 'India', 'Bombay', 71000],
+        ['África', 'Marruecos', 'Casablanca', 38000],
+        ['África', 'Egipto', 'El Cairo', 33000],
+        ['Oceanía', 'Australia', 'Sídney', 62000],
+        ['Oceanía', 'Australia', 'Melbourne', 44000],
+        ['Oceanía', 'Nueva Zelanda', 'Auckland', 19000],
+      ].map(row);
+
+      qa.ventas = new LozChart('#ventas', {
+        title: 'Ventas por región, país y ciudad',
+        subtitle:
+          'Año 2026. Pasa el puntero para ver la ruta; con el teclado, flechas para recorrer, arriba y abajo para subir y bajar de nivel',
+        // Un círculo: en un teléfono, tan alto como ancho.
+        height: Math.min(560, Math.max(320, window.innerWidth + 40)),
+        data: ventas,
+        xAxis: { field: 'ciudad' },
+        yAxis: { format: 'currency' },
+        series: [{ type: 'sunburst', field: 'ventas', name: 'Ventas', levels: ['region', 'pais', 'ciudad'] }],
+      });
+
+      qa.presupuesto = new LozChart('#presupuesto', {
+        title: 'Presupuesto por área y equipo',
+        subtitle: 'Dos niveles',
+        height: 400,
+        data: [
+          { area: 'Ingeniería', equipo: 'Plataforma', monto: 980000 },
+          { area: 'Ingeniería', equipo: 'Producto', monto: 860000 },
+          { area: 'Ingeniería', equipo: 'Datos', monto: 560000 },
+          { area: 'Comercial', equipo: 'Ventas', monto: 940000 },
+          { area: 'Comercial', equipo: 'Marketing', monto: 610000 },
+          { area: 'Operaciones', equipo: 'Logística', monto: 520000 },
+          { area: 'Operaciones', equipo: 'Soporte', monto: 410000 },
+          { area: 'Administración', equipo: 'Finanzas', monto: 290000 },
+          { area: 'Administración', equipo: 'Personas', monto: 240000 },
+          { area: 'Administración', equipo: 'Legal', monto: 150000 },
+        ],
+        xAxis: { field: 'equipo' },
+        yAxis: { format: 'currency' },
+        series: [{ type: 'sunburst', field: 'monto', name: 'Presupuesto', levels: ['area', 'equipo'] }],
+      });
+
+      qa.donut = new LozChart('#donut', {
+        title: 'Un solo nivel',
+        subtitle: 'Se comporta como un donut',
+        height: 400,
+        data: [
+          { canal: 'Web', pedidos: 4820 },
+          { canal: 'App', pedidos: 3210 },
+          { canal: 'Tienda', pedidos: 1980 },
+          { canal: 'Teléfono', pedidos: 640 },
+        ],
+        xAxis: { field: 'canal' },
+        series: [{ type: 'sunburst', field: 'pedidos', name: 'Pedidos' }],
+      });
+
+      // 11 ramas: las 7 mayores con color y el resto en el gris de "Otros", cada una con su anillo.
+      var paises = [
+        'México',
+        'Colombia',
+        'Argentina',
+        'Chile',
+        'Perú',
+        'España',
+        'Uruguay',
+        'Ecuador',
+        'Bolivia',
+        'Paraguay',
+        'Panamá',
+      ];
+      var visitas = [];
+      paises.forEach(function (p, k) {
+        ['Web', 'App', 'Tienda'].forEach(function (canal, j) {
+          visitas.push({ pais: p, canal: canal, n: Math.round((5200 / (k + 1.5)) * [1, 0.6, 0.3][j]) });
+        });
+      });
+      qa.muchas = new LozChart('#muchas', {
+        title: 'Visitas por país y canal',
+        subtitle: 'Más de 8 ramas',
+        height: 400,
+        data: visitas,
+        xAxis: { field: 'canal' },
+        series: [{ type: 'sunburst', field: 'n', name: 'Visitas', levels: ['pais', 'canal'] }],
+      });
+
+      // Seis niveles: el uso de un disco.
+      var archivos = [
+        ['Usuarios', 'mayra', 'Fotos', '2025', 'Viajes', 'Oaxaca', 3400],
+        ['Usuarios', 'mayra', 'Fotos', '2025', 'Viajes', 'Lisboa', 2800],
+        ['Usuarios', 'mayra', 'Fotos', '2025', 'Familia', 'Navidad', 1900],
+        ['Usuarios', 'mayra', 'Fotos', '2026', 'Viajes', 'Tokio', 4100],
+        ['Usuarios', 'mayra', 'Documentos', 'Trabajo', 'Informes', 'Q1', 600],
+        ['Usuarios', 'mayra', 'Documentos', 'Trabajo', 'Informes', 'Q2', 720],
+        ['Usuarios', 'mayra', 'Documentos', 'Personal', 'Impuestos', '2025', 240],
+        ['Usuarios', 'mayra', 'Música', 'Álbumes', 'Jazz', 'Clásicos', 2300],
+        ['Usuarios', 'invitado', 'Descargas', 'Instaladores', 'Herramientas', 'Editor', 900],
+        ['Sistema', 'Biblioteca', 'Cachés', 'Navegador', 'Imágenes', 'Miniaturas', 1500],
+        ['Sistema', 'Biblioteca', 'Fuentes', 'Familias', 'Sans', 'Variables', 380],
+        ['Aplicaciones', 'Diseño', 'Editor de fotos', 'Recursos', 'Pinceles', 'Básicos', 2100],
+        ['Aplicaciones', 'Oficina', 'Hojas de cálculo', 'Plantillas', 'Finanzas', 'Mensual', 420],
+      ].map(function (r) {
+        return { a: r[0], b: r[1], c: r[2], d: r[3], e: r[4], f: r[5], mb: r[6] };
+      });
+      qa.disco = new LozChart('#disco', {
+        title: 'Uso del disco',
+        subtitle: 'Seis niveles, en MB',
+        height: 440,
+        data: archivos,
+        xAxis: { field: 'f' },
+        series: [{ type: 'sunburst', field: 'mb', name: 'Tamaño', levels: ['a', 'b', 'c', 'd', 'e', 'f'] }],
+      });
+
+      qa.huecos = new LozChart('#huecos', {
+        title: 'Huecos y valores raros',
+        subtitle: 'Nivel vacío al medio, ruta corta, cero, negativo, sin dato y ruta repetida',
+        height: 400,
+        data: [
+          row(['Norte', 'Sonora', 'Hermosillo', 420]),
+          row(['Norte', '', 'Sin estado', 180]),
+          row(['Norte', 'Chihuahua', '', 260]),
+          row(['Norte', 'Chihuahua', 'Juárez', 300]),
+          row(['Sur', 'Oaxaca', 'Oaxaca', 240]),
+          row(['Sur', 'Chiapas', 'Tuxtla', 0]),
+          row(['Sur', 'Yucatán', 'Mérida', -50]),
+          row(['Centro', 'Puebla', 'Puebla', null]),
+          row(['Centro', 'Querétaro', 'Querétaro', 190]),
+          row(['Centro', 'Querétaro', 'Querétaro', 110]),
+          row(['', '', '', 75]),
+        ],
+        xAxis: { field: 'ciudad' },
+        series: [{ type: 'sunburst', field: 'ventas', name: 'Ventas', levels: ['region', 'pais', 'ciudad'] }],
+      });
+
+      // Cola larga: muchos segmentos diminutos que van juntos, sin etiqueta, pero se apuntan.
+      var cola = [];
+      for (var k = 0; k < 60; k++) {
+        cola.push({
+          tipo: k < 3 ? 'Principales' : 'Resto',
+          producto: 'Producto ' + (k + 1),
+          n: Math.round(20000 / Math.pow(k + 1, 1.6)),
+        });
+      }
+      qa.cola = new LozChart('#cola', {
+        title: 'Cola larga',
+        subtitle: '60 productos: los diminutos van juntos',
+        height: 400,
+        data: cola,
+        xAxis: { field: 'producto' },
+        series: [{ type: 'sunburst', field: 'n', name: 'Unidades', levels: ['tipo', 'producto'] }],
+      });
+
+      qa.largos = new LozChart('#largos', {
+        title: 'Nombres largos y caracteres especiales',
+        height: 400,
+        data: [
+          { g: 'Investigación & <Desarrollo> "aplicado"', s: 'Laboratorio de materiales compuestos avanzados', v: 420 },
+          { g: 'Investigación & <Desarrollo> "aplicado"', s: 'Prototipos', v: 260 },
+          { g: 'Departamento de atención a clientes corporativos', s: 'Cuentas clave de la región metropolitana', v: 310 },
+          { g: 'Departamento de atención a clientes corporativos', s: 'Pymes', v: 140 },
+        ],
+        xAxis: { field: 's' },
+        series: [{ type: 'sunburst', field: 'v', name: 'Horas', levels: ['g', 's'] }],
+      });
+
+      qa.sinEtiquetas = new LozChart('#sin-etiquetas', {
+        title: 'labels: false',
+        height: 320,
+        data: ventas,
+        xAxis: { field: 'ciudad' },
+        yAxis: { format: 'currency' },
+        series: [{ type: 'sunburst', field: 'ventas', name: 'Ventas', levels: ['region', 'pais', 'ciudad'], labels: false }],
+      });
+
+      qa.vacio = new LozChart('#vacio', {
+        title: 'Sin valores positivos',
+        height: 260,
+        data: [
+          { a: 'A', b: 'x', v: 0 },
+          { a: 'B', b: 'y', v: -3 },
+        ],
+        xAxis: { field: 'b' },
+        series: [{ type: 'sunburst', field: 'v', name: 'Valor', levels: ['a', 'b'] }],
+      });
+    </script>
+  </body>
+</html>

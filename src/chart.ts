@@ -1755,7 +1755,8 @@ export class LozChart {
     }
     this.positionTooltip();
     if (announce) this.liveEl.textContent = this.describe(i);
-    if (changed) this.opts.onHover?.(this.xKey(i));
+    // Un índice virtual (un nodo interior de un sunburst) no tiene X que compartir.
+    if (changed) this.opts.onHover?.(i < this.prepared.n ? this.xKey(i) : null);
   }
 
   /** @param notify avisar a onHover (no cuando la limpieza viene de highlight). */
