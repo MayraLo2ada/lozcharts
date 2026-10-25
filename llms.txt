@@ -52,7 +52,8 @@
 - 'bullet': `xAxis.field` (indicador), `field` (valor), `targetField` (meta), `ranges: [50, 75, 100]`;
   una serie por gráfico.
 - 'timeline': `xAxis.field` (inicio, fecha), `end` (fin; sin fin es un hito), `field` (nombre del
-  tramo), `group` (un carril por grupo). Usa `xAxis.type: 'time'`.
+  tramo, o `label` si el nombre está en otro campo), `group` (un carril por grupo), `today: true` o
+  una fecha (línea vertical de hoy). Usa `xAxis.type: 'time'`.
 - 'wordcloud': `xAxis.field` (palabra), `field` (peso), `group` opcional.
 - 'choropleth': `xAxis.field` (país: ISO de 3 letras, numérico o nombre en inglés o español),
   `field`; `fit: 'data'` para encuadrar una región; `projection: 'equalEarth'|'mercator'|'orthographic'`;
@@ -63,11 +64,16 @@
 ## Opciones del gráfico
 
 - `title`, `subtitle`, `height` (px, 320), `theme: 'light'|'dark'|'auto'`, `locale` ('es'),
-  `currency` ('USD'), `legend: false | { position: 'top'|'bottom' }`, `tooltip`, `animate`,
+  `currency` ('USD'), `legend: false | { position: 'top'|'bottom' }`, `tooltip` (false, o
+  `{ float: false }` para quitar solo el recuadro y conservar puntero, teclado y onHover), `animate`,
   `background`, `ariaLabel`, `palette` (hasta 8 colores, o `{ light, dark }`).
 - `yAxis`: `format` ('auto'|'compact'|'number'|'percent'|'currency'|función), `title`, `min`, `max`,
-  `zero`, `labels`, `width`, `index` (base 100). `xAxis`: `field`, `type`, `format`, `title`, `labels`, `band`.
-- `zoom: true | { range: [desde, hasta], scrollbar: false }`, `onZoom(rango)`.
+  `zero`, `labels`, `width`, `index` (base 100), `type: 'log'` (escala logarítmica), `grid: false`
+  (sin rejilla). `xAxis`: `field`, `type`, `format`, `title`, `labels`, `band`.
+- `zoom: true | { range: [desde, hasta], scrollbar: false, reset: false }`, `onZoom(rango, ventana)`
+  (`ventana` = `{ start, end }` en fracciones del eje).
+- `onClick(x, indice, serie)`: clic, Enter o Espacio en un dato. `onHover(x, indice, serie)` igual.
+- `selection: [indices de fila]`: lo seleccionado normal y el resto atenuado (`chart.select([...])`).
 - `annotations: [{ y: 80000, label: 'Meta' }, { x: ['2026-06-01', '2026-06-30'], label: 'Campaña' }]`
   (un valor = línea, dos = franja; `axis: 'right'` con `yAxis2`).
 - `endLabels: true | { value: true }`, `emphasis: 'Serie' | ['A', 'B']`, `onHover(x)`.
@@ -75,8 +81,10 @@
 
 ## Métodos
 
-`setData`, `setOptions(opciones, animar?)`, `setTheme`, `toggleSeries(nombre)`, `highlight(x)`,
-`zoomTo(desde, hasta)`, `resetZoom()`, `zoomRange`, `toSVG()`, `toCSV()`,
+`setData`, `setOptions(opciones, animar?)`, `setTheme`, `toggleSeries(nombre)`, `highlight(x | [x])`,
+`highlightIndex(i | [i])`, `select([i] | null)`, `selection`, `zoomTo(desde, hasta)`, `resetZoom()`,
+`zoomRange`, `zoomWindow`, `setZoomWindow({ start, end })`,
+`redraw()`, `toSVG()`, `toCSV()`,
 `download('png'|'svg'|'csv')`, `destroy()`; estáticos `LozChart.multiples(el, { facet: 'series' | { field }, ... })`,
 `LozChart.initAll(raiz)`, `LozChart.registerMap(nombre, topojsonOGeojson)`, `LozChart.registerSeries(nombre, impl)`.
 

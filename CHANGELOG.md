@@ -15,6 +15,31 @@
   `attrs`, `textWidth`, `fitText`, `toCSV` y `swatchOf`.
   En el build para `<script>` llegan en `window.LozChart`, y `chart.options` da las opciones
   vigentes (también en los small multiples).
+- **Opciones nuevas:** `tooltip: { float: false }` quita solo el recuadro flotante y conserva el
+  puntero, el crosshair, el teclado, los avisos y `onHover`. `zoom: { reset: false }` quita el botón
+  "Ver todo". `yAxis.grid: false` quita la rejilla del valor. `yAxis.type: 'log'`: escala
+  logarítmica con marcas en 1, 2 y 5 × 10ⁿ. `onClick(x, índice, serie)`, también con Enter o
+  Espacio sobre el dato activo (en `<loz-chart>`, el evento `lozclick`).
+- **Zoom exacto:** `onZoom` recibe también la ventana en fracciones del eje (`{ start, end }`), y
+  `setZoomWindow` la fija sin redondear a un dato; `zoomWindow` la da. Para sincronizar gráficos.
+- **`chart.redraw()`:** vuelve a dibujar con el estado actual, sin animar.
+- **Para crear tipos:** `ctx.purpose` (`'screen'`, `'export'` u `'overview'`), `ctx.locale` y
+  `ctx.currency` (también en el `format` del tooltip), `ctx.siblings()`, `hit` también en
+  cartesiano, el gancho `click(ctx, i, evento)`, `preferredHeight(ps, ancho)` y `derivedName`.
+  Exporta además `inkFor`, `MAX_COLORS`, `legendSpec`, `legendWidth`, `toOklab`, `fromOklab`,
+  `LogScale`, `logTicks` y `logDomain`.
+- **Línea de tiempo:** `label` (el campo con el nombre del tramo; por defecto `field`) y `today`
+  (línea de hoy o de una fecha dada). Fechas, eje y duraciones en el idioma del gráfico.
+- **Cascada:** `toCSV` ya no repite el encabezado cuando la serie se llama como su campo (el valor
+  sale como "monto (acumulado)"); varias cascadas lado a lado deciden juntas si llevan etiquetas, y
+  el mini gráfico del zoom va sin ellas.
+- **Selección:** la opción `selection` (índices de fila) y `chart.select()` dejan lo seleccionado
+  como siempre y atenúan el resto en barras, cascada, bala, velas, dispersión, burbujas, pie,
+  donut, embudo, mapa de calor, treemap, sunburst, sankey, cuerdas, red, línea de tiempo, nube y
+  mapas; en líneas, áreas y radar se marcan los seleccionados. Se anuncia, va en la descripción y en
+  la tabla de datos. `onHover` recibe también el índice de la fila y la serie, y `highlight()`
+  acepta varias X (`highlightIndex()`, índices).
+- **Corregido:** el tooltip oculto ya no abre un scroll horizontal al achicarse la ventana.
 
 ## 1.0.0 (25 de octubre de 2026)
 

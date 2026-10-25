@@ -63,7 +63,17 @@ El oscuro tiene sus propios valores; no es una inversión.
 - Líneas: 2 px, uniones y extremos redondeados. Suave = curva monótona.
 - Áreas: relleno al 10 % del color de la serie y su línea encima.
 - Puntos de hover: radio 4,5 px con anillo de 2 px del color de la superficie.
-- Rejilla: 1 px sólida y discreta; la línea del cero un poco más marcada.
+- Rejilla: 1 px sólida y discreta; la línea del cero un poco más marcada. `yAxis.grid: false` quita
+  la rejilla del valor, nunca la línea del cero (o la base, si el cero no se ve): sin ella las barras
+  flotan.
+- Selección (`selection`): lo seleccionado queda como siempre y el resto al 25 % de opacidad,
+  también sus etiquetas: la diferencia es de claridad, no de tono, y no depende de distinguir
+  colores. Conectores, ejes, nodos de un sankey y arcos de cuerdas no se atenúan: son la
+  estructura. En un sunburst se ve entera la rama de lo seleccionado hasta la raíz. Las líneas y
+  áreas no se cortan: llevan el punto de hover en cada dato seleccionado.
+- Eje logarítmico (`yAxis.type: 'log'`): marcas en 1, 2 y 5 × 10ⁿ, o solo en potencias de 10 si no
+  caben, con los extremos en marcas; nunca 3, 4 o 6, que en esta escala quedan apretados contra el
+  siguiente. Sin cero, la base discreta va en el borde inferior y las barras parten de ahí.
 - Línea escalonada: mismo trazo que la línea; cambia de nivel en ángulo recto.
 - Banda de rango: relleno al 16 %, sin borde; es contexto, no protagonista.
 - Dispersión: puntos de 8 px con anillo exterior de 2 px del color de la superficie.
@@ -135,7 +145,9 @@ El oscuro tiene sus propios valores; no es una inversión.
   paleta, con su nombre en texto principal y una muestra de 10 px, separados por una línea de la
   rejilla. Rejilla vertical en cada fecha del eje. Nombres adentro si caben, a la derecha antes de
   la marca siguiente o recortados si conservan el 70 %; si no, no van. Hover: anillo de 2 px y
-  guías de 1 px hasta el eje en el inicio y el fin.
+  guías de 1 px hasta el eje en el inicio y el fin. Hoy (`today`): línea de 1 px discontinua (4 3)
+  en texto secundario, encima de las marcas, con su texto de 12 px arriba en una franja de 20 px que
+  solo se reserva si la fecha cae en el eje; contra un borde, el texto se corre hacia adentro.
 - Nube de palabras: cuerpo con la raíz del peso (el área va con el peso), mínimo de 12 px, la más
   pesada al centro, todas horizontales, en espiral desde el centro con la forma del área. 500 para
   el texto y 600 desde 24 px; 2 px de aire entre cajas. Sin grupo, el color de la serie en 3
@@ -188,7 +200,8 @@ El oscuro tiene sus propios valores; no es una inversión.
   ventana con borde de 1 px en texto secundario (3:1 o más contra la superficie) y bordes de
   10 × 22 px (área táctil de 26 × 38 px) para estirarla.
 - "Ver todo" va en el encabezado, a la derecha del título; su lugar queda reservado aunque no se vea,
-  así el gráfico no salta al acercar y el botón nunca tapa datos ni anotaciones.
+  así el gráfico no salta al acercar y el botón nunca tapa datos ni anotaciones. Con
+  `zoom: { reset: false }` no hay botón ni lugar reservado (quien lo quita da su propio control).
 
 ## Un eje Y, salvo que se pida el segundo con salvaguardas
 

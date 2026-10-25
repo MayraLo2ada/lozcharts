@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · API para extensiones</title>
+    <style>
+      :root {
+        --margen: clamp(16px, 3vw, 96px);
+      }
+      body {
+        margin: 0;
+        padding: 24px var(--margen) 64px;
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+        background: #fcfcfb;
+        color: #0b0b0b;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #1a1a19;
+          color: #f0efec;
+        }
+      }
+      h1 {
+        font-size: clamp(22px, 1.4vw + 10px, 40px);
+        margin: 0 0 4px;
+      }
+      p {
+        margin: 0 0 32px;
+        max-width: 70ch;
+        color: #52514e;
+      }
+      @media (prefers-color-scheme: dark) {
+        p {
+          color: #c3c2b7;
+        }
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(560px, 100%), 1fr));
+        /* Los gráficos chicos llenan los huecos que dejan los anchos: nada de columnas vacías a 2560 px. */
+        grid-auto-flow: row dense;
+        gap: 48px clamp(24px, 2.5vw, 64px);
+      }
+      .wide {
+        grid-column: 1 / -1;
+      }
+      .log {
+        margin: 8px 0 0;
+        min-height: 1.4em;
+        font:
+          13px/1.4 ui-monospace,
+          monospace;
+        color: #52514e;
+      }
+      @media (prefers-color-scheme: dark) {
+        .log {
+          color: #c3c2b7;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>API para extensiones</h1>
+    <p>
+      Opciones nuevas del núcleo: tooltip sin recuadro, zoom sin "Ver todo" y sincronizado por fracciones, rejilla oculta, eje
+      logarítmico, clic, selección, varias marcas y la línea de hoy en la línea de tiempo.
+    </p>
+    <div class="grid">
+      <div>
+        <div id="flotante"></div>
+        <div class="log" id="flotante-log"></div>
+      </div>
+      <div id="rejilla"></div>
+      <div id="log" class="wide"></div>
+      <div class="wide">
+        <div id="precio"></div>
+        <div id="volumen"></div>
+        <div class="log" id="zoom-log"></div>
+      </div>
+      <div>
+        <div id="clic"></div>
+        <div class="log" id="clic-log"></div>
+      </div>
+      <div id="seleccion"></div>
+      <div>
+        <div id="calor"></div>
+        <div class="log" id="calor-log"></div>
+      </div>
+      <div id="pie"></div>
+      <div id="arbol"></div>
+      <div id="lineas"></div>
+      <div id="cascadas"></div>
+      <div id="plan" class="wide"></div>
+      <div id="plan-en" class="wide"></div>
+    </div>
+
+    <script src="../dist/lozcharts.umd.js"></script>
+    <script>
+      var meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+      var ventas = meses.map(function (m, i) {
+        return { mes: m, online: 42 + i * 3 + (i % 3) * 4, tienda: 30 + ((i * 7) % 11) };
+      });
+      var texto = function (id, s) {
+        document.getElementById(id).textContent = s;
+      };
+      var charts = {};
+
+      charts.flotante = new LozChart('#flotante', {
+        title: 'Tooltip sin recuadro',
+        subtitle: 'tooltip: { float: false }: puntero, crosshair, teclado y onHover siguen',
+        data: ventas,
+        xAxis: { field: 'mes' },
+        series: [
+          { type: 'line', field: 'online', name: 'Online' },
+          { type: 'line', field: 'tienda', name: 'Tienda' },
+        ],
+        tooltip: { float: false },
+        onHover: function (x, i, serie) {
+          texto('flotante-log', x === null ? '—' : 'onHover(' + x + ', ' + i + ', ' + serie + ')');
+        },
+      });
+
+      charts.rejilla = new LozChart('#rejilla', {
+        title: 'Sin rejilla',
+        subtitle: 'yAxis.grid: false (la línea del cero queda)',
+        data: ventas,
+        xAxis: { field: 'mes' },
+        yAxis: { grid: false },
+        series: [{ type: 'bar', field: 'online', name: 'Online' }],
+      });
+
+      var poblacion = [
+        { anio: '1800', mundo: 985, ciudad: 25 },
+        { anio: '1850', mundo: 1262, ciudad: 80 },
+        { anio: '1900', mundo: 1650, ciudad: 220 },
+        { anio: '1950', mundo: 2536, ciudad: 750 },
+        { anio: '1975', mundo: 4079, ciudad: 1540 },
+        { anio: '2000', mundo: 6143, ciudad: 2870 },
+        { anio: '2025', mundo: 8200, ciudad: 4700 },
+      ];
+      charts.log = new LozChart('#log', {
+        title: 'Eje logarítmico',
+        subtitle: "yAxis.type: 'log' · millones de personas",
+        data: poblacion,
+        xAxis: { field: 'anio' },
+        yAxis: { type: 'log' },
+        series: [
+          { type: 'line', field: 'mundo', name: 'Mundo' },
+          { type: 'line', field: 'ciudad', name: 'En ciudades' },
+        ],
+      });
+
+      var dias = [];
+      for (var k = 0; k < 120; k++) {
+        dias.push({
+          fecha: new Date(2026, 0, 1 + k),
+          precio: 100 + Math.sin(k / 9) * 12 + k * 0.2,
+          volumen: 40 + ((k * 37) % 23),
+        });
+      }
+      charts.volumen = new LozChart('#volumen', {
+        data: dias,
+        height: 140,
+        xAxis: { field: 'fecha', type: 'time' },
+        series: [{ type: 'bar', field: 'volumen', name: 'Volumen' }],
+        zoom: { scrollbar: false, reset: false },
+      });
+      charts.precio = new LozChart('#precio', {
+        title: 'Zoom sincronizado',
+        subtitle: 'onZoom(rango, ventana) → setZoomWindow; el panel de abajo no tiene "Ver todo" ni barra',
+        data: dias,
+        xAxis: { field: 'fecha', type: 'time' },
+        series: [{ type: 'line', field: 'precio', name: 'Precio' }],
+        zoom: { range: ['2026-02-01', '2026-03-15'] },
+        onZoom: function (rango, ventana) {
+          charts.volumen.setZoomWindow(ventana);
+          texto('zoom-log', 'ventana ' + ventana.start.toFixed(4) + ' – ' + ventana.end.toFixed(4));
+        },
+      });
+      charts.volumen.setZoomWindow(charts.precio.zoomWindow);
+
+      charts.clic = new LozChart('#clic', {
+        title: 'Clic',
+        subtitle: 'onClick(x, índice, serie); también Enter o Espacio con el foco',
+        data: ventas,
+        xAxis: { field: 'mes' },
+        series: [
+          { type: 'scatter', field: 'online', name: 'Online' },
+          { type: 'scatter', field: 'tienda', name: 'Tienda' },
+        ],
+        onClick: function (x, i, serie) {
+          texto('clic-log', 'onClick(' + x + ', ' + i + ', ' + serie + ')');
+          charts.seleccion.select([i]);
+        },
+      });
+
+      charts.seleccion = new LozChart('#seleccion', {
+        title: 'Selección',
+        subtitle: 'selection: [2, 3] · el clic en el gráfico de al lado la cambia',
+        data: ventas,
+        xAxis: { field: 'mes' },
+        series: [
+          { type: 'bar', field: 'online', name: 'Online', stack: true },
+          { type: 'bar', field: 'tienda', name: 'Tienda', stack: true },
+        ],
+        selection: [2, 3],
+      });
+
+      var calor = [];
+      ['lun', 'mar', 'mié', 'jue', 'vie'].forEach(function (d, a) {
+        ['9 h', '12 h', '15 h', '18 h'].forEach(function (h, b) {
+          calor.push({ dia: d, hora: h, visitas: 20 + ((a * 13 + b * 7) % 40) });
+        });
+      });
+      charts.calor = new LozChart('#calor', {
+        title: 'Mapa de calor: índice de la celda',
+        subtitle: 'onHover da el índice; el clic selecciona la celda y highlightIndex marca su fila',
+        data: calor,
+        xAxis: { field: 'dia' },
+        series: [{ type: 'heatmap', field: 'visitas', y: 'hora', name: 'Visitas' }],
+        onHover: function (x, i) {
+          texto('calor-log', i < 0 ? '—' : 'onHover(' + x + ', ' + i + ') · ' + calor[i].hora);
+        },
+        onClick: function (x, i) {
+          charts.calor.select([i]);
+        },
+      });
+
+      var gastos = [
+        { cat: 'Vivienda', monto: 920 },
+        { cat: 'Comida', monto: 540 },
+        { cat: 'Transporte', monto: 310 },
+        { cat: 'Salud', monto: 180 },
+        { cat: 'Ocio', monto: 150 },
+      ];
+      charts.pie = new LozChart('#pie', {
+        title: 'Pie con selección',
+        subtitle: 'selection: [1]',
+        data: gastos,
+        xAxis: { field: 'cat' },
+        series: [{ type: 'donut', field: 'monto', name: 'Gasto' }],
+        selection: [1],
+      });
+      charts.arbol = new LozChart('#arbol', {
+        title: 'Treemap con selección',
+        subtitle: 'selection: [0, 2]',
+        data: gastos,
+        xAxis: { field: 'cat' },
+        series: [{ type: 'treemap', field: 'monto', name: 'Gasto' }],
+        selection: [0, 2],
+      });
+      charts.lineas = new LozChart('#lineas', {
+        title: 'Varias marcas',
+        subtitle: "highlight(['mar', 'jul', 'nov']) y selection: [5] en líneas (se marca, no se atenúa)",
+        data: ventas,
+        xAxis: { field: 'mes' },
+        series: [
+          { type: 'line', field: 'online', name: 'Online' },
+          { type: 'line', field: 'tienda', name: 'Tienda' },
+        ],
+        selection: [5],
+      });
+      charts.lineas.highlight(['mar', 'jul', 'nov']);
+
+      charts.cascadas = new LozChart('#cascadas', {
+        title: 'Dos cascadas lado a lado',
+        subtitle: 'Deciden juntas si llevan etiquetas',
+        data: [
+          { paso: 'Ventas', a: 4200, b: 48000 },
+          { paso: 'Costos', a: -1900, b: -21000 },
+          { paso: 'Gastos', a: -800, b: -9300 },
+          { paso: 'Neto', total: true },
+        ],
+        xAxis: { field: 'paso' },
+        series: [
+          { type: 'waterfall', field: 'a', name: '2025', total: 'total' },
+          { type: 'waterfall', field: 'b', name: '2026', total: 'total' },
+        ],
+      });
+
+      var plan = [
+        { inicio: '2026-07-06', fin: '2026-08-14', tarea: 'Investigación', avance: 1, equipo: 'Producto' },
+        { inicio: '2026-08-03', fin: '2026-10-09', tarea: 'Diseño', avance: 0.8, equipo: 'Diseño' },
+        { inicio: '2026-09-14', fin: '2026-12-18', tarea: 'Desarrollo', avance: 0.4, equipo: 'Ingeniería' },
+        { inicio: '2026-11-02', fin: '2026-12-11', tarea: 'Pruebas', avance: 0, equipo: 'Ingeniería' },
+        { inicio: '2027-01-11', tarea: 'Lanzamiento', avance: 0, equipo: 'Marketing' },
+      ];
+      charts.plan = new LozChart('#plan', {
+        title: 'Línea de tiempo con hoy',
+        subtitle: "label: 'tarea' (field queda en el avance) y today: true",
+        data: plan,
+        xAxis: { field: 'inicio', type: 'time' },
+        series: [{ type: 'timeline', field: 'avance', label: 'tarea', end: 'fin', group: 'equipo', name: 'Plan', today: true }],
+      });
+      charts.planEn = new LozChart('#plan-en', {
+        title: 'Timeline in English',
+        subtitle: "locale: 'en' and today: '2026-12-01'",
+        locale: 'en',
+        data: plan,
+        xAxis: { field: 'inicio', type: 'time' },
+        series: [{ type: 'timeline', field: 'tarea', end: 'fin', name: 'Plan', today: '2026-12-01' }],
+      });
+    </script>
+  </body>
+</html>
