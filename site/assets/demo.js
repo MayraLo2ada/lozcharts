@@ -29,6 +29,13 @@
     paises: 'Un valor por país, coloreado.',
     'tiendas-mapa': 'Cantidades sobre el mapa, en su latitud y longitud.',
     regiones: 'Un gráfico pequeño por región, con las demás en gris para comparar.',
+    resultado: 'Cómo se llega de un número a otro: lo que suma, lo que resta y dónde terminas.',
+    metas: 'Cada indicador contra su meta, con los rangos de bueno y malo de fondo.',
+    opiniones: 'Lo que más se repite en un texto, a primera vista.',
+    lanzamiento: 'Un plan en el tiempo: quién hace qué y cuándo.',
+    mercados: 'Una jerarquía de un vistazo: región, país y ciudad en anillos.',
+    equipo: 'Quién se relaciona con quién, y quién está en el centro.',
+    mudanzas: 'Quién envía a quién, en las dos direcciones.',
   };
 
   var o = JSON.parse(JSON.stringify(ej.opciones));

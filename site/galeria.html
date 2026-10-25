@@ -49,7 +49,18 @@
       .cards {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        /* Las fichas anchas ocupan una fila entera: dense rellena el hueco que dejarían. */
+        grid-auto-flow: row dense;
         gap: var(--s7) var(--s6);
+      }
+      @media (min-width: 1800px) {
+        .cards {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        /* Con tres columnas, un mapa a todo el ancho completa las filas y se lee mejor. */
+        .card-wide-xl {
+          grid-column: 1 / -1;
+        }
       }
       .card {
         min-width: 0;
@@ -179,7 +190,7 @@
         EJEMPLOS.forEach(function (ej) {
           if (familias.indexOf(ej.familia) < 0) familias.push(ej.familia);
           var card = document.createElement('article');
-          card.className = 'card' + (ej.multiples || ej.id === 'visitas-dia' ? ' card-wide' : '');
+          card.className = 'card' + (ej.multiples || ej.ancho ? ' card-wide' : '') + (ej.anchoGrande ? ' card-wide-xl' : '');
           card.id = ej.id;
           card.dataset.familia = ej.familia;
           card.dataset.buscar = [
