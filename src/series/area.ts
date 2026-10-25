@@ -15,7 +15,7 @@ export const area: SeriesImpl = {
     const { frame, color } = ctx;
     const smooth = !!frame.ps.options.smooth;
     // La base usa los mismos índices que la punta: el relleno queda cerrado entre las dos.
-    const idx = visible(ctx, frame.y1);
+    const idx = visible(ctx, frame.y1, frame.ps.stackKey ? frame.y0 : undefined);
     const top = points(ctx, frame.y1, idx);
     const fill = areaPath(top, points(ctx, frame.y0, idx), smooth);
     const edge = linePath(top, smooth);

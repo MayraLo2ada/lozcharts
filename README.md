@@ -32,7 +32,7 @@ Abre `demo/index.html` con doble clic para ver la galería (después de `npm run
 </script>
 ```
 
-**2. Con `import` (Vite, React, Angular):**
+**2. Con `import` (Vite, webpack) o `require` (Node, Jest):**
 
 ```js
 import { LozChart } from 'lozcharts';
@@ -294,7 +294,8 @@ export class VentasComponent {
 - Las opciones van en el atributo `options` (JSON) o en la propiedad `options` (un objeto). Si
   solo cambian los datos, el gráfico anima con `setData`; si cambia otra cosa, con `setOptions`.
   Con `facet` crea small multiples.
-- Emite `lozhover` y `lozzoom` (en `event.detail`, la X activa o el tramo visible).
+- Emite `lozhover` y `lozzoom` (en `event.detail`, la X activa o el tramo visible); con `facet`
+  (small multiples) no emite eventos.
 - `elemento.chart` da la instancia con todos sus métodos. Al quitar el elemento de la página, el
   gráfico se destruye solo: dentro de fragmentos HTMX no hace falta `initAll`.
 

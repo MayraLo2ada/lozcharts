@@ -8,8 +8,12 @@ import { drawIndices } from '../core/decimate';
  * Índices que vale la pena dibujar de una serie: los visibles y, con más de dos datos por px,
  * los extremos de cada columna de píxeles (ver core/decimate.ts).
  */
-export function visible(ctx: DrawContext, values: readonly number[]): number[] {
-  return drawIndices(ctx.x, ctx.width, values);
+export function visible(ctx: DrawContext, values: readonly number[], other?: readonly number[]): number[] {
+  const idx = drawIndices(ctx.x, ctx.width, values);
+  if (!other) return idx;
+  // Un borde inferior propio (una banda, la base de un área apilada): sus extremos también cuentan.
+  const merged = new Set([...idx, ...drawIndices(ctx.x, ctx.width, other)]);
+  return [...merged].sort((a, b) => a - b);
 }
 
 /** Puntos (x, y) en px de una lista de valores; con `idx`, solo esos índices. */

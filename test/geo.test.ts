@@ -221,3 +221,91 @@ test('burbujas: el área es proporcional al valor', () => {
   assert.equal(bubbleRadius(0, 100, 20), 0);
   assert.equal(bubbleRadius(NaN, 100, 20), 0);
 });
+
+test('GeoJSON con puntos o líneas: se ignoran, no rompen', () => {
+  const list = features({
+    type: 'FeatureCollection',
+    features: [
+      { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [0, 0] } as never },
+      {
+        type: 'Feature',
+        id: 'a',
+        properties: {},
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 0],
+            ],
+          ],
+        },
+      },
+    ],
+  });
+  assert.deepEqual(
+    list.map((f) => f.id),
+    ['a'],
+  );
+});
+
+test('una propiedad numérica (población) no es una clave para cruzar datos', () => {
+  const list = features({
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        id: '1',
+        properties: { name: 'Uno' },
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 0],
+            ],
+          ],
+        },
+      },
+      {
+        type: 'Feature',
+        id: '2',
+        properties: { name: 'Dos', pop: 1 },
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 0],
+            ],
+          ],
+        },
+      },
+    ],
+  });
+  assert.equal(featureIndex(list).get('1'), 0);
+});
+
+test('el centro de un país con un hueco cae en su tierra, no en el hueco', () => {
+  const outer: [number, number][] = [
+    [0, 0],
+    [10, 0],
+    [10, 10],
+    [0, 10],
+  ];
+  const hole: [number, number][] = [
+    [3, 3],
+    [7, 3],
+    [7, 7],
+    [3, 7],
+  ];
+  const c = featureCenter([[outer, hole]])!;
+  assert.ok(contains([[outer, hole]], c[0], c[1]), `centro ${c}`);
+  assert.equal(featureCenter([]), null);
+});

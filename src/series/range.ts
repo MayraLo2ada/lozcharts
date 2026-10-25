@@ -18,7 +18,7 @@ export const range: SeriesImpl = {
   columns: (o) => ({ low: o.low }),
   valueColumns: ['low'],
   draw(ctx) {
-    const idx = visible(ctx, ctx.frame.y1);
+    const idx = visible(ctx, ctx.frame.y1, ctx.frame.cols.low);
     const d = areaPath(points(ctx, ctx.frame.y1, idx), points(ctx, ctx.frame.cols.low, idx), !!ctx.frame.ps.options.smooth);
     return d ? `<path${attrs({ d, fill: ctx.color, 'fill-opacity': FILL_OPACITY })}/>` : '';
   },

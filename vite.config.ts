@@ -7,7 +7,8 @@ import { defineConfig } from 'vite';
 // - react: dist/react.js, que importa 'lozcharts' y 'react' sin copiarlos.
 // - element: dist/element.js, el elemento <loz-chart> (importa 'lozcharts').
 // - world: dist/maps/world.js (ESM, registra el mapa en 'lozcharts') y
-// - world-umd: dist/maps/world.umd.js (registra el mapa en window.LozChart).
+// - world-umd: dist/maps/world.umd.js (registra el mapa en window.LozChart), y world-cjs para require.
+// Para require, el UMD se copia como lozcharts.umd.cjs: con "type": "module", Node leería un .js como ESM.
 const format = process.env.LC_FORMAT;
 
 const libs = {
@@ -15,6 +16,8 @@ const libs = {
   react: { entry: 'src/react.ts', formats: ['es' as const], fileName: () => 'react.js' },
   world: { entry: 'src/maps/register-world.ts', formats: ['es' as const], fileName: () => 'maps/world.js' },
   element: { entry: 'src/element.ts', formats: ['es' as const], fileName: () => 'element.js' },
+  // Para require: el mapa como CommonJS, que hace require('lozcharts') y lo registra ahí.
+  'world-cjs': { entry: 'src/maps/register-world.ts', formats: ['cjs' as const], fileName: () => 'maps/world.cjs' },
   'world-umd': {
     entry: 'src/maps/world-umd.ts',
     name: 'LozChartWorld',
@@ -35,11 +38,16 @@ export default defineConfig({
   build: {
     emptyOutDir: !format,
     // El mapa del mundo son datos: un sourcemap solo duplicaría sus 110 KB.
-    sourcemap: format !== 'world' && format !== 'world-umd',
+    sourcemap: !format?.startsWith('world'),
     minify: umd ? 'esbuild' : false,
     lib,
     rollupOptions: {
-      external: format === 'react' ? ['react', 'lozcharts'] : format === 'world' || format === 'element' ? ['lozcharts'] : [],
+      external:
+        format === 'react'
+          ? ['react', 'lozcharts']
+          : format === 'world' || format === 'world-cjs' || format === 'element'
+            ? ['lozcharts']
+            : [],
       output: umd ? { exports: 'default' } : {},
     },
   },

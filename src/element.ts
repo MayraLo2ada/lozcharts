@@ -9,10 +9,12 @@
  * que es lo que usan los frameworks: `[options]="opciones"` en Angular, `:options` en Vue).
  * Al cambiar las opciones el gráfico anima; si solo cambian los datos, usa setData. Con `facet`
  * en las opciones crea small multiples. El gráfico se destruye al quitar el elemento.
- * Emite `lozhover` y `lozzoom` (CustomEvent con la X o el tramo en `detail`).
+ * Emite `lozhover` y `lozzoom` (CustomEvent con la X o el tramo en `detail`); en small multiples
+ * (`facet`) no hay eventos: el puntero ya se sincroniza entre los paneles.
  */
 import { LozChart, type LozMultiples } from 'lozcharts';
 import type { LozChartOptions, MultiplesOptions } from 'lozcharts';
+import { optionsKey, optionsPatch } from './core/sync';
 
 type Options = LozChartOptions | MultiplesOptions;
 
@@ -53,8 +55,17 @@ export class LozChartElement extends Base {
   }
 
   connectedCallback(): void {
+    // Si un framework asignó `options` antes de que el elemento se definiera, quedó como propiedad
+    // propia que tapa el setter: se quita y se vuelve a asignar para que pase por él.
+    if (Object.prototype.hasOwnProperty.call(this, 'options')) {
+      const value = (this as unknown as { options: Options | null }).options;
+      delete (this as unknown as { options?: unknown }).options;
+      this.options = value;
+    }
     if (!this.style.display) this.style.display = 'block';
-    this.render(null);
+    // Moverlo de lugar lo desconecta y lo vuelve a conectar: el gráfico que ya tiene se conserva
+    // (con su zoom y sus series ocultas).
+    if (!this._chart) this.render(null);
   }
 
   disconnectedCallback(): void {
@@ -71,18 +82,20 @@ export class LozChartElement extends Base {
     const o = this._options;
     if (!o || !this.isConnected) return;
     const multiples = isMultiples(o);
-    const withEvents = this.withEvents(o);
     if (this._chart && multiples === this._multiples && prev) {
-      const sameExceptData = JSON.stringify({ ...prev, data: undefined }) === JSON.stringify({ ...o, data: undefined });
-      if (sameExceptData) this._chart.setData(o.data);
-      else (this._chart as LozChart).setOptions(withEvents as LozChartOptions);
+      if (optionsKey(prev) === optionsKey(o)) {
+        if (prev.data !== o.data) this._chart.setData(o.data);
+      } else {
+        // Lo que se quitó de las opciones también se quita del gráfico.
+        (this._chart as LozChart).setOptions(this.withEvents(optionsPatch(prev, o)) as LozChartOptions);
+      }
       return;
     }
     this._chart?.destroy();
     this._multiples = multiples;
     this._chart = multiples
-      ? LozChart.multiples(this, withEvents as MultiplesOptions)
-      : new LozChart(this, withEvents as LozChartOptions);
+      ? LozChart.multiples(this, o as MultiplesOptions)
+      : new LozChart(this, this.withEvents(o) as LozChartOptions);
   }
 
   /** Las funciones onHover y onZoom se suman a eventos del DOM, que es como escuchan los frameworks. */

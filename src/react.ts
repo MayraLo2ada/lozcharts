@@ -6,14 +6,17 @@
  * - los datos (`data`, comparados por referencia): `setData`, que anima desde lo que se ve;
  * - cualquier otra opción (comparada por contenido, no por referencia): `setOptions`.
  * Así un objeto de opciones escrito en línea, que es nuevo en cada render, no vuelve a animar
- * el gráfico si su contenido es el mismo. Las funciones (onHover, onZoom) siempre llaman a la
- * versión más reciente, sin recrear nada.
+ * el gráfico si su contenido es el mismo. Una opción que se quita, se quita del gráfico. Las
+ * funciones (onHover, onZoom, un formato) siempre llaman a su versión más reciente.
  *
  * El `ref` da la instancia (LozChart o LozMultiples) para usar sus métodos: download, zoomTo…
  */
 import { createElement, forwardRef, useEffect, useRef, type CSSProperties, type MutableRefObject, type Ref } from 'react';
 import { LozChart, type LozMultiples } from 'lozcharts';
 import type { Datum, LozChartOptions, MultiplesOptions } from 'lozcharts';
+import { optionsKey, optionsPatch, withLatest } from './core/sync';
+
+export { optionsKey };
 
 /** Lo que el componente agrega a las opciones: clase y estilo del contenedor. */
 interface ContainerProps {
@@ -32,36 +35,10 @@ interface Instance {
   destroy(): void;
 }
 
-/**
- * Clave de contenido de las opciones (sin los datos): dos objetos con lo mismo dan la misma
- * clave. Una función cuenta por su código: una flecha escrita en línea es la misma en cada render.
- */
-export function optionsKey(options: object): string {
-  return JSON.stringify(options, (k, v: unknown) => {
-    if (k === 'data') return undefined;
-    if (typeof v === 'function') return `ƒ${v.toString()}`;
-    return v;
-  });
-}
-
 /** Separa las props del contenedor de las opciones del gráfico. */
 function split<T extends ContainerProps>(props: T): [Omit<T, keyof ContainerProps>, ContainerProps] {
   const { className, style, id, ...options } = props;
   return [options, { className, style, id }];
-}
-
-/**
- * Las funciones de las opciones de primer nivel (onHover, onZoom) se pasan como envoltorios que
- * llaman a la última versión: cambiar la función no recrea ni redibuja el gráfico.
- */
-function withLatestCallbacks<T extends object>(options: T, latest: { current: T }): T {
-  const out = { ...options } as Record<string, unknown>;
-  for (const k of Object.keys(out)) {
-    if (typeof out[k] === 'function' && /^on[A-Z]/.test(k)) {
-      out[k] = (...args: unknown[]) => (latest.current as Record<string, (...a: unknown[]) => unknown>)[k]?.(...args);
-    }
-  }
-  return out as T;
 }
 
 function useInstance<O extends { data: Datum[] }, I extends Instance>(
@@ -73,15 +50,15 @@ function useInstance<O extends { data: Datum[] }, I extends Instance>(
   const instance = useRef<I | null>(null);
   const latest = useRef(options);
   latest.current = options;
-  const applied = useRef<{ data: Datum[]; key: string } | null>(null);
+  const applied = useRef<{ options: O; key: string } | null>(null);
   const key = optionsKey(options);
 
   // Montar y desmontar. En modo estricto React monta dos veces: destruir en la limpieza lo cubre.
   useEffect(() => {
     if (!el.current) return;
     const opts = latest.current;
-    instance.current = create(el.current, withLatestCallbacks(opts, latest));
-    applied.current = { data: opts.data, key: optionsKey(opts) };
+    instance.current = create(el.current, withLatest(opts, latest));
+    applied.current = { options: opts, key: optionsKey(opts) };
     setRef(ref, instance.current);
     return () => {
       setRef(ref, null);
@@ -97,9 +74,9 @@ function useInstance<O extends { data: Datum[] }, I extends Instance>(
     const chart = instance.current;
     const prev = applied.current;
     if (!chart || !prev) return;
-    if (prev.key !== key) chart.setOptions(withLatestCallbacks(options, latest));
-    else if (prev.data !== options.data) chart.setData(options.data);
-    applied.current = { data: options.data, key };
+    if (prev.key !== key) chart.setOptions(withLatest(optionsPatch(prev.options, options), latest));
+    else if (prev.options.data !== options.data) chart.setData(options.data);
+    applied.current = { options, key };
   });
 
   return (node) => {

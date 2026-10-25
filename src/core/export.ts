@@ -41,10 +41,13 @@ export async function downloadImage(
 /**
  * Tabla a CSV (RFC 4180): los campos con coma, comillas o salto de línea van entre comillas, y
  * las comillas se duplican. Empieza con BOM para que Excel lea bien los acentos.
+ * Un texto que empieza con = + - @ (o tabulador o retorno) va precedido de un apóstrofo: una
+ * hoja de cálculo lo tomaría como fórmula, y los datos pueden venir de cualquiera.
  */
 export function toCSV(rows: readonly (readonly (string | number)[])[]): string {
   const cell = (v: string | number) => {
-    const s = typeof v === 'number' ? (isFinite(v) ? String(v) : '') : v;
+    let s = typeof v === 'number' ? (isFinite(v) ? String(v) : '') : v;
+    if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = "'" + s;
     return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   return '\ufeff' + rows.map((r) => r.map(cell).join(',')).join('\r\n') + '\r\n';

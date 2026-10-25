@@ -66,7 +66,7 @@ export function getMap(name: string): GeoFeature[] | undefined {
 export function features(source: MapSource, object?: string): GeoFeature[] {
   if (source.type === 'FeatureCollection') {
     return source.features
-      .filter((f) => f.geometry)
+      .filter((f) => f.geometry?.type === 'Polygon' || f.geometry?.type === 'MultiPolygon')
       .map((f, k) => ({
         id: String(f.id ?? f.properties?.id ?? k),
         properties: f.properties ?? {},
@@ -288,8 +288,9 @@ export function contains(polys: [number, number][][][], x: number, y: number): b
 }
 
 /** Centro del polígono más grande del lugar (por área), en px: ahí va su tooltip o su burbuja. */
-export function featureCenter(polys: [number, number][][][]): [number, number] {
-  let best: [number, number] = [NaN, NaN];
+export function featureCenter(polys: [number, number][][][]): [number, number] | null {
+  let best: [number, number] | null = null;
+  let bestPoly: [number, number][][] | null = null;
   let bestArea = -1;
   for (const poly of polys) {
     const ring = poly[0];
@@ -306,6 +307,33 @@ export function featureCenter(polys: [number, number][][][]): [number, number] {
     if (Math.abs(a) > bestArea && a !== 0) {
       bestArea = Math.abs(a);
       best = [cx / (3 * a), cy / (3 * a)];
+      bestPoly = poly;
+    }
+  }
+  // El centroide puede caer fuera (una forma de C) o en un hueco (Lesoto dentro de Sudáfrica):
+  // entonces, sobre la horizontal del centroide, el centro del tramo interior más ancho.
+  if (best && bestPoly && !contains([bestPoly], best[0], best[1])) best = widestSpanCenter(bestPoly, best[1]) ?? best;
+  return best;
+}
+
+/** Centro del tramo más ancho de la horizontal y = `y` que queda dentro del polígono (con sus huecos). */
+function widestSpanCenter(poly: [number, number][][], y: number): [number, number] | null {
+  const xs: number[] = [];
+  for (const ring of poly) {
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i];
+      const [xj, yj] = ring[j];
+      if (yi > y !== yj > y) xs.push(xi + ((y - yi) * (xj - xi)) / (yj - yi));
+    }
+  }
+  xs.sort((a, b) => a - b);
+  let best: [number, number] | null = null;
+  let width = -1;
+  // Los cruces van de a pares: entra, sale (par-impar, como el relleno).
+  for (let k = 0; k + 1 < xs.length; k += 2) {
+    if (xs[k + 1] - xs[k] > width) {
+      width = xs[k + 1] - xs[k];
+      best = [(xs[k] + xs[k + 1]) / 2, y];
     }
   }
   return best;
@@ -329,12 +357,14 @@ export function normalizeKey(s: unknown): string {
 export function featureIndex(list: readonly GeoFeature[]): Map<string, number> {
   const index = new Map<string, number>();
   list.forEach((f, k) => {
-    const keys = [f.id, ...Object.values(f.properties).filter((v) => typeof v === 'string' || typeof v === 'number')];
+    // Solo el id y los textos: una propiedad numérica (población, área) no es una clave.
+    const keys = [f.id, ...Object.values(f.properties).filter((v) => typeof v === 'string')];
     for (const key of keys) {
       const norm = normalizeKey(key);
-      // Un código numérico también se encuentra sin ceros a la izquierda ("32" = "032").
       if (norm && !index.has(norm)) index.set(norm, k);
-      if (/^\d+$/.test(norm)) index.set(String(Number(norm)), k);
+      // Un código numérico también se encuentra sin ceros a la izquierda ("32" = "032").
+      const short = /^\d+$/.test(norm) ? String(Number(norm)) : '';
+      if (short && !index.has(short)) index.set(short, k);
     }
   });
   return index;

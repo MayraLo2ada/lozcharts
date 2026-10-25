@@ -45,7 +45,7 @@ interface MapSetup {
   key: string;
   features: GeoFeature[];
   /** Anillos en px, caminos SVG y centro de cada lugar dibujado. */
-  shapes: { polys: [number, number][][][]; d: string; center: [number, number]; box: [number, number, number, number] }[];
+  shapes: { polys: [number, number][][][]; d: string; center: [number, number] | null; box: [number, number, number, number] }[];
   /** Lugar de cada fila de datos (-1 si no se encontró). */
   place: number[];
   project: (lon: number, lat: number) => [number, number];
@@ -170,9 +170,12 @@ function hitPlace(S: MapSetup, px: number, py: number, rows: readonly number[]):
 
 /** Filas con lugar y valor, de mayor a menor (el orden del teclado). */
 function ranked(ps: PreparedSeries, place?: readonly number[]): number[] {
+  // Un lugar repetido cuenta una vez, con su última fila: la misma regla que el color.
+  const last = new Map<number, number>();
+  if (place) place.forEach((k, i) => k >= 0 && isFinite(ps.values[i]) && last.set(k, i));
   return ps.values
     .map((_, i) => i)
-    .filter((i) => isFinite(ps.values[i]) && (!place || place[i] >= 0))
+    .filter((i) => isFinite(ps.values[i]) && (!place || (place[i] >= 0 && last.get(place[i]) === i)))
     .sort((a, b) => ps.values[b] - ps.values[a]);
 }
 

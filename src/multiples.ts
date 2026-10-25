@@ -9,7 +9,7 @@ import type { LozChartOptions, MultiplesOptions, MultiplesUpdate, ThemeName, YAx
 import { AXIS_GAP, LozChart, seriesSymbol, tickCountFor, usesBand, valueDomain, X_LABEL_SPACE } from './chart';
 import { facetPanels, type PanelSpec } from './core/facet';
 import { attrs, esc, html, resolveElement } from './core/dom';
-import { downloadImage, slug } from './core/export';
+import { downloadCSV, downloadImage, slug, toCSV } from './core/export';
 import { Legend, legendSVG, type LegendItem } from './core/legend';
 import { mount, unmount, type Mounted } from './core/mount';
 import { injectStyles, MAX_COLORS, resolveTheme, themeVars, type Theme } from './core/theme';
@@ -127,9 +127,27 @@ export class LozMultiples implements Mounted {
     return this.exportSVG().markup;
   }
 
-  download(type: 'png' | 'svg' = 'png', filename?: string): Promise<void> {
+  /** Descarga la cuadrícula como PNG o SVG, o los datos como CSV. */
+  download(type: 'png' | 'svg' | 'csv' = 'png', filename?: string): Promise<void> {
+    const name = filename || slug(this.opts.title ?? '') || 'lozchart';
+    if (type === 'csv') {
+      downloadCSV(this.toCSV(), name);
+      return Promise.resolve();
+    }
     const { markup, width, height } = this.exportSVG();
-    return downloadImage(markup, width, height, type, filename || slug(this.opts.title ?? '') || 'lozchart');
+    return downloadImage(markup, width, height, type, name);
+  }
+
+  /**
+   * Los datos como CSV, tal como llegaron: una columna por cada campo que aparece en las filas
+   * (en el orden en que aparece), sin formato.
+   */
+  toCSV(): string {
+    const fields: string[] = [];
+    for (const row of this.opts.data) for (const k of Object.keys(row)) if (!fields.includes(k)) fields.push(k);
+    const cell = (v: unknown): string | number =>
+      typeof v === 'number' ? v : v instanceof Date ? v.toISOString() : v == null ? '' : String(v);
+    return toCSV([fields, ...this.opts.data.map((row) => fields.map((k) => cell(row[k])))]);
   }
 
   destroy(): void {

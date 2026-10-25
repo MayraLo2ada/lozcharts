@@ -458,11 +458,22 @@ export class LozChart {
    */
   toCSV(): string {
     const p = this.prepared;
-    const head = [this.opts.xAxis.title ?? this.opts.xAxis.field, ...p.series.map((s) => s.name)];
-    const rows: (string | number)[][] = [head];
+    const xField = this.opts.xAxis.field;
+    // Cada serie con su valor y las columnas que lee de cada fila (el destino de un sankey, la
+    // fila de un mapa de calor, el máximo de una vela), con el nombre de su campo.
+    const cols: { name: string; at: (i: number) => string | number }[] = [];
+    for (const s of p.series) {
+      const values = s.raw ?? s.values;
+      cols.push({ name: s.name, at: (i) => values[i] });
+      for (const [key, field] of Object.entries(s.impl.columns?.(s.options) ?? {}))
+        if (field && s.columns[key]) cols.push({ name: field, at: (i) => s.columns[key][i] });
+      for (const [key, field] of Object.entries(s.impl.texts?.(s.options, xField) ?? {}))
+        if (field && field !== xField && s.texts[key]) cols.push({ name: field, at: (i) => s.texts[key][i] });
+    }
+    const rows: (string | number)[][] = [[this.opts.xAxis.title ?? xField, ...cols.map((c) => c.name)]];
     for (let i = 0; i < p.n; i++) {
       const x = p.xType === 'time' && isFinite(p.xNum[i]) ? new Date(p.xNum[i]).toISOString() : String(p.xRaw[i] ?? '');
-      rows.push([x, ...p.series.map((s) => (s.raw ?? s.values)[i])]);
+      rows.push([x, ...cols.map((c) => c.at(i))]);
     }
     return toCSV(rows);
   }

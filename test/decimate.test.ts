@@ -49,3 +49,8 @@ test('CSV: comillas, comas y saltos de línea escapados; BOM para Excel', () => 
   ]);
   assert.equal(csv, '﻿Mes,Ventas\r\n"Enero, 2026",1200.5\r\n"Dijo ""hola""",\r\n');
 });
+
+test('CSV: un texto que parece fórmula no se ejecuta en la hoja de cálculo', () => {
+  const csv = toCSV([['=HYPERLINK("x")', '@SUM(1)', '-5', -5, 'normal']]);
+  assert.equal(csv, '\ufeff"\'=HYPERLINK(""x"")",\'@SUM(1),\'-5,-5,normal\r\n');
+});
