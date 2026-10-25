@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Bala</title>
+    <style>
+      :root {
+        --surface: #fcfcfb;
+        --text: #0b0b0b;
+        --muted: #52514e;
+        --line: #e7e6e1;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --surface: #1a1a19;
+          --text: #f0efec;
+          --muted: #c3c2b7;
+          --line: #2f2f2d;
+        }
+      }
+      :root[data-theme='dark'] {
+        --surface: #1a1a19;
+        --text: #f0efec;
+        --muted: #c3c2b7;
+        --line: #2f2f2d;
+      }
+      body {
+        margin: 0;
+        padding: 16px;
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+        background: var(--surface);
+        color: var(--text);
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 0 0 24px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 20px;
+      }
+      .theme button {
+        min-height: 32px;
+        padding: 4px 12px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--surface);
+        color: var(--text);
+        font: inherit;
+        cursor: pointer;
+      }
+      .theme button[aria-pressed='true'] {
+        background: var(--line);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(520px, 100%), 1fr));
+        gap: 40px 32px;
+      }
+      .wide {
+        grid-column: 1 / -1;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>LozBullet</h1>
+      <div class="theme" role="group" aria-label="Tema">
+        <button type="button" data-theme="auto" aria-pressed="true">Automático</button>
+        <button type="button" data-theme="light" aria-pressed="false">Claro</button>
+        <button type="button" data-theme="dark" aria-pressed="false">Oscuro</button>
+      </div>
+    </header>
+    <div class="grid">
+      <div id="ventas" class="wide"></div>
+      <div id="cumplimiento"></div>
+      <div id="satisfaccion"></div>
+      <div id="margen"></div>
+      <div id="limites"></div>
+      <div id="largos"></div>
+      <div id="sinetiquetas"></div>
+      <div id="uno"></div>
+      <div id="vacio"></div>
+      <div id="muchas" class="wide"></div>
+    </div>
+
+    <script src="../dist/lozcharts.umd.js"></script>
+    <script>
+      var charts = {};
+      var bala = function (title, subtitle, data, serie, extra) {
+        return Object.assign(
+          {
+            title: title,
+            subtitle: subtitle,
+            data: data,
+            height: 300,
+            xAxis: { field: 'indicador' },
+            series: [Object.assign({ type: 'bullet', field: 'valor', targetField: 'meta' }, serie)],
+          },
+          extra || {},
+        );
+      };
+      var f = function (indicador, valor, meta) {
+        return { indicador: indicador, valor: valor, meta: meta };
+      };
+
+      // Ventas del trimestre por región contra la meta, en miles de dólares.
+      charts.ventas = new LozChart(
+        '#ventas',
+        bala(
+          'Ventas del tercer trimestre por región',
+          'Miles de USD; fondo: menos de 300 es bajo, hasta 450 aceptable y hasta 600 bueno',
+          [
+            f('Norte', 512, 480),
+            f('Centro', 438, 500),
+            f('Sur', 297, 420),
+            f('Occidente', 571, 520),
+            f('Oriente', 365, 380),
+            f('Ventas en línea', 642, 560),
+          ],
+          { name: 'Ventas', ranges: [300, 450, 600], format: 'currency' },
+          { height: 360, yAxis: { format: 'currency' } },
+        ),
+      );
+
+      // Cumplimiento de objetivos como proporción: la meta es el 100 %.
+      charts.cumplimiento = new LozChart(
+        '#cumplimiento',
+        bala(
+          'Cumplimiento de objetivos',
+          'Avance al cierre de septiembre',
+          [
+            f('Contratos firmados', 0.92, 1),
+            f('Clientes retenidos', 0.87, 0.9),
+            f('Proyectos a tiempo', 0.64, 0.85),
+            f('Capacitación', 1.08, 1),
+          ],
+          { name: 'Cumplimiento', ranges: [0.6, 0.85, 1], format: 'percent' },
+          { yAxis: { format: 'percent' } },
+        ),
+      );
+
+      // Escala de 1 a 5, con la meta de 4 y el fondo en tres tramos.
+      charts.satisfaccion = new LozChart(
+        '#satisfaccion',
+        bala(
+          'Satisfacción por canal',
+          'Promedio de 1 a 5; meta 4,2',
+          [f('Tienda', 4.4, 4.2), f('Teléfono', 3.6, 4.2), f('Chat', 4.1, 4.2), f('Correo', 2.9, 4.2)],
+          { name: 'Satisfacción', ranges: [3, 4, 5] },
+          { height: 260 },
+        ),
+      );
+
+      // Márgenes con pérdidas: la escala incluye los negativos y las barras parten del cero.
+      charts.margen = new LozChart(
+        '#margen',
+        bala(
+          'Margen operativo por línea',
+          'Millones de USD; una línea con pérdidas',
+          [f('Hogar', 12.4, 10), f('Oficina', 6.8, 9), f('Industrial', -4.2, 2), f('Repuestos', 3.1, 4)],
+          { name: 'Margen', ranges: [0, 5, 15] },
+          { height: 260 },
+        ),
+      );
+
+      // Casos límite: sin meta, sin valor, meta fuera de los rangos y valor sobre el máximo.
+      charts.limites = new LozChart(
+        '#limites',
+        bala(
+          'Casos límite',
+          'Sin meta · sin dato · meta fuera de los rangos · sobre el último rango · meta encima del valor',
+          [
+            f('Sin meta', 62, null),
+            f('Sin dato', null, 70),
+            f('Meta muy alta', 58, 135),
+            f('Sobre el máximo', 128, 90),
+            f('Meta en la punta', 80, 81),
+          ],
+          { name: 'Valor', ranges: [50, 75, 100] },
+        ),
+      );
+
+      // Sin rangos y con nombres larguísimos (se recortan al 40 % del ancho).
+      charts.largos = new LozChart(
+        '#largos',
+        bala(
+          'Sin rangos y nombres largos',
+          'La pista tenue marca la escala; los nombres se recortan con "…"',
+          [
+            f('Tiempo medio de resolución de incidentes críticos', 42, 36),
+            f('Porcentaje de entregas completas en la primera visita', 78, 85),
+            f('Reclamos <b>escapados</b> & "comillas"', 15, 20),
+          ],
+          { name: 'Indicador' },
+          { height: 220 },
+        ),
+      );
+
+      charts.sinetiquetas = new LozChart(
+        '#sinetiquetas',
+        bala(
+          'Sin etiquetas de valor',
+          'labels: false; los valores quedan en el tooltip',
+          [f('Producción', 820, 900), f('Calidad', 960, 950), f('Mermas', 140, 100)],
+          { name: 'Unidades', ranges: [400, 800, 1000], labels: false },
+          { height: 220 },
+        ),
+      );
+
+      charts.uno = new LozChart(
+        '#uno',
+        bala(
+          'Un solo indicador',
+          'Ingresos del año contra el presupuesto',
+          [f('Ingresos 2026', 8.6, 9.2)],
+          { name: 'Ingresos', ranges: [6, 8, 10] },
+          { height: 120 },
+        ),
+      );
+
+      charts.vacio = new LozChart(
+        '#vacio',
+        bala('Sin datos', 'data: []', [], { name: 'Nada', ranges: [50, 75, 100] }, { height: 120 }),
+      );
+
+      // Muchas filas en poco alto: las filas se achican y los nombres se saltan para no encimarse.
+      var tiendas = [];
+      for (var k = 1; k <= 24; k++) {
+        tiendas.push(f('Tienda ' + k, Math.round(40 + 70 * Math.abs(Math.sin(k * 1.7))), 80 + (k % 4) * 5));
+      }
+      charts.muchas = new LozChart(
+        '#muchas',
+        bala(
+          'Veinticuatro tiendas',
+          'Cumplimiento de la meta mensual, en %',
+          tiendas,
+          { name: 'Cumplimiento', ranges: [60, 85, 110] },
+          { height: 420 },
+        ),
+      );
+
+      document.querySelectorAll('.theme button').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var theme = btn.getAttribute('data-theme');
+          document.querySelectorAll('.theme button').forEach(function (b) {
+            b.setAttribute('aria-pressed', String(b === btn));
+          });
+          if (theme === 'auto') document.documentElement.removeAttribute('data-theme');
+          else document.documentElement.setAttribute('data-theme', theme);
+          Object.keys(charts).forEach(function (id) {
+            charts[id].setOptions({ theme: theme });
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
