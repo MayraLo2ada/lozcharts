@@ -90,6 +90,11 @@ export class LozMultiples implements Mounted {
     return this;
   }
 
+  /** Opciones vigentes de la cuadrícula. Para cambiarlas, setOptions. */
+  get options(): Readonly<MultiplesOptions> {
+    return this.opts;
+  }
+
   /** Cambia opciones (se combinan con las actuales). Cambiar `facet` o las series rearma la cuadrícula. */
   setOptions(options: MultiplesUpdate): this {
     const prev = this.opts;

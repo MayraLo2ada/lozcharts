@@ -14,7 +14,7 @@
   colores (contraste, mezcla en OKLab, rampas), formatos de número y fecha, marcas de eje, `esc`,
   `attrs`, `textWidth`, `fitText`, `toCSV` y `swatchOf`.
   En el build para `<script>` llegan en `window.LozChart`, y `chart.options` da las opciones
-  vigentes.
+  vigentes (también en los small multiples).
 
 ## 1.0.0 (25 de octubre de 2026)
 
