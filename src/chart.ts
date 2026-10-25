@@ -11,11 +11,21 @@
  * se refleja sobre su diagonal; la rejilla, los ejes y el tooltip sí conocen la orientación.
  * La lógica de datos vive en core/ y es pura; esta clase maneja estado, DOM y eventos.
  */
-import type { Datum, FormatSpec, LozChartOptions, LozChartUpdate, MultiplesOptions, ThemeName, XValue } from './types';
+import type {
+  Datum,
+  FormatSpec,
+  LozChartOptions,
+  LozChartUpdate,
+  MultiplesOptions,
+  ThemeName,
+  XValue,
+  ZoomWindow,
+} from './types';
 import type { LozMultiples } from './multiples';
 import {
   swatchOf,
   type DrawContext,
+  type DrawPurpose,
   type PolarPlane,
   type PreparedSeries,
   type SeriesFrame,
@@ -24,9 +34,9 @@ import {
   type TooltipValue,
 } from './core/series';
 import { injectStyles, LIGHT, MAX_COLORS, resolveTheme, themeVars, type Theme } from './core/theme';
-import { BandScale, ContinuousScale, LinearScale, type XScale } from './core/scales';
+import { BandScale, ContinuousScale, LinearScale, LogScale, type XScale } from './core/scales';
 import { clampView, FULL_VIEW, isFull, minSpan, panView, visibleIndices, zoomView, type View } from './core/view';
-import { niceDomain, niceStep, numberTicks } from './core/ticks';
+import { logTicks, niceDomain, niceStep, numberTicks } from './core/ticks';
 import { axisFormatter, indexFormatter, parseTime, valueFormatter, type NumberContext } from './core/format';
 import { prepare, toNumber, type Prepared } from './core/prepare';
 import { buildFrame, collapse, interpolate, withExits, type Frame } from './core/frame';
@@ -79,6 +89,11 @@ const MAX_END_SHARE = 0.3;
 const MIN_PLOT_SHARE = 0.5;
 /** Si no cabe este ancho (o la etiqueta completa, si es más corta), las etiquetas al final no se muestran. */
 const MIN_END_WIDTH = 56;
+
+/** Alto del gráfico si no se da `height` ni lo pide el tipo de serie. */
+const DEFAULT_HEIGHT = 320;
+/** Un puntero que se movió más que esto entre presionar y soltar arrastró: no es un clic. */
+const CLICK_SLOP = 4;
 
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 
@@ -138,7 +153,7 @@ function normalize(o: LozChartOptions): Normalized {
     data: Array.isArray(o.data) ? o.data : [],
     series: Array.isArray(o.series) ? o.series : [],
     theme: o.theme ?? 'auto',
-    height: o.height ?? 320,
+    height: o.height ?? DEFAULT_HEIGHT,
     tooltip: o.tooltip ?? true,
     animate: o.animate ?? true,
     locale: o.locale ?? 'es',
@@ -248,6 +263,20 @@ export class LozChart {
   private active = -1;
   /** Posición del puntero dentro del SVG; -1 si se llegó con el teclado. */
   private pointer = { x: -1, y: -1 };
+  /** La serie del dato bajo el puntero, cuando se sabe (la más cercana, o la que respondió a `hit`). */
+  private pointerSeries: PreparedSeries | null = null;
+  /** ¿El dato activo lo marcó highlight()? Entonces no hay tooltip ni marcas del puntero todavía. */
+  private highlighted = false;
+  /** Con highlight() de varios datos: los que se marcan además del activo. */
+  private extraMarks: number[] = [];
+  /** Lo último que se avisó a onHover (índice y serie), para avisar solo los cambios. */
+  private hovered: { i: number; series: PreparedSeries | null } = { i: -1, series: null };
+  /** Índices de la selección (opción selection), o null sin selección. */
+  private selectedIdx: Set<number> | null = null;
+  /** Dónde se presionó el puntero (px de la pantalla), para distinguir un clic de un arrastre. */
+  private pressedAt: { x: number; y: number } | null = null;
+  /** El alto que dio el usuario, si lo dio: manda sobre el que pida el tipo de serie. */
+  private explicitHeight: number | undefined;
   private theme: Theme = LIGHT;
   private destroyed = false;
 
@@ -285,6 +314,7 @@ export class LozChart {
     mount(this);
     injectStyles(document);
     this.opts = normalize(options);
+    this.explicitHeight = options.height;
 
     const clipId = `lc-clip-${++uid}`;
     this.root = html('div', { class: 'lc-root' });
@@ -324,11 +354,11 @@ export class LozChart {
     // Al volver a todo el botón se esconde: el foco pasa al gráfico en vez de perderse.
     this.resetBtn.addEventListener('click', () => {
       this.svgEl.focus();
-      this.setView(FULL_VIEW, true);
+      this.applyView(FULL_VIEW, true);
     });
     this.scrollbar = new Scrollbar({
       view: () => this.view,
-      setView: (v, announce) => this.setView(v, announce),
+      setView: (v, announce) => this.applyView(v, announce),
       minSpan: () => this.minSpan(),
       unit: () => 1 / Math.max(1, this.prepared.n - (this.prepared.band ? 0 : 1)),
       label: (f, edge) => this.labelAtFraction(f, edge),
@@ -349,7 +379,7 @@ export class LozChart {
         const L = this.layout;
         return { left: this.svgEl.getBoundingClientRect().left + (L?.left ?? 0), width: L?.plotW ?? 0 };
       },
-      setView: (v) => this.setView(v, false),
+      setView: (v) => this.applyView(v, false),
       selection: (from: number | null, to?: number) => this.drawSelection(from, to),
       clearHover: () => this.clearActive(),
     });
@@ -397,6 +427,7 @@ export class LozChart {
       yAxis: { ...prev.yAxis, ...options.yAxis },
     });
     if (options.series) this.resetVisibility();
+    if ('height' in options) this.explicitHeight = options.height;
     this.applyTheme();
     // El zoom vuelve a su ventana inicial solo si la opción cambió de verdad: React y otros
     // frameworks mandan todas las opciones en cada cambio, y eso no debe perder la ventana actual.
@@ -470,11 +501,16 @@ export class LozChart {
     const cols: { name: string; at: (i: number) => string | number }[] = [];
     for (const s of p.series) {
       const values = s.raw ?? s.values;
-      cols.push({ name: s.name, at: (i) => values[i] });
+      const extra: typeof cols = [];
       for (const [key, field] of Object.entries(s.impl.columns?.(s.options) ?? {}))
-        if (field && s.columns[key]) cols.push({ name: field, at: (i) => s.columns[key][i] });
+        if (field && s.columns[key]) extra.push({ name: field, at: (i) => s.columns[key][i] });
       for (const [key, field] of Object.entries(s.impl.texts?.(s.options, xField) ?? {}))
-        if (field && field !== xField && s.texts[key]) cols.push({ name: field, at: (i) => s.texts[key][i] });
+        if (field && field !== xField && s.texts[key]) extra.push({ name: field, at: (i) => s.texts[key][i] });
+      // Una serie sin nombre propio se llama como su campo: si ese campo también va como columna
+      // (la variación de una cascada, junto al acumulado), el valor dice qué es.
+      const clash = extra.some((c) => c.name === s.name);
+      cols.push({ name: clash ? `${s.name} (${s.impl.derivedName ?? 'valor'})` : s.name, at: (i) => values[i] });
+      cols.push(...extra);
     }
     const rows: (string | number)[][] = [[this.opts.xAxis.title ?? xField, ...cols.map((c) => c.name)]];
     for (let i = 0; i < p.n; i++) {
@@ -485,18 +521,51 @@ export class LozChart {
   }
 
   /**
-   * Marca el dato cuya X vale `x` (sin tooltip), o limpia la marca con null.
+   * Marca el dato cuya X vale `x` (sin tooltip), o varios con una lista, o limpia la marca con null.
    * Sirve para sincronizar el puntero entre varios gráficos (ver la opción onHover).
    */
   highlight(x: unknown): this {
-    const i = x === null || x === undefined ? -1 : this.indexOfX(x);
-    if (i < 0) {
+    const list = Array.isArray(x) ? x : x === null || x === undefined ? [] : [x];
+    return this.highlightIndex(list.map((v) => this.indexOfX(v)));
+  }
+
+  /**
+   * Como highlight(), por índice de fila (el que dan onHover y onClick): marca datos que la X no
+   * identifica, como una celda de un mapa de calor. null o una lista vacía limpian la marca.
+   */
+  highlightIndex(index: number | readonly number[] | null): this {
+    // Valen las filas y los índices virtuales que recorre el teclado (los nodos interiores de un sunburst).
+    const stops = new Set(this.navigable());
+    const ok = (i: number) => Number.isInteger(i) && ((i >= 0 && i < this.prepared.n) || stops.has(i));
+    const list = [...new Set(index === null ? [] : typeof index === 'number' ? [index] : index)].filter(ok);
+    if (!list.length) {
       this.clearActive(false);
       return this;
     }
-    this.active = i;
+    this.active = list[0];
+    this.extraMarks = list.slice(1);
+    this.highlighted = true;
     this.tooltipEl.classList.remove('lc-show');
     if (this.current && this.layout) this.drawHover(this.current, this.layout);
+    return this;
+  }
+
+  /** Índices seleccionados (ver la opción selection), en orden; vacío sin selección. */
+  get selection(): number[] {
+    return this.selectedIdx ? [...this.selectedIdx].sort((a, b) => a - b) : [];
+  }
+
+  /**
+   * Selecciona datos por su índice de fila: se ven como siempre y los demás quedan atenuados. null o
+   * una lista vacía quitan la selección. Se anuncia a los lectores de pantalla.
+   */
+  select(index: readonly number[] | null): this {
+    this.opts.selection = index && index.length ? [...index] : null;
+    this.syncSelection();
+    this.liveEl.textContent = this.selectionText() || 'Sin selección';
+    this.renderTable();
+    this.svgEl.setAttribute('aria-label', this.ariaLabel());
+    this.redraw();
     return this;
   }
 
@@ -507,13 +576,13 @@ export class LozChart {
   zoomTo(from: XValue, to: XValue): this {
     const a = this.fractionOf(from, 'start');
     const b = this.fractionOf(to, 'end');
-    if (this.zoomable && a !== null && b !== null) this.setView(clampView(a, b, this.minSpan()), false);
+    if (this.zoomable && a !== null && b !== null) this.applyView(clampView(a, b, this.minSpan()), false);
     return this;
   }
 
   /** Vuelve a mostrar todos los datos. */
   resetZoom(): this {
-    if (!isFull(this.view)) this.setView(FULL_VIEW, false);
+    if (!isFull(this.view)) this.applyView(FULL_VIEW, false);
     return this;
   }
 
@@ -523,6 +592,36 @@ export class LozChart {
     // Una ventana sobre un hueco de los datos no tiene puntos: se informan los vecinos.
     const r = this.visibleRange() ?? this.visibleRange(true);
     return r ? [this.xKey(r[0]), this.xKey(r[1])] : null;
+  }
+
+  /** Ventana exacta del zoom, en fracciones del eje X: `{ start: 0, end: 1 }` si se ve todo. */
+  get zoomWindow(): ZoomWindow {
+    return { start: this.view.start, end: this.view.end };
+  }
+
+  /**
+   * Fija la ventana del zoom en fracciones del eje X, sin redondear a un dato: con la ventana que
+   * da onZoom, otro gráfico con el mismo eje muestra exactamente el mismo tramo. null vuelve a todo.
+   * Necesita la opción `zoom`; la ventana no queda más angosta que el mínimo del zoom.
+   */
+  setZoomWindow(window: ZoomWindow | null): this {
+    if (!this.zoomable) return this;
+    this.applyView(window ? clampView(window.start, window.end, this.minSpan()) : FULL_VIEW, false);
+    return this;
+  }
+
+  /**
+   * Vuelve a dibujar todo con el estado actual, sin animar ni releer los datos: para un tipo de
+   * serie cuyo dibujo cambió por fuera de las opciones (una imagen que terminó de prepararse).
+   */
+  redraw(): this {
+    if (this.destroyed) return this;
+    this.layoutCache = null;
+    this.miniKey = null;
+    // Si hay una animación en curso, su próximo cuadro ya dibuja con todo recalculado.
+    if (!this.anim) this.draw();
+    if (this.active >= 0 && !this.highlighted) this.fillTooltip(this.active);
+    return this;
   }
 
   destroy(): void {
@@ -564,6 +663,7 @@ export class LozChart {
   private update(animate: boolean): void {
     if (this.destroyed) return;
     this.hiddenIdx = this.hiddenPointIndices();
+    this.syncSelection();
     this.syncZoom();
     this.retarget(true);
     this.renderTable();
@@ -592,6 +692,7 @@ export class LozChart {
           ticks: this.valueTickCount(),
           include: annotationValues(notes, 'left'),
           range,
+          log: this.logScale,
         },
         { min: ya2?.min, max: ya2?.max, include: annotationValues(notes, 'right') },
         this.hiddenIdx,
@@ -624,7 +725,7 @@ export class LozChart {
       this.rangePending = false;
       this.initialZoom();
       // La ventana inicial también se avisa: quien escucha onZoom muestra el tramo desde el principio.
-      if (!isFull(this.view)) this.opts.onZoom?.(this.zoomRange);
+      if (!isFull(this.view)) this.opts.onZoom?.(this.zoomRange, this.zoomWindow);
     }
   }
 
@@ -686,7 +787,7 @@ export class LozChart {
    * Cambia la ventana: el eje X cambia al instante (sigue al gesto) y el del valor se acomoda a
    * lo visible con una animación corta.
    */
-  private setView(v: View, announce: boolean): void {
+  private applyView(v: View, announce: boolean): void {
     const next = isFull(v) ? FULL_VIEW : v;
     if (Math.abs(next.start - this.view.start) < 1e-9 && Math.abs(next.end - this.view.end) < 1e-9) return;
     this.view = next;
@@ -701,14 +802,14 @@ export class LozChart {
       : range
         ? `Mostrando de ${this.labelAtFraction(next.start, 'start')} a ${this.labelAtFraction(next.end, 'end')}`
         : 'Mostrando todos los datos';
-    this.opts.onZoom?.(range);
+    this.opts.onZoom?.(range, this.zoomWindow);
   }
 
   /** Acerca o aleja con el teclado alrededor del dato activo (o del centro). */
   private zoomByKey(factor: number): void {
     const L = this.layout;
     const focus = this.active >= 0 && L ? Math.max(0, Math.min(1, L.x.at(this.active) / L.plotW)) : 0.5;
-    this.setView(zoomView(this.view, focus, factor, this.minSpan()), true);
+    this.applyView(zoomView(this.view, focus, factor, this.minSpan()), true);
   }
 
   /** Si el teclado lleva a un dato fuera de la ventana, la ventana lo sigue. */
@@ -721,7 +822,7 @@ export class LozChart {
     let shift = 0;
     if (pos - margin < 0) shift = (pos - margin) / L.plotW;
     else if (pos + margin > L.plotW) shift = (pos + margin - L.plotW) / L.plotW;
-    if (shift) this.setView(panView(this.view, shift * span), false);
+    if (shift) this.applyView(panView(this.view, shift * span), false);
   }
 
   /** Muestra (o quita) el tramo que se marca al arrastrar. */
@@ -756,6 +857,23 @@ export class LozChart {
     attrsOn(this.selLabel, { x: mid.toFixed(1), y: 6, fill: this.theme.text, stroke: this.theme.surface, visibility: 'visible' });
   }
 
+  /** Índices válidos de la opción selection (los que existen en los datos), o null si no hay. */
+  private syncSelection(): void {
+    const sel = this.opts.selection;
+    const valid = (sel ?? []).filter((i) => Number.isInteger(i) && i >= 0 && i < this.prepared.n);
+    this.selectedIdx = valid.length ? new Set(valid) : null;
+  }
+
+  /** "Selección: 3 de 12 celdas", o '' sin selección. */
+  private selectionText(): string {
+    const sel = this.selectedIdx;
+    if (!sel) return '';
+    const items =
+      this.prepared.series[0]?.impl.items ?? (this.prepared.pointLegend ? ['categoría', 'categorías'] : ['punto', 'puntos']);
+    const n = this.prepared.n;
+    return `Selección: ${sel.size} de ${n} ${n === 1 ? items[0] : items[1]}`;
+  }
+
   private hiddenPointIndices(): Set<number> {
     const out = new Set<number>();
     if (!this.prepared.pointLegend) return out;
@@ -774,11 +892,55 @@ export class LozChart {
     return this.opts.orientation === 'horizontal';
   }
 
+  /** Eje del valor logarítmico: solo en gráficos cartesianos. */
+  private get logScale(): boolean {
+    return this.opts.yAxis?.type === 'log' && this.coords === 'cartesian';
+  }
+
+  /** ¿El puntero recorre los datos? Solo `tooltip: false` lo apaga. */
+  private get pointerOn(): boolean {
+    return this.opts.tooltip !== false;
+  }
+
+  /** ¿Se muestra el recuadro flotante del tooltip? */
+  private get floatOn(): boolean {
+    const t = this.opts.tooltip;
+    return t !== false && !(typeof t === 'object' && t.float === false);
+  }
+
+  /** ¿Se muestra "Ver todo" al acercar? */
+  private get resetOn(): boolean {
+    const z = this.opts.zoom;
+    return this.zoomable && !(typeof z === 'object' && z.reset === false);
+  }
+
+  /** ¿Alguien escucha los clics: la opción onClick o un tipo de serie visible? */
+  private get clickable(): boolean {
+    return !!this.opts.onClick || this.prepared.series.some((s) => !this.hidden.has(s.key) && s.impl.click);
+  }
+
+  /**
+   * Alto del gráfico con `width` px de ancho: el que dio el usuario; si no, el mayor que pidan las
+   * series visibles (preferredHeight); si no, el de siempre.
+   */
+  private heightFor(width: number): number {
+    if (this.explicitHeight !== undefined) return this.opts.height;
+    let wanted = 0;
+    for (const s of this.prepared.series) {
+      if (this.hidden.has(s.key)) continue;
+      const h = s.impl.preferredHeight?.(s, width);
+      if (h !== undefined && isFinite(h) && h > wanted) wanted = h;
+    }
+    return wanted > 0 ? Math.round(wanted) : this.opts.height;
+  }
+
   /**
    * Cuántos ticks caben en un eje del valor de `length` px. Antes del primer layout se estima
    * el largo: el alto menos los márgenes, o tres cuartos del ancho en horizontal.
    */
-  private valueTickCount(length = this.horizontal ? (this.width || 600) * 0.75 : this.opts.height - AXIS_ALLOWANCE): number {
+  private valueTickCount(
+    length = this.horizontal ? (this.width || 600) * 0.75 : this.heightFor(this.width || 600) - AXIS_ALLOWANCE,
+  ): number {
     return Math.max(2, Math.round(length / (this.horizontal ? TICK_SPACING_H : TICK_SPACING_V)));
   }
 
@@ -840,7 +1002,8 @@ export class LozChart {
     // Etiquetas de abajo: en horizontal, los números del valor; en vertical, las X.
     const bottomLabels = horizontal ? valueLabels : o.xAxis.labels !== false;
     const bottom = (bottomLabels ? X_LABEL_SPACE : AXIS_GAP) + ((horizontal ? valueTitle : indexTitle) ? 20 : 0);
-    const plotH = Math.max(10, o.height - top - bottom);
+    const height = this.heightFor(width);
+    const plotH = Math.max(10, height - top - bottom);
 
     let left: number;
     let right: number;
@@ -857,8 +1020,10 @@ export class LozChart {
 
     // Ticks del valor salen del dominio destino: quedan quietos durante la animación. En vertical,
     // el paso es el del cuadro (el eje derecho se alineó con él); en horizontal depende del ancho.
-    const step = horizontal ? niceStep(t.d1 - t.d0, this.valueTickCount(width - left)) : t.step;
-    const valueTicks = numberTicks(t.d0, t.d1, step);
+    // En un eje logarítmico, las marcas son 1, 2 y 5 × 10ⁿ (ver logTicks) y el paso es la menor.
+    const count = horizontal ? this.valueTickCount(width - left) : this.valueTickCount();
+    const step = t.log ? t.step : horizontal ? niceStep(t.d1 - t.d0, count) : t.step;
+    const valueTicks = t.log ? logTicks(t.d0, t.d1, count) : numberTicks(t.d0, t.d1, step);
     const spec = o.yAxis?.index ? 'number' : o.yAxis?.format;
     const valueFormat = axisFormatter(spec, this.numberContext(), step, Math.max(Math.abs(t.d0), Math.abs(t.d1)));
     if (!valueLabels) {
@@ -899,7 +1064,7 @@ export class LozChart {
       labelWidth,
       valueLabels,
       width,
-      height: o.height,
+      height,
       left,
       top,
       plotW,
@@ -926,7 +1091,8 @@ export class LozChart {
     const font = `${FONT_SIZE}px ${getComputedStyle(this.root).fontFamily || 'system-ui, sans-serif'}`;
     const measure = (s: string) => textWidth(s, font);
     const plotW = width;
-    const plotH = Math.max(10, o.height - 2 * AXIS_GAP);
+    const height = this.heightFor(width);
+    const plotH = Math.max(10, height - 2 * AXIS_GAP);
     const valueTicks = numberTicks(t.d0, t.d1, t.step);
     const valueFormat = axisFormatter(o.yAxis?.format, this.numberContext(), t.step, Math.max(Math.abs(t.d0), Math.abs(t.d1)));
     let polar: PolarFrame | undefined;
@@ -947,7 +1113,7 @@ export class LozChart {
       labelWidth,
       valueLabels: o.yAxis?.labels !== false,
       width,
-      height: o.height,
+      height,
       left: 0,
       top: AXIS_GAP,
       plotW,
@@ -989,9 +1155,10 @@ export class LozChart {
 
   /** Escala del valor (del eje izquierdo o del derecho): en vertical crece hacia arriba; en horizontal, a la derecha. */
   private valueScale(frame: Frame, L: Layout, axis: 'left' | 'right' = 'left'): LinearScale {
-    const { d0, d1 } = axis === 'right' && frame.right ? frame.right : frame;
+    const { d0, d1, log } = axis === 'right' && frame.right ? frame.right : frame;
     if (L.polar) return new LinearScale(d0, d1, 0, L.polar.radius);
-    return L.horizontal ? new LinearScale(d0, d1, 0, L.valueLen) : new LinearScale(d0, d1, L.valueLen, 0);
+    const Scale = log ? LogScale : LinearScale;
+    return L.horizontal ? new Scale(d0, d1, 0, L.valueLen) : new Scale(d0, d1, L.valueLen, 0);
   }
 
   private draw(): void {
@@ -1015,7 +1182,7 @@ export class LozChart {
     this.overlay.setAttribute('height', String(L.plotH));
     this.overlay.style.touchAction = L.horizontal ? 'pan-x' : this.coords === 'cartesian' ? 'pan-y' : 'pan-x pan-y';
 
-    const parts = this.renderParts(frame, L);
+    const parts = this.renderParts(frame, L, 'screen');
     this.gGrid.innerHTML = parts.grid;
     this.gSeries.innerHTML = parts.series;
     this.gNotes.innerHTML = parts.notes;
@@ -1030,7 +1197,7 @@ export class LozChart {
   /** Botón "Ver todo" y barra de desplazamiento con su mini gráfico. */
   private drawZoomControls(L: Layout, zoomed: boolean): void {
     this.resetBtn.classList.toggle('lc-off', !zoomed);
-    this.resetBtn.tabIndex = zoomed ? 0 : -1;
+    this.resetBtn.tabIndex = zoomed && this.resetOn ? 0 : -1;
     const z = this.opts.zoom;
     const show = this.zoomable && !(typeof z === 'object' && z.scrollbar === false);
     if (!show) {
@@ -1052,21 +1219,23 @@ export class LozChart {
   private miniChart(full: Frame, L: Layout): string {
     const h = SCROLLBAR_HEIGHT - 8;
     const mini: Layout = { ...L, x: this.indexScale(L.plotW, FULL_VIEW), valueLen: h, plotH: h, indexLen: L.plotW };
-    const th = { ...this.theme, surface: 'transparent' };
     let body = '';
     for (const f of full.series.slice().sort((a, b) => (a.ps.impl.layer ?? 1) - (b.ps.impl.layer ?? 1))) {
       if (f.alpha <= 0.001) continue;
-      const ctx = { ...this.drawContext(f, mini, full), color: this.theme.context, theme: th };
-      body += f.ps.impl.draw(ctx);
+      body += f.ps.impl.draw(this.drawContext(f, mini, full, 'overview'));
     }
     return `<svg${attrs({ width: L.plotW, height: SCROLLBAR_HEIGHT, viewBox: `0 -4 ${L.plotW} ${SCROLLBAR_HEIGHT}` })}>${body}</svg>`;
   }
 
   /** Markup de rejilla, series (plano lógico) y ejes. Sirve para la vista en vivo y para exportar. */
-  private renderParts(frame: Frame, L: Layout): { grid: string; series: string; notes: string; axes: string } {
+  private renderParts(
+    frame: Frame,
+    L: Layout,
+    purpose: DrawPurpose,
+  ): { grid: string; series: string; notes: string; axes: string } {
     if (this.coords !== 'cartesian') {
       const guides = L.polar ? this.polarGuides(frame, L) : { grid: '', axes: '' };
-      return { ...guides, series: this.renderSeries(frame, L), notes: '' };
+      return { ...guides, series: this.renderSeries(frame, L, purpose), notes: '' };
     }
     const th = this.theme;
     const vs = this.valueScale(frame, L);
@@ -1076,20 +1245,24 @@ export class LozChart {
       `<text${attrs({ x, y, fill: th.textMuted, 'font-size': FONT_SIZE, ...extra })}>${esc(text)}</text>`;
     const measure = (s: string) => textWidth(s, L.font);
 
-    // Rejilla de 1 px, sólida y discreta; la línea del cero un poco más marcada.
+    // Rejilla de 1 px, sólida y discreta; la línea del cero un poco más marcada. Con
+    // `yAxis.grid: false` solo queda la línea de referencia.
+    const gridOn = this.opts.yAxis?.grid !== false;
     let grid = '';
     let axes = '';
     for (const v of L.valueTicks) {
       const pos = Math.round(vs.map(v)) + 0.5;
       if (pos < -1 || pos > L.valueLen + 1) continue;
       // La línea de referencia: el cero, o el 100 de un índice.
-      const color = v === (this.opts.yAxis?.index ? INDEX_BASE : 0) ? th.zero : th.grid;
+      const reference = v === (this.opts.yAxis?.index ? INDEX_BASE : 0);
+      const color = reference ? th.zero : th.grid;
       const text = L.valueFormat(v);
+      const drawn = gridOn || reference;
       if (L.horizontal) {
-        grid += line(pos, 0, pos, L.plotH, color);
+        if (drawn) grid += line(pos, 0, pos, L.plotH, color);
         if (L.valueLabels) axes += label(pos, L.plotH + 10, text, { 'text-anchor': 'middle', 'dominant-baseline': 'hanging' });
       } else {
-        grid += line(0, pos, L.plotW, pos, color);
+        if (drawn) grid += line(0, pos, L.plotW, pos, color);
         if (L.valueLabels) axes += label(-10, pos, text, { 'text-anchor': 'end', 'dominant-baseline': 'central' });
       }
     }
@@ -1144,7 +1317,7 @@ export class LozChart {
     );
     grid += notes.under;
     axes += this.endLabelMarkup(frame, L);
-    return { grid, series: this.renderSeries(frame, L), notes: notes.over, axes };
+    return { grid, series: this.renderSeries(frame, L, purpose), notes: notes.over, axes };
   }
 
   /** Posición en el eje del índice de un valor de X (para anotaciones); null si no está. */
@@ -1236,14 +1409,18 @@ export class LozChart {
   }
 
   /** Cada serie con su plugin, por capa: barras abajo, líneas y puntos arriba. */
-  private renderSeries(frame: Frame, L: Layout): string {
+  private renderSeries(frame: Frame, L: Layout, purpose: DrawPurpose): string {
     let series = '';
     // Por capa (barras abajo, líneas arriba) y, con `emphasis`, las destacadas encima del contexto.
     const rank = (f: SeriesFrame) => (f.ps.impl.layer ?? 1) + (this.isContext(f.ps) ? 0 : 0.5);
     const layered = frame.series.slice().sort((a, b) => rank(a) - rank(b));
     for (const f of layered) {
       if (f.alpha <= 0.001) continue;
-      const body = f.ps.impl.draw(this.drawContext(f, L, frame));
+      const ctx = this.drawContext(f, L, frame, purpose);
+      let body = f.ps.impl.draw(ctx);
+      // Un tipo que no atenúa por su cuenta: queda como está y sus datos seleccionados se marcan.
+      if (this.selectedIdx && purpose !== 'overview' && !f.ps.impl.dimmable && f.ps.impl.hover && !this.isContext(f.ps))
+        for (const i of this.selectedIdx) body += f.ps.impl.hover(ctx, i);
       if (!body) continue;
       const opacity = f.alpha < 0.999 ? f.alpha.toFixed(3) : undefined;
       series += `<g${attrs({ opacity, 'data-series': f.ps.key })}>${body}</g>`;
@@ -1334,16 +1511,24 @@ export class LozChart {
     return { grid, axes };
   }
 
-  private drawContext(f: SeriesFrame, L: Layout, frame: Frame): DrawContext {
+  /**
+   * Contexto de dibujo de una serie. En el mini gráfico del zoom ('overview') todo va en el gris de
+   * contexto y sin superficie: es para orientarse, no para leer valores.
+   */
+  private drawContext(f: SeriesFrame, L: Layout, frame: Frame, purpose: DrawPurpose = 'screen'): DrawContext {
     const hidden = this.hiddenIdx;
-    return {
+    const overview = purpose === 'overview';
+    // El mini gráfico del zoom es para orientarse: ahí no hay selección que atenuar.
+    const selected = overview ? null : this.selectedIdx;
+    const ctx: DrawContext = {
       frame: f,
-      color: this.colorOf(f.ps),
+      purpose,
+      color: overview ? this.theme.context : this.colorOf(f.ps),
       pointColor: (i) => this.pointColor(i),
       polar: L.polar && this.polarPlane(L, frame),
       x: L.x,
       y: this.valueScale(frame, L, f.ps.axis),
-      theme: this.theme,
+      theme: overview ? { ...this.theme, surface: 'transparent' } : this.theme,
       width: L.indexLen,
       height: L.valueLen,
       n: frame.n,
@@ -1353,7 +1538,15 @@ export class LozChart {
       format: this.valueFormat(f.ps),
       percent: valueFormatter('percent', this.numberContext()),
       compact: (v) => this.compactFormat(f.ps)(v),
+      locale: this.opts.locale,
+      currency: this.opts.currency,
+      isDimmed: (i) => !!selected && !selected.has(i),
+      siblings: () =>
+        frame.series
+          .filter((s) => s.ps.impl === f.ps.impl && s.alpha > 0.001)
+          .map((s) => (s === f ? ctx : this.drawContext(s, L, frame, purpose))),
     };
+    return ctx;
   }
 
   /** Compacto respetando el formato de la serie: moneda en moneda, porcentaje en porcentaje. */
@@ -1428,6 +1621,8 @@ export class LozChart {
       isHidden: (i) => hidden.has(i),
       difference: (d) =>
         spec === 'percent' ? `${sign(d)}${number(Math.abs(d) * 100)} p. p.` : `${sign(d)}${value(Math.abs(d))}`,
+      locale: this.opts.locale,
+      currency: this.opts.currency,
     };
     const text = this.baseValueText(s, i, format);
     // "Otros" detalla qué categorías suma: ninguna se pierde.
@@ -1466,6 +1661,9 @@ export class LozChart {
     const width = Math.floor(this.plotEl.clientWidth);
     if (width === this.width) return;
     this.width = width;
+    // Un tooltip oculto conserva su última posición: al achicarse el gráfico podría quedar más
+    // allá del borde y abrir un scroll horizontal en la página. Vuelve al origen hasta que se use.
+    if (!this.tooltipEl.classList.contains('lc-show')) this.tooltipEl.style.transform = '';
     // Al cambiar el ancho se redibuja sin animar; si hay una animación en curso, ella dibuja.
     if (!this.anim) this.draw();
   };
@@ -1504,9 +1702,10 @@ export class LozChart {
     if (title) heading.appendChild(html('div', { class: 'lc-title' }, title));
     if (subtitle) heading.appendChild(html('div', { class: 'lc-subtitle' }, subtitle));
     this.header.replaceChildren(heading);
-    if (this.zoomable) this.header.appendChild(this.resetBtn);
-    this.header.hidden = !title && !subtitle && !this.zoomable;
-    this.header.classList.toggle('lc-tools', this.zoomable);
+    const reset = this.resetOn;
+    if (reset) this.header.appendChild(this.resetBtn);
+    this.header.hidden = !title && !subtitle && !reset;
+    this.header.classList.toggle('lc-tools', reset);
   }
 
   private legendItems(): LegendItem[] {
@@ -1568,7 +1767,8 @@ export class LozChart {
     const shown = Math.min(p.n, MAX_TABLE_ROWS);
     for (let i = 0; i < shown; i++) {
       const row = html('tr');
-      const hiddenMark = p.pointLegend && this.hiddenIdx.has(i) ? ' (oculta)' : '';
+      const hiddenMark =
+        (p.pointLegend && this.hiddenIdx.has(i) ? ' (oculta)' : '') + (this.selectedIdx?.has(i) ? ' (en la selección)' : '');
       const own = p.series[0]?.impl.headline?.(p.series[0], i, xLabel(p, i, false, ctx));
       row.appendChild(html('th', { scope: 'row' }, (own || xLabel(p, i, false, ctx)) + hiddenMark));
       for (const s of p.series) {
@@ -1613,7 +1813,8 @@ export class LozChart {
           ? 'las flechas arriba y abajo'
           : 'las flechas izquierda y derecha';
     const zoom = this.zoomable ? ' Con + y − se acerca o aleja el eje X, y con 0 se vuelve a ver todo.' : '';
-    return `${title}${what} con ${count}. Usa ${keys} para recorrer los datos.${zoom}${this.annotationText()}`;
+    const selection = this.selectedIdx ? ` ${this.selectionText()}.` : '';
+    return `${title}${what} con ${count}. Usa ${keys} para recorrer los datos.${zoom}${this.annotationText()}${selection}`;
   }
 
   /** Las anotaciones dichas en palabras: "Referencias: Meta, 120 mil $; Campaña de verano." */
@@ -1639,15 +1840,26 @@ export class LozChart {
   private bindEvents(): void {
     const point = (e: PointerEvent) => {
       const L = this.layout;
-      if (!L || !this.opts.tooltip || !this.prepared.n || this.gestures.busy) return;
-      const box = this.svgEl.getBoundingClientRect();
-      this.pointer = { x: e.clientX - box.left, y: e.clientY - box.top };
-      const i = this.indexAtPointer(L);
+      if (!L || !this.pointerOn || !this.prepared.n || this.gestures.busy) return;
+      const i = this.indexAtEvent(e, L);
       if (i < 0) this.clearActive();
       else this.setActive(i, false);
     };
     this.overlay.addEventListener('pointermove', point);
-    this.overlay.addEventListener('pointerdown', point);
+    this.overlay.addEventListener('pointerdown', (e) => {
+      this.pressedAt = { x: e.clientX, y: e.clientY };
+      point(e);
+    });
+    // Un clic es presionar y soltar casi en el mismo lugar: un arrastre (el zoom) no cuenta.
+    this.overlay.addEventListener('click', (e) => {
+      const L = this.layout;
+      const from = this.pressedAt;
+      this.pressedAt = null;
+      if (!L || !this.clickable || !this.prepared.n) return;
+      if (from && Math.hypot(e.clientX - from.x, e.clientY - from.y) > CLICK_SLOP) return;
+      const i = this.indexAtEvent(e, L);
+      if (i >= 0) this.fireClick(i, this.pointerSeries, e);
+    });
     this.overlay.addEventListener('pointerleave', (e) => {
       if (e.pointerType === 'mouse') this.clearActive();
     });
@@ -1659,12 +1871,20 @@ export class LozChart {
       const free = this.coords !== 'cartesian';
       const forwardKeys = free ? ['ArrowRight', 'ArrowDown'] : [this.horizontal ? 'ArrowDown' : 'ArrowRight'];
       const backKeys = free ? ['ArrowLeft', 'ArrowUp'] : [this.horizontal ? 'ArrowUp' : 'ArrowLeft'];
+      // Enter o Espacio sobre el dato activo es su clic. Sin nadie que escuche, Espacio sigue
+      // moviendo la página.
+      if ((e.key === 'Enter' || e.key === ' ') && this.active >= 0 && this.clickable) {
+        e.preventDefault();
+        const own = free ? (this.prepared.series.find((x) => !this.hidden.has(x.key)) ?? null) : null;
+        this.fireClick(this.active, own, e);
+        return;
+      }
       if (this.zoomable && !e.ctrlKey && !e.metaKey && !e.altKey) {
         const factor = e.key === '+' || e.key === '=' ? 1.5 : e.key === '-' || e.key === '_' ? 1 / 1.5 : 0;
         if (factor || e.key === '0') {
           e.preventDefault();
           if (factor) this.zoomByKey(factor);
-          else this.setView(FULL_VIEW, true);
+          else this.applyView(FULL_VIEW, true);
           return;
         }
       }
@@ -1702,6 +1922,7 @@ export class LozChart {
         }
       e.preventDefault();
       this.pointer = { x: -1, y: -1 };
+      this.pointerSeries = null;
       if (this.zoomable) this.followActive(next);
       this.setActive(next, true);
     });
@@ -1714,16 +1935,42 @@ export class LozChart {
     return all.filter((i) => !this.hiddenIdx.has(i));
   }
 
-  /** Índice bajo el puntero: por su posición en el eje del índice, o el punto más cercano. */
+  /** Guarda la posición de un evento del puntero (px del SVG) y devuelve el índice que hay ahí. */
+  private indexAtEvent(e: MouseEvent, L: Layout): number {
+    const box = this.svgEl.getBoundingClientRect();
+    this.pointer = { x: e.clientX - box.left, y: e.clientY - box.top };
+    return this.indexAtPointer(L);
+  }
+
+  /**
+   * Índice bajo el puntero: el que responda una serie con `hit`, por su posición en el eje del
+   * índice o el punto más cercano. Deja en `pointerSeries` la serie del dato, si se sabe.
+   */
   private indexAtPointer(L: Layout): number {
     // Coordenadas del puntero en el plano lógico (índice, valor).
     const sx = this.pointer.x - L.left;
     const sy = this.pointer.y - L.top;
     const [li, lv] = L.horizontal ? [sy, sx] : [sx, sy];
     const frame = this.current;
+    this.pointerSeries = null;
     if (frame && this.coords === 'free') {
       const f = frame.series.find((s) => s.alpha >= 0.5 && s.ps.impl.hit);
-      return f ? f.ps.impl.hit!(this.drawContext(f, L, frame), sx, sy) : -1;
+      const i = f ? f.ps.impl.hit!(this.drawContext(f, L, frame), sx, sy) : -1;
+      if (i >= 0) this.pointerSeries = f!.ps;
+      return i;
+    }
+    if (frame && this.coords === 'cartesian') {
+      // Las series que deciden qué dato tienen bajo el puntero, de la capa de arriba a la de abajo.
+      const visible = frame.series.filter((s) => s.alpha >= 0.5);
+      const hitters = visible.filter((s) => s.ps.impl.hit).sort((a, b) => (b.ps.impl.layer ?? 1) - (a.ps.impl.layer ?? 1));
+      for (const f of hitters) {
+        const i = f.ps.impl.hit!(this.drawContext(f, L, frame), li, lv);
+        if (i >= 0 && i < frame.n) {
+          this.pointerSeries = f.ps;
+          return i;
+        }
+      }
+      if (hitters.length && hitters.length === visible.length) return -1;
     }
     if (L.polar) {
       // Lejos del radar no hay dato activo; cerca, el radio más próximo al ángulo del puntero.
@@ -1735,44 +1982,77 @@ export class LozChart {
     if (!frame || !this.nearestMode()) return L.x.indexAt(li);
     let best = 0;
     let bestDist = Infinity;
+    let bestSeries: PreparedSeries | null = null;
     const [first, last] = visibleIndices(L.x, L.indexLen) ?? [0, frame.n - 1];
     for (const f of frame.series) {
       if (f.alpha < 0.5) continue;
       for (let i = first; i <= last; i++) {
         if (!isFinite(f.y1[i])) continue;
         const d = Math.hypot(L.x.at(i) - li, this.valueScale(frame, L, f.ps.axis).map(f.y1[i]) - lv);
-        if (d < bestDist) [best, bestDist] = [i, d];
+        if (d < bestDist) [best, bestDist, bestSeries] = [i, d, f.ps];
       }
     }
+    this.pointerSeries = bestSeries;
     return best;
   }
 
   /** Activa el índice i desde el puntero o el teclado: marcas, tooltip y aviso a onHover. */
   private setActive(i: number, announce: boolean): void {
-    const changed = i !== this.active;
+    const changed = i !== this.active || this.extraMarks.length > 0;
     this.active = i;
+    this.extraMarks = [];
     const frame = this.current;
     const L = this.layout;
     if (!frame || !L) return;
     // También si el índice venía marcado por highlight(): ahí no había tooltip.
-    if (changed || !this.tooltipEl.classList.contains('lc-show')) {
+    if (changed || this.highlighted) {
+      this.highlighted = false;
       this.drawHover(frame, L);
       this.fillTooltip(i);
     }
     this.positionTooltip();
     if (announce) this.liveEl.textContent = this.describe(i);
+    // La serie del dato: la del puntero o, con el teclado en un gráfico sin ejes, la que se recorre.
+    const series =
+      this.pointer.x >= 0
+        ? this.pointerSeries
+        : this.coords === 'free'
+          ? (this.prepared.series.find((s) => !this.hidden.has(s.key)) ?? null)
+          : null;
+    if (i === this.hovered.i && series === this.hovered.series) return;
+    this.hovered = { i, series };
     // Un índice virtual (un nodo interior de un sunburst) no tiene X que compartir.
-    if (changed) this.opts.onHover?.(i < this.prepared.n ? this.xKey(i) : null);
+    this.opts.onHover?.(i < this.prepared.n ? this.xKey(i) : null, i, series?.key ?? null);
   }
 
   /** @param notify avisar a onHover (no cuando la limpieza viene de highlight). */
   private clearActive(notify = true): void {
-    const was = this.active;
+    const was = this.hovered.i;
     this.active = -1;
+    this.highlighted = false;
+    this.extraMarks = [];
     this.gBand.replaceChildren();
     this.gHover.replaceChildren();
     this.tooltipEl.classList.remove('lc-show');
-    if (notify && was >= 0) this.opts.onHover?.(null);
+    if (!notify) return;
+    this.hovered = { i: -1, series: null };
+    if (was >= 0) this.opts.onHover?.(null, -1, null);
+  }
+
+  /**
+   * Clic (o Enter y Espacio) en el dato i: primero el gancho del tipo de serie (el de `series`, o
+   * el de cada serie visible que lo tenga) y después la opción onClick.
+   */
+  private fireClick(i: number, series: PreparedSeries | null, event: MouseEvent | KeyboardEvent): void {
+    const frame = this.current;
+    const L = this.layout;
+    if (frame && L) {
+      const targets = frame.series.filter(
+        (f) => f.alpha >= 0.5 && f.ps.impl.click && (series ? f.ps === series : !this.hidden.has(f.ps.key)),
+      );
+      for (const f of targets) f.ps.impl.click!(this.drawContext(f, L, frame), i, event);
+    }
+    this.opts.onClick?.(i < this.prepared.n ? this.xKey(i) : null, i, series?.key ?? null);
   }
 
   /** Clave de la X en el índice i: el texto de la categoría, o el número (fecha en ms) en tiempo y numérico. */
@@ -1789,13 +2069,28 @@ export class LozChart {
     return -1;
   }
 
-  /** Banda resaltada (barras) o crosshair (líneas y áreas), más las marcas de cada serie. Plano lógico. */
+  /**
+   * Banda resaltada (barras) o crosshair (líneas y áreas), más las marcas de cada serie, en el dato
+   * activo y en los demás que marcó highlight(). Plano lógico.
+   */
   private drawHover(frame: Frame, L: Layout): void {
-    const i = this.active;
+    let band = '';
+    let marks = '';
+    for (const i of [this.active, ...this.extraMarks]) {
+      if (i < 0) continue;
+      const m = this.hoverMarks(frame, L, i);
+      band += m.band;
+      marks += m.marks;
+    }
+    this.gBand.innerHTML = band;
+    this.gHover.innerHTML = marks;
+  }
+
+  /** Marcas de un dato: la banda o el crosshair y las marcas de cada serie (vacío si queda fuera del zoom). */
+  private hoverMarks(frame: Frame, L: Layout, i: number): { band: string; marks: string } {
     const th = this.theme;
     if (this.coords !== 'cartesian') {
       // Sin banda ni crosshair; en el radar, se resalta el radio de la categoría.
-      this.gBand.innerHTML = '';
       let marks = '';
       if (L.polar) {
         const [x, y] = this.spokeEnd(L, i);
@@ -1813,19 +2108,14 @@ export class LozChart {
       for (const f of frame.series) {
         if (f.alpha >= 0.5 && f.ps.impl.hover) marks += f.ps.impl.hover(this.drawContext(f, L, frame), i);
       }
-      this.gHover.innerHTML = marks;
-      return;
+      return { band: '', marks };
     }
     const cx = L.x.at(i);
     // Un dato fuera de la ventana del zoom (marcado desde otro gráfico) no se marca sobre los ejes.
-    if (cx < -1 || cx > L.indexLen + 1) {
-      this.gBand.replaceChildren();
-      this.gHover.replaceChildren();
-      return;
-    }
+    if (cx < -1 || cx > L.indexLen + 1) return { band: '', marks: '' };
     const band = L.x.kind === 'band';
     const w = L.x.bandwidth;
-    this.gBand.innerHTML = band
+    const bandMark = band
       ? `<rect${attrs({ x: (cx - w / 2).toFixed(2), y: 0, width: w.toFixed(2), height: L.valueLen, fill: th.highlight, rx: 4 })}/>`
       : '';
     let marks = '';
@@ -1837,7 +2127,7 @@ export class LozChart {
       // Las series de contexto (emphasis) no se marcan: la atención queda en las destacadas.
       if (f.alpha >= 0.5 && f.ps.impl.hover && !this.isContext(f.ps)) marks += f.ps.impl.hover(this.drawContext(f, L, frame), i);
     }
-    this.gHover.innerHTML = marks;
+    return { band: bandMark, marks };
   }
 
   /** Series visibles en el índice i; con `emphasis`, las destacadas primero. */
@@ -1871,6 +2161,10 @@ export class LozChart {
 
   /** El tooltip se arma con textContent: los datos del usuario nunca pasan por innerHTML. */
   private fillTooltip(i: number): void {
+    if (!this.floatOn) {
+      this.tooltipEl.classList.remove('lc-show');
+      return;
+    }
     // En dispersión, solo las series con dato en ese punto.
     const rows = this.visibleAt(i).filter((r) => !this.nearestMode() || isFinite(r.v));
     // Total si hay 2 o más series visibles en una misma pila; va justo debajo de ellas.
@@ -1901,7 +2195,7 @@ export class LozChart {
       }
     }
     this.tooltipEl.replaceChildren(...nodes);
-    this.tooltipEl.classList.toggle('lc-show', this.opts.tooltip);
+    this.tooltipEl.classList.toggle('lc-show', this.floatOn);
   }
 
   /**
@@ -1911,7 +2205,7 @@ export class LozChart {
   private positionTooltip(): void {
     const L = this.layout;
     const frame = this.current;
-    if (!L || !frame || this.active < 0) return;
+    if (!L || !frame || this.active < 0 || !this.floatOn) return;
     const tt = this.tooltipEl;
     const w = tt.offsetWidth;
     const h = tt.offsetHeight;
@@ -1970,7 +2264,8 @@ export class LozChart {
       const detail = text.details ? ` (${text.details.map(([k, v]) => `${k} ${v}`).join(', ')})` : '';
       return `${s.name} ${text.value}${detail}`;
     });
-    return `${this.headline(i)}: ${values.join(', ')}`;
+    const selected = this.selectedIdx?.has(i) ? ' (en la selección)' : '';
+    return `${this.headline(i)}${selected}: ${values.join(', ')}`;
   }
 
   // ------------------------------------------------------------ Exportar
@@ -1979,7 +2274,7 @@ export class LozChart {
     const th = this.theme;
     const width = this.width ? this.width + 2 * pad : 640;
     const L = this.computeLayout(width - 2 * pad)!;
-    const parts = this.renderParts(this.target, L);
+    const parts = this.renderParts(this.target, L, 'export');
     const family = L.font.slice(L.font.indexOf(' ') + 1);
     const text = (x: number, y: number, s: string, a: Record<string, string | number>) =>
       `<text${attrs({ x, y, ...a })}>${esc(s)}</text>`;
@@ -2033,7 +2328,12 @@ export function valueDomain(options: LozChartOptions, hidden: ReadonlySet<string
   const input = { data, xField: xAxis.field, xType: xAxis.type ?? 'category', series, index: yAxis?.index };
   const p = prepare(input, registry, MAX_COLORS);
   if (p.series.every((s) => hidden.has(s.key))) return null;
-  const f = buildFrame(p, hidden, { zero: yAxis?.zero, ticks, include: annotationValues(options.annotations, 'left') });
+  const f = buildFrame(p, hidden, {
+    zero: yAxis?.zero,
+    ticks,
+    include: annotationValues(options.annotations, 'left'),
+    log: yAxis?.type === 'log' && p.coords === 'cartesian',
+  });
   return [f.d0, f.d1];
 }
 

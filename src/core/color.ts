@@ -43,7 +43,6 @@ export function position(d: Domain, v: number): number {
 }
 
 export type RGB = [number, number, number];
-type Lab = [number, number, number];
 
 /** sRGB (0 a 1) de un color #rgb, #rrggbb o rgb(); null si es otro formato (un nombre, hsl…). */
 export function parseColor(s: string): RGB | null {
@@ -60,8 +59,12 @@ export function parseColor(s: string): RGB | null {
 const toLinear = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
 const toGamma = (c: number) => (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055);
 
+/** Un color en OKLab: claridad L (0 a 1) y los ejes a (verde–rojo) y b (azul–amarillo). */
+export type Lab = [L: number, a: number, b: number];
+
 // OKLab (Björn Ottosson, 2020): mezclar ahí da pasos de claridad parejos y sin el gris sucio de mezclar en sRGB.
-function toLab([r, g, b]: RGB): Lab {
+/** sRGB (0 a 1) a OKLab: para medir distancias entre colores o mezclarlos con claridad pareja. */
+export function toOklab([r, g, b]: RGB): Lab {
   const [lr, lg, lb] = [toLinear(r), toLinear(g), toLinear(b)];
   const l = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
   const m = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
@@ -73,7 +76,8 @@ function toLab([r, g, b]: RGB): Lab {
   ];
 }
 
-function fromLab([L, a, b]: Lab): RGB {
+/** OKLab a sRGB (0 a 1), recortado a lo que se puede mostrar. */
+export function fromOklab([L, a, b]: Lab): RGB {
   const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
   const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
   const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
@@ -100,9 +104,9 @@ export function toHex(rgb: RGB): string {
 
 /** Mezcla en OKLab: t = 0 es `a`, t = 1 es `b`. */
 export function mixOklab(a: RGB, b: RGB, t: number): RGB {
-  const A = toLab(a);
-  const B = toLab(b);
-  return fromLab([A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t]);
+  const A = toOklab(a);
+  const B = toOklab(b);
+  return fromOklab([A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t]);
 }
 
 /** Luminancia relativa y contraste WCAG. */
@@ -133,6 +137,15 @@ export function textOn(fill: RGB | null, candidates: readonly string[]): string 
     if (ratio > bestRatio) [best, bestRatio] = [c, ratio];
   }
   return best;
+}
+
+/**
+ * Tinta para escribir sobre un relleno: el texto o la superficie del tema (siempre uno oscuro y
+ * otro claro), la de mayor contraste. Con un color que no se puede leer, el texto del tema.
+ */
+export function inkFor(fill: string, theme: Pick<Theme, 'text' | 'surface'>): string {
+  // Si ni el texto ni la superficie del tema llegan a 4,5:1, negro o blanco puros.
+  return textOn(parseColor(fill), [theme.text, theme.surface, '#000000', '#ffffff']);
 }
 
 /** Relleno de una celda: con colores que no se pueden leer, el color final con opacidad (aproxima la mezcla). */

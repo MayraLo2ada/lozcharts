@@ -9,7 +9,8 @@
  * que es lo que usan los frameworks: `[options]="opciones"` en Angular, `:options` en Vue).
  * Al cambiar las opciones el gráfico anima; si solo cambian los datos, usa setData. Con `facet`
  * en las opciones crea small multiples. El gráfico se destruye al quitar el elemento.
- * Emite `lozhover` y `lozzoom` (CustomEvent con la X o el tramo en `detail`); en small multiples
+ * Emite `lozhover`, `lozzoom` y `lozclick` (CustomEvent con la X, el tramo o `{ x, index, series }`
+ * en `detail`); en small multiples
  * (`facet`) no hay eventos: el puntero ya se sincroniza entre los paneles.
  */
 import { LozChart, type LozMultiples } from 'lozcharts';
@@ -98,19 +99,23 @@ export class LozChartElement extends Base {
       : new LozChart(this, this.withEvents(o) as LozChartOptions);
   }
 
-  /** Las funciones onHover y onZoom se suman a eventos del DOM, que es como escuchan los frameworks. */
+  /** Las funciones onHover, onZoom y onClick se suman a eventos del DOM, que es como escuchan los frameworks. */
   private withEvents(o: Options): Options {
     if (isMultiples(o)) return o;
     const user = o as LozChartOptions;
     return {
       ...user,
-      onHover: (x) => {
-        user.onHover?.(x);
+      onHover: (x, index, series) => {
+        user.onHover?.(x, index, series);
         this.dispatchEvent(new CustomEvent('lozhover', { detail: x, bubbles: true }));
       },
-      onZoom: (range) => {
-        user.onZoom?.(range);
+      onZoom: (range, window) => {
+        user.onZoom?.(range, window);
         this.dispatchEvent(new CustomEvent('lozzoom', { detail: range, bubbles: true }));
+      },
+      onClick: (x, index, series) => {
+        user.onClick?.(x, index, series);
+        this.dispatchEvent(new CustomEvent('lozclick', { detail: { x, index, series }, bubbles: true }));
       },
     };
   }

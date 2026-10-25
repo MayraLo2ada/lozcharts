@@ -36,6 +36,9 @@ export function minSpan(n: number, band: boolean): number {
 export function clampView(start: number, end: number, min: number): View {
   if (!isFinite(start) || !isFinite(end)) return FULL_VIEW;
   if (end < start) [start, end] = [end, start];
+  // Una ventana que ya es válida queda tal cual, sin el ruido de recentrarla: así dos gráficos
+  // sincronizados por sus fracciones muestran exactamente lo mismo.
+  if (start >= 0 && end <= 1 && end - start >= min && end - start < 1 - EPS) return { start, end };
   let span = Math.min(1, Math.max(min, end - start));
   if (span >= 1 - EPS) return FULL_VIEW;
   const mid = (start + end) / 2;

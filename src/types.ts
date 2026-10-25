@@ -34,6 +34,31 @@ export interface ZoomOptions {
   range?: [XValue, XValue];
   /** Barra con un mini gráfico de todos los datos para mover la ventana. Por defecto true. */
   scrollbar?: boolean;
+  /**
+   * Botón "Ver todo" junto al título al acercar. Por defecto true. Sin él se vuelve a todo con
+   * doble clic, con la tecla 0 o con resetZoom().
+   */
+  reset?: boolean;
+}
+
+/**
+ * Ventana del zoom como fracciones del eje X completo: { start: 0.25, end: 0.5 } es el segundo
+ * cuarto. Es exacta (no se redondea a un dato) y no depende del ancho: sirve para que varios
+ * gráficos con el mismo eje muestren exactamente el mismo tramo (ver setZoomWindow).
+ */
+export interface ZoomWindow {
+  start: number;
+  end: number;
+}
+
+/** Tooltip: además de true o false, qué partes se muestran. */
+export interface TooltipOptions {
+  /**
+   * false quita el recuadro flotante pero conserva todo lo demás: el puntero, el crosshair o la
+   * banda, las marcas del dato activo, el teclado, los avisos a lectores de pantalla y onHover.
+   * Para quien muestra los valores en otro lado (un panel fijo, una tabla). Por defecto true.
+   */
+  float?: boolean;
 }
 
 /** Etiquetas al final de cada línea o área, en lugar de buscar el color en la leyenda. */
@@ -75,6 +100,15 @@ export interface YAxisOptions {
    * también el valor original.
    */
   index?: boolean;
+  /**
+   * Escala del eje: 'linear' (por defecto) o 'log', para datos que crecen por multiplicación
+   * (poblaciones, precios a largo plazo). En 'log' cuentan solo los valores positivos, el eje no
+   * incluye el cero y sus marcas van en valores redondos: 1, 2 y 5 × 10ⁿ, o solo potencias de 10
+   * si no caben. Las barras y áreas parten del borde inferior.
+   */
+  type?: 'linear' | 'log';
+  /** false oculta la rejilla del eje del valor (la línea del cero o la base quedan). Por defecto true. */
+  grid?: boolean;
 }
 
 export interface SeriesOptions {
@@ -114,6 +148,13 @@ export interface SeriesOptions {
   levels?: string[];
   /** Línea de tiempo: campo con la fecha de fin de cada tramo (el inicio es la X). */
   end?: string;
+  /** Línea de tiempo: campo con el nombre de cada tramo. Por defecto, `field`. */
+  label?: string;
+  /**
+   * Línea de tiempo: línea vertical en el día de hoy (true) o en una fecha dada, con su texto
+   * arriba ("Hoy" o la fecha). Solo se dibuja si cae dentro del eje.
+   */
+  today?: boolean | XValue;
   /** Cascada: campo que marca las filas que son subtotal o total (verdadero: la barra parte de cero). */
   total?: string;
   /** Bala: campo con la meta de cada fila. */
@@ -176,11 +217,18 @@ export interface LozChartOptions {
   theme?: ThemeName;
   /** Paleta propia. Por defecto, la de LozChart (validada para daltonismo). */
   palette?: PaletteOption;
-  /** Alto del área del gráfico (ejes incluidos), en px. Por defecto 320. */
+  /**
+   * Alto del área del gráfico (ejes incluidos), en px. Por defecto 320, o el que pida el tipo de
+   * serie (ver SeriesImpl.preferredHeight); un alto dado aquí siempre manda.
+   */
   height?: number;
   /** false oculta la leyenda. Solo aparece con 2 o más series. */
   legend?: boolean | LegendOptions;
-  tooltip?: boolean;
+  /**
+   * false apaga el tooltip y el puntero (el teclado sigue recorriendo los datos). `{ float: false }`
+   * quita solo el recuadro flotante. Por defecto true.
+   */
+  tooltip?: boolean | TooltipOptions;
   animate?: boolean;
   /** Locale para números y fechas. Por defecto 'es'. */
   locale?: string;
@@ -208,20 +256,41 @@ export interface LozChartOptions {
    * valor se ajusta a lo visible. Con el teclado: + y − acercan y alejan, 0 vuelve a todo.
    */
   zoom?: boolean | ZoomOptions;
-  /** Se llama al cambiar el zoom con la ventana visible (desde y hasta, en valores de X), o null si se ve todo. */
-  onZoom?: (range: [string | number, string | number] | null) => void;
+  /**
+   * Se llama al cambiar el zoom con el primer y el último dato visibles (en valores de X), o null
+   * si se ve todo, y con la ventana exacta en fracciones del eje (`{ start: 0, end: 1 }` al ver todo).
+   */
+  onZoom?: (range: [string | number, string | number] | null, window: ZoomWindow) => void;
   /**
    * Se llama cuando el puntero o el teclado activan un dato, con su X (texto de la categoría,
    * o número: fecha en ms o valor), y con null al salir. Junto con highlight() sincroniza gráficos.
+   * También recibe el índice de la fila (−1 al salir), que identifica el dato aunque la X no lo
+   * haga (una celda de un mapa de calor), y la serie, como en onClick.
    */
-  onHover?: (x: string | number | null) => void;
+  onHover?: (x: string | number | null, index: number, series: string | null) => void;
+  /**
+   * Se llama al hacer clic en un dato, o al pulsar Enter o Espacio con un dato activo desde el
+   * teclado. Recibe la X (como onHover; null en un dato que no es una fila, como un nodo interior),
+   * el índice de la fila y el nombre de la serie del dato: la que está bajo el puntero, o la que
+   * se recorre con el teclado en un gráfico sin ejes; null si el dato es de todas las series (el
+   * índice de un crosshair).
+   */
+  onClick?: (x: string | number | null, index: number, series: string | null) => void;
+  /**
+   * Datos seleccionados, por su índice de fila (el que dan onClick y onHover): se ven como siempre y
+   * los demás quedan atenuados. Vacío o null: sin selección. Ver también select().
+   */
+  selection?: readonly number[] | null;
 }
 
 /** Cambios para setOptions: cualquier opción, y del eje X solo lo que cambia. */
 export type LozChartUpdate = Omit<Partial<LozChartOptions>, 'xAxis'> & { xAxis?: Partial<XAxisOptions> };
 
 /** Small multiples: una cuadrícula de gráficos pequeños con escalas compartidas. */
-export interface MultiplesOptions extends Omit<LozChartOptions, 'onHover' | 'orientation' | 'zoom' | 'onZoom' | 'emphasis'> {
+export interface MultiplesOptions extends Omit<
+  LozChartOptions,
+  'onHover' | 'onClick' | 'orientation' | 'zoom' | 'onZoom' | 'emphasis'
+> {
   /**
    * Cómo se reparten los paneles: 'series' (uno por serie) o { field } (uno por cada valor de
    * ese campo; `order` fija el orden de los paneles).

@@ -70,8 +70,23 @@ export interface PolarPlane {
   point(i: number, v: number): [number, number];
 }
 
+/**
+ * Para qué se dibuja: 'screen' (el gráfico en la página), 'export' (toSVG y las descargas en PNG o
+ * SVG: un archivo suelto, sin interacción ni nada que dependa de la página) u 'overview' (el mini
+ * gráfico de la barra del zoom: todos los datos en unos 28 px de alto, en el gris de contexto y
+ * con `theme.surface` transparente; ahí las etiquetas y los detalles sobran).
+ */
+export type DrawPurpose = 'screen' | 'export' | 'overview';
+
+/*
+ * Los campos opcionales de DrawContext y TooltipFormat siempre llegan desde el núcleo: son
+ * opcionales para que los contextos armados a mano (en las pruebas de un tipo) sigan valiendo.
+ */
+
 export interface DrawContext {
   frame: SeriesFrame;
+  /** Para qué se dibuja (ver DrawPurpose). Ausente equivale a 'screen'. */
+  purpose?: DrawPurpose;
   /** Color de la serie en el tema actual. */
   color: string;
   /**
@@ -83,7 +98,7 @@ export interface DrawContext {
   polar?: PolarPlane;
   /** Escala del índice (eje de categorías o tiempo). */
   x: XScale;
-  /** Escala del valor. */
+  /** Escala del valor. Con yAxis.type: 'log' es una LogScale, con la misma interfaz. */
   y: LinearScale;
   theme: Theme;
   /** Tamaño del plano lógico en px: largo del eje del índice y del eje del valor (en 'free', el área completa). */
@@ -102,6 +117,20 @@ export interface DrawContext {
   percent(v: number): string;
   /** Formatear un valor en forma compacta ("506 mil M"), para cuando el exacto no cabe. */
   compact(v: number): string;
+  /** Idioma del gráfico (la opción locale), para fechas y textos con Intl. Ausente equivale a 'es'. */
+  locale?: string;
+  /** Moneda ISO del gráfico (la opción currency). */
+  currency?: string;
+  /**
+   * Los contextos de las series visibles del mismo tipo en este cuadro, en el orden de `series` (esta
+   * incluida): para lo que varias series lado a lado deben decidir juntas, como si llevan etiquetas.
+   */
+  siblings?(): DrawContext[];
+  /**
+   * ¿El dato i queda atenuado? Con una selección (la opción selection o select()), todo lo que no
+   * está en ella; sin selección, nada. Los tipos con `dimmable` lo aplican con dimOpacity.
+   */
+  isDimmed?(i: number): boolean;
 }
 
 /** Formateadores que recibe una serie para su tooltip, en el idioma del gráfico. */
@@ -119,6 +148,10 @@ export interface TooltipFormat {
    * puntos porcentuales ("−7 p. p."), que no se confunde con una variación relativa.
    */
   difference: (d: number) => string;
+  /** Idioma del gráfico (la opción locale), para fechas y textos con Intl. Ausente equivale a 'es'. */
+  locale?: string;
+  /** Moneda ISO del gráfico (la opción currency). */
+  currency?: string;
 }
 
 /** Una línea del tooltip. */
@@ -145,8 +178,31 @@ export interface SeriesImpl {
   navigable?(ps: PreparedSeries): number[];
   /** Cómo se llaman sus datos en la descripción accesible: ['etapa', 'etapas']. Por defecto, puntos. */
   items?: readonly [singular: string, plural: string];
-  /** En 'free': índice del dato bajo el punto (px, py) del área, o -1. */
+  /**
+   * Índice del dato bajo el punto (px, py), o -1. En 'free', px del área; en 'cartesian', del plano
+   * lógico (px a lo largo del eje del índice y del eje del valor, como dibuja la serie), así vale en
+   * las dos orientaciones. En cartesiano, si ninguna serie con `hit` encuentra un dato, el puntero
+   * sigue como siempre (el índice más cercano), salvo que todas las series visibles tengan `hit`.
+   */
   hit?(ctx: DrawContext, px: number, py: number): number;
+  /**
+   * Clic en el dato i (o Enter o Espacio con el dato activo desde el teclado). En 'free' y con `hit`
+   * se llama a la serie bajo el puntero; si no, a cada serie visible que lo define. También se
+   * llama a la opción onClick del gráfico.
+   */
+  click?(ctx: DrawContext, i: number, event: MouseEvent | KeyboardEvent): void;
+  /**
+   * Alto que pide la serie para el gráfico (ejes incluidos), en px, según el ancho disponible: una
+   * línea de tiempo con muchos carriles o un Gantt con muchas tareas. Se usa solo si el usuario no
+   * dio `height`; con varias series, el mayor. undefined: el alto por defecto.
+   */
+  preferredHeight?(ps: PreparedSeries, width: number): number | undefined;
+  /**
+   * Con `derive`: cómo se llama el valor calculado ('acumulado'). Si el nombre de la serie coincide
+   * con el de un campo que también se exporta, toCSV titula así la columna del valor: "monto
+   * (acumulado)" junto a "monto". Por defecto 'valor'.
+   */
+  derivedName?: string;
   /** En 'free': dónde apoyar el tooltip del dato i (px del área). */
   anchor?(ctx: DrawContext, i: number): [number, number] | null;
   /** Necesita escala de banda en X (barras, velas). */
@@ -204,6 +260,11 @@ export interface SeriesImpl {
   domainValues?(options: SeriesOptions): number[];
   /** Columnas que están en unidades del eje Y: cuentan para el dominio y se encogen al ocultarse. */
   valueColumns?: readonly string[];
+  /**
+   * El tipo atenúa por su cuenta los datos fuera de la selección (con ctx.isDimmed y dimOpacity).
+   * Sin esto, el núcleo deja la serie como está y marca los seleccionados con `hover`.
+   */
+  dimmable?: boolean;
   /** Markup SVG de la serie. */
   draw(ctx: DrawContext): string;
   /** Marcas de hover en el índice i (puntos, por ejemplo). */
@@ -224,4 +285,35 @@ export interface SeriesImpl {
 export function swatchOf(ctx: DrawContext, i: number): string {
   const impl = ctx.frame.ps.impl;
   return impl.swatch?.(ctx, i) ?? (impl.legendBy === 'points' ? ctx.pointColor(i) : ctx.color);
+}
+
+/**
+ * Opacidad de un dato fuera de la selección: el dato se sigue viendo como contexto y la diferencia
+ * es de claridad, no de tono, así que no depende de distinguir colores.
+ */
+export const DIM_OPACITY = 0.25;
+
+/** Opacidad del dato i: DIM_OPACITY si está atenuado; undefined si se ve normal (para attrs()). */
+export function dimOpacity(ctx: DrawContext, i: number): number | undefined {
+  return ctx.isDimmed?.(i) ? DIM_OPACITY : undefined;
+}
+
+/**
+ * Dibuja una serie en dos pasadas cuando hay datos atenuados: primero los atenuados, en un grupo
+ * con DIM_OPACITY, y encima los demás. `paint(include)` arma el markup solo de los índices para los
+ * que `include(i)` es verdadero; sin selección se llama una vez con todos. Sirve a los tipos que
+ * juntan sus marcas en un solo trazo (todas las barras en un path).
+ */
+export function paintDimmed(ctx: DrawContext, paint: (include: (i: number) => boolean) => string): string {
+  const dimmed = ctx.isDimmed;
+  let any = false;
+  if (dimmed) for (let i = 0; i < ctx.n && !any; i++) any = dimmed(i);
+  if (!dimmed || !any) return paint(() => true);
+  const faded = paint((i) => dimmed(i));
+  return (faded ? `<g opacity="${DIM_OPACITY}">${faded}</g>` : '') + paint((i) => !dimmed(i));
+}
+
+/** El markup del dato i, en un grupo con DIM_OPACITY si está atenuado. */
+export function dimmed(ctx: DrawContext, i: number, markup: string): string {
+  return markup && ctx.isDimmed?.(i) ? `<g opacity="${DIM_OPACITY}">${markup}</g>` : markup;
 }

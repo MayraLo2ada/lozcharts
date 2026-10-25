@@ -57,22 +57,56 @@ export { LozChart, LozMultiples };
 export default LozChart;
 export { LIGHT, DARK } from './core/theme';
 export type { Theme } from './core/theme';
-export type { SeriesImpl, DrawContext, SeriesFrame, PreparedSeries, TooltipValue, TooltipFormat } from './core/series';
+export type {
+  SeriesImpl,
+  DrawContext,
+  DrawPurpose,
+  SeriesFrame,
+  PreparedSeries,
+  TooltipValue,
+  TooltipFormat,
+} from './core/series';
 export type { XScale } from './core/scales';
 export type { MapSource, Topology, GeoJSON } from './core/geo';
-export { LinearScale, BandScale, ContinuousScale } from './core/scales';
+export { LinearScale, LogScale, BandScale, ContinuousScale } from './core/scales';
 export { linePath, areaPath, barPath, stepPath, polarPoint, r2 } from './core/shapes';
 export type * from './types';
 
 // Piezas del núcleo para quien crea tipos de serie o extensiones: las mismas con las que se dibujan
 // los tipos de la librería, para que lo nuevo se vea y se comporte igual.
-export { swatchOf } from './core/series';
-export type { RGB, Ramp, Paint, Domain } from './core/color';
-export { parseColor, toHex, mixOklab, luminance, contrast, textOn, colorDomain, makeRamp, paint, paintColor } from './core/color';
+export { swatchOf, DIM_OPACITY, dimOpacity, dimmed, paintDimmed } from './core/series';
+export { MAX_COLORS } from './core/theme';
+export type { RGB, Lab, Ramp, Paint, Domain, LegendSpec } from './core/color';
+export {
+  parseColor,
+  toHex,
+  toOklab,
+  fromOklab,
+  mixOklab,
+  luminance,
+  contrast,
+  textOn,
+  inkFor,
+  colorDomain,
+  makeRamp,
+  paint,
+  paintColor,
+  legendSpec,
+  legendWidth,
+} from './core/color';
 export type { NumberContext } from './core/format';
 export { valueFormatter, compactFormatter, axisFormatter, parseTime, timeTickLabel, timeFullLabel } from './core/format';
 export type { TimeUnit, TimeInterval } from './core/ticks';
-export { niceStep, niceDomain, numberTicks, chooseTimeInterval, timeTicks, detectTimeUnit } from './core/ticks';
+export {
+  niceStep,
+  niceDomain,
+  numberTicks,
+  logTicks,
+  logDomain,
+  chooseTimeInterval,
+  timeTicks,
+  detectTimeUnit,
+} from './core/ticks';
 export { esc, attrs, textWidth } from './core/dom';
 export { fitText } from './core/axis';
 export { toCSV, slug } from './core/export';
