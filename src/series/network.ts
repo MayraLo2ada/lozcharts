@@ -744,7 +744,9 @@ function currentWeights(ctx: DrawContext, m: NetworkModel): { link: number[]; de
   return { link, degree };
 }
 
-function linkWidth(w: number, top: number, weighted: boolean): number {
+/** Grosor de un vínculo; con peso cero (primer cuadro de la animación) no se dibuja. */
+export function linkWidth(w: number, top: number, weighted: boolean): number {
+  if (!(w > 0)) return 0;
   if (!weighted || !(top > 0)) return 1;
   return LINK_MIN + (LINK_MAX - LINK_MIN) * Math.sqrt(Math.max(0, Math.min(1, w / top)));
 }
