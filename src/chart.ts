@@ -382,6 +382,11 @@ export class LozChart {
     return this;
   }
 
+  /** Opciones vigentes, con los valores por defecto ya puestos. Para cambiarlas, setOptions. */
+  get options(): Readonly<LozChartOptions> {
+    return this.opts;
+  }
+
   /** Cambia opciones (se combinan con las actuales) y redibuja, animando salvo que se pida lo contrario. */
   setOptions(options: LozChartUpdate, animate = true): this {
     const prev = this.opts;

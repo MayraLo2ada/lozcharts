@@ -662,6 +662,7 @@ new LozChart('#grafico', {
 | Método                                                    | Qué hace                                                                                         |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | `setData(datos)`                                          | Cambia los datos y anima desde el estado actual (aunque haya una animación a medias).            |
+| `options`                                                 | Opciones vigentes, con los valores por defecto (solo lectura).                                   |
 | `setOptions({...}, animar?)`                              | Combina opciones nuevas con las actuales y redibuja.                                             |
 | `axisWidth`                                               | Ancho que necesitan hoy los números del eje Y (para alinear gráficos con `yAxis.width`).         |
 | `highlight(x)`                                            | Marca el dato con esa X, sin tooltip; `null` limpia.                                             |
