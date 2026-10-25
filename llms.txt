@@ -77,7 +77,7 @@
 - `annotations: [{ y: 80000, label: 'Meta' }, { x: ['2026-06-01', '2026-06-30'], label: 'Campaña' }]`
   (un valor = línea, dos = franja; `axis: 'right'` con `yAxis2`).
 - `endLabels: true | { value: true }`, `emphasis: 'Serie' | ['A', 'B']`, `onHover(x)`.
-- Percent: los datos van como fracción (0.25 = 25 %).
+- Con `format: 'percent'`, los datos van como fracción (0.25 = 25 %).
 
 ## Métodos
 

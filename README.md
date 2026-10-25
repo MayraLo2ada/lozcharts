@@ -1,15 +1,16 @@
 # LozCharts
 
-Gráficos SVG interactivos, accesibles y sin dependencias, escritos en TypeScript. La librería se
-llama LozCharts y cada gráfico que creas es un `LozChart`.
-Modo claro, oscuro y automático; tooltip, leyenda, teclado, animación y exportación a SVG/PNG.
+LozCharts es una librería de gráficos para la web, escrita en TypeScript y sin dependencias. Dibuja
+en SVG, y cada gráfico que creas es un `LozChart`. Le pasas tus datos y ya trae lo que normalmente
+toca programar aparte: tooltip, leyenda, modo claro y oscuro, animación, manejo con teclado y una
+tabla de datos para lectores de pantalla.
 
-Tipos: líneas, barras (verticales u horizontales, agrupadas y apiladas), áreas, líneas
-escalonadas, bandas de rango, dispersión, burbujas, velas, OHLC, pie, donut, gauge, radar, embudo,
-mapa de calor, treemap, sankey, mapas coropléticos y de burbujas, y small multiples. Con zoom,
-anotaciones, etiquetas directas, exportación a PNG, SVG y CSV, y un componente para React.
+Hay de todo, desde líneas y barras hasta velas, mapa de calor, sankey, cascada, línea de tiempo,
+nube de palabras, mapas y small multiples; la lista completa está en [Tipos de serie](#tipos-de-serie).
+También trae zoom, anotaciones, etiquetas al final de cada línea, exportación a PNG, SVG y CSV, y
+componentes para React y para Angular, Vue o Svelte.
 
-## Instalación y build
+## Instalar y compilar
 
 ```bash
 npm install
@@ -27,7 +28,8 @@ npm install ../lozcharts                          # desde la carpeta, en la mism
 npm install github:MayraLo2ada/lozcharts          # desde GitHub (con acceso al repositorio)
 ```
 
-Al instalarla así se compila sola (`prepare`; si npm pide aprobar scripts de instalación, `npm approve-scripts lozcharts`). Después se usa igual que desde npm:
+Al instalarla así se compila sola, con el script `prepare`. Si npm te pide aprobar scripts de
+instalación, corre `npm approve-scripts lozcharts`. Después la usas igual que si viniera de npm:
 `import { Chart } from 'lozcharts/react'`.
 
 ## Tres formas de usarla
@@ -51,11 +53,12 @@ const chart = new LozChart(elemento, opciones);
 chart.destroy();
 ```
 
-**En React:** los componentes de `lozcharts/react` (ver [React](#react)). **En Angular, Vue o
-Svelte:** el elemento `<loz-chart>` (ver [`<loz-chart>`](#loz-chart-angular-vue-svelte-o-html-puro)).
+**En React** usa los componentes de `lozcharts/react` (ver [React](#react)). **En Angular, Vue o
+Svelte**, el elemento `<loz-chart>` (ver [`<loz-chart>`](#loz-chart-angular-vue-svelte-o-html-puro)).
 
-**3. Con Django + HTMX:** pon las opciones en JSON en el atributo `data-lozchart`
-(o el selector de un `<script type="application/json">`) y re-inicializa en cada swap:
+**3. Con Django + HTMX:** pon las opciones en JSON en el atributo `data-lozchart` (o el selector de
+un `<script type="application/json">`) y vuelve a iniciar los gráficos cada vez que HTMX cambie un
+fragmento:
 
 ```html
 <div data-lozchart="#opciones-ventas"></div>
@@ -66,9 +69,9 @@ Svelte:** el elemento `<loz-chart>` (ver [`<loz-chart>`](#loz-chart-angular-vue-
 </script>
 ```
 
-`initAll` reemplaza el gráfico si el elemento ya tenía uno y limpia los que quedaron fuera de la página.
-Ejemplo completo en `examples/django` (vista, URL y plantillas) y, para verlo sin Django,
-`examples/htmx/index.html`.
+Si el elemento ya tenía un gráfico, `initAll` lo reemplaza, y limpia los que quedaron fuera de la
+página. Hay un ejemplo completo en `examples/django` (vista, URL y plantillas) y otro para verlo sin
+Django en `examples/htmx/index.html`.
 
 ## Ejemplo completo
 
@@ -130,15 +133,16 @@ const chart = new LozChart('#grafico', {
 | LozMap       | `mapbubble`   | Cantidades sobre el mapa                         | `xAxis.field`, `field`; `lat` y `lon` opcionales                 |
 | LozMultiples | —             | Cuadrícula de gráficos pequeños                  | `LozChart.multiples(…)`; ver [Small multiples](#small-multiples) |
 
-Los nombres (LozBar, LozLine…) son los de la familia LozCharts en la documentación; en el código
-cada tipo se elige con su nombre corto: `type: 'bar'`.
+LozBar, LozLine y los demás son los nombres que usamos en la documentación y en la galería. En el
+código eliges cada tipo por su nombre corto: `type: 'bar'`.
 
 **Pie, donut, gauge y embudo** muestran una sola serie. En el pie y el donut cada categoría tiene
-su color y su botón en la leyenda, con su porcentaje (ocultarla lo recalcula); con más de 8
-categorías, las 7 primeras llevan color y el resto se suma en "Otros", con su detalle en el
-tooltip y la tabla. Si son más de 5, considera barras horizontales ordenadas: se leen mejor. Las etiquetas (`labels: false` las apaga) se reparten para no
-encimarse y se omiten en pantallas angostas, donde la leyenda y el tooltip ya lo dicen.
-Para varios gauges o varios embudos, usa small multiples.
+su color y su botón en la leyenda, con su porcentaje (si ocultas una, los demás se recalculan). Con
+más de 8 categorías, las 7 primeras llevan color y el resto se suma en "Otros", con su detalle en el
+tooltip y en la tabla. Si tienes más de 5, prueba con barras horizontales ordenadas: se leen mejor.
+Las etiquetas se reparten para no encimarse y se omiten en pantallas angostas, donde la leyenda y el
+tooltip ya dicen lo mismo; `labels: false` las apaga. Para varios gauges o varios embudos, usa small
+multiples.
 
 ```js
 new LozChart('#categorias', {
@@ -156,7 +160,7 @@ new LozChart('#meta', {
 });
 ```
 
-Con `orientation: 'horizontal'` el gráfico gira: las categorías van en el eje vertical. Sirve
+Con `orientation: 'horizontal'` el gráfico gira y las categorías pasan al eje vertical. Te sirve
 sobre todo para barras con nombres largos.
 
 ```js
@@ -316,12 +320,13 @@ new LozChart('#nube', {
   cabe se omite desde las más livianas (con un aviso en la consola) y sigue en la tabla. Todo
   color de palabra se ajusta a 4,5:1 contra el fondo.
 
-Los valores cero, negativos o vacíos no se dibujan en estos tipos; la tabla de datos los lista
-igual. `labels: false` quita las etiquetas.
+En estos tipos, los valores cero, negativos o vacíos no se dibujan, pero la tabla de datos los
+lista igual. `labels: false` quita las etiquetas.
 
 ## Mapas
 
-Los contornos van aparte (pesan unos 110 KB): solo los carga quien hace mapas.
+Los contornos de los países van en un archivo aparte, de unos 110 KB: solo los cargas si haces
+mapas.
 
 ```html
 <script src="lozcharts.umd.js"></script>
@@ -394,8 +399,9 @@ function Ventas({ filas }) {
 
 ## `<loz-chart>`: Angular, Vue, Svelte o HTML puro
 
-Un elemento HTML estándar (Custom Element) que sirve en cualquier framework sin adaptador. Con
-`<script src="lozcharts.umd.js">` ya queda registrado; con módulos, `import 'lozcharts/element'`.
+Es un elemento HTML estándar (un Custom Element), así que funciona en cualquier framework sin
+adaptador. Si cargas `<script src="lozcharts.umd.js">`, ya queda registrado; con módulos, importa
+`'lozcharts/element'`.
 
 ```html
 <loz-chart
@@ -432,10 +438,10 @@ export class VentasComponent {
 ## LozCharts con IA
 
 Si le pides gráficos a ChatGPT, Claude o Copilot, dile que use LozCharts y pásale el archivo
-[`llms.txt`](llms.txt): en una página, todo lo que existe (tipos, opciones, métodos) y las reglas
-para escribir código correcto. Así no inventa opciones y todo lo demás (zoom, leyenda, modo oscuro,
-accesibilidad) ya viene hecho. Con TypeScript, además, los tipos de `lozcharts` marcan cualquier
-opción que no exista.
+[llms.txt](llms.txt). Es una sola página con todo lo que existe (tipos, opciones y métodos) y las
+reglas para escribir código que funcione. Con eso no se inventa opciones, y el zoom, la leyenda, el
+modo oscuro y la accesibilidad ya vienen hechos. Si usas TypeScript, los tipos de `lozcharts`
+además te marcan cualquier opción que no exista.
 
 ## Muchos datos
 
@@ -447,9 +453,9 @@ filas y avisa; `download('csv')` o `toCSV()` dan todos los datos.
 
 ## Small multiples
 
-Muchos gráficos pequeños con la misma escala, uno por serie o por valor de un campo. Es la
-salida correcta cuando hay más de 4 o 5 series (que en un solo gráfico se enredan) o cuando se
-quiere comparar la forma de varias categorías.
+Son muchos gráficos pequeños con la misma escala, uno por serie o por cada valor de un campo.
+Úsalos cuando tengas más de 4 o 5 series, que en un solo gráfico se enredan, o cuando quieras
+comparar la forma de varias categorías.
 
 ```js
 // Un panel por serie
@@ -491,11 +497,11 @@ LozChart.multiples('#regiones', {
 ## Dos medidas con distintas unidades
 
 Con dos ejes Y, quien dibuja decide dónde se cruzan las líneas: basta mover un eje para que una
-medida "alcance" a la otra, y el lector saca conclusiones que los datos no dicen. Por eso LozCharts
-ofrece tres caminos, del más al menos recomendable.
+medida "alcance" a la otra, y quien lee saca conclusiones que los datos no dicen. Por eso hay tres
+caminos, ordenados del más recomendable al menos.
 
-**Paneles alineados.** Cada medida en su panel y con sus unidades; mismo eje X, áreas de datos
-alineadas al píxel y puntero sincronizado.
+**Paneles alineados.** Cada medida va en su panel y con sus unidades. Comparten el eje X, las
+áreas de datos quedan alineadas al píxel y el puntero se mueve en los dos a la vez.
 
 ```js
 LozChart.multiples('#ventas-y-visitas', {
@@ -511,9 +517,9 @@ LozChart.multiples('#ventas-y-visitas', {
 });
 ```
 
-**Índice base 100.** Para comparar cuál creció más: cada serie se divide por su primer valor y se
-multiplica por 100, así comparten un eje con la misma unidad. El tooltip muestra el índice y el
-valor original.
+**Índice base 100.** Sirve para ver cuál creció más. Cada serie se divide por su primer valor y se
+multiplica por 100, así las dos comparten un eje con la misma unidad. El tooltip muestra el índice y
+el valor original.
 
 ```js
 new LozChart('#crecimiento', {
@@ -527,7 +533,7 @@ new LozChart('#crecimiento', {
 });
 ```
 
-**Doble eje, con salvaguardas.** Si de verdad hace falta (por ejemplo, porque el público ya lo
+**Doble eje, con salvaguardas.** Si de verdad lo necesitas (por ejemplo, porque tu público ya lo
 espera), `axis: 'right'` lleva una serie al eje derecho y `yAxis2` lo configura. LozCharts hace que
 los dos ejes empiecen en cero, que el cero quede a la misma altura, que las líneas de la rejilla
 coincidan (el paso del eje derecho se elige para eso) y que la leyenda diga "(eje derecho)". No
@@ -628,7 +634,7 @@ cada panel: su serie en color y las demás en gris detrás.
 | `series[].name`              | texto                                       | el campo        | Nombre visible; debe ser único.                                                                                           |
 | `series[].stack`             | `true` o texto                              | —               | Apila barras o áreas del mismo grupo. Positivos y negativos se apilan por separado.                                       |
 | `series[].smooth`            | booleano                                    | `false`         | Curva monótona (línea y área).                                                                                            |
-| `series[].color`             | 1 a 8                                       | su posición     | Slot de la paleta.                                                                                                        |
+| `series[].color`             | 1 a 8                                       | su posición     | Lugar en la paleta.                                                                                                       |
 | `series[].visible`           | booleano                                    | `true`          | Visible al inicio.                                                                                                        |
 | `series[].format`            | formato                                     | el del eje Y    | Formato propio en el tooltip.                                                                                             |
 | `orientation`                | `'vertical'` `'horizontal'`                 | `'vertical'`    | En horizontal, las categorías van en el eje vertical.                                                                     |
@@ -657,7 +663,7 @@ cada panel: su serie en color y las demás en gris detrás.
 ## Paleta propia
 
 Por defecto LozCharts usa su paleta de 8 colores, validada para daltonismo y con tonos propios para
-el modo oscuro. Para usar los colores de una marca:
+el modo oscuro. Si quieres los colores de tu marca:
 
 ```js
 new LozChart('#grafico', {
@@ -672,8 +678,8 @@ new LozChart('#grafico', {
 - Un arreglo simple (`palette: ['#0a7d4f', …]`) vale para los dos modos.
 - Máximo 8 colores. El número de colores es el número de series que caben: las sobrantes se
   agrupan en "Otros" si están apiladas juntas, o se descartan con un aviso. Nunca se repite un color.
-- Valida tu paleta para daltonismo y contraste antes de usarla; los colores de marca rara vez
-  están pensados para gráficos.
+- Revisa tu paleta con daltonismo y contraste antes de usarla: los colores de una marca rara vez
+  se pensaron para gráficos.
 
 ## Métodos
 
@@ -813,4 +819,5 @@ formatos (`valueFormatter`, `compactFormatter`, `axisFormatter`, `parseTime`, `t
 
 ## Reglas de diseño
 
-Ver [DESIGN.md](DESIGN.md).
+Las reglas fijas que siguen todos los tipos (nombres, paleta y medidas de cada marca) están en
+[DESIGN.md](DESIGN.md).

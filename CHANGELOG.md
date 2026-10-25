@@ -3,8 +3,8 @@
 ## Sin publicar
 
 - **Siete tipos nuevos:** cascada (`waterfall`), bala (`bullet`), sunburst, cuerdas (`chord`),
-  red (`network`), línea de tiempo (`timeline`) y nube de palabras (`wordcloud`), con tooltip,
-  teclado, tabla de datos, tema oscuro y animación como los demás.
+  red (`network`), línea de tiempo (`timeline`) y nube de palabras (`wordcloud`). Igual que los
+  demás, traen tooltip, teclado, tabla de datos, tema oscuro y animación.
 - **Para crear tipos:** `derive` en `SeriesImpl` calcula los valores del eje con la serie completa
   (la cascada lo usa para los acumulados). `onHover` recibe `null` en los nodos que no son filas
   de datos (los interiores del sunburst).
@@ -21,9 +21,10 @@
   logarítmica con marcas en 1, 2 y 5 × 10ⁿ. `onClick(x, índice, serie)`, también con Enter o
   Espacio sobre el dato activo (en `<loz-chart>`, el evento `lozclick`).
 - **Zoom exacto:** `onZoom` recibe también la ventana en fracciones del eje (`{ start, end }`), y
-  `setZoomWindow` la fija sin redondear a un dato; `zoomWindow` la da. Para sincronizar gráficos.
+  `setZoomWindow` la fija sin redondear a un dato; `zoomWindow` la da. Sirve para sincronizar
+  varios gráficos.
 - **`chart.redraw()`:** vuelve a dibujar con el estado actual, sin animar.
-- **Para crear tipos:** `ctx.purpose` (`'screen'`, `'export'` u `'overview'`), `ctx.locale` y
+- **Más para crear tipos:** `ctx.purpose` (`'screen'`, `'export'` u `'overview'`), `ctx.locale` y
   `ctx.currency` (también en el `format` del tooltip), `ctx.siblings()`, `hit` también en
   cartesiano, el gancho `click(ctx, i, evento)`, `preferredHeight(ps, ancho)` y `derivedName`.
   Exporta además `inkFor`, `MAX_COLORS`, `legendSpec`, `legendWidth`, `toOklab`, `fromOklab`,
