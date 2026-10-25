@@ -1,0 +1,1090 @@
+<!doctype html>
+<!--
+  Plan de diseño (propuesta 12, "Honesto")
+  1. Concepto: un manifiesto corto sobre la honestidad en los datos. Cada tesis pone lado a lado la trampa clásica y lo que LozCharts hace por defecto, con gráficos reales.
+  2. Paleta del sitio: papel gris claro #f5f5f3, tinta #111111, gris de apoyo #55554f, filete #d8d8d2, coral de marca #e45934 (#b23d1b en texto) solo para "lo honesto"; oscuro #141413 y tinta #f1f0ec.
+  3. Tipografías: Bricolage Grotesque, pesada y apretada, para las tesis (voz de cartel); Newsreader para el texto corrido (voz de ensayo).
+  4. Layout: una columna de lectura con titulares enormes; cada tesis abre un "díptico" a todo el ancho (trampa a la izquierda, LozCharts a la derecha; en móvil una debajo de la otra). Cierre con lo que la librería no promete.
+  5. Lo audaz: la portada es un gráfico de barras que miente y, delante de ti, se corrige solo al poner el eje en cero (un interruptor lo deja volver a mentir).
+  6. Lo que cambié de lo obvio: nada de lista de funciones; las funciones aparecen como pruebas de cada tesis. Las trampas que la librería no permite (doble eje torcido, arcoíris, colores repetidos) están dibujadas a mano en SVG y se dice así.
+  Paleta de los gráficos: la de LozCharts por defecto, sin `palette`.
+-->
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts, sin trampas</title>
+    <meta name="description" content="Un manifiesto corto: gráficos que no engañan, por defecto." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function () {
+        var t = null;
+        try {
+          t = localStorage.getItem('loz-honesto-tema');
+        } catch (e) {}
+        if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+    <style>
+      :root {
+        --paper: #f5f5f3;
+        --panel: #fcfcfb;
+        --ink: #111111;
+        --ink-2: #55554f;
+        --rule: #d8d8d2;
+        --lie: #ebebe6;
+        --true: #e45934;
+        --true-text: #b23d1b;
+        --c2: #009298;
+        --display: 'Bricolage Grotesque', system-ui, sans-serif;
+        --text: 'Newsreader', Georgia, serif;
+        --gutter: clamp(16px, 4vw, 48px);
+        --s1: 4px;
+        --s2: 8px;
+        --s3: 16px;
+        --s4: 24px;
+        --s5: 40px;
+        --s6: 72px;
+        --s7: 128px;
+        color-scheme: light;
+      }
+      :root[data-theme='dark'] {
+        --paper: #141413;
+        --panel: #1a1a19;
+        --ink: #f1f0ec;
+        --ink-2: #b0afa9;
+        --rule: #34342f;
+        --lie: #22221f;
+        --true: #e05630;
+        --true-text: #f07a55;
+        --c2: #0a999f;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        overflow-x: clip;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--text);
+        font-size: 20px;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: clip;
+      }
+      a {
+        color: inherit;
+      }
+      :focus-visible {
+        outline: 3px solid var(--true);
+        outline-offset: 3px;
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: var(--display);
+        font-weight: 800;
+        letter-spacing: -0.035em;
+        line-height: 0.95;
+        margin: 0;
+      }
+      p {
+        margin: 0;
+      }
+      .wrap {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 0 var(--gutter);
+      }
+      .col {
+        max-width: 760px;
+      }
+
+      /* cabecera */
+      header {
+        display: flex;
+        align-items: center;
+        gap: var(--s4);
+        padding-top: var(--s3);
+        padding-bottom: var(--s3);
+      }
+      .brand {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        text-decoration: none;
+        font-family: var(--display);
+        font-weight: 800;
+        font-size: 24px;
+        letter-spacing: -0.03em;
+        line-height: 1;
+      }
+      .brand svg {
+        width: 26px;
+        height: 26px;
+        flex: none;
+      }
+      nav {
+        margin-left: auto;
+        display: flex;
+        gap: var(--s4);
+        font-family: var(--display);
+        font-size: 16px;
+      }
+      nav a {
+        text-decoration: none;
+      }
+      nav a:hover {
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
+      .theme {
+        width: 40px;
+        height: 40px;
+        display: grid;
+        place-items: center;
+        background: transparent;
+        color: var(--ink);
+        border: 1.5px solid var(--ink);
+        border-radius: 50%;
+        cursor: pointer;
+      }
+      .theme svg {
+        width: 18px;
+        height: 18px;
+      }
+      .theme .moon,
+      :root[data-theme='dark'] .theme .sun {
+        display: none;
+      }
+      :root[data-theme='dark'] .theme .moon {
+        display: block;
+      }
+
+      /* portada */
+      .hero {
+        padding-top: var(--s6);
+      }
+      .hero h1 {
+        font-size: clamp(48px, 8.6vw, 132px);
+        max-width: 12ch;
+      }
+      .hero-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+        gap: var(--s5);
+        margin-top: var(--s6);
+        align-items: end;
+      }
+      .stage {
+        background: var(--panel);
+        border-top: 6px solid var(--ink);
+        padding: var(--s4) var(--s4) var(--s3);
+      }
+      .stage-title {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 18px;
+        letter-spacing: -0.01em;
+      }
+      .stage-sub {
+        font-size: 16px;
+        color: var(--ink-2);
+      }
+      .verdict {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: clamp(26px, 2.6vw, 36px);
+        letter-spacing: -0.025em;
+        line-height: 1.05;
+        min-height: 3.2em;
+      }
+      .verdict-note {
+        margin-top: var(--s3);
+        color: var(--ink-2);
+        font-size: 18px;
+      }
+      .switch {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-top: var(--s4);
+        padding: 10px 18px 10px 10px;
+        background: transparent;
+        border: 1.5px solid var(--ink);
+        border-radius: 999px;
+        color: var(--ink);
+        font: 600 17px var(--display);
+        cursor: pointer;
+      }
+      .switch .track {
+        width: 48px;
+        height: 28px;
+        border-radius: 999px;
+        background: var(--rule);
+        position: relative;
+        transition: background 0.25s;
+      }
+      .switch .track::after {
+        content: '';
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--ink);
+        transition: transform 0.25s;
+      }
+      .switch[aria-checked='true'] .track {
+        background: var(--true);
+      }
+      .switch[aria-checked='true'] .track::after {
+        transform: translateX(20px);
+        background: #fff;
+      }
+      .intro {
+        margin-top: var(--s7);
+        font-size: clamp(22px, 2.2vw, 28px);
+        line-height: 1.4;
+      }
+      .intro p + p {
+        margin-top: var(--s3);
+      }
+
+      /* tesis */
+      .tesis {
+        margin-top: var(--s7);
+        padding-top: var(--s4);
+        border-top: 6px solid var(--ink);
+      }
+      .tesis-head {
+        display: grid;
+        grid-template-columns: 120px minmax(0, 1fr);
+        gap: var(--s4);
+      }
+      .num {
+        font-family: var(--display);
+        font-weight: 800;
+        font-size: clamp(56px, 7vw, 96px);
+        line-height: 0.85;
+        letter-spacing: -0.05em;
+        color: var(--true-text);
+      }
+      .tesis h2 {
+        font-size: clamp(36px, 5.2vw, 72px);
+        max-width: 16ch;
+      }
+      .tesis .why {
+        margin-top: var(--s3);
+        max-width: 62ch;
+        color: var(--ink-2);
+      }
+      .diptico {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: var(--s3);
+        margin-top: var(--s5);
+      }
+      .panel {
+        margin: 0;
+        padding: var(--s3) var(--s3) var(--s3);
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .panel.mal {
+        background: var(--lie);
+      }
+      .panel.bien {
+        background: var(--panel);
+        box-shadow: inset 0 0 0 1.5px var(--ink);
+      }
+      .panel .label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 17px;
+        margin-bottom: var(--s2);
+      }
+      .panel.mal .label::before {
+        content: '';
+        width: 18px;
+        height: 18px;
+        background:
+          linear-gradient(45deg, transparent 44%, var(--ink) 44% 56%, transparent 56%),
+          linear-gradient(-45deg, transparent 44%, var(--ink) 44% 56%, transparent 56%);
+      }
+      .panel.bien .label::before {
+        content: '';
+        width: 14px;
+        height: 14px;
+        margin: 2px;
+        border-radius: 50%;
+        background: var(--true);
+      }
+      .panel .plot {
+        position: relative;
+        min-height: 300px;
+      }
+      .panel figcaption {
+        margin-top: auto;
+        padding-top: var(--s3);
+        font-size: 17px;
+        line-height: 1.45;
+        color: var(--ink-2);
+      }
+      .panel figcaption b {
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .hand {
+        position: absolute;
+        pointer-events: none;
+        overflow: visible;
+      }
+      .handnote {
+        font-family: var(--text);
+        font-style: italic;
+      }
+      .mini-switch {
+        align-self: flex-start;
+        margin-top: var(--s3);
+        background: transparent;
+        border: 1.5px solid var(--ink);
+        color: var(--ink);
+        font: 600 15px var(--display);
+        padding: 8px 14px;
+        border-radius: 999px;
+        cursor: pointer;
+      }
+      .mini-switch:hover {
+        background: var(--ink);
+        color: var(--paper);
+      }
+
+      /* firma */
+      .firma {
+        margin-top: var(--s7);
+        padding-top: var(--s6);
+        padding-bottom: var(--s6);
+        border-top: 6px solid var(--ink);
+      }
+      .firma h2 {
+        font-size: clamp(40px, 6vw, 88px);
+        max-width: 14ch;
+      }
+      .cuentas {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--s5) var(--s6);
+        margin-top: var(--s5);
+      }
+      .cuentas p {
+        border-top: 1.5px solid var(--ink);
+        padding-top: var(--s2);
+      }
+      .cuentas b {
+        display: block;
+        font-family: var(--display);
+        font-weight: 800;
+        font-size: clamp(28px, 3vw, 40px);
+        letter-spacing: -0.03em;
+        line-height: 1.1;
+      }
+      .cuentas span {
+        color: var(--ink-2);
+        font-size: 18px;
+      }
+      .no {
+        margin-top: var(--s6);
+        font-size: clamp(22px, 2.2vw, 28px);
+        line-height: 1.4;
+        max-width: 40ch;
+      }
+      .no em {
+        font-style: italic;
+      }
+      .uso {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+        gap: var(--s5);
+        margin-top: var(--s6);
+        align-items: start;
+      }
+      .uso h3 {
+        font-size: clamp(30px, 3.4vw, 44px);
+      }
+      .uso p {
+        margin-top: var(--s3);
+        color: var(--ink-2);
+        font-size: 18px;
+      }
+      pre {
+        margin: 0;
+        padding: var(--s4);
+        background: var(--panel);
+        box-shadow: inset 0 0 0 1.5px var(--ink);
+        overflow-x: auto;
+        font: 14.5px/1.65 ui-monospace, 'SF Mono', Menlo, monospace;
+      }
+      .cta {
+        display: flex;
+        gap: var(--s3);
+        flex-wrap: wrap;
+        margin-top: var(--s4);
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        min-height: 48px;
+        padding: 0 22px;
+        border-radius: 999px;
+        background: var(--ink);
+        color: var(--paper);
+        text-decoration: none;
+        font: 700 17px var(--display);
+        border: 1.5px solid var(--ink);
+      }
+      .btn.alt {
+        background: transparent;
+        color: var(--ink);
+      }
+      .btn:hover {
+        background: var(--true);
+        border-color: var(--true);
+        color: #fff;
+      }
+      footer {
+        padding: var(--s5) 0 var(--s5);
+        border-top: 1.5px solid var(--rule);
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: var(--s3);
+        font-size: 16px;
+        color: var(--ink-2);
+      }
+
+      @media (max-width: 860px) {
+        body {
+          font-size: 18px;
+        }
+        header {
+          gap: 12px;
+        }
+        nav {
+          gap: 12px;
+          font-size: 15px;
+        }
+        .brand {
+          font-size: 21px;
+        }
+        nav .gh {
+          display: none;
+        }
+        .hero {
+          padding-top: var(--s5);
+        }
+        .hero-row,
+        .diptico,
+        .uso,
+        .cuentas {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .hero-row {
+          margin-top: var(--s5);
+          gap: var(--s4);
+        }
+        .stage {
+          padding: var(--s3) var(--s2) var(--s2);
+        }
+        .tesis-head {
+          grid-template-columns: minmax(0, 1fr);
+          gap: var(--s2);
+        }
+        .intro,
+        .tesis {
+          margin-top: var(--s6);
+        }
+        .panel {
+          padding: var(--s3) var(--s2);
+        }
+        .panel .plot {
+          min-height: 0;
+        }
+        .cuentas {
+          gap: var(--s4);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+          animation: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="wrap">
+      <a class="brand" href="#" aria-label="LozCharts, inicio">
+        <svg viewBox="0 0 26 26" aria-hidden="true">
+          <rect x="3" y="11" width="5" height="11" rx="1" fill="currentColor" />
+          <rect x="10.5" y="6" width="5" height="16" rx="1" fill="currentColor" />
+          <rect x="18" y="2" width="5" height="20" rx="1" fill="#e45934" />
+          <rect x="0" y="22.5" width="26" height="3.5" fill="currentColor" />
+        </svg>
+        LozCharts
+      </a>
+      <nav aria-label="Principal">
+        <a href="../galeria.html">Galería</a>
+        <a href="../docs.html">Documentación</a>
+        <a class="gh" href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+      </nav>
+      <button class="theme" type="button" id="tema" aria-label="Cambiar a modo oscuro">
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2" />
+          <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" />
+        </svg>
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
+        </svg>
+      </button>
+    </header>
+
+    <main>
+      <section class="wrap hero" aria-labelledby="titulo">
+        <h1 id="titulo">Un gráfico puede mentir sin decir nada falso.</h1>
+        <div class="hero-row">
+          <div class="stage">
+            <p class="stage-title">Calificación de tres cafeterías</p>
+            <p class="stage-sub">Promedio sobre 5 estrellas, datos de ejemplo</p>
+            <div id="portada"></div>
+          </div>
+          <div>
+            <p class="verdict" id="veredicto" aria-live="polite"></p>
+            <p class="verdict-note" id="nota"></p>
+            <button class="switch" type="button" role="switch" aria-checked="false" id="cero">
+              <span class="track" aria-hidden="true"></span>
+              Eje desde cero
+            </button>
+          </div>
+        </div>
+        <div class="intro col">
+          <p>Los números eran los mismos. Cambió dónde empieza el eje.</p>
+          <p>
+            LozCharts es una librería de gráficos para la web. La escribí para que el camino fácil sea el honesto: lo que
+            sigue son cinco trampas comunes y lo que la librería hace en su lugar, sin que tengas que pedírselo.
+          </p>
+        </div>
+      </section>
+
+      <section class="wrap tesis" aria-labelledby="t1">
+        <div class="tesis-head">
+          <span class="num" aria-hidden="true">1</span>
+          <div>
+            <h2 id="t1">Dos ejes no son dos verdades.</h2>
+            <p class="why">
+              Con dos ejes, quien dibuja decide dónde se cruzan las líneas. Basta mover uno para que una medida
+              "alcance" a la otra.
+            </p>
+          </div>
+        </div>
+        <div class="diptico">
+          <figure class="panel mal">
+            <p class="label">La trampa</p>
+            <div class="plot" id="dual-mal"></div>
+            <figcaption>
+              El eje derecho empieza en 9 800. Parece que las visitas se dispararon y arrastraron las ventas.
+              <b>Dibujado a mano: LozCharts no te deja hacerlo.</b>
+            </figcaption>
+          </figure>
+          <figure class="panel bien">
+            <p class="label">LozCharts, por defecto</p>
+            <div class="plot" id="dual-bien"></div>
+            <figcaption>
+              Los dos ejes empiezan en cero, el cero va a la misma altura y la rejilla coincide. La leyenda dice cuál va a la
+              derecha. <b>Las visitas casi no se movieron.</b>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="wrap tesis" aria-labelledby="t2">
+        <div class="tesis-head">
+          <span class="num" aria-hidden="true">2</span>
+          <div>
+            <h2 id="t2">El arcoíris no es una escala.</h2>
+            <p class="why">
+              El amarillo brilla más que el rojo y el azul oscuro se pierde. El ojo ve bordes donde los datos son suaves. Y uno de cada doce hombres confunde el rojo con el verde.
+            </p>
+          </div>
+        </div>
+        <div class="diptico">
+          <figure class="panel mal">
+            <p class="label">La trampa</p>
+            <div class="plot" id="calor-mal"></div>
+            <figcaption>Un tono por valor, de azul a rojo. ¿Las 14:00 del martes son el doble que las 10:00? No se sabe.</figcaption>
+          </figure>
+          <figure class="panel bien">
+            <p class="label">LozCharts, por defecto</p>
+            <div class="plot" id="calor-bien"></div>
+            <figcaption>
+              Un solo tono que va de la superficie al color, con pasos de claridad parejos. <b>Más oscuro es más.</b> Se lee
+              hasta en blanco y negro.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="wrap tesis" aria-labelledby="t3">
+        <div class="tesis-head">
+          <span class="num" aria-hidden="true">3</span>
+          <div>
+            <h2 id="t3">El norte no es más grande.</h2>
+            <p class="why">
+              La proyección de los mapas web estira los países a medida que se alejan del ecuador. Para colorear países, eso
+              es mentir con el área.
+            </p>
+          </div>
+        </div>
+        <div class="diptico">
+          <figure class="panel mal">
+            <p class="label">La trampa</p>
+            <div class="plot" id="mapa-mal"></div>
+            <figcaption>Mercator. Groenlandia parece más grande que Argelia y que el Congo juntos.</figcaption>
+          </figure>
+          <figure class="panel bien">
+            <p class="label">LozCharts, por defecto</p>
+            <div class="plot" id="mapa-bien"></div>
+            <figcaption>
+              Equal Earth, de áreas iguales. <b>Groenlandia, Argelia y el Congo miden casi lo mismo</b>: algo más de 2
+              millones de km² cada uno.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="wrap tesis" aria-labelledby="t4">
+        <div class="tesis-head">
+          <span class="num" aria-hidden="true">4</span>
+          <div>
+            <h2 id="t4">Los picos no se esconden.</h2>
+            <p class="why">
+              Con muchos datos, lo fácil es tomar uno de cada tantos. Rápido, sí. Pero lo raro, que suele ser lo importante,
+              desaparece.
+            </p>
+          </div>
+        </div>
+        <div class="diptico">
+          <figure class="panel mal">
+            <p class="label">La trampa</p>
+            <div class="plot" id="picos-mal"></div>
+            <figcaption>Uno de cada 250 puntos. El pico ya no está.</figcaption>
+          </figure>
+          <figure class="panel bien">
+            <p class="label">LozCharts, por defecto</p>
+            <div class="plot" id="picos-bien"></div>
+            <figcaption id="picos-nota">
+              Los 100 000 puntos. Por cada columna de píxeles guarda el primero, el mínimo, el máximo y el último.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="wrap tesis" aria-labelledby="t5">
+        <div class="tesis-head">
+          <span class="num" aria-hidden="true">5</span>
+          <div>
+            <h2 id="t5">Un color, una cosa.</h2>
+            <p class="why">
+              Cuando se acaban los colores, muchas librerías vuelven a empezar. Dos categorías distintas quedan iguales y nadie
+              lo nota.
+            </p>
+          </div>
+        </div>
+        <div class="diptico">
+          <figure class="panel mal">
+            <p class="label">La trampa</p>
+            <div class="plot" id="pie-mal"></div>
+            <figcaption>Seis colores para diez porciones. ¿Cuál de los dos coral es Poesía?</figcaption>
+          </figure>
+          <figure class="panel bien">
+            <p class="label">LozCharts, por defecto</p>
+            <div class="plot" id="pie-bien"></div>
+            <figcaption>
+              Ocho colores validados para daltonismo, nunca repetidos. Las siete mayores llevan color y el resto se suma en
+              <b>Otros</b>, con su detalle en el tooltip.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="wrap firma" aria-labelledby="firma">
+        <h2 id="firma">Y lo que no se ve.</h2>
+        <div class="cuentas">
+          <p><b>Se describe sola.</b><span>Cada gráfico lleva una descripción y una tabla con sus datos para lectores de pantalla.</span></p>
+          <p><b>Se recorre con flechas.</b><span>Con el foco en el gráfico, cada dato se anuncia.</span></p>
+          <p><b>19 tipos.</b><span>De líneas a sankey y mapas, más small multiples. Exporta PNG, SVG y CSV.</span></p>
+          <p><b>51 KB, cero dependencias.</b><span>TypeScript, 199 pruebas automáticas, licencia MIT.</span></p>
+        </div>
+        <p class="no">
+          Tampoco te voy a decir que la usan miles de personas. <em>Aún no está en npm.</em> Está en GitHub, hecha en español por
+          Mayra Lozada, gratis también para empresas.
+        </p>
+        <div class="uso">
+          <div>
+            <h3>Pruébala en un minuto.</h3>
+            <p>Un archivo y un div. También hay componente para React, el elemento &lt;loz-chart&gt; para Angular, Vue o Svelte, y montaje automático para Django con HTMX.</p>
+            <div class="cta">
+              <a class="btn" href="../docs.html">Leer la documentación</a>
+              <a class="btn alt" href="../galeria.html">Ver la galería</a>
+            </div>
+          </div>
+          <pre><code>&lt;div id="grafico"&gt;&lt;/div&gt;
+&lt;script src="lozcharts.umd.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  new LozChart('#grafico', {
+    data: cafeterias,
+    xAxis: { field: 'nombre' },
+    series: [{ type: 'bar', field: 'nota', name: 'Nota' }],
+  });
+&lt;/script&gt;</code></pre>
+        </div>
+      </section>
+    </main>
+
+    <footer class="wrap">
+      <span>LozCharts. Licencia MIT.</span>
+      <a href="https://github.com/MayraLo2ada/lozcharts">Código en GitHub</a>
+    </footer>
+
+    <script src="../lib/lozcharts.umd.js"></script>
+    <script src="../lib/maps/world.umd.js"></script>
+    <script>
+      (function () {
+        var root = document.documentElement;
+        var charts = [];
+        var redraws = [];
+        var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var theme = function () {
+          return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+        };
+        function mk(sel, opts) {
+          var c = new LozChart(sel, Object.assign({ background: false, theme: theme(), animate: !reduce }, opts));
+          charts.push(c);
+          return c;
+        }
+        var btn = document.getElementById('tema');
+        function syncBtn() {
+          btn.setAttribute('aria-label', theme() === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+        }
+        syncBtn();
+        btn.addEventListener('click', function () {
+          var t = theme() === 'dark' ? 'light' : 'dark';
+          root.setAttribute('data-theme', t);
+          try {
+            localStorage.setItem('loz-honesto-tema', t);
+          } catch (e) {}
+          charts.forEach(function (c) {
+            c.setTheme(t);
+          });
+          redraws.forEach(function (f) {
+            f();
+          });
+          syncBtn();
+        });
+        function css(name) {
+          return getComputedStyle(root).getPropertyValue(name).trim();
+        }
+        function rng(seed) {
+          return function () {
+            seed = (seed + 0x6d2b79f5) | 0;
+            var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+        var pad = function (n) {
+          return String(n).padStart(2, '0');
+        };
+        var fmt = function (v) {
+          return v.toLocaleString('es');
+        };
+        var narrow = function () {
+          return window.innerWidth <= 860;
+        };
+
+        // Trazo "a mano": un óvalo irregular para señalar la trampa.
+        function hand(cx, cy, rx, ry) {
+          var d = '';
+          for (var i = 0; i <= 36; i++) {
+            var a = (i / 32) * Math.PI * 2 - 0.6;
+            var k = 1 + Math.sin(i * 1.7) * 0.04 + i * 0.003;
+            d += (i ? 'L' : 'M') + (cx + Math.cos(a) * rx * k).toFixed(1) + ' ' + (cy + Math.sin(a) * ry * k).toFixed(1);
+          }
+          return '<path d="' + d + '" fill="none" stroke="' + css('--ink') + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+        }
+        function svgOpen(w, h, label) {
+          return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="' + label + '" style="display:block;overflow:visible;font-family:Newsreader,Georgia,serif">';
+        }
+
+        // ------------------------------------------------ Portada: el eje que no empieza en cero
+        var cafes = [
+          { nombre: 'La Esquina', nota: 4.1 },
+          { nombre: 'Molino', nota: 4.3 },
+          { nombre: 'Café Ruta', nota: 4.4 },
+        ];
+        var ver = document.getElementById('veredicto');
+        var nota = document.getElementById('nota');
+        var sw = document.getElementById('cero');
+        var portada = mk('#portada', {
+          data: cafes,
+          xAxis: { field: 'nombre' },
+          yAxis: { min: 4, max: 4.5, format: function (v) { return v.toLocaleString('es', { minimumFractionDigits: 1 }); } },
+          series: [{ type: 'bar', field: 'nota', name: 'Nota' }],
+          height: narrow() ? 280 : 360,
+          animate: false,
+        });
+        function estado(honesto, anim) {
+          sw.setAttribute('aria-checked', String(honesto));
+          portada.setOptions({ yAxis: honesto ? { min: 0, max: 5 } : { min: 4, max: 4.5 } }, anim && !reduce);
+          if (honesto) {
+            ver.textContent = 'Desde cero, las tres son casi iguales. Lo eran.';
+            nota.textContent = 'Entre la mejor y la peor hay tres décimas de estrella. Con barras, LozCharts siempre incluye el cero.';
+          } else {
+            ver.textContent = 'Café Ruta parece cuatro veces mejor que La Esquina.';
+            nota.textContent = 'El eje empieza en 4,0. Así se cortan las barras y tres décimas parecen un abismo.';
+          }
+        }
+        estado(false, false);
+        sw.addEventListener('click', function () {
+          estado(sw.getAttribute('aria-checked') !== 'true', true);
+        });
+        // El único momento orquestado: a los dos segundos, el gráfico se corrige solo.
+        if (!reduce) {
+          setTimeout(function () {
+            if (sw.getAttribute('aria-checked') === 'false' && !sw.dataset.toc) estado(true, true);
+          }, 2200);
+        }
+        sw.addEventListener('click', function () {
+          sw.dataset.toc = '1';
+        });
+
+        // ------------------------------------------------ 1. Doble eje
+        var MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago'];
+        var ventas = [52, 53, 51, 55, 56, 57, 59, 60].map(function (v) { return v * 1000; });
+        var visitas = [9870, 9910, 9940, 10050, 10180, 10290, 10420, 10560];
+        var meses = MESES.map(function (m, i) {
+          return { mes: '2026-' + pad(i + 1), ventas: ventas[i], visitas: visitas[i] };
+        });
+        function dualMal() {
+          var el = document.getElementById('dual-mal');
+          var w = el.clientWidth, h = narrow() ? 260 : 300;
+          var L = 46, R = 58, T = 18, B = 30, pw = w - L - R, ph = h - T - B;
+          var ink2 = css('--ink-2'), rule = css('--rule'), c1 = css('--true'), c2 = css('--c2');
+          var s = svgOpen(w, h, 'Gráfico engañoso: el eje derecho empieza en 9 800 y la línea de visitas parece dispararse');
+          for (var g = 0; g <= 4; g++) {
+            var y = T + ph - (g / 4) * ph;
+            s += '<line x1="' + L + '" x2="' + (L + pw) + '" y1="' + y + '" y2="' + y + '" stroke="' + rule + '"/>';
+            s += '<text x="' + (L - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="12" fill="' + ink2 + '">' + g * 15 + ' mil</text>';
+            s += '<text x="' + (L + pw + 8) + '" y="' + (y + 4) + '" font-size="12" fill="' + ink2 + '">' + fmt(9800 + g * 200) + '</text>';
+          }
+          var bw = (pw / 8) * 0.55;
+          var pts = [];
+          meses.forEach(function (d, i) {
+            var cx = L + (pw / 8) * (i + 0.5);
+            var bh = (d.ventas / 60000) * ph;
+            s += '<rect x="' + (cx - bw / 2) + '" y="' + (T + ph - bh) + '" width="' + bw + '" height="' + bh + '" rx="3" fill="' + c1 + '"/>';
+            pts.push(cx.toFixed(1) + ',' + (T + ph - ((d.visitas - 9800) / 800) * ph).toFixed(1));
+            if (!narrow() || i % 2 === 0) s += '<text x="' + cx + '" y="' + (h - 8) + '" text-anchor="middle" font-size="12" fill="' + ink2 + '">' + MESES[i] + '</text>';
+          });
+          s += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + c2 + '" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>';
+          s += hand(L + pw + 27, T + ph - 2, 27, 17);
+          s += '</svg>';
+          el.innerHTML = s;
+        }
+        dualMal();
+        redraws.push(dualMal);
+        mk('#dual-bien', {
+          data: meses,
+          xAxis: { field: 'mes', type: 'time' },
+          yAxis: { format: 'compact', title: 'Ventas' },
+          yAxis2: { format: 'compact', title: 'Visitas' },
+          series: [
+            { type: 'bar', field: 'ventas', name: 'Ventas', format: 'currency' },
+            { type: 'line', field: 'visitas', name: 'Visitas a la web', axis: 'right', color: 2 },
+          ],
+          height: narrow() ? 260 : 300,
+        });
+
+        // ------------------------------------------------ 2. Arcoíris
+        var r = rng(5);
+        var DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+        var HORAS = [];
+        for (var hh = 8; hh <= 20; hh += 2) HORAS.push(pad(hh) + ':00');
+        var calor = [];
+        DIAS.forEach(function (d, k) {
+          HORAS.forEach(function (h, j) {
+            var curva = Math.sin(((j + 0.5) / HORAS.length) * Math.PI);
+            calor.push({ hora: h, dia: d, visitas: Math.round((600 * curva * (k < 5 ? 1 : 0.55) + 80) * (0.92 + r() * 0.16)) });
+          });
+        });
+        function calorMal() {
+          var el = document.getElementById('calor-mal');
+          var w = el.clientWidth, h = narrow() ? 260 : 300;
+          var L = 40, T = 8, B = 26, pw = w - L - 4, ph = h - T - B;
+          var cw = pw / HORAS.length, ch = ph / DIAS.length;
+          var max = Math.max.apply(null, calor.map(function (c) { return c.visitas; }));
+          var min = Math.min.apply(null, calor.map(function (c) { return c.visitas; }));
+          var ink2 = css('--ink-2');
+          var s = svgOpen(w, h, 'Mapa de calor engañoso con escala arcoíris');
+          calor.forEach(function (c) {
+            var i = HORAS.indexOf(c.hora), j = DIAS.indexOf(c.dia);
+            var t = (c.visitas - min) / (max - min);
+            var hue = 240 - t * 240;
+            s += '<rect x="' + (L + i * cw + 1) + '" y="' + (T + j * ch + 1) + '" width="' + (cw - 2) + '" height="' + (ch - 2) + '" fill="hsl(' + hue.toFixed(0) + ' 95% 52%)"/>';
+          });
+          DIAS.forEach(function (d, j) {
+            s += '<text x="' + (L - 6) + '" y="' + (T + j * ch + ch / 2 + 4) + '" text-anchor="end" font-size="12" fill="' + ink2 + '">' + d + '</text>';
+          });
+          HORAS.forEach(function (hr, i) {
+            if (narrow() && i % 2) return;
+            s += '<text x="' + (L + i * cw + cw / 2) + '" y="' + (h - 8) + '" text-anchor="middle" font-size="12" fill="' + ink2 + '">' + hr.slice(0, 2) + '</text>';
+          });
+          s += '</svg>';
+          el.innerHTML = s;
+        }
+        calorMal();
+        redraws.push(calorMal);
+        mk('#calor-bien', {
+          data: calor,
+          xAxis: { field: 'hora' },
+          series: [{ type: 'heatmap', field: 'visitas', name: 'Visitas', y: 'dia' }],
+          height: narrow() ? 260 : 300,
+        });
+
+        // ------------------------------------------------ 3. Proyección
+        var areas = [
+          ['GRL', 2166086],
+          ['DZA', 2381741],
+          ['COD', 2344858],
+          ['ESP', 505990],
+          ['COL', 1141748],
+          ['MEX', 1964375],
+          ['ARG', 2780400],
+          ['IND', 3287263],
+        ].map(function (a) {
+          return { pais: a[0], km2: a[1] };
+        });
+        var mapaOpts = function (proj) {
+          return {
+            data: areas,
+            xAxis: { field: 'pais' },
+            yAxis: { format: function (v) { return fmt(Math.round(v)) + ' km²'; } },
+            series: [{ type: 'choropleth', field: 'km2', name: 'Superficie', projection: proj }],
+            height: narrow() ? 220 : 300,
+          };
+        };
+        mk('#mapa-mal', mapaOpts('mercator'));
+        mk('#mapa-bien', mapaOpts('equalEarth'));
+
+        // ------------------------------------------------ 4. Picos
+        var rr = rng(9);
+        var serie = new Array(100000);
+        var y = 200;
+        var base = Date.UTC(2026, 0, 1);
+        var PICO = 41337;
+        for (var i = 0; i < 100000; i++) {
+          y += (rr() - 0.5) * 3;
+          y += (200 - y) * 0.002;
+          serie[i] = { t: base + i * 300000, v: Math.round((i === PICO ? y + 140 : y) * 10) / 10 };
+        }
+        var muestra = serie.filter(function (_, k) {
+          return k % 250 === 0;
+        });
+        var picoOpts = function (data) {
+          return {
+            data: data,
+            xAxis: { field: 't', type: 'time' },
+            yAxis: { min: 120, max: 360 },
+            series: [{ type: 'line', field: 'v', name: 'Lectura' }],
+            height: narrow() ? 240 : 280,
+            legend: false,
+          };
+        };
+        mk('#picos-mal', picoOpts(muestra));
+        var t0 = performance.now();
+        mk('#picos-bien', Object.assign(picoOpts(serie), { animate: false }));
+        var ms = Math.round(performance.now() - t0);
+        document.getElementById('picos-nota').innerHTML =
+          'Los 100 000 puntos, en ' + ms + ' ms en tu navegador. Por cada columna de píxeles guarda el primero, el mínimo, el máximo y el último. <b>El pico sigue ahí.</b>';
+
+        // ------------------------------------------------ 5. Colores que se repiten
+        var gen = [
+          ['Novela', 31], ['Ensayo', 17], ['Infantil', 14], ['Cómic', 11], ['Historia', 8],
+          ['Viajes', 6], ['Poesía', 5], ['Cocina', 4], ['Teatro', 2], ['Arte', 2],
+        ];
+        function pieMal() {
+          var el = document.getElementById('pie-mal');
+          var w = el.clientWidth, h = narrow() ? 260 : 300;
+          var six = theme() === 'dark'
+            ? ['#e05630', '#0a999f', '#8b61e3', '#9d4e6b', '#4996f5', '#399e43']
+            : ['#e45934', '#009298', '#5e2dad', '#9c1854', '#4c99f8', '#31983d'];
+          var R = Math.min(h / 2 - 16, w / 2 - 110);
+          if (narrow()) R = Math.min(h / 2 - 16, w / 2 - 90);
+          var cx = R + 12, cy = h / 2;
+          var tot = gen.reduce(function (a, g) { return a + g[1]; }, 0);
+          var a0 = -Math.PI / 2;
+          var s = svgOpen(w, h, 'Gráfico de pie engañoso: seis colores para diez categorías, algunos repetidos');
+          var lx = cx + R + 24, ly = cy - (gen.length * 22) / 2 + 12;
+          gen.forEach(function (g, i) {
+            var a1 = a0 + (g[1] / tot) * Math.PI * 2;
+            var large = a1 - a0 > Math.PI ? 1 : 0;
+            var col = six[i % 6];
+            s += '<path d="M' + cx + ' ' + cy + 'L' + (cx + R * Math.cos(a0)).toFixed(1) + ' ' + (cy + R * Math.sin(a0)).toFixed(1) +
+              'A' + R + ' ' + R + ' 0 ' + large + ' 1 ' + (cx + R * Math.cos(a1)).toFixed(1) + ' ' + (cy + R * Math.sin(a1)).toFixed(1) +
+              'Z" fill="' + col + '" stroke="' + css('--lie') + '" stroke-width="2"/>';
+            s += '<rect x="' + lx + '" y="' + (ly + i * 22 - 10) + '" width="12" height="12" rx="2" fill="' + col + '"/>';
+            s += '<text x="' + (lx + 20) + '" y="' + (ly + i * 22) + '" font-size="13" fill="' + css('--ink') + '">' + g[0] + '</text>';
+            if (i % 6 === 0) s += hand(lx + 34, ly + i * 22 - 4, 46, 14);
+            a0 = a1;
+          });
+          s += '</svg>';
+          el.innerHTML = s;
+        }
+        pieMal();
+        redraws.push(pieMal);
+        mk('#pie-bien', {
+          data: gen.map(function (g) { return { genero: g[0], libros: g[1] * 100 }; }),
+          xAxis: { field: 'genero' },
+          series: [{ type: 'pie', field: 'libros', name: 'Libros vendidos' }],
+          height: narrow() ? 260 : 300,
+          legend: { position: 'bottom' },
+        });
+
+        var lastW = window.innerWidth;
+        window.addEventListener('resize', function () {
+          if (window.innerWidth === lastW) return;
+          lastW = window.innerWidth;
+          clearTimeout(window.__rz);
+          window.__rz = setTimeout(function () {
+            redraws.forEach(function (f) { f(); });
+          }, 150);
+        });
+      })();
+    </script>
+  </body>
+</html>

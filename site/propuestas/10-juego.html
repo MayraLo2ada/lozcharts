@@ -1,0 +1,1629 @@
+<!doctype html>
+<!--
+  Plan de diseño · 10 Juego
+  1. Concepto: la portada es un instrumento, como una mesa de mezclas: teclas para el tipo de gráfico, faders para cada dato, interruptores para las opciones. Mueves algo y el gráfico real cambia con animación, y el código que lo dibuja se ilumina donde cambió.
+  2. Paleta del sitio: cuerpo de aparato #e4e2db, panel #f3f2ee, tinta #141413, borde #c6c2b8, teclas #fbfaf7 y coral #e45934 solo para lo que está encendido; en oscuro, cuerpo #191918 y panel #232322. Los gráficos usan la Coral sin cambios (la tecla "Paleta" muestra la opción palette con colores de marca).
+  3. Tipografías: Unbounded (redonda y ancha, de juguete) para títulos y Figtree para la interfaz; DM Mono solo en el código y las lecturas de los faders.
+  4. Layout: tres columnas en escritorio (controles, pantalla con faders debajo, código); en móvil se apila: pantalla, faders, teclas, opciones, código. Debajo, tipos, medición de rendimiento, accesibilidad, cómo llevártelo y cierre.
+  5. Elemento audaz: los faders alineados bajo cada columna del gráfico; el dato se agarra con la mano.
+  6. Qué cambié de lo obvio: no es "pestañas + gráfico + código" (la portada rechazada); es un aparato con controles físicos, sin texto de instrucciones largo, y el código resalta la línea exacta que cambiaste.
+-->
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts, juega con un gráfico</title>
+    <meta
+      name="description"
+      content="Mueve los datos, cambia el tipo de gráfico y mira el código. LozCharts: gráficos en SVG, en español, sin dependencias."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Figtree:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function () {
+        var t;
+        try {
+          t = localStorage.getItem('loz-10-tema');
+        } catch (e) {}
+        if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+    <style>
+      :root {
+        --cuerpo: #e4e2db;
+        --panel: #f3f2ee;
+        --tinta: #141413;
+        --tinta-2: #55534d;
+        --borde: #c6c2b8;
+        --tecla: #fbfaf7;
+        --tecla-sombra: #b5b0a4;
+        --hundida: #dcd9d0;
+        --encendido: #e45934;
+        --encendido-txt: #141413;
+        --led: #e45934;
+        --pantalla: #fcfcfb;
+        --codigo-bg: #141413;
+        --codigo: #e9e7e0;
+        --codigo-2: #9a988f;
+        --codigo-cadena: #f2a07f;
+        --codigo-num: #7fd1d4;
+        --flash: rgba(228, 89, 52, 0.35);
+        --foco: #5e2dad;
+        --r: 10px;
+        --r-s: 6px;
+        --s1: 8px;
+        --s2: 16px;
+        --s3: 24px;
+        --s4: 40px;
+        --s5: 64px;
+        --s6: 104px;
+        --max: 1400px;
+        --sans: 'Figtree', system-ui, sans-serif;
+        --display: 'Unbounded', 'Figtree', sans-serif;
+        --mono: 'DM Mono', ui-monospace, Menlo, monospace;
+        color-scheme: light;
+      }
+      [data-theme='dark'] {
+        --cuerpo: #191918;
+        --panel: #232322;
+        --tinta: #f0efec;
+        --tinta-2: #b8b6ad;
+        --borde: #3b3b38;
+        --tecla: #2f2f2d;
+        --tecla-sombra: #0b0b0a;
+        --hundida: #1d1d1c;
+        --encendido: #e05630;
+        --encendido-txt: #141413;
+        --led: #ff7a52;
+        --pantalla: #1a1a19;
+        --codigo-bg: #0f0f0e;
+        --codigo: #e9e7e0;
+        --codigo-2: #8f8d85;
+        --flash: rgba(224, 86, 48, 0.4);
+        --foco: #b796ff;
+        color-scheme: dark;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--cuerpo);
+        color: var(--tinta);
+        font: 400 16px/1.55 var(--sans);
+        overflow-x: hidden;
+      }
+      a {
+        color: inherit;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+      }
+      :focus-visible {
+        outline: 3px solid var(--foco);
+        outline-offset: 2px;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+      .saltar:focus {
+        position: fixed;
+        z-index: 10;
+        left: 12px;
+        top: 12px;
+        width: auto;
+        height: auto;
+        clip: auto;
+        background: var(--panel);
+        padding: 8px 12px;
+      }
+      .wrap {
+        max-width: var(--max);
+        margin: 0 auto;
+        padding: 0 var(--s3);
+      }
+      h1,
+      h2 {
+        font-family: var(--display);
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        line-height: 1;
+        margin: 0;
+      }
+      h2 {
+        font-size: clamp(32px, 4.4vw, 56px);
+        max-width: 18ch;
+      }
+      p {
+        margin: 0;
+      }
+      .bajada {
+        color: var(--tinta-2);
+        max-width: 52ch;
+        margin-top: var(--s2);
+        font-size: 18px;
+      }
+
+      /* Encabezado */
+      .top .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--s2);
+        padding-top: 14px;
+        padding-bottom: 14px;
+      }
+      .marca {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 18px;
+        letter-spacing: -0.01em;
+      }
+      .marca svg {
+        width: 30px;
+        height: 30px;
+      }
+      nav {
+        display: flex;
+        align-items: center;
+        gap: var(--s3);
+        font-weight: 500;
+      }
+      nav a {
+        text-decoration: none;
+      }
+      nav a:hover {
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
+      .tema {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 1px solid var(--borde);
+        background: var(--tecla);
+        box-shadow: 0 2px 0 var(--tecla-sombra);
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        padding: 0;
+      }
+      .tema svg {
+        width: 20px;
+        height: 20px;
+      }
+      .tema .sol,
+      [data-theme='dark'] .tema .luna {
+        display: none;
+      }
+      [data-theme='dark'] .tema .sol {
+        display: block;
+      }
+
+      /* Instrumento */
+      .cabeza {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: var(--s3);
+        flex-wrap: wrap;
+        padding: var(--s2) 0 var(--s3);
+      }
+      .cabeza h1 {
+        font-size: clamp(36px, 4.8vw, 68px);
+      }
+      .cabeza p {
+        color: var(--tinta-2);
+        max-width: 40ch;
+        font-size: 17px;
+      }
+      .aparato {
+        display: grid;
+        grid-template-columns: 272px minmax(0, 1fr) 380px;
+        grid-template-areas:
+          'ctrl pantalla codigo'
+          'ctrl faders codigo';
+        gap: 12px;
+        background: var(--panel);
+        border: 1px solid var(--borde);
+        border-radius: 18px;
+        padding: 12px;
+        box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 18px 40px -24px rgba(0, 0, 0, 0.35);
+      }
+      .modulo {
+        border: 1px solid var(--borde);
+        border-radius: var(--r);
+        padding: var(--s2);
+        min-width: 0;
+      }
+      .controles {
+        grid-area: ctrl;
+        display: flex;
+        flex-direction: column;
+        gap: var(--s3);
+      }
+      .grupo-titulo {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--tinta-2);
+        margin: 0 0 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .grupo-titulo::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--led);
+        box-shadow: 0 0 6px var(--led);
+      }
+      .teclas {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .tecla {
+        background: var(--tecla);
+        border: 1px solid var(--borde);
+        border-radius: var(--r-s);
+        box-shadow: 0 3px 0 var(--tecla-sombra);
+        padding: 8px 4px 6px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        font-size: 12.5px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: transform 0.08s, box-shadow 0.08s;
+        min-height: 58px;
+      }
+      .tecla svg {
+        width: 24px;
+        height: 24px;
+      }
+      .tecla:active {
+        transform: translateY(2px);
+        box-shadow: 0 1px 0 var(--tecla-sombra);
+      }
+      .tecla[aria-pressed='true'] {
+        background: var(--encendido);
+        color: var(--encendido-txt);
+        border-color: var(--encendido);
+        transform: translateY(2px);
+        box-shadow: 0 1px 0 var(--tecla-sombra);
+      }
+      .segmentos {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        background: var(--hundida);
+        border-radius: var(--r-s);
+        padding: 3px;
+        gap: 3px;
+      }
+      .segmentos button {
+        border: 0;
+        background: transparent;
+        border-radius: 4px;
+        padding: 8px 4px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+      .segmentos button[aria-pressed='true'] {
+        background: var(--tecla);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+        font-weight: 700;
+      }
+      .interruptores {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .interruptor {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        border: 0;
+        background: transparent;
+        padding: 6px 0;
+        cursor: pointer;
+        font-size: 15px;
+        text-align: left;
+      }
+      .interruptor .riel {
+        width: 40px;
+        height: 22px;
+        border-radius: 11px;
+        background: var(--hundida);
+        border: 1px solid var(--borde);
+        position: relative;
+        flex: none;
+        transition: background 0.15s;
+      }
+      .interruptor .riel::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--tecla);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+        transition: transform 0.15s;
+      }
+      .interruptor[aria-checked='true'] .riel {
+        background: var(--encendido);
+        border-color: var(--encendido);
+      }
+      .interruptor[aria-checked='true'] .riel::after {
+        transform: translateX(18px);
+      }
+      .interruptor:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .acciones-ctrl {
+        display: flex;
+        gap: 8px;
+        margin-top: auto;
+      }
+      .boton {
+        flex: 1;
+        min-height: 44px;
+        background: var(--tecla);
+        border: 1px solid var(--borde);
+        border-radius: var(--r-s);
+        box-shadow: 0 3px 0 var(--tecla-sombra);
+        font-weight: 600;
+        font-size: 15px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 0 14px;
+        text-decoration: none;
+      }
+      .boton:active {
+        transform: translateY(2px);
+        box-shadow: 0 1px 0 var(--tecla-sombra);
+      }
+      .boton svg {
+        width: 18px;
+        height: 18px;
+      }
+      .pantalla {
+        grid-area: pantalla;
+        background: var(--pantalla);
+        padding: var(--s2) var(--s2) 4px;
+      }
+      #grafico {
+        min-height: 300px;
+      }
+      .faders.alineados {
+        display: block;
+        position: relative;
+        height: 186px;
+      }
+      .faders.alineados .fader {
+        position: absolute;
+        top: 12px;
+        transform: translateX(-50%);
+      }
+      .faders {
+        grid-area: faders;
+        display: grid;
+        grid-template-columns: var(--cols, repeat(6, 1fr));
+        gap: 4px;
+        padding: 12px 8px 10px;
+        background: var(--hundida);
+      }
+      .fader {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+      .fader output {
+        font: 600 11px var(--mono);
+        color: var(--tinta);
+        white-space: nowrap;
+      }
+      .fader label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--tinta-2);
+      }
+      .fader input {
+        -webkit-appearance: none;
+        appearance: none;
+        writing-mode: vertical-lr;
+        direction: rtl;
+        width: 34px;
+        height: 120px;
+        background: transparent;
+        cursor: ns-resize;
+        margin: 0;
+      }
+      .fader input::-webkit-slider-runnable-track {
+        width: 6px;
+        border-radius: 3px;
+        background: linear-gradient(var(--tinta), var(--tinta)) center / 2px 100% no-repeat, var(--borde);
+      }
+      .fader input::-moz-range-track {
+        width: 6px;
+        border-radius: 3px;
+        background: var(--borde);
+      }
+      .fader input::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 32px;
+        height: 18px;
+        border-radius: 4px;
+        background: linear-gradient(var(--encendido), var(--encendido)) center / 100% 2px no-repeat, var(--tecla);
+        border: 1px solid var(--tecla-sombra);
+        box-shadow: 0 2px 0 var(--tecla-sombra);
+        margin-left: -13px;
+      }
+      .fader input::-moz-range-thumb {
+        width: 30px;
+        height: 16px;
+        border-radius: 4px;
+        background: var(--tecla);
+        border: 1px solid var(--tecla-sombra);
+        box-shadow: inset 0 0 0 7px var(--tecla), inset 0 0 0 9px var(--encendido);
+      }
+      .codigo {
+        grid-area: codigo;
+        background: var(--codigo-bg);
+        color: var(--codigo);
+        border-color: var(--codigo-bg);
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        overflow: hidden;
+      }
+      .codigo-barra {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px 10px 10px 12px;
+        border-bottom: 1px solid #2c2c2a;
+      }
+      .codigo-tabs {
+        display: flex;
+        gap: 4px;
+      }
+      .codigo-tabs button {
+        background: transparent;
+        border: 1px solid transparent;
+        color: var(--codigo-2);
+        border-radius: 4px;
+        padding: 4px 9px;
+        font: 600 12px var(--mono);
+        cursor: pointer;
+      }
+      .codigo-tabs button[aria-selected='true'] {
+        color: var(--codigo);
+        border-color: #4a4a46;
+      }
+      .copiar {
+        background: transparent;
+        border: 1px solid #4a4a46;
+        color: var(--codigo);
+        border-radius: 4px;
+        padding: 4px 10px;
+        font: 600 12px var(--mono);
+        cursor: pointer;
+      }
+      .codigo pre {
+        margin: 0;
+        padding: 14px 0;
+        font: 12px/1.75 var(--mono);
+        overflow: auto;
+        flex: 1;
+        max-height: 560px;
+        tab-size: 2;
+      }
+      .codigo pre:focus-visible {
+        outline-offset: -3px;
+      }
+      .codigo .ln {
+        display: block;
+        padding: 0 14px;
+        white-space: pre;
+      }
+      .codigo .ln.nuevo {
+        animation: flash 1.4s ease-out;
+      }
+      @keyframes flash {
+        from {
+          background: var(--flash);
+          box-shadow: inset 3px 0 0 var(--encendido);
+        }
+        to {
+          background: transparent;
+          box-shadow: inset 3px 0 0 transparent;
+        }
+      }
+      .k {
+        color: #c9a6ff;
+      }
+      .s {
+        color: var(--codigo-cadena);
+      }
+      .n {
+        color: var(--codigo-num);
+      }
+      .c {
+        color: var(--codigo-2);
+      }
+
+      /* Secciones */
+      section.bloque {
+        padding: var(--s6) 0 0;
+      }
+      .tipos {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 8px;
+        margin-top: var(--s4);
+        padding: 0;
+        list-style: none;
+      }
+      .tipos li > * {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        min-height: 52px;
+        padding: 0 14px;
+        border-radius: var(--r-s);
+        font-weight: 600;
+        font-size: 15px;
+        text-decoration: none;
+        text-align: left;
+      }
+      .tipos button {
+        background: var(--tecla);
+        border: 1px solid var(--borde);
+        box-shadow: 0 3px 0 var(--tecla-sombra);
+        cursor: pointer;
+      }
+      .tipos button::after {
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--led);
+      }
+      .tipos a {
+        border: 1px dashed var(--borde);
+        color: var(--tinta-2);
+      }
+      .nota {
+        margin-top: var(--s2);
+        color: var(--tinta-2);
+        font-size: 15px;
+      }
+      .nota i {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--led);
+        margin-right: 6px;
+      }
+      .medidor {
+        display: grid;
+        grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+        gap: 12px;
+        margin-top: var(--s4);
+        background: var(--panel);
+        border: 1px solid var(--borde);
+        border-radius: 18px;
+        padding: 12px;
+      }
+      .lectura {
+        background: var(--codigo-bg);
+        color: var(--codigo);
+        border-radius: var(--r);
+        padding: var(--s3);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: var(--s3);
+      }
+      .lectura .cifra {
+        font: 700 clamp(48px, 6vw, 80px) / 1 var(--display);
+        color: var(--led);
+        letter-spacing: -0.04em;
+      }
+      .lectura .cifra small {
+        font-size: 0.35em;
+        letter-spacing: 0;
+        color: var(--codigo-2);
+        margin-left: 6px;
+      }
+      .lectura p {
+        color: var(--codigo-2);
+        font-size: 15px;
+      }
+      .lectura .boton {
+        flex: none;
+        background: var(--encendido);
+        color: var(--encendido-txt);
+        border-color: var(--encendido);
+        box-shadow: 0 3px 0 #8a3015;
+      }
+      .pantalla-medidor {
+        background: var(--pantalla);
+        padding: var(--s2) var(--s2) 4px;
+        min-width: 0;
+        border-radius: var(--r);
+        border: 1px solid var(--borde);
+        min-height: 340px;
+      }
+      .vacio {
+        min-height: 320px;
+        display: grid;
+        place-items: center;
+        color: var(--tinta-2);
+        text-align: center;
+        padding: var(--s3);
+      }
+      .dos {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: var(--s5);
+        align-items: start;
+      }
+      .teclado {
+        list-style: none;
+        padding: 0;
+        margin: var(--s4) 0 0;
+        display: grid;
+        gap: 10px;
+      }
+      .teclado li {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: var(--s2);
+        align-items: center;
+      }
+      kbd {
+        display: inline-grid;
+        place-items: center;
+        min-width: 34px;
+        height: 34px;
+        padding: 0 8px;
+        background: var(--tecla);
+        border: 1px solid var(--borde);
+        border-radius: 5px;
+        box-shadow: 0 3px 0 var(--tecla-sombra);
+        font: 600 13px var(--mono);
+        margin-right: 4px;
+      }
+      .lista {
+        list-style: none;
+        padding: 0;
+        margin: var(--s4) 0 0;
+        border-top: 1px solid var(--borde);
+      }
+      .lista li {
+        padding: 14px 0;
+        border-bottom: 1px solid var(--borde);
+        display: flex;
+        justify-content: space-between;
+        gap: var(--s2);
+      }
+      .lista span {
+        color: var(--tinta-2);
+        text-align: right;
+      }
+      .pasos {
+        list-style: none;
+        padding: 0;
+        margin: var(--s4) 0 0;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        counter-reset: paso;
+      }
+      .pasos li {
+        background: var(--panel);
+        border: 1px solid var(--borde);
+        border-radius: var(--r);
+        padding: var(--s3);
+        counter-increment: paso;
+        min-width: 0;
+      }
+      .pasos li::before {
+        content: counter(paso);
+        display: inline-grid;
+        place-items: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: var(--tinta);
+        color: var(--cuerpo);
+        font: 600 14px var(--mono);
+        margin-bottom: var(--s2);
+      }
+      .pasos h3 {
+        margin: 0 0 8px;
+        font-size: 19px;
+        font-weight: 700;
+      }
+      .pasos p {
+        color: var(--tinta-2);
+        font-size: 15px;
+      }
+      .pasos code {
+        display: block;
+        margin-top: var(--s2);
+        background: var(--codigo-bg);
+        color: var(--codigo);
+        border-radius: var(--r-s);
+        padding: 10px 12px;
+        font: 12px/1.6 var(--mono);
+        overflow-x: auto;
+        white-space: pre;
+      }
+      .cierre {
+        margin-top: var(--s6);
+        border-top: 1px solid var(--borde);
+        padding: var(--s5) 0 var(--s4);
+      }
+      .cierre .fila {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: var(--s4);
+        flex-wrap: wrap;
+      }
+      .cierre h2 {
+        max-width: 14ch;
+      }
+      .cierre .botones {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .cierre .boton {
+        flex: none;
+      }
+      .cierre .boton.fuerte {
+        background: var(--encendido);
+        color: var(--encendido-txt);
+        border-color: var(--encendido);
+        box-shadow: 0 3px 0 #8a3015;
+      }
+      .pie {
+        margin-top: var(--s5);
+        display: flex;
+        gap: var(--s3);
+        flex-wrap: wrap;
+        font-size: 14px;
+        color: var(--tinta-2);
+      }
+
+      @media (max-width: 1180px) {
+        .aparato {
+          grid-template-columns: 260px minmax(0, 1fr);
+          grid-template-areas:
+            'ctrl pantalla'
+            'ctrl faders'
+            'codigo codigo';
+        }
+        .codigo pre {
+          max-height: 420px;
+        }
+      }
+      @media (max-width: 760px) {
+        :root {
+          --s6: 72px;
+          --s5: 44px;
+        }
+        .wrap {
+          padding: 0 var(--s2);
+        }
+        nav {
+          gap: 14px;
+          font-size: 15px;
+        }
+        .marca span {
+          display: none;
+        }
+        .aparato {
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-areas: 'pantalla' 'faders' 'ctrl' 'codigo';
+          padding: 8px;
+          gap: 8px;
+          border-radius: 14px;
+        }
+        .pantalla {
+          padding: 12px 8px 0;
+        }
+        #grafico {
+          min-height: 280px;
+        }
+        .faders.alineados {
+          height: 160px;
+        }
+        .teclas {
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          gap: 6px;
+        }
+        .tecla {
+          font-size: 11px;
+          padding: 6px 2px 5px;
+        }
+        .fader input {
+          height: 96px;
+        }
+        .fader output {
+          font-size: 10px;
+        }
+        .medidor,
+        .dos,
+        .pasos {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .dos {
+          gap: var(--s4);
+        }
+        .teclado li {
+          grid-template-columns: 1fr;
+          gap: 4px;
+        }
+        .lista li {
+          flex-direction: column;
+          gap: 2px;
+        }
+        .lista span {
+          text-align: left;
+        }
+        .tipos {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .codigo .ln.nuevo {
+          animation: none;
+          background: var(--flash);
+        }
+        .tecla,
+        .interruptor .riel,
+        .interruptor .riel::after {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="sr-only saltar" href="#contenido">Saltar al contenido</a>
+    <header class="top">
+      <div class="wrap">
+        <a class="marca" href="#contenido" aria-label="LozCharts, inicio">
+          <svg viewBox="0 0 30 30" aria-hidden="true">
+            <!-- Una tecla con tres faders: el símbolo del aparato. -->
+            <rect x="1" y="1" width="28" height="28" rx="7" fill="var(--tinta)" />
+            <rect x="7.5" y="6" width="2" height="18" rx="1" fill="var(--cuerpo)" opacity=".5" />
+            <rect x="14" y="6" width="2" height="18" rx="1" fill="var(--cuerpo)" opacity=".5" />
+            <rect x="20.5" y="6" width="2" height="18" rx="1" fill="var(--cuerpo)" opacity=".5" />
+            <rect x="5" y="17" width="7" height="4" rx="1.5" fill="var(--cuerpo)" />
+            <rect x="11.5" y="12" width="7" height="4" rx="1.5" fill="var(--cuerpo)" />
+            <rect x="18" y="7" width="7" height="4" rx="1.5" fill="var(--encendido)" />
+          </svg>
+          <span>LozCharts</span>
+        </a>
+        <nav aria-label="Principal">
+          <a href="../galeria.html">Galería</a>
+          <a href="../docs.html">Docs</a>
+          <a href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+          <button class="tema" type="button" id="tema" aria-label="Cambiar a modo oscuro">
+            <svg class="luna" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+            </svg>
+            <svg class="sol" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="2" />
+              <path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main id="contenido">
+      <section class="wrap" aria-labelledby="titulo">
+        <div class="cabeza">
+          <h1 id="titulo">Toca. Se mueve.</h1>
+          <p>Esto es LozCharts de verdad. Sube un fader, cambia de tecla y mira la línea del código que se enciende.</p>
+        </div>
+
+        <div class="aparato">
+          <div class="controles modulo">
+            <div>
+              <p class="grupo-titulo" id="t-tipo">Tipo</p>
+              <div class="teclas" role="group" aria-labelledby="t-tipo" id="teclas"></div>
+            </div>
+            <div>
+              <p class="grupo-titulo" id="t-datos">Datos</p>
+              <div class="segmentos" role="group" aria-labelledby="t-datos" id="datos"></div>
+            </div>
+            <div>
+              <p class="grupo-titulo" id="t-opc">Opciones</p>
+              <div class="interruptores" role="group" aria-labelledby="t-opc" id="opciones"></div>
+            </div>
+            <div class="acciones-ctrl">
+              <button class="boton" type="button" id="dados">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4" fill="none" stroke="currentColor" stroke-width="2" /><circle cx="8.5" cy="8.5" r="1.6" fill="currentColor" /><circle cx="15.5" cy="15.5" r="1.6" fill="currentColor" /><circle cx="12" cy="12" r="1.6" fill="currentColor" /></svg>
+                Al azar
+              </button>
+              <button class="boton" type="button" id="reiniciar">Reiniciar</button>
+            </div>
+          </div>
+
+          <div class="pantalla modulo">
+            <div id="grafico"></div>
+          </div>
+
+          <div class="faders modulo" id="faders" role="group" aria-label="Valores de la primera serie"></div>
+
+          <div class="codigo modulo">
+            <div class="codigo-barra">
+              <div class="codigo-tabs" role="tablist" aria-label="Forma del código">
+                <button role="tab" type="button" aria-selected="true" aria-controls="codigo" data-f="js">HTML</button>
+                <button role="tab" type="button" aria-selected="false" aria-controls="codigo" data-f="react" tabindex="-1">React</button>
+                <button role="tab" type="button" aria-selected="false" aria-controls="codigo" data-f="el" tabindex="-1">&lt;loz-chart&gt;</button>
+              </div>
+              <button class="copiar" type="button" id="copiar">Copiar</button>
+            </div>
+            <pre id="codigo" role="tabpanel" tabindex="0" aria-label="Código del gráfico"><code></code></pre>
+          </div>
+        </div>
+        <p class="sr-only" aria-live="polite" id="anuncio"></p>
+      </section>
+
+      <section class="bloque wrap" aria-labelledby="h-tipos">
+        <h2 id="h-tipos">Diecinueve tipos. Arriba caben diez.</h2>
+        <p class="bajada">Los que tienen luz se cargan en el aparato. Los demás te esperan en la galería, con mapas y todo.</p>
+        <ul class="tipos" id="tipos"></ul>
+      </section>
+
+      <section class="bloque wrap" aria-labelledby="h-medir">
+        <h2 id="h-medir">Cien mil puntos. Mídelo tú.</h2>
+        <p class="bajada">
+          Dibuja solo lo que se ve y guarda los picos de cada columna de píxeles. No te pedimos que lo creas: aprieta el
+          botón y tu navegador lo cronometra.
+        </p>
+        <div class="medidor">
+          <div class="lectura">
+            <p class="cifra" id="cifra" aria-live="polite">-- <small>ms</small></p>
+            <p id="cifra-nota">Suele tardar entre 25 y 40 ms.</p>
+            <button class="boton" type="button" id="medir">Dibujar 100 000 puntos</button>
+          </div>
+          <div class="pantalla-medidor" id="pesado"><p class="vacio">Aquí sale el gráfico, con zoom y su barra de desplazamiento.</p></div>
+        </div>
+      </section>
+
+      <section class="bloque wrap" aria-labelledby="h-sin">
+        <div class="dos">
+          <div>
+            <h2 id="h-sin">Ahora sin ratón.</h2>
+            <p class="bajada">Ve al gráfico de arriba con Tab. Cada dato se anuncia a los lectores de pantalla.</p>
+            <ul class="teclado">
+              <li><span><kbd>←</kbd><kbd>→</kbd></span>Recorre los datos</li>
+              <li><span><kbd>Inicio</kbd><kbd>Fin</kbd></span>Va a los extremos</li>
+              <li><span><kbd>Esc</kbd></span>Cierra el tooltip</li>
+              <li><span><kbd>+</kbd><kbd>−</kbd><kbd>0</kbd></span>Acerca, aleja y vuelve a todo, con zoom</li>
+            </ul>
+          </div>
+          <div>
+            <ul class="lista">
+              <li>Tabla de datos<span>oculta, para lectores de pantalla</span></li>
+              <li>Paleta Coral<span>validada para daltonismo</span></li>
+              <li>Modo oscuro<span>con colores propios</span></li>
+              <li>Exporta<span>PNG, SVG y CSV</span></li>
+              <li>Peso<span>51 KB comprimida, sin dependencias</span></li>
+              <li>Pruebas<span>199 automáticas</span></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="bloque wrap" aria-labelledby="h-llevar">
+        <h2 id="h-llevar">Llévate lo que armaste.</h2>
+        <p class="bajada">Todavía no está en npm. Se instala desde GitHub y funciona igual.</p>
+        <ol class="pasos">
+          <li>
+            <h3>Instálala</h3>
+            <p>Desde GitHub, o copia el archivo UMD si no usas empaquetador.</p>
+            <code>npm install github:MayraLo2ada/lozcharts</code>
+          </li>
+          <li>
+            <h3>Elige cómo</h3>
+            <p>Script, import, React, &lt;loz-chart&gt; para Angular, Vue o Svelte, o Django con HTMX.</p>
+            <code>import { LozChart } from 'lozcharts';</code>
+          </li>
+          <li>
+            <h3>Pega tu código</h3>
+            <p>El de arriba ya es válido. Cambia los datos por los tuyos.</p>
+            <code id="mini">new LozChart('#grafico', { … });</code>
+          </li>
+        </ol>
+      </section>
+
+      <footer class="cierre wrap">
+        <div class="fila">
+          <h2>Hecha en español por Mayra Lozada.</h2>
+          <div class="botones">
+            <a class="boton fuerte" href="../docs.html">Leer la documentación</a>
+            <a class="boton" href="../galeria.html">Ver la galería</a>
+            <a class="boton" href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+          </div>
+        </div>
+        <div class="pie">
+          <span>Licencia MIT, gratis también para empresas.</span>
+          <span>SVG y TypeScript, sin dependencias.</span>
+        </div>
+      </footer>
+    </main>
+
+    <script src="../lib/lozcharts.umd.js"></script>
+    <script>
+      (function () {
+        var root = document.documentElement;
+        var tema = function () {
+          return root.dataset.theme === 'dark' ? 'dark' : 'light';
+        };
+        var reducido = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var $ = function (s) {
+          return document.querySelector(s);
+        };
+        var esc = function (s) {
+          return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        };
+
+        /* ---------- Conjuntos de datos ---------- */
+        var DATOS = {
+          ventas: {
+            nombre: 'Ventas',
+            titulo: 'Ventas por mes',
+            x: 'mes',
+            a: 'online',
+            b: 'tienda',
+            an: 'Online',
+            bn: 'Tienda',
+            formato: 'currency',
+            max: 80000,
+            paso: 500,
+            meta: 50000,
+            metaTxt: 'Meta',
+            filas: [
+              ['ene', 34000, 26000],
+              ['feb', 36500, 24800],
+              ['mar', 41000, 29500],
+              ['abr', 44200, 31000],
+              ['may', 47800, 30200],
+              ['jun', 52600, 33900],
+            ],
+          },
+          lluvia: {
+            nombre: 'Lluvia',
+            titulo: 'Lluvia por mes (mm)',
+            x: 'mes',
+            a: 'bogota',
+            b: 'quito',
+            an: 'Bogotá',
+            bn: 'Quito',
+            formato: 'number',
+            max: 200,
+            paso: 1,
+            meta: 80,
+            metaTxt: 'Promedio',
+            filas: [
+              ['ene', 46, 98],
+              ['feb', 62, 112],
+              ['mar', 88, 141],
+              ['abr', 118, 167],
+              ['may', 102, 116],
+              ['jun', 54, 42],
+            ],
+          },
+          visitas: {
+            nombre: 'Visitas',
+            titulo: 'Visitas por día',
+            x: 'dia',
+            a: 'web',
+            b: 'app',
+            an: 'Web',
+            bn: 'App',
+            formato: 'compact',
+            max: 12000,
+            paso: 50,
+            meta: 6000,
+            metaTxt: 'Meta diaria',
+            filas: [
+              ['lun', 6200, 3100],
+              ['mar', 7100, 3500],
+              ['mié', 7400, 3800],
+              ['jue', 6900, 3600],
+              ['vie', 5800, 4200],
+              ['sáb', 3900, 5100],
+            ],
+          },
+        };
+
+        /* ---------- Tipos (teclas) ---------- */
+        var I = function (d) {
+          return '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
+        };
+        var TIPOS = [
+          { id: 'bar', nombre: 'Barras', icono: I('<path d="M5 20V12M10 20V6M15 20V10M20 20V4"/>') },
+          { id: 'stack', nombre: 'Apiladas', icono: I('<path d="M6 20v-6h4v6M6 14V9h4v5M14 20v-9h4v9M14 11V5h4v6"/>') },
+          { id: 'hbar', nombre: 'Horizontal', icono: I('<path d="M4 5h10M4 10h16M4 15h7M4 20h13"/>') },
+          { id: 'line', nombre: 'Líneas', icono: I('<path d="M3 18l5-6 4 3 8-10"/>') },
+          { id: 'area', nombre: 'Áreas', icono: I('<path d="M3 20V15l5-6 4 3 9-7v15Z" fill="currentColor" fill-opacity=".25"/>') },
+          { id: 'step', nombre: 'Escalones', icono: I('<path d="M3 19h5v-5h5V9h5V4h3"/>') },
+          { id: 'donut', nombre: 'Dona', icono: I('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 4v4.5M19 15l-3.6-1.6"/>') },
+          { id: 'radar', nombre: 'Radar', icono: I('<path d="M12 3l8 6-3 10H7L4 9Z"/><path d="M12 8l4 3-2 5h-4l-2-5Z" fill="currentColor" fill-opacity=".3"/>') },
+          { id: 'funnel', nombre: 'Embudo', icono: I('<path d="M3 5h18M6 10h12M9 15h6M11 20h2"/>') },
+          { id: 'treemap', nombre: 'Treemap', icono: I('<rect x="3" y="4" width="18" height="16" rx="1"/><path d="M12 4v16M12 13h9M16.5 13v7"/>') },
+        ];
+        var tipoPorId = {};
+        TIPOS.forEach(function (t) {
+          tipoPorId[t.id] = t;
+        });
+        var CARTESIANO = { bar: 1, stack: 1, hbar: 1, line: 1, area: 1, step: 1 };
+        var CURVA = { line: 1, area: 1 };
+        var FINALES = { line: 1, area: 1, step: 1 };
+        var UNA = { donut: 1, funnel: 1, treemap: 1 };
+
+        /* ---------- Estado ---------- */
+        var INICIAL = { tipo: 'bar', datos: 'ventas', suave: true, meta: true, finales: false, segunda: true, marca: false };
+        var estado = JSON.parse(JSON.stringify(INICIAL));
+        var valores = {};
+        var reiniciarValores = function () {
+          Object.keys(DATOS).forEach(function (k) {
+            valores[k] = DATOS[k].filas.map(function (f) {
+              return [f[0], f[1], f[2]];
+            });
+          });
+        };
+        reiniciarValores();
+
+        var PALETA_MARCA = { light: ['#0a7d4f', '#6b3fa0', '#d9480f', '#1f6fb2', '#b5179e', '#8a6d00'], dark: ['#2fb37a', '#9b74d1', '#f0703a', '#5aa3e0', '#e05bc8', '#c9a227'] };
+
+        /* ---------- Opciones del gráfico ---------- */
+        function opciones() {
+          var D = DATOS[estado.datos];
+          var t = estado.tipo;
+          var data = valores[estado.datos].map(function (f) {
+            var o = {};
+            o[D.x] = f[0];
+            o[D.a] = f[1];
+            o[D.b] = f[2];
+            return o;
+          });
+          var o = { title: D.titulo, data: data, xAxis: { field: D.x }, yAxis: { format: D.formato } };
+          var dos = estado.segunda && !UNA[t];
+          var tipoSerie = { bar: 'bar', stack: 'bar', hbar: 'bar', line: 'line', area: 'area', step: 'step', donut: 'donut', radar: 'radar', funnel: 'funnel', treemap: 'treemap' }[t];
+          var s1 = { type: tipoSerie, field: D.a, name: D.an };
+          var s2 = { type: tipoSerie, field: D.b, name: D.bn };
+          if (t === 'stack') s1.stack = s2.stack = true;
+          if (CURVA[t] && estado.suave) s1.smooth = s2.smooth = true;
+          o.series = dos ? [s1, s2] : [s1];
+          if (t === 'hbar') o.orientation = 'horizontal';
+          if (t === 'radar') o.yAxis.min = 0;
+          if (CARTESIANO[t] && estado.meta) o.annotations = [{ y: D.meta, label: D.metaTxt }];
+          if (FINALES[t] && estado.finales) o.endLabels = true;
+          if (estado.marca) o.palette = PALETA_MARCA;
+          return o;
+        }
+
+        /* ---------- Código generado ---------- */
+        function literal(v, ind) {
+          var pad = '  '.repeat(ind);
+          var plano = function (x) {
+            return x === null || typeof x !== 'object' || (Array.isArray(x) && x.every(plano));
+          };
+          if (Array.isArray(v)) {
+            if (v.every(plano)) return '[' + v.map(function (x) {
+              return literal(x, 0);
+            }).join(', ') + ']';
+            return '[\n' + v.map(function (x) {
+              return pad + '  ' + literal(x, ind + 1);
+            }).join(',\n') + ',\n' + pad + ']';
+          }
+          if (v && typeof v === 'object') {
+            var ks = Object.keys(v);
+            var corto = ks.every(function (k) {
+              return plano(v[k]);
+            });
+            if (corto)
+              return '{ ' + ks.map(function (k) {
+                return k + ': ' + literal(v[k], 0);
+              }).join(', ') + ' }';
+            return '{\n' + ks.map(function (k) {
+              return pad + '  ' + k + ': ' + literal(v[k], ind + 1);
+            }).join(',\n') + ',\n' + pad + '}';
+          }
+          if (typeof v === 'string') return "'" + v + "'";
+          return String(v);
+        }
+        function codigo(f) {
+          var o = opciones();
+          if (o.palette) o.palette = { light: o.palette.light.slice(0, 2), dark: o.palette.dark.slice(0, 2) };
+          if (f === 'js') {
+            return '<div id="grafico"></div>\n<script src="lozcharts.umd.js"></' + 'script>\n<script>\n' + "new LozChart('#grafico', " + literal(o, 0) + ');\n</' + 'script>';
+          }
+          if (f === 'react') {
+            var ks = Object.keys(o);
+            return "import { Chart } from 'lozcharts/react';\n\n<Chart\n" + ks.map(function (k) {
+              var v = o[k];
+              if (typeof v === 'string') return '  ' + k + '="' + v + '"';
+              if (v === true) return '  ' + k;
+              return '  ' + k + '={' + literal(v, 1) + '}';
+            }).join('\n') + '\n/>';
+          }
+          return "<loz-chart options='" + JSON.stringify(o, null, 2) + "'></loz-chart>";
+        }
+        var TOKENS = /(&lt;\/?[\w-]+|\/?&gt;)|('[^'\n]*'|"[^"\n]*")|\b(new|import|from|true)\b|\b(\d[\d.]*)\b/g;
+        function resaltar(linea) {
+          return esc(linea).replace(TOKENS, function (m, tag, str, kw, num) {
+            var c = tag || kw ? 'k' : str ? 's' : 'n';
+            return '<span class="' + c + '">' + m + '</span>';
+          });
+        }
+        var formato = 'js';
+        var antes = [];
+        var pre = $('#codigo code');
+        function pintarCodigo(animar) {
+          var lineas = codigo(formato).split('\n');
+          var previas = {};
+          antes.forEach(function (l) {
+            previas[l] = (previas[l] || 0) + 1;
+          });
+          pre.innerHTML = lineas
+            .map(function (l) {
+              var nuevo = animar && !previas[l];
+              if (previas[l]) previas[l]--;
+              return '<span class="ln' + (nuevo ? ' nuevo' : '') + '">' + (resaltar(l) || ' ') + '</span>';
+            })
+            .join('');
+          antes = lineas;
+          var primero = pre.querySelector('.nuevo');
+          if (primero && animar) {
+            var p = pre.parentNode;
+            var top = primero.offsetTop - p.offsetTop;
+            if (top < p.scrollTop || top > p.scrollTop + p.clientHeight - 30) p.scrollTop = top - 60;
+          }
+          var o = opciones();
+          $('#mini').textContent = "new LozChart('#grafico', { title: '" + o.title + "', … });";
+        }
+
+        /* ---------- Gráfico ---------- */
+        var chart = null;
+        function crearGrafico() {
+          if (chart) chart.destroy();
+          chart = new LozChart('#grafico', Object.assign({ background: false, theme: tema(), height: window.innerWidth < 760 ? 280 : 300 }, opciones()));
+          alinearLuego();
+        }
+        function alinear() {
+          var cont = $('#faders');
+          var t = estado.tipo;
+          var etiquetas = valores[estado.datos].map(function (f) {
+            return f[0];
+          });
+          var textos = Array.prototype.slice.call(document.querySelectorAll('#grafico svg text'));
+          var base = cont.getBoundingClientRect();
+          var xs = CARTESIANO[t] && t !== 'hbar'
+            ? etiquetas.map(function (l) {
+                var c = textos.filter(function (el) {
+                  return el.textContent.trim() === l;
+                });
+                if (!c.length) return null;
+                c.sort(function (a, b) {
+                  return b.getBoundingClientRect().top - a.getBoundingClientRect().top;
+                });
+                var r = c[0].getBoundingClientRect();
+                return r.left + r.width / 2 - base.left;
+              })
+            : [null];
+          var ok = xs.every(function (x) {
+            return x !== null;
+          });
+          cont.classList.toggle('alineados', ok);
+          Array.prototype.forEach.call(cont.children, function (f, i) {
+            f.style.left = ok ? Math.min(Math.max(xs[i], 30), base.width - 30) + 'px' : '';
+          });
+        }
+        var alinearLuego = function () {
+          requestAnimationFrame(function () {
+            requestAnimationFrame(alinear);
+          });
+        };
+        var resizeT = 0;
+        window.addEventListener('resize', function () {
+          clearTimeout(resizeT);
+          resizeT = setTimeout(alinear, 200);
+        });
+        function actualizarDatos() {
+          chart.setData(opciones().data);
+        }
+
+        /* ---------- Controles ---------- */
+        var teclas = $('#teclas');
+        teclas.innerHTML = TIPOS.map(function (t) {
+          return '<button type="button" class="tecla" data-tipo="' + t.id + '" aria-pressed="false">' + t.icono + '<span>' + t.nombre + '</span></button>';
+        }).join('');
+        var datosEl = $('#datos');
+        datosEl.innerHTML = Object.keys(DATOS).map(function (k) {
+          return '<button type="button" data-datos="' + k + '" aria-pressed="false">' + DATOS[k].nombre + '</button>';
+        }).join('');
+        var OPC = [
+          { k: 'segunda', n: 'Segunda serie' },
+          { k: 'suave', n: 'Curva suave' },
+          { k: 'meta', n: 'Línea de meta' },
+          { k: 'finales', n: 'Nombres al final' },
+          { k: 'marca', n: 'Colores de mi marca' },
+        ];
+        $('#opciones').innerHTML = OPC.map(function (o) {
+          return '<button type="button" role="switch" class="interruptor" data-opc="' + o.k + '" aria-checked="false"><span>' + o.n + '</span><span class="riel" aria-hidden="true"></span></button>';
+        }).join('');
+
+        function fmt(v) {
+          var D = DATOS[estado.datos];
+          if (window.innerWidth < 760) return D.formato === 'number' ? String(v) : (v / 1000).toLocaleString('es', { maximumFractionDigits: 1 });
+          if (D.formato === 'currency') return (v / 1000).toLocaleString('es', { maximumFractionDigits: 1 }) + ' mil';
+          if (D.formato === 'compact') return v >= 1000 ? (v / 1000).toLocaleString('es', { maximumFractionDigits: 1 }) + ' mil' : String(v);
+          return v + ' mm';
+        }
+        function pintarFaders() {
+          var D = DATOS[estado.datos];
+          var cont = $('#faders');
+          var filas = valores[estado.datos];
+          cont.setAttribute('aria-label', 'Valores de ' + D.an);
+          cont.innerHTML = filas
+            .map(function (f, i) {
+              return (
+                '<div class="fader"><output id="o' + i + '" for="f' + i + '">' + fmt(f[1]) + '</output>' +
+                '<input type="range" id="f' + i + '" min="0" max="' + D.max + '" step="' + D.paso + '" value="' + f[1] + '" aria-label="' + D.an + ', ' + f[0] + '" aria-valuetext="' + fmt(f[1]) + '">' +
+                '<label for="f' + i + '">' + f[0] + '</label></div>'
+              );
+            })
+            .join('');
+        }
+        var pendiente = 0;
+        $('#faders').addEventListener('input', function (e) {
+          var i = +e.target.id.slice(1);
+          var v = +e.target.value;
+          valores[estado.datos][i][1] = v;
+          $('#o' + i).textContent = fmt(v);
+          e.target.setAttribute('aria-valuetext', fmt(v));
+          cancelAnimationFrame(pendiente);
+          pendiente = requestAnimationFrame(function () {
+            actualizarDatos();
+            pintarCodigo(true);
+          });
+        });
+
+        function sincronizar() {
+          teclas.querySelectorAll('.tecla').forEach(function (b) {
+            b.setAttribute('aria-pressed', b.dataset.tipo === estado.tipo ? 'true' : 'false');
+          });
+          datosEl.querySelectorAll('button').forEach(function (b) {
+            b.setAttribute('aria-pressed', b.dataset.datos === estado.datos ? 'true' : 'false');
+          });
+          var t = estado.tipo;
+          var aplica = { segunda: !UNA[t], suave: !!CURVA[t], meta: !!CARTESIANO[t], finales: !!FINALES[t], marca: true };
+          document.querySelectorAll('.interruptor').forEach(function (b) {
+            b.setAttribute('aria-checked', estado[b.dataset.opc] && aplica[b.dataset.opc] ? 'true' : 'false');
+            b.disabled = !aplica[b.dataset.opc];
+          });
+        }
+        var anunciar = function (s) {
+          $('#anuncio').textContent = s;
+        };
+
+        teclas.addEventListener('click', function (e) {
+          var b = e.target.closest('.tecla');
+          if (!b || b.dataset.tipo === estado.tipo) return;
+          estado.tipo = b.dataset.tipo;
+          sincronizar();
+          crearGrafico();
+          pintarCodigo(true);
+          anunciar('Gráfico de tipo ' + tipoPorId[estado.tipo].nombre);
+        });
+        datosEl.addEventListener('click', function (e) {
+          var b = e.target.closest('button');
+          if (!b || b.dataset.datos === estado.datos) return;
+          estado.datos = b.dataset.datos;
+          sincronizar();
+          pintarFaders();
+          chart.setOptions(opciones());
+          alinearLuego();
+          pintarCodigo(true);
+          anunciar('Datos: ' + DATOS[estado.datos].nombre);
+        });
+        $('#opciones').addEventListener('click', function (e) {
+          var b = e.target.closest('.interruptor');
+          if (!b || b.disabled) return;
+          estado[b.dataset.opc] = !estado[b.dataset.opc];
+          sincronizar();
+          crearGrafico();
+          pintarCodigo(true);
+        });
+        $('#dados').addEventListener('click', function () {
+          var D = DATOS[estado.datos];
+          valores[estado.datos].forEach(function (f) {
+            f[1] = Math.round((D.max * (0.15 + Math.random() * 0.75)) / D.paso) * D.paso;
+            f[2] = Math.round((D.max * (0.1 + Math.random() * 0.6)) / D.paso) * D.paso;
+          });
+          pintarFaders();
+          actualizarDatos();
+          alinearLuego();
+          pintarCodigo(true);
+        });
+        $('#reiniciar').addEventListener('click', function () {
+          reiniciarValores();
+          estado = JSON.parse(JSON.stringify(INICIAL));
+          sincronizar();
+          pintarFaders();
+          crearGrafico();
+          pintarCodigo(true);
+        });
+
+        var tabs = document.querySelectorAll('.codigo-tabs button');
+        var elegirFormato = function (f) {
+          formato = f;
+          tabs.forEach(function (b) {
+            var on = b.dataset.f === f;
+            b.setAttribute('aria-selected', on ? 'true' : 'false');
+            b.tabIndex = on ? 0 : -1;
+          });
+          antes = [];
+          pintarCodigo(false);
+        };
+        tabs.forEach(function (b, i) {
+          b.addEventListener('click', function () {
+            elegirFormato(b.dataset.f);
+          });
+          b.addEventListener('keydown', function (e) {
+            var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+            if (!d) return;
+            var n = tabs[(i + d + tabs.length) % tabs.length];
+            n.focus();
+            elegirFormato(n.dataset.f);
+          });
+        });
+        $('#copiar').addEventListener('click', function () {
+          var btn = this;
+          var listo = function (txt) {
+            btn.textContent = txt;
+            setTimeout(function () {
+              btn.textContent = 'Copiar';
+            }, 1600);
+          };
+          if (navigator.clipboard)
+            navigator.clipboard.writeText(codigo(formato)).then(
+              function () {
+                listo('Copiado');
+              },
+              function () {
+                listo('No se pudo');
+              },
+            );
+          else listo('No se pudo');
+        });
+
+        /* ---------- Lista de tipos ---------- */
+        var TODOS = [
+          ['LozBar', 'bar'], ['LozLine', 'line'], ['LozArea', 'area'], ['LozStep', 'step'], ['LozDonut', 'donut'], ['LozRadar', 'radar'], ['LozFunnel', 'funnel'], ['LozTreemap', 'treemap'],
+          ['LozBar horizontal', 'hbar'], ['LozBar apiladas', 'stack'],
+          ['LozRange'], ['LozScatter'], ['LozBubble'], ['LozCandle'], ['LozOHLC'], ['LozPie'], ['LozGauge'], ['LozHeatmap'], ['LozSankey'], ['LozMap coroplético'], ['LozMap de burbujas'], ['LozMultiples'],
+        ];
+        $('#tipos').innerHTML = TODOS.map(function (t) {
+          return t[1]
+            ? '<li><button type="button" data-cargar="' + t[1] + '">' + t[0] + '</button></li>'
+            : '<li><a href="../galeria.html">' + t[0] + '</a></li>';
+        }).join('');
+        $('#tipos').addEventListener('click', function (e) {
+          var b = e.target.closest('[data-cargar]');
+          if (!b) return;
+          var tecla = teclas.querySelector('[data-tipo="' + b.dataset.cargar + '"]');
+          document.querySelector('.aparato').scrollIntoView({ behavior: reducido ? 'auto' : 'smooth', block: 'start' });
+          tecla.click();
+          tecla.focus({ preventScroll: true });
+        });
+
+        /* ---------- Medidor ---------- */
+        var pesado = null;
+        $('#medir').addEventListener('click', function () {
+          var data = new Array(100000);
+          var v = 50,
+            seed = 3;
+          for (var i = 0; i < data.length; i++) {
+            seed = (seed + 0x6d2b79f5) | 0;
+            var q = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            q = (q + Math.imul(q ^ (q >>> 7), 61 | q)) ^ q;
+            var azar = ((q ^ (q >>> 14)) >>> 0) / 4294967296;
+            v += (azar - 0.5) * 2 - (v - 50 - 12 * Math.sin(i / 9000)) * 0.004;
+            data[i] = { lectura: i, valor: Math.round((v + (i >= 72000 && i < 72030 ? 30 : 0)) * 100) / 100 };
+          }
+          var el = $('#pesado');
+          if (pesado) pesado.destroy();
+          el.innerHTML = '';
+          var t0 = performance.now();
+          pesado = new LozChart(el, {
+            title: '100 000 lecturas',
+            subtitle: 'Hay un pico breve cerca de la 72 000: arrastra para acercar',
+            data: data,
+            xAxis: { field: 'lectura', type: 'linear', format: 'compact' },
+            series: [{ type: 'line', field: 'valor', name: 'Valor', color: 2 }],
+            zoom: true,
+            animate: false,
+            background: false,
+            theme: tema(),
+            height: 300,
+          });
+          var ms = Math.round(performance.now() - t0);
+          $('#cifra').innerHTML = ms + ' <small>ms</small>';
+          $('#cifra-nota').textContent = 'Lo que tardó tu navegador, ahora mismo.';
+          this.textContent = 'Medir otra vez';
+        });
+
+        /* ---------- Tema ---------- */
+        var boton = $('#tema');
+        var etiqueta = function () {
+          boton.setAttribute('aria-label', tema() === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+        };
+        boton.addEventListener('click', function () {
+          root.dataset.theme = tema() === 'dark' ? 'light' : 'dark';
+          try {
+            localStorage.setItem('loz-10-tema', root.dataset.theme);
+          } catch (e) {}
+          etiqueta();
+          chart.setTheme(tema());
+          if (pesado) pesado.setTheme(tema());
+        });
+
+        /* ---------- Arranque ---------- */
+        etiqueta();
+        sincronizar();
+        pintarFaders();
+        crearGrafico();
+        pintarCodigo(false);
+        if (document.fonts) document.fonts.ready.then(alinear);
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,558 @@
+<!doctype html>
+<!--
+Plan 07 · "A lo bruto" (neo-brutalismo alegre)
+1. Concepto: una portada que habla claro y se ríe un poco de las portadas serias; bloques de color plano, bordes de 3 px y sombras sólidas, como pegatinas sobre una mesa.
+2. Paleta del sitio: tinta #121212, papel #fbfbf9, y la paleta Coral usada en bloques planos (coral, ocre, cielo, rosa, verde, petróleo); en oscuro, fondo #111110, tarjetas #1a1a19 y bordes claros.
+3. Tipografías: Bricolage Grotesque 800 para titulares enormes y Atkinson Hyperlegible (hecha para baja visión) para el texto; JetBrains Mono solo en código.
+4. Layout: titular a todo el ancho que ocupa casi la pantalla; debajo, bloque ocre con el texto y una tarjeta con el gráfico real, ladeada, con una pegatina encima. Luego secciones como bloques apilados de distinto color, sin rejilla de tarjetas iguales.
+5. Elemento audaz: el titular gigante y la tarjeta del gráfico ladeada con la pegatina de "51 KB", que se puede sacudir con "Mezclar los datos".
+6. Qué cambié de lo obvio: en vez de una lista de beneficios, cada sección deja hacer algo (elegir entre los 19 tipos, cronometrar 100 000 puntos en tu equipo, recorrer el gráfico con flechas). Y la fuente del texto es la de baja visión, no Inter.
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LozCharts: gráficos que van al grano</title>
+<meta name="description" content="LozCharts: librería de gráficos en SVG, sin dependencias, accesible y en español.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #121212;
+    --paper: #fbfbf9;
+    --card: #fcfcfb;
+    --muted: #4a4a46;
+    --line: #121212;
+    --shadow: #121212;
+    --coral: #e45934;
+    --teal: #009298;
+    --violet: #5e2dad;
+    --wine: #9c1854;
+    --sky: #4c99f8;
+    --green: #31983d;
+    --pink: #db6ea5;
+    --ochre: #e2aa00;
+    --on-block: #121212;
+    --code-bg: #121212;
+    --code-ink: #f4f3ee;
+    --b: 3px;
+    --s: 6px;
+    --r: 14px;
+    --gap: 24px;
+    --wrap: 1280px;
+    --display: 'Bricolage Grotesque', 'Arial Black', sans-serif;
+    --text: 'Atkinson Hyperlegible', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    color-scheme: light;
+  }
+  :root[data-theme='dark'] {
+    --ink: #f4f3ee;
+    --paper: #111110;
+    --card: #1a1a19;
+    --muted: #c9c8c1;
+    --line: #f4f3ee;
+    --shadow: #f4f3ee;
+    --coral: #e05630;
+    --teal: #0a999f;
+    --violet: #8b61e3;
+    --wine: #9d4e6b;
+    --sky: #4996f5;
+    --green: #399e43;
+    --pink: #d1649c;
+    --ochre: #e2aa00;
+    --on-block: #121212;
+    --code-bg: #000;
+    --code-ink: #f4f3ee;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 18px/1.55 var(--text);
+    overflow-x: hidden;
+  }
+  a { color: inherit; }
+  :focus-visible { outline: 3px solid var(--coral); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 24px; }
+  h1, h2, h3 { font-family: var(--display); font-weight: 800; line-height: .95; letter-spacing: -0.03em; margin: 0; }
+  p { margin: 0; }
+
+  /* Botones y bloques */
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    font: 700 18px/1 var(--text);
+    padding: 15px 22px;
+    border: var(--b) solid var(--line);
+    border-radius: 999px;
+    background: var(--card);
+    color: var(--ink);
+    text-decoration: none;
+    box-shadow: 4px 4px 0 var(--shadow);
+    cursor: pointer;
+    transition: transform .12s, box-shadow .12s;
+  }
+  .btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--shadow); }
+  .btn:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--shadow); }
+  .btn.primary { background: var(--ink); color: var(--paper); }
+  .box {
+    border: var(--b) solid var(--line);
+    border-radius: var(--r);
+    box-shadow: var(--s) var(--s) 0 var(--shadow);
+    background: var(--card);
+  }
+
+  /* Menú */
+  header.top { border-bottom: var(--b) solid var(--line); background: var(--paper); }
+  .top .wrap { display: flex; align-items: center; gap: 16px; min-height: 76px; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 800 26px/1 var(--display); letter-spacing: -0.03em; }
+  .brand svg { flex: none; }
+  nav.links { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+  nav.links a { font-weight: 700; text-decoration: none; padding: 8px 12px; border-radius: 999px; border: 2px solid transparent; }
+  nav.links a:hover { border-color: var(--line); }
+  .theme {
+    width: 46px; height: 46px; border-radius: 50%;
+    border: var(--b) solid var(--line); background: var(--ochre); color: #121212;
+    display: grid; place-items: center; cursor: pointer; box-shadow: 3px 3px 0 var(--shadow);
+  }
+  .theme .moon { display: none; }
+  [data-theme='dark'] .theme .sun { display: none; }
+  [data-theme='dark'] .theme .moon { display: block; }
+
+  /* Portada */
+  .hero { padding: 56px 0 96px; }
+  .hero h1 { font-size: clamp(54px, 11.2vw, 170px); max-width: 12ch; }
+  .hero h1 .under { text-decoration: underline; text-decoration-thickness: .09em; text-underline-offset: .08em; text-decoration-color: var(--coral); }
+  .hero-row { display: grid; grid-template-columns: 5fr 7fr; gap: 40px; margin-top: 48px; align-items: start; }
+  .pitch { background: var(--ochre); color: var(--on-block); padding: 32px; }
+  .pitch p { font-size: 22px; line-height: 1.45; }
+  .pitch .actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 28px; }
+  .pitch .btn { box-shadow: 4px 4px 0 #121212; border-color: #121212; background: #fcfcfb; color: #121212; }
+  .pitch .btn.primary { background: #121212; color: #fcfcfb; }
+  .pitch .btn:hover { box-shadow: 6px 6px 0 #121212; }
+  .pitch small { display: block; margin-top: 22px; font-size: 16px; }
+  .stage { position: relative; }
+  .tilt { transform: rotate(-1.6deg); padding: 20px 18px 14px; }
+  .tilt .bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 8px; padding-top: 12px; border-top: 2px dashed var(--line); }
+  .tilt .bar span { color: var(--muted); font-size: 16px; }
+  .btn.small { padding: 10px 16px; font-size: 16px; box-shadow: 3px 3px 0 var(--shadow); }
+  .sticker {
+    position: absolute; top: -78px; right: -18px; z-index: 2;
+    width: 132px; height: 132px; border-radius: 50%;
+    background: var(--pink); color: #121212; border: var(--b) solid var(--line);
+    box-shadow: 4px 4px 0 var(--shadow);
+    display: grid; place-items: center; text-align: center;
+    transform: rotate(12deg);
+    font: 800 16px/1.05 var(--display);
+  }
+  .sticker b { display: block; font-size: 38px; letter-spacing: -0.04em; }
+  .sacude { animation: sacude .5s ease-out; }
+  @keyframes sacude { 0%{transform:rotate(-1.6deg)} 30%{transform:rotate(1.4deg) scale(1.01)} 60%{transform:rotate(-3deg)} 100%{transform:rotate(-1.6deg)} }
+
+  /* Secciones */
+  section.sec { padding: 96px 0; border-top: var(--b) solid var(--line); }
+  .sec h2 { font-size: clamp(44px, 7vw, 104px); max-width: 14ch; }
+  .sec .lead { font-size: 22px; max-width: 46ch; margin-top: 20px; color: var(--ink); }
+
+  /* Tipos */
+  .tipos-grid { display: grid; grid-template-columns: 360px 1fr; gap: 40px; margin-top: 48px; align-items: start; }
+  .tipos-grid > * { min-width: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip {
+    font: 700 16px/1 var(--text); padding: 11px 14px; border-radius: 999px;
+    border: 2px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer;
+  }
+  .chip:hover { background: var(--paper); transform: translateY(-1px); }
+  .chip[aria-pressed='true'] { background: var(--ink); color: var(--paper); }
+  .chips-note { margin-top: 20px; color: var(--muted); font-size: 16px; }
+  .viewer { padding: 22px 20px 16px; min-height: 470px; }
+  .viewer-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tag { font: 700 15px/1 var(--text); padding: 7px 11px; border-radius: 999px; background: var(--teal); color: #121212; border: 2px solid var(--line); }
+  details.code { margin-top: 14px; border-top: 2px dashed var(--line); padding-top: 12px; }
+  details.code summary { cursor: pointer; font-weight: 700; }
+  pre {
+    margin: 12px 0 0; padding: 18px; overflow: auto; border-radius: 10px;
+    background: var(--code-bg); color: var(--code-ink); font: 14px/1.6 var(--mono); max-height: 340px;
+  }
+
+  /* Rendimiento */
+  .perf { background: var(--sky); color: var(--on-block); }
+  .perf h2 { color: #121212; }
+  .perf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 44px; align-items: stretch; }
+  .big-num { font: 800 clamp(72px, 13vw, 200px)/.85 var(--display); letter-spacing: -0.05em; }
+  .perf .box { border-color: #121212; box-shadow: var(--s) var(--s) 0 #121212; }
+  .perf .lead { color: #121212; }
+  .timer { padding: 26px; background: #fcfcfb; color: #121212; display: flex; flex-direction: column; gap: 16px; }
+  .timer .btn { align-self: flex-start; background: #121212; color: #fcfcfb; border-color: #121212; box-shadow: 4px 4px 0 var(--coral); }
+  .readout { font: 800 64px/1 var(--display); letter-spacing: -0.03em; min-height: 64px; }
+  .readout small { font: 400 18px/1.4 var(--text); display: block; letter-spacing: 0; margin-top: 8px; }
+  .perf-chart { padding: 14px 12px 8px; margin-top: 32px; min-height: 120px; }
+  .perf-chart:empty { display: none; }
+  .perf .dark-card { background: #fcfcfb; }
+
+  /* Accesibilidad */
+  .a11y-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; margin-top: 48px; align-items: start; }
+  .swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: var(--b) solid var(--line); border-radius: var(--r); overflow: hidden; box-shadow: var(--s) var(--s) 0 var(--shadow); }
+  .sw { aspect-ratio: 1 / 1.05; padding: 12px; display: flex; flex-direction: column; justify-content: flex-end; font-size: 15px; line-height: 1.2; border-right: 2px solid var(--line); border-bottom: 2px solid var(--line); }
+  .sw:nth-child(4n) { border-right: 0; }
+  .sw:nth-child(n+5) { border-bottom: 0; }
+  .sw b { font: 800 22px/1 var(--display); display: block; margin-bottom: 4px; }
+  .sw code { font: 13px var(--mono); }
+  .facts { display: grid; gap: 18px; }
+  .fact { padding: 20px 22px; }
+  .fact h3 { font-size: 30px; letter-spacing: -0.02em; }
+  .fact p { margin-top: 8px; color: var(--muted); }
+  kbd { font: 700 16px/1 var(--mono); padding: 5px 9px; border: 2px solid var(--line); border-bottom-width: 4px; border-radius: 7px; background: var(--card); color: var(--ink); }
+  .try { padding: 18px 16px 10px; margin-top: 28px; }
+  .try p { font-size: 16px; color: var(--muted); margin-bottom: 4px; }
+
+  /* Código */
+  .code-sec { background: var(--violet); color: #fcfcfb; }
+  .code-sec h2, .code-sec .lead { color: #fcfcfb; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 40px; }
+  .tab { font: 700 16px/1 var(--text); padding: 12px 16px; border-radius: 999px; border: 2px solid #121212; background: #fcfcfb; color: #121212; cursor: pointer; }
+  .tab[aria-selected='true'] { background: var(--ochre); box-shadow: 3px 3px 0 #121212; }
+  .panel-code { margin-top: 18px; border: var(--b) solid #121212; border-radius: var(--r); box-shadow: var(--s) var(--s) 0 #121212; overflow: hidden; background: #121212; }
+  .panel-code pre { margin: 0; border-radius: 0; max-height: none; background: #121212; color: #f4f3ee; font-size: 15px; }
+  .panel-code .cap { padding: 12px 18px; background: #fcfcfb; color: #121212; border-bottom: var(--b) solid #121212; font-weight: 700; }
+
+  /* Cierre */
+  .end { background: var(--coral); color: #121212; text-align: left; }
+  .end h2 { font-size: clamp(56px, 10vw, 156px); max-width: 11ch; color: #121212; }
+  .end .lead { color: #121212; }
+  .end .actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 36px; }
+  .end .btn { border-color: #121212; box-shadow: 4px 4px 0 #121212; background: #fcfcfb; color: #121212; }
+  .end .btn.primary { background: #121212; color: #fcfcfb; }
+  footer { border-top: var(--b) solid var(--line); padding: 28px 0 40px; font-size: 16px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; }
+
+  .only-s { display: none; }
+  @media (max-width: 640px) { .only-s { display: inline; } }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (max-width: 980px) {
+    .hero-row, .tipos-grid, .perf-grid, .a11y-grid { grid-template-columns: 1fr; }
+    .stage { margin-top: 30px; }
+  }
+  @media (max-width: 640px) {
+    body { font-size: 17px; }
+    .wrap { padding: 0 16px; }
+    nav.links a.hide-s { display: none; }
+    nav.links a { padding: 8px 8px; font-size: 16px; }
+    .brand { font-size: 22px; }
+    .hero { padding: 36px 0 72px; }
+    .hero-row { margin-top: 32px; gap: 28px; }
+    .pitch { padding: 22px; }
+    .pitch p { font-size: 19px; }
+    .tilt { transform: rotate(-1deg); padding: 14px 10px 10px; }
+    .sticker { width: 104px; height: 104px; top: -46px; right: -4px; font-size: 13px; }
+    .sticker b { font-size: 30px; }
+    section.sec { padding: 64px 0; }
+    .sec .lead { font-size: 19px; }
+    .viewer { padding: 14px 10px 10px; min-height: 420px; }
+    .chips { flex-wrap: nowrap; overflow-x: auto; padding: 4px 2px 12px; scroll-snap-type: x proximity; }
+    .chip { white-space: nowrap; scroll-snap-align: start; }
+    .swatches { grid-template-columns: repeat(2, 1fr); }
+    .sw { aspect-ratio: auto; min-height: 96px; }
+    .sw:nth-child(4n) { border-right: 2px solid var(--line); }
+    .sw:nth-child(2n) { border-right: 0; }
+    .sw:nth-child(n+5) { border-bottom: 2px solid var(--line); }
+    .sw:nth-child(n+7) { border-bottom: 0; }
+    .readout { font-size: 48px; }
+    .panel-code pre { font-size: 13px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#inicio" aria-label="LozCharts, inicio">
+      <svg width="38" height="38" viewBox="0 0 40 40" aria-hidden="true">
+        <path d="M22 4 L38 21 L22 38 L6 21 Z" fill="#121212"/>
+        <path d="M19 2 L35 19 L19 36 L3 19 Z" fill="#e45934" stroke="#121212" stroke-width="3" stroke-linejoin="round"/>
+        <rect x="12" y="18" width="4" height="7" fill="#121212"/>
+        <rect x="17.5" y="13" width="4" height="12" fill="#121212"/>
+        <rect x="23" y="16" width="4" height="9" fill="#121212"/>
+      </svg>
+      lozcharts
+    </a>
+    <nav class="links" aria-label="Principal">
+      <a href="../galeria.html">Galería</a>
+      <a href="../docs.html">Docs</a>
+      <a class="hide-s" href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+      <button class="theme" id="theme" type="button" aria-label="Cambiar a modo oscuro">
+        <svg class="sun" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>
+        <svg class="moon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a8.5 8.5 0 1 0 11.1 11.1Z"/></svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main id="inicio">
+  <section class="hero">
+    <div class="wrap">
+      <h1>Gráficos que van <span class="under">al grano.</span></h1>
+      <div class="hero-row">
+        <div class="pitch box">
+          <p>LozCharts dibuja 19 tipos de gráfico en SVG. Sin dependencias, en español y gratis, también para tu empresa.</p>
+          <div class="actions">
+            <a class="btn primary" href="../galeria.html">Ver la galería</a>
+            <a class="btn" href="../docs.html">Leer la documentación</a>
+          </div>
+          <small>Hecha en TypeScript por Mayra Lozada. Licencia MIT.</small>
+        </div>
+        <div class="stage">
+          <div class="sticker" aria-hidden="true"><span><b>51 KB</b>y nada más</span></div>
+          <div class="tilt box" id="tilt">
+            <div id="hero-chart"></div>
+            <div class="bar">
+              <span>Datos de ejemplo. Los tuyos serán mejores.</span>
+              <button class="btn small" id="mezclar" type="button">Mezclar los datos</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="tipos" aria-labelledby="t-tipos">
+    <div class="wrap">
+      <h2 id="t-tipos">19 tipos. Cero excusas.</h2>
+      <p class="lead">Desde barras de toda la vida hasta sankey y mapas. Toca uno y míralo en vivo.</p>
+      <div class="tipos-grid">
+        <div>
+          <div class="chips" id="chips" role="group" aria-label="Elegir un gráfico"></div>
+          <p class="chips-note"><span class="only-s">Desliza para ver más. </span>También hay pie, OHLC, dispersión y bandas de rango. Están en la galería.</p>
+        </div>
+        <div class="viewer box">
+          <div class="viewer-head"><span class="tag" id="tipo-tag">LozBar</span></div>
+          <div id="viewer-chart"></div>
+          <details class="code"><summary>Ver el código de este gráfico</summary><pre id="viewer-code"></pre></details>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec perf" id="rendimiento" aria-labelledby="t-perf">
+    <div class="wrap">
+      <h2 id="t-perf">No le tiene miedo a los datos.</h2>
+      <div class="perf-grid">
+        <div>
+          <div class="big-num" aria-hidden="true">100 000</div>
+          <p class="lead">puntos en unos 25 a 40 ms. Solo dibuja lo que se ve y no se come los picos.</p>
+        </div>
+        <div class="timer box">
+          <p><strong>No nos creas.</strong> Cronométralo en tu equipo.</p>
+          <button class="btn" id="cronometrar" type="button">Dibujar 100 000 puntos</button>
+          <div class="readout" id="readout" aria-live="polite"></div>
+        </div>
+      </div>
+      <div class="perf-chart box dark-card" id="perf-chart"></div>
+    </div>
+  </section>
+
+  <section class="sec" id="accesible" aria-labelledby="t-a11y">
+    <div class="wrap">
+      <h2 id="t-a11y">Para todos los ojos.</h2>
+      <p class="lead">Ocho colores que se distinguen también con daltonismo. Y un gráfico que se deja leer sin mirarlo.</p>
+      <div class="a11y-grid">
+        <div>
+          <div class="swatches" id="swatches" aria-label="Paleta Coral"></div>
+          <div class="try box">
+            <p>Llega con <kbd>Tab</kbd> y muévete con <kbd>←</kbd> <kbd>→</kbd></p>
+            <div id="a11y-chart"></div>
+          </div>
+        </div>
+        <div class="facts">
+          <div class="fact box"><h3>Habla</h3><p>Cada gráfico se describe a los lectores de pantalla y anuncia cada dato al moverte.</p></div>
+          <div class="fact box"><h3>Trae su tabla</h3><p>Una tabla con todos los datos va siempre al lado, para quien la necesite.</p></div>
+          <div class="fact box"><h3>Tiene noche</h3><p>Modo oscuro con colores propios, no la misma paleta apagada. Prueba el botón de arriba.</p></div>
+          <div class="fact box"><h3>Se lleva</h3><p>Descarga PNG, SVG o CSV con una línea.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec code-sec" id="codigo" aria-labelledby="t-code">
+    <div class="wrap">
+      <h2 id="t-code">Va donde tú vayas.</h2>
+      <p class="lead">Un script suelto, un import, React, Angular, Vue, Svelte o Django con HTMX. Mismas opciones en todos.</p>
+      <div class="tabs" role="tablist" aria-label="Formas de usarla" id="tabs"></div>
+      <div class="panel-code" role="tabpanel" id="panel" aria-labelledby="">
+        <div class="cap" id="panel-cap"></div>
+        <pre id="panel-pre"></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec end" aria-labelledby="t-end">
+    <div class="wrap">
+      <h2 id="t-end">Es gratis. Úsala.</h2>
+      <p class="lead">Todavía no está en npm. Mientras tanto, se instala desde GitHub y 199 pruebas cuidan que nada se rompa.</p>
+      <div class="actions">
+        <a class="btn primary" href="https://github.com/MayraLo2ada/lozcharts">Ver el código en GitHub</a>
+        <a class="btn" href="../galeria.html">Ver la galería</a>
+        <a class="btn" href="../docs.html">Leer la documentación</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>LozCharts, por Mayra Lozada. Licencia MIT.</span>
+    <span>Hecha en español, desde el primer commit.</span>
+  </div>
+</footer>
+
+<script src="../lib/lozcharts.umd.js"></script>
+<script src="../lib/maps/world.umd.js"></script>
+<script src="../assets/ejemplos.js"></script>
+<script>
+(function () {
+  var root = document.documentElement;
+  var theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  var charts = [];
+  var btnTheme = document.getElementById('theme');
+  function keep(c) { charts.push(c); return c; }
+  function drop(c) { var i = charts.indexOf(c); if (i >= 0) charts.splice(i, 1); c.destroy(); }
+  function applyTheme(t) {
+    theme = t;
+    root.dataset.theme = t;
+    btnTheme.setAttribute('aria-label', t === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+    charts.forEach(function (c) { c.setTheme(t); });
+  }
+  applyTheme(theme);
+  btnTheme.addEventListener('click', function () { applyTheme(theme === 'dark' ? 'light' : 'dark'); });
+
+  var porId = {};
+  EJEMPLOS.forEach(function (e) { porId[e.id] = e; });
+  function crear(id, el, extra) {
+    return keep(crearEjemplo(porId[id], el, Object.assign({ theme: theme }, extra || {})));
+  }
+
+  // Portada: ventas por mes, con datos que se pueden mezclar
+  var base = porId.ventas.opciones.data;
+  var hero = crear('ventas', document.getElementById('hero-chart'), { title: undefined, subtitle: undefined, height: 330 });
+  document.getElementById('mezclar').addEventListener('click', function () {
+    var nuevos = base.map(function (r) {
+      var k = 0.55 + Math.random() * 0.9;
+      return { mes: r.mes, online: Math.round(r.online * k), tienda: Math.round(r.tienda * (0.6 + Math.random() * 0.8)), meta: r.meta };
+    });
+    hero.setData(nuevos);
+    var t = document.getElementById('tilt');
+    t.classList.remove('sacude'); void t.offsetWidth; t.classList.add('sacude');
+  });
+
+  // Tipos
+  var lista = ['ventas', 'usuarios', 'visitas-dia', 'dispositivos', 'tasa', 'precios', 'categorias', 'productos', 'meta', 'embudo', 'tiendas', 'modelos', 'visitas-hora', 'recorrido', 'paises', 'tiendas-mapa', 'regiones', 'paginas'];
+  var chips = document.getElementById('chips');
+  var vista = null;
+  var vEl = document.getElementById('viewer-chart');
+  function mostrar(id) {
+    if (vista) drop(vista);
+    vEl.innerHTML = '';
+    var ej = porId[id];
+    vista = crear(id, vEl, { height: ej.multiples ? 120 : 340 });
+    document.getElementById('tipo-tag').textContent = ej.tipo;
+    document.getElementById('viewer-code').textContent = codigoEjemplo(ej);
+    Array.prototype.forEach.call(chips.children, function (b) { b.setAttribute('aria-pressed', b.dataset.id === id ? 'true' : 'false'); });
+  }
+  lista.forEach(function (id) {
+    var ej = porId[id];
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.dataset.id = id;
+    b.textContent = ej.tipo.replace('Loz', '') + ': ' + ej.opciones.title.toLowerCase();
+    b.addEventListener('click', function () { mostrar(id); });
+    chips.appendChild(b);
+  });
+  mostrar('recorrido');
+
+  // Rendimiento
+  var perfChart = null;
+  document.getElementById('cronometrar').addEventListener('click', function () {
+    var N = 100000, data = new Array(N), v = 50, seed = Date.now() % 997;
+    for (var i = 0; i < N; i++) {
+      v += (Math.random() - 0.5) * 1.6;
+      var pico = i % 12347 === 0 ? 40 : 0;
+      data[i] = { n: i, valor: Math.round((v + pico) * 10) / 10 };
+    }
+    var el = document.getElementById('perf-chart');
+    if (perfChart) perfChart.destroy();
+    el.innerHTML = '';
+    var t0 = performance.now();
+    perfChart = (new LozChart(el, {
+      data: data, background: false, theme: 'light', animate: false, height: 220,
+      xAxis: { field: 'n', type: 'linear' }, yAxis: { format: 'number' },
+      series: [{ type: 'line', field: 'valor', name: 'Lectura' }],
+      zoom: true, ariaLabel: 'Línea de prueba con 100 000 puntos',
+    }));
+    var ms = Math.round(performance.now() - t0);
+    document.getElementById('readout').innerHTML = ms + ' ms<small>Lo que tardó en tu equipo, ahora mismo. Arrastra para acercar.</small>';
+  });
+
+  // Paleta Coral
+  var pal = [['Coral', '#e45934', '#e05630'], ['Petróleo', '#009298', '#0a999f'], ['Violeta', '#5e2dad', '#8b61e3'], ['Vino', '#9c1854', '#9d4e6b'], ['Cielo', '#4c99f8', '#4996f5'], ['Verde', '#31983d', '#399e43'], ['Rosa', '#db6ea5', '#d1649c'], ['Ocre', '#e2aa00', '#b88a06']];
+  var sw = document.getElementById('swatches');
+  pal.forEach(function (p, i) {
+    var d = document.createElement('div');
+    d.className = 'sw'; d.dataset.i = i;
+    sw.appendChild(d);
+  });
+  function pintarPaleta() {
+    Array.prototype.forEach.call(sw.children, function (d) {
+      var p = pal[d.dataset.i], hex = theme === 'dark' ? p[2] : p[1];
+      d.style.background = hex;
+      d.style.color = (p[0] === 'Violeta' && theme === 'light') || p[0] === 'Vino' ? '#fcfcfb' : '#121212';
+      d.innerHTML = '<b>' + p[0] + '</b><code>' + hex + '</code>';
+    });
+  }
+  pintarPaleta();
+  btnTheme.addEventListener('click', pintarPaleta);
+
+  crear('usuarios', document.getElementById('a11y-chart'), { title: undefined, subtitle: undefined, height: 230, endLabels: true, legend: false, ariaLabel: 'Usuarios activos por ciudad, de enero a diciembre de 2026' });
+
+  // Código
+  var snippets = [
+    ['Script', 'Sin servidor ni compilador: copia, pega y listo.', '<div id="ventas"></div>\n<script src="lozcharts.umd.js"><\/script>\n<script>\n  new LozChart(\'#ventas\', {\n    data: [{ mes: \'2026-01\', ventas: 42000 }, { mes: \'2026-02\', ventas: 45500 }],\n    xAxis: { field: \'mes\', type: \'time\' },\n    series: [{ type: \'bar\', field: \'ventas\', name: \'Ventas\' }],\n  });\n<\/script>'],
+    ['Import', 'Con Vite, webpack o lo que uses.', "import { LozChart } from 'lozcharts';\n\nconst chart = new LozChart(elemento, opciones);\n// al desmontar:\nchart.destroy();"],
+    ['React', 'Las opciones van como props.', "import { Chart } from 'lozcharts/react';\n\n<Chart\n  data={data}\n  xAxis={{ field: 'mes', type: 'time' }}\n  series={[{ type: 'bar', field: 'ventas', name: 'Ventas' }]}\n  zoom\n/>"],
+    ['Angular, Vue, Svelte', 'Un elemento HTML estándar. Sin adaptadores.', "<loz-chart\n  [options]=\"opciones\"\n  (lozzoom)=\"alHacerZoom($event)\"\n></loz-chart>"],
+    ['Django + HTMX', 'Las opciones en JSON y se monta solo en cada swap.', "<div data-lozchart=\"#opciones-ventas\"></div>\n{{ opciones|json_script:\"opciones-ventas\" }}\n<script>\n  htmx.onLoad((el) => LozChart.initAll(el));\n<\/script>"],
+  ];
+  var tabs = document.getElementById('tabs');
+  function abrir(i) {
+    Array.prototype.forEach.call(tabs.children, function (t, k) {
+      t.setAttribute('aria-selected', k === i ? 'true' : 'false');
+      t.tabIndex = k === i ? 0 : -1;
+    });
+    document.getElementById('panel').setAttribute('aria-labelledby', 'tab-' + i);
+    document.getElementById('panel-cap').textContent = snippets[i][1];
+    document.getElementById('panel-pre').textContent = snippets[i][2];
+  }
+  snippets.forEach(function (s, i) {
+    var t = document.createElement('button');
+    t.type = 'button'; t.className = 'tab'; t.id = 'tab-' + i;
+    t.setAttribute('role', 'tab'); t.setAttribute('aria-controls', 'panel');
+    t.textContent = s[0];
+    t.addEventListener('click', function () { abrir(i); });
+    t.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        var n = (i + (e.key === 'ArrowRight' ? 1 : -1) + snippets.length) % snippets.length;
+        abrir(n); tabs.children[n].focus();
+      }
+    });
+    tabs.appendChild(t);
+  });
+  abrir(0);
+})();
+</script>
+</body>
+</html>

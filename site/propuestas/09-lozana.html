@@ -1,0 +1,1364 @@
+<!doctype html>
+<!--
+  Plan de diseño · 09 Lozana
+  1. Concepto: "lozana" es lo que crece con vigor. LozCharts como un jardín: cada planta del dibujo está hecha con formas de gráfico (donas, barras, radares, embudos), y la L del logo es el eje de un gráfico del que sale un brote.
+  2. Paleta del sitio: mango #f3b21b (portada), hoja #16332a (tinta), salvia #f1f4ec (fondo), papel #fcfcfb (láminas); en oscuro, noche de huerto #0f1813 con mango #f2bf3c. Los gráficos usan la Coral sin cambios.
+  3. Tipografías: Fraunces (blanda y con quiebre, para títulos y nombres en itálica tipo herbario) y Outfit (geométrica, como las formas del dibujo) para el texto.
+  4. Layout: portada a todo ancho color mango con el jardín plantado sobre un eje X; luego una historia en dos columnas, un herbario de láminas con gráficos vivos, una siembra de 100 000 puntos, accesibilidad, integraciones con pestañas y cierre firmado.
+  5. Elemento audaz: el jardín de la portada, una ilustración geométrica que crece una sola vez al cargar, plantada sobre un eje con marcas.
+  6. Qué cambié de lo obvio: nada de fondo crema con terracota ni de "hero texto a la izquierda y gráfico a la derecha"; el color de portada es mango, la marca cuenta de dónde viene el nombre y los tipos se presentan como especies de un herbario.
+-->
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts, gráficos lozanos</title>
+    <meta
+      name="description"
+      content="LozCharts: librería de gráficos en SVG, en español, sin dependencias y accesible. Hecha por Mayra Lozada."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..900,100,1;1,9..144,400..700,100,1&family=Outfit:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function () {
+        var t = 'light';
+        try {
+          t = localStorage.getItem('loz-09-tema') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        } catch (e) {
+          t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+    <style>
+      :root {
+        --mango: #f3b21b;
+        --mango-ink: #16332a;
+        --hoja: #16332a;
+        --hoja-2: #42564d;
+        --salvia: #f1f4ec;
+        --papel: #fcfcfb;
+        --linea: #d3dccd;
+        --linea-fuerte: #9fb0a2;
+        --coral: #e45934;
+        --petroleo: #009298;
+        --violeta: #5e2dad;
+        --vino: #9c1854;
+        --cielo: #4c99f8;
+        --verde: #31983d;
+        --rosa: #db6ea5;
+        --ocre: #e2aa00;
+        --tallo: #1f6b4a;
+        --linea-sol: rgba(22, 51, 42, 0.16);
+        --boton: #16332a;
+        --boton-txt: #fdfcf6;
+        --foco: #9c1854;
+        --codigo-bg: #16332a;
+        --codigo-txt: #eef3e6;
+        --codigo-acento: #f3b21b;
+        --r: 6px;
+        --s1: 8px;
+        --s2: 16px;
+        --s3: 24px;
+        --s4: 40px;
+        --s5: 64px;
+        --s6: 112px;
+        --max: 1200px;
+        --serif: 'Fraunces', Georgia, serif;
+        --sans: 'Outfit', system-ui, sans-serif;
+        --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        color-scheme: light;
+      }
+      [data-theme='dark'] {
+        --mango: #1b2a22;
+        --mango-ink: #f2bf3c;
+        --hoja: #eef0e8;
+        --hoja-2: #b7c1b4;
+        --salvia: #0f1813;
+        --papel: #1a1a19;
+        --linea: #2b3a31;
+        --linea-fuerte: #4d6155;
+        --coral: #e05630;
+        --petroleo: #0a999f;
+        --violeta: #8b61e3;
+        --vino: #9d4e6b;
+        --cielo: #4996f5;
+        --verde: #399e43;
+        --rosa: #d1649c;
+        --ocre: #b88a06;
+        --tallo: #3f9a6e;
+        --linea-sol: rgba(242, 191, 60, 0.18);
+        --boton: #f2bf3c;
+        --boton-txt: #13201a;
+        --foco: #f2bf3c;
+        --codigo-bg: #08100c;
+        --codigo-txt: #e4eadc;
+        --codigo-acento: #f2bf3c;
+        color-scheme: dark;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--salvia);
+        color: var(--hoja);
+        font: 400 17px/1.6 var(--sans);
+        overflow-x: hidden;
+      }
+      a {
+        color: inherit;
+      }
+      :focus-visible {
+        outline: 3px solid var(--foco);
+        outline-offset: 3px;
+        border-radius: 4px;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+      .saltar:focus {
+        position: fixed;
+        left: 12px;
+        top: 12px;
+        width: auto;
+        height: auto;
+        clip: auto;
+        z-index: 10;
+        background: var(--papel);
+        padding: 8px 12px;
+      }
+      .wrap {
+        max-width: var(--max);
+        margin: 0 auto;
+        padding: 0 var(--s3);
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: var(--serif);
+        font-variation-settings: 'SOFT' 100, 'WONK' 1;
+        line-height: 1.02;
+        margin: 0;
+        letter-spacing: -0.01em;
+      }
+      h2 {
+        font-size: clamp(36px, 5vw, 60px);
+        font-weight: 800;
+        max-width: 16ch;
+      }
+      p {
+        margin: 0;
+      }
+      .bajada {
+        color: var(--hoja-2);
+        max-width: 54ch;
+        margin-top: var(--s2);
+        font-size: 18px;
+      }
+
+      /* Encabezado */
+      .top {
+        background: var(--mango);
+        color: var(--mango-ink);
+      }
+      .top .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--s2);
+        padding-top: var(--s2);
+        padding-bottom: var(--s2);
+      }
+      .marca {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        font-family: var(--serif);
+        font-weight: 800;
+        font-size: 24px;
+        font-variation-settings: 'SOFT' 100, 'WONK' 1;
+      }
+      .marca svg {
+        width: 36px;
+        height: 36px;
+        flex: none;
+      }
+      nav {
+        display: flex;
+        align-items: center;
+        gap: var(--s3);
+        font-weight: 500;
+        font-size: 16px;
+      }
+      nav a {
+        text-decoration: none;
+        padding: 6px 0;
+        border-bottom: 2px solid transparent;
+      }
+      nav a:hover {
+        border-color: currentColor;
+      }
+      .tema {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 2px solid currentColor;
+        background: transparent;
+        color: inherit;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        padding: 0;
+      }
+      .tema svg {
+        width: 20px;
+        height: 20px;
+      }
+      .tema .sol {
+        display: none;
+      }
+      [data-theme='dark'] .tema .sol {
+        display: block;
+      }
+      [data-theme='dark'] .tema .luna {
+        display: none;
+      }
+
+      /* Portada */
+      .portada {
+        background: var(--mango);
+        color: var(--mango-ink);
+        overflow: hidden;
+      }
+      .portada .wrap {
+        padding-top: var(--s4);
+        text-align: center;
+      }
+      .portada h1 {
+        font-size: clamp(64px, 10.5vw, 150px);
+        font-weight: 900;
+        line-height: 0.88;
+        letter-spacing: -0.03em;
+      }
+      .portada .lema {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: clamp(20px, 2.4vw, 28px);
+        margin: var(--s3) auto 0;
+        max-width: 34ch;
+        line-height: 1.3;
+      }
+      .portada .lead {
+        margin: var(--s2) auto 0;
+        max-width: 52ch;
+        font-size: 18px;
+      }
+      .acciones {
+        display: flex;
+        gap: var(--s2);
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: var(--s4);
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        min-height: 48px;
+        padding: 0 22px;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 17px;
+        text-decoration: none;
+        border: 2px solid var(--boton);
+        cursor: pointer;
+        font-family: var(--sans);
+      }
+      .btn.lleno {
+        background: var(--boton);
+        color: var(--boton-txt);
+      }
+      .btn.hueco {
+        background: transparent;
+        color: inherit;
+        border-color: currentColor;
+      }
+      .portada .btn.lleno {
+        background: var(--mango-ink);
+        border-color: var(--mango-ink);
+        color: var(--mango);
+      }
+      .jardin {
+        display: block;
+        width: 100%;
+        height: auto;
+        margin-top: var(--s4);
+      }
+      .jardin .planta {
+        transform-box: fill-box;
+        transform-origin: 50% 100%;
+        animation: brotar 1.1s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+      }
+      @keyframes brotar {
+        from {
+          transform: scaleY(0);
+          opacity: 0;
+        }
+        to {
+          transform: scaleY(1);
+          opacity: 1;
+        }
+      }
+      .firma {
+        font-size: 15px;
+        padding: var(--s2) 0 var(--s3);
+        display: flex;
+        justify-content: space-between;
+        gap: var(--s2);
+        flex-wrap: wrap;
+        border-top: 2px solid var(--mango-ink);
+        text-align: left;
+      }
+
+      /* Historia */
+      .historia {
+        padding: var(--s6) 0;
+      }
+      .historia .wrap {
+        display: grid;
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+        gap: var(--s5);
+        align-items: start;
+      }
+      .definicion {
+        font-family: var(--serif);
+        font-size: 22px;
+        line-height: 1.4;
+        margin-top: var(--s3);
+        padding-left: var(--s2);
+        border-left: 4px solid var(--coral);
+      }
+      .definicion b {
+        font-weight: 800;
+      }
+      .definicion i {
+        color: var(--hoja-2);
+        font-size: 17px;
+        display: block;
+        margin-top: 4px;
+      }
+      .historia p + p {
+        margin-top: var(--s2);
+      }
+      .historia .texto p:not(.definicion) {
+        color: var(--hoja-2);
+        margin-top: var(--s2);
+        max-width: 46ch;
+      }
+      .dichos {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--s1);
+        margin-top: var(--s3);
+        padding: 0;
+        list-style: none;
+      }
+      .dichos li {
+        border: 1px solid var(--linea-fuerte);
+        border-radius: 999px;
+        padding: 4px 14px;
+        font-size: 15px;
+      }
+      .dichos s {
+        color: var(--hoja-2);
+        margin-left: 6px;
+      }
+      .lienzo {
+        background: var(--papel);
+        border-radius: var(--r);
+        padding: var(--s3);
+        border: 1px solid var(--linea);
+      }
+
+      /* Herbario */
+      .herbario {
+        padding: var(--s6) 0;
+        border-top: 1px solid var(--linea);
+      }
+      .laminas {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--s3);
+        margin-top: var(--s5);
+      }
+      .lamina {
+        background: var(--papel);
+        border: 1px solid var(--linea);
+        border-radius: 2px;
+        padding: var(--s2) var(--s2) 0;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+      .lamina:nth-child(3n + 2) {
+        transform: translateY(var(--s4));
+      }
+      .lamina .grafico {
+        min-height: 240px;
+      }
+      .etiqueta {
+        align-self: flex-end;
+        margin: var(--s2) 0 var(--s2);
+        border: 1px solid var(--linea-fuerte);
+        padding: 8px 12px;
+        font-size: 14px;
+        line-height: 1.4;
+        min-width: 60%;
+      }
+      .etiqueta b {
+        font-family: var(--serif);
+        font-style: italic;
+        font-weight: 600;
+        font-size: 19px;
+        display: block;
+      }
+      .etiqueta span {
+        color: var(--hoja-2);
+      }
+      .especies {
+        margin-top: calc(var(--s5) + var(--s4));
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 20px;
+        line-height: 1.7;
+        color: var(--hoja-2);
+        max-width: 70ch;
+      }
+      .especies a {
+        font-style: normal;
+        font-family: var(--sans);
+        font-weight: 600;
+        color: var(--hoja);
+        font-size: 17px;
+      }
+
+      /* Siembra */
+      .siembra {
+        background: var(--hoja);
+        color: var(--salvia);
+        padding: var(--s6) 0;
+      }
+      [data-theme='dark'] .siembra {
+        background: #17241d;
+        color: var(--hoja);
+      }
+      .siembra .bajada {
+        color: inherit;
+        opacity: 0.86;
+      }
+      .siembra-cabeza {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: var(--s4);
+        flex-wrap: wrap;
+      }
+      .contador {
+        font-family: var(--serif);
+        font-weight: 900;
+        font-size: clamp(64px, 9vw, 128px);
+        line-height: 0.9;
+        font-variation-settings: 'SOFT' 100, 'WONK' 1;
+        color: var(--codigo-acento);
+      }
+      .contador small {
+        display: block;
+        font-family: var(--sans);
+        font-weight: 500;
+        font-size: 16px;
+        color: inherit;
+        margin-top: var(--s1);
+        opacity: 0.9;
+      }
+      .siembra .btn {
+        background: var(--codigo-acento);
+        border-color: var(--codigo-acento);
+        color: #16332a;
+        margin-top: var(--s3);
+      }
+      .surco {
+        margin-top: var(--s4);
+        background: var(--papel);
+        color: var(--hoja);
+        border-radius: var(--r);
+        padding: var(--s2);
+        min-height: 360px;
+      }
+      [data-theme='light'] .surco {
+        color: #16332a;
+      }
+      .surco-vacio {
+        display: grid;
+        place-items: center;
+        min-height: 320px;
+        color: #52514e;
+        text-align: center;
+        padding: var(--s3);
+      }
+      [data-theme='dark'] .surco-vacio {
+        color: #c3c2b7;
+      }
+      .raices {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--s3);
+        margin-top: var(--s4);
+        padding: 0;
+        list-style: none;
+      }
+      .raices li {
+        border-top: 2px solid currentColor;
+        padding-top: var(--s2);
+      }
+      .raices b {
+        font-family: var(--serif);
+        font-size: 36px;
+        font-weight: 800;
+        display: block;
+        line-height: 1.1;
+      }
+
+      /* Para todas las personas */
+      .todos {
+        padding: var(--s6) 0;
+      }
+      .todos .wrap {
+        display: grid;
+        grid-template-columns: minmax(0, 6fr) minmax(0, 6fr);
+        gap: var(--s5);
+        align-items: start;
+      }
+      .semillas {
+        display: grid;
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+        gap: var(--s1);
+        margin-top: var(--s4);
+        padding: 0;
+        list-style: none;
+      }
+      .semillas li {
+        text-align: center;
+        font-size: 13px;
+        color: var(--hoja-2);
+      }
+      .semillas i {
+        display: block;
+        aspect-ratio: 1;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        margin: 0 auto 6px;
+        width: 70%;
+        background: var(--c);
+      }
+      .cuidados {
+        list-style: none;
+        padding: 0;
+        margin: var(--s4) 0 0;
+      }
+      .cuidados li {
+        padding: 14px 0;
+        border-top: 1px solid var(--linea);
+        display: grid;
+        grid-template-columns: 12ch 1fr;
+        gap: var(--s2);
+      }
+      .cuidados li b {
+        font-weight: 600;
+      }
+      .cuidados li span {
+        color: var(--hoja-2);
+      }
+      .pista {
+        font-size: 15px;
+        color: var(--hoja-2);
+        margin-top: var(--s2);
+      }
+      kbd {
+        font-family: var(--mono);
+        font-size: 13px;
+        border: 1px solid var(--linea-fuerte);
+        border-bottom-width: 2px;
+        border-radius: 4px;
+        padding: 0 5px;
+      }
+
+      /* Tierra */
+      .tierra {
+        padding: var(--s6) 0;
+        border-top: 1px solid var(--linea);
+      }
+      .pestanas {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: var(--s4);
+      }
+      .pestanas button {
+        font: 500 16px var(--sans);
+        color: var(--hoja);
+        background: transparent;
+        border: 1.5px solid var(--linea-fuerte);
+        border-radius: 999px;
+        padding: 8px 16px;
+        cursor: pointer;
+      }
+      .pestanas button[aria-selected='true'] {
+        background: var(--hoja);
+        color: var(--salvia);
+        border-color: var(--hoja);
+      }
+      pre {
+        margin: var(--s2) 0 0;
+        background: var(--codigo-bg);
+        color: var(--codigo-txt);
+        border-radius: var(--r);
+        padding: var(--s3);
+        overflow-x: auto;
+        font: 14px/1.7 var(--mono);
+        max-width: 100%;
+      }
+      pre .c {
+        color: #9fb4a6;
+      }
+      pre .s {
+        color: var(--codigo-acento);
+      }
+
+      /* Cierre */
+      .cierre {
+        background: var(--mango);
+        color: var(--mango-ink);
+        padding: var(--s6) 0 var(--s4);
+        text-align: center;
+      }
+      .cierre svg.grande {
+        width: 120px;
+        height: 120px;
+      }
+      .cierre h2 {
+        margin: var(--s3) auto 0;
+        max-width: 18ch;
+      }
+      .cierre p {
+        margin: var(--s2) auto 0;
+        max-width: 50ch;
+      }
+      .cierre .btn.lleno {
+        background: var(--mango-ink);
+        border-color: var(--mango-ink);
+        color: var(--mango);
+      }
+      .pie {
+        margin-top: var(--s5);
+        font-size: 14px;
+        display: flex;
+        justify-content: center;
+        gap: var(--s3);
+        flex-wrap: wrap;
+      }
+
+      @media (max-width: 900px) {
+        .historia .wrap,
+        .todos .wrap {
+          grid-template-columns: 1fr;
+          gap: var(--s4);
+        }
+        .laminas {
+          grid-template-columns: 1fr 1fr;
+        }
+        .lamina:nth-child(3n + 2) {
+          transform: none;
+        }
+        .lamina:nth-child(2n) {
+          transform: translateY(var(--s4));
+        }
+      }
+      @media (max-width: 620px) {
+        :root {
+          --s6: 72px;
+          --s5: 44px;
+        }
+        .wrap {
+          padding: 0 var(--s2);
+        }
+        body {
+          font-size: 16px;
+        }
+        nav {
+          gap: var(--s2);
+          font-size: 15px;
+        }
+        .marca span {
+          display: none;
+        }
+        .laminas {
+          grid-template-columns: 1fr;
+        }
+        .lamina:nth-child(2n) {
+          transform: none;
+        }
+        .raices {
+          grid-template-columns: 1fr;
+        }
+        .cuidados li {
+          grid-template-columns: 1fr;
+          gap: 2px;
+        }
+        .semillas {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          row-gap: var(--s2);
+        }
+        .jardin {
+          width: 180%;
+          margin-left: -40%;
+        }
+        .etiqueta {
+          min-width: 80%;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .jardin .planta {
+          animation: none;
+        }
+        * {
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="sr-only saltar" href="#contenido">Saltar al contenido</a>
+
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="logo" viewBox="0 0 48 48">
+        <!-- La L es el eje de un gráfico; del rincón sale un brote. -->
+        <path d="M8 5 V40 H44" fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M17 40 C17 30 20 23 28 17" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" />
+        <path d="M28 17 C29 9 36 5 43 6 C43 13 37 18 28 17 Z" fill="var(--coral)" />
+        <path d="M21 26 C15 25 11 20 11 14 C17 14 21 19 21 26 Z" fill="var(--petroleo)" />
+      </symbol>
+    </svg>
+
+    <header class="top">
+      <div class="wrap">
+        <a class="marca" href="#contenido" aria-label="LozCharts, inicio">
+          <svg aria-hidden="true"><use href="#logo" /></svg>
+          <span>lozcharts</span>
+        </a>
+        <nav aria-label="Principal">
+          <a href="../galeria.html">Galería</a>
+          <a href="../docs.html">Docs</a>
+          <a href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+          <button class="tema" type="button" id="tema" aria-label="Cambiar a modo oscuro">
+            <svg class="luna" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+            </svg>
+            <svg class="sol" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="2" />
+              <path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main id="contenido">
+      <section class="portada" aria-labelledby="titulo">
+        <div class="wrap">
+          <h1 id="titulo">Gráficos lozanos.</h1>
+          <p class="lema">Que crecen con fuerza, se ven sanos y se entienden de una.</p>
+          <p class="lead">
+            LozCharts es una librería de gráficos en SVG, escrita en TypeScript, sin dependencias y en español desde la
+            primera línea.
+          </p>
+          <div class="acciones">
+            <a class="btn lleno" href="../galeria.html">Ver la galería</a>
+            <a class="btn hueco" href="../docs.html">Leer la documentación</a>
+          </div>
+          <svg class="jardin" id="jardin" viewBox="0 0 1200 380" role="img" aria-label="Un jardín dibujado con formas de gráficos: flores de dona y de pie, arbustos de barras, un radar, un embudo y burbujas, plantados sobre un eje."></svg>
+          <div class="firma">
+            <span>Hecha por Mayra Lozada, ingeniera.</span>
+            <span>Licencia MIT, gratis también para empresas.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="historia" aria-labelledby="h-nombre">
+        <div class="wrap">
+          <div class="texto">
+            <h2 id="h-nombre">Un nombre con raíz.</h2>
+            <p class="definicion">
+              <b>lozano, na.</b> Que crece con vigor. Que tiene buen aspecto, frescura y viveza.
+              <i>Y Loz, de Lozada.</i>
+            </p>
+            <p>
+              La escribe Mayra Lozada, ingeniera, para que un gráfico en español no tenga que traducirse. Los meses, los
+              miles y la moneda salen como se dicen aquí.
+            </p>
+            <ul class="dichos" aria-label="Cómo escribe los números y las fechas">
+              <li>1,5 mil <s>1.5K</s></li>
+              <li>ene, feb, mar <s>Jan, Feb, Mar</s></li>
+              <li>42.000 $ <s>$42,000</s></li>
+            </ul>
+          </div>
+          <figure class="lienzo" style="margin: 0">
+            <div id="g-ciudades"></div>
+          </figure>
+        </div>
+      </section>
+
+      <section class="herbario" aria-labelledby="h-herbario">
+        <div class="wrap">
+          <h2 id="h-herbario">Diecinueve especies, una sola raíz.</h2>
+          <p class="bajada">
+            Todas comparten ejes, tooltip, teclado, temas y exportación. Aprendes una y ya sabes usar las demás.
+          </p>
+          <div class="laminas">
+            <article class="lamina">
+              <div class="grafico" id="g-donut"></div>
+              <p class="etiqueta"><b>LozDonut</b><span>Partes de un todo, con el total al centro.</span></p>
+            </article>
+            <article class="lamina">
+              <div class="grafico" id="g-radar"></div>
+              <p class="etiqueta"><b>LozRadar</b><span>Perfiles en varias dimensiones.</span></p>
+            </article>
+            <article class="lamina">
+              <div class="grafico" id="g-treemap"></div>
+              <p class="etiqueta"><b>LozTreemap</b><span>Muchas partes, agrupadas por color.</span></p>
+            </article>
+            <article class="lamina">
+              <div class="grafico" id="g-sankey"></div>
+              <p class="etiqueta"><b>LozSankey</b><span>De dónde vienen y adónde van.</span></p>
+            </article>
+            <article class="lamina">
+              <div class="grafico" id="g-mapa"></div>
+              <p class="etiqueta"><b>LozMap</b><span>Un valor por país, en proyección honesta.</span></p>
+            </article>
+            <article class="lamina">
+              <div class="grafico" id="g-calor"></div>
+              <p class="etiqueta"><b>LozHeatmap</b><span>Patrones por día y hora.</span></p>
+            </article>
+          </div>
+          <p class="especies">
+            También LozLine, LozBar, LozArea, LozStep, LozRange, LozScatter, LozBubble, LozCandle, LozOHLC, LozPie,
+            LozGauge, LozFunnel y LozMultiples. <a href="../galeria.html">Verlas todas en la galería</a>
+          </p>
+        </div>
+      </section>
+
+      <section class="siembra" aria-labelledby="h-siembra">
+        <div class="wrap">
+          <div class="siembra-cabeza">
+            <div>
+              <h2 id="h-siembra">Siembra cien mil puntos.</h2>
+              <p class="bajada">
+                Solo dibuja lo que se ve y, en cada columna de píxeles, guarda el primero, el mínimo, el máximo y el
+                último. Ningún pico se pierde.
+              </p>
+              <button class="btn" type="button" id="sembrar">Sembrar 100 000 puntos</button>
+            </div>
+            <p class="contador" aria-live="polite" id="contador">25–40 ms<small>lo que suele tardar en dibujarlos</small></p>
+          </div>
+          <div class="surco" id="surco">
+            <p class="surco-vacio">Aquí sale el gráfico, con zoom: arrastra sobre él para acercar.</p>
+          </div>
+          <ul class="raices">
+            <li><b>0</b>dependencias</li>
+            <li><b>51 KB</b>comprimida, todo incluido</li>
+            <li><b>199</b>pruebas automáticas</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="todos" aria-labelledby="h-todos">
+        <div class="wrap">
+          <div>
+            <h2 id="h-todos">Que la lea todo el mundo.</h2>
+            <p class="bajada">Un gráfico que no se puede leer no sirve, por bonito que sea.</p>
+            <ul class="cuidados">
+              <li><b>Lectores de pantalla</b><span>Cada gráfico se describe solo y lleva su tabla de datos.</span></li>
+              <li><b>Teclado</b><span>Las flechas recorren los datos y cada paso se anuncia.</span></li>
+              <li><b>Daltonismo</b><span>La paleta Coral se validó para que los colores se distingan.</span></li>
+              <li><b>Modo oscuro</b><span>Con colores propios, no una inversión.</span></li>
+            </ul>
+            <ul class="semillas" aria-label="Paleta Coral, en su orden">
+              <li><i style="--c: var(--coral)"></i>coral</li>
+              <li><i style="--c: var(--petroleo)"></i>petróleo</li>
+              <li><i style="--c: var(--violeta)"></i>violeta</li>
+              <li><i style="--c: var(--vino)"></i>vino</li>
+              <li><i style="--c: var(--cielo)"></i>cielo</li>
+              <li><i style="--c: var(--verde)"></i>verde</li>
+              <li><i style="--c: var(--rosa)"></i>rosa</li>
+              <li><i style="--c: var(--ocre)"></i>ocre</li>
+            </ul>
+          </div>
+          <figure class="lienzo" style="margin: 0">
+            <div id="g-teclado"></div>
+            <p class="pista">Haz clic en el gráfico o llega con <kbd>Tab</kbd>, y usa <kbd>←</kbd> <kbd>→</kbd>.</p>
+          </figure>
+        </div>
+      </section>
+
+      <section class="tierra" aria-labelledby="h-tierra">
+        <div class="wrap">
+          <h2 id="h-tierra">Se planta en cualquier tierra.</h2>
+          <p class="bajada">Un script, un import, React, un elemento HTML para Angular, Vue o Svelte, o Django con HTMX.</p>
+          <div class="pestanas" role="tablist" aria-label="Forma de usarla">
+            <button role="tab" type="button" aria-selected="true" aria-controls="codigo" data-c="script">&lt;script&gt;</button>
+            <button role="tab" type="button" aria-selected="false" aria-controls="codigo" data-c="import">import</button>
+            <button role="tab" type="button" aria-selected="false" aria-controls="codigo" data-c="react">React</button>
+            <button role="tab" type="button" aria-selected="false" aria-controls="codigo" data-c="element">Angular, Vue, Svelte</button>
+            <button role="tab" type="button" aria-selected="false" aria-controls="codigo" data-c="htmx">Django + HTMX</button>
+          </div>
+          <pre id="codigo" role="tabpanel" tabindex="0"><code></code></pre>
+        </div>
+      </section>
+
+      <section class="cierre" aria-labelledby="h-cierre">
+        <div class="wrap">
+          <svg class="grande" aria-hidden="true"><use href="#logo" /></svg>
+          <h2 id="h-cierre">Hecha en español, con cuidado.</h2>
+          <p>
+            Todavía no está en npm. Mientras tanto, se instala desde GitHub y se usa igual. Es libre: licencia MIT.
+          </p>
+          <div class="acciones">
+            <a class="btn lleno" href="https://github.com/MayraLo2ada/lozcharts">Ver el código en GitHub</a>
+            <a class="btn hueco" href="../docs.html">Empezar con la documentación</a>
+          </div>
+          <div class="pie">
+            <span>LozCharts, de Mayra Lozada</span>
+            <a href="../galeria.html">Galería</a>
+            <a href="../docs.html">Documentación</a>
+            <a href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="../lib/lozcharts.umd.js"></script>
+    <script src="../lib/maps/world.umd.js"></script>
+    <script>
+      (function () {
+        var root = document.documentElement;
+        var tema = function () {
+          return root.dataset.theme === 'dark' ? 'dark' : 'light';
+        };
+        var charts = [];
+        var crear = function (sel, o) {
+          var c = new LozChart(sel, Object.assign({ background: false, theme: tema() }, o));
+          charts.push(c);
+          return c;
+        };
+
+        /* ---------- Jardín de la portada ---------- */
+        var NS = 'http://www.w3.org/2000/svg';
+        var g = document.getElementById('jardin');
+        var BASE = 340;
+        var svg = '';
+        var leaf = function (x, y, ang, len, color) {
+          return (
+            '<path transform="translate(' + x + ' ' + y + ') rotate(' + ang + ')" d="M0 0 C' + len * 0.3 + ' ' + -len * 0.32 + ' ' + len * 0.75 + ' ' + -len * 0.3 + ' ' + len + ' 0 C' + len * 0.75 + ' ' + len * 0.3 + ' ' + len * 0.3 + ' ' + len * 0.32 + ' 0 0Z" fill="' + color + '"/>'
+          );
+        };
+        var stem = function (x, top, w) {
+          return '<rect x="' + (x - w / 2) + '" y="' + top + '" width="' + w + '" height="' + (BASE - top) + '" rx="' + w / 2 + '" fill="var(--tallo)"/>';
+        };
+        var arc = function (cx, cy, r, a0, a1) {
+          var p = function (a) {
+            return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+          };
+          var s = p(a0),
+            e = p(a1);
+          return 'M' + cx + ' ' + cy + ' L' + s[0] + ' ' + s[1] + ' A' + r + ' ' + r + ' 0 ' + (a1 - a0 > Math.PI ? 1 : 0) + ' 1 ' + e[0] + ' ' + e[1] + 'Z';
+        };
+        var donut = function (cx, cy, r, w, vals, colors) {
+          var C = 2 * Math.PI * r,
+            tot = vals.reduce(function (a, b) {
+              return a + b;
+            }, 0),
+            off = 0,
+            s = '';
+          vals.forEach(function (v, i) {
+            var len = (v / tot) * C;
+            s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + colors[i] + '" stroke-width="' + w + '" stroke-dasharray="' + (len - 3) + ' ' + (C - len + 3) + '" stroke-dashoffset="' + -off + '" transform="rotate(-90 ' + cx + ' ' + cy + ')"/>';
+            off += len;
+          });
+          return s + '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r - w / 2 - 4) + '" fill="var(--mango-ink)"/>';
+        };
+        var pie = function (cx, cy, r, vals, colors) {
+          var tot = vals.reduce(function (a, b) {
+              return a + b;
+            }, 0),
+            a = -Math.PI / 2,
+            s = '';
+          vals.forEach(function (v, i) {
+            var b = a + (v / tot) * Math.PI * 2;
+            s += '<path d="' + arc(cx, cy, r, a, b) + '" fill="' + colors[i] + '" stroke="var(--mango)" stroke-width="3"/>';
+            a = b;
+          });
+          return s;
+        };
+        var planta = function (contenido, delay) {
+          return '<g class="planta" style="animation-delay:' + delay + 's">' + contenido + '</g>';
+        };
+
+        // Sol: un gauge.
+        svg += '<g aria-hidden="true">';
+        svg += '<path d="M940 120 A110 110 0 0 1 1160 120" fill="none" stroke="var(--linea-sol)" stroke-width="22" stroke-linecap="round"/>';
+        svg += '<path d="M940 120 A110 110 0 0 1 1120 44" fill="none" stroke="var(--coral)" stroke-width="22" stroke-linecap="round"/>';
+        svg += '</g>';
+
+        // 1. Flor de dona
+        svg += planta(stem(110, 150, 10) + leaf(110, 270, -150, 70, 'var(--verde)') + leaf(110, 230, -30, 60, 'var(--petroleo)') + donut(110, 120, 46, 22, [41, 20, 18, 12, 9], ['var(--coral)', 'var(--rosa)', 'var(--vino)', 'var(--violeta)', 'var(--cielo)']), 0.05);
+        // 2. Arbusto de barras
+        var bars = [70, 120, 95, 150, 110];
+        var bx = 200,
+          bs = '';
+        bars.forEach(function (h, i) {
+          bs += '<rect x="' + (bx + i * 26) + '" y="' + (BASE - h) + '" width="20" height="' + h + '" rx="3" fill="' + (i % 2 ? 'var(--petroleo)' : 'var(--verde)') + '"/>';
+        });
+        svg += planta(bs, 0.15);
+        // 3. Flor de pie, alta
+        svg += planta(stem(400, 90, 10) + leaf(400, 250, -160, 80, 'var(--petroleo)') + leaf(400, 200, -20, 70, 'var(--verde)') + leaf(400, 300, -25, 55, 'var(--verde)') + pie(400, 72, 52, [5, 3, 2, 2], ['var(--vino)', 'var(--coral)', 'var(--rosa)', 'var(--violeta)']), 0.25);
+        // 4. Radar
+        var radar = function (cx, cy, r, vals) {
+          var pts = vals.map(function (v, i) {
+            var a = -Math.PI / 2 + (i * 2 * Math.PI) / vals.length;
+            return [cx + r * v * Math.cos(a), cy + r * v * Math.sin(a)];
+          });
+          var ring = vals.map(function (v, i) {
+            var a = -Math.PI / 2 + (i * 2 * Math.PI) / vals.length;
+            return (cx + r * Math.cos(a)).toFixed(1) + ',' + (cy + r * Math.sin(a)).toFixed(1);
+          });
+          return (
+            '<polygon points="' + ring.join(' ') + '" fill="none" stroke="var(--tallo)" stroke-width="2"/>' +
+            '<polygon points="' + pts.map(function (p) {
+              return p[0].toFixed(1) + ',' + p[1].toFixed(1);
+            }).join(' ') + '" fill="var(--violeta)" opacity=".9"/>' +
+            '<circle cx="' + cx + '" cy="' + cy + '" r="7" fill="var(--ocre)"/>'
+          );
+        };
+        svg += planta(stem(540, 200, 9) + leaf(540, 290, -150, 60, 'var(--verde)') + radar(540, 175, 50, [0.9, 0.6, 1, 0.55, 0.95, 0.7]), 0.35);
+        // 5. Línea que trepa (enredadera)
+        var lp = [
+          [620, 330],
+          [650, 290],
+          [680, 300],
+          [710, 240],
+          [740, 255],
+          [770, 190],
+          [800, 205],
+          [830, 140],
+        ];
+        var vine = '<polyline points="' + lp.map(function (p) {
+          return p.join(',');
+        }).join(' ') + '" fill="none" stroke="var(--tallo)" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>';
+        lp.forEach(function (p, i) {
+          if (i % 2 === 1) vine += leaf(p[0], p[1], -60 - i * 4, 34, i % 4 === 1 ? 'var(--verde)' : 'var(--petroleo)');
+          vine += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (i === lp.length - 1 ? 12 : 6) + '" fill="' + (i === lp.length - 1 ? 'var(--coral)' : 'var(--mango-ink)') + '"/>';
+        });
+        svg += planta(vine, 0.45);
+        // 6. Tulipán de embudo
+        var fx = 920,
+          fy = 160,
+          fun = '';
+        [
+          [70, 'var(--coral)'],
+          [54, 'var(--rosa)'],
+          [38, 'var(--vino)'],
+          [22, 'var(--violeta)'],
+        ].forEach(function (s, i) {
+          var w = s[0],
+            w2 = i < 3 ? [54, 38, 22][i] : 14,
+            y = fy + i * 22;
+          fun += '<path d="M' + (fx - w) + ' ' + y + ' L' + (fx + w) + ' ' + y + ' L' + (fx + w2) + ' ' + (y + 20) + ' L' + (fx - w2) + ' ' + (y + 20) + 'Z" fill="' + s[1] + '"/>';
+        });
+        svg += planta(stem(fx, 240, 10) + leaf(fx, 300, -150, 70, 'var(--verde)') + leaf(fx, 280, -30, 60, 'var(--petroleo)') + fun, 0.55);
+        // 7. Burbujas (semillas)
+        var bub = [
+          [1040, 300, 26, 'var(--cielo)'],
+          [1085, 270, 18, 'var(--rosa)'],
+          [1070, 318, 14, 'var(--ocre)'],
+          [1120, 305, 30, 'var(--petroleo)'],
+          [1160, 270, 14, 'var(--coral)'],
+        ];
+        svg += planta(
+          bub.map(function (b) {
+            return '<circle cx="' + b[0] + '" cy="' + b[1] + '" r="' + b[2] + '" fill="' + b[3] + '"/>';
+          }).join(''),
+          0.65,
+        );
+        // 8. Treemap: piedras del huerto
+        svg += planta('<rect x="270" y="300" width="46" height="40" fill="var(--vino)"/><rect x="318" y="300" width="28" height="18" fill="var(--rosa)"/><rect x="318" y="320" width="28" height="20" fill="var(--coral)"/>', 0.2);
+        // Eje X con marcas: el suelo
+        svg += '<line x1="0" y1="' + BASE + '" x2="1200" y2="' + BASE + '" stroke="var(--mango-ink)" stroke-width="3"/>';
+        for (var t = 60; t < 1200; t += 120) svg += '<line x1="' + t + '" y1="' + BASE + '" x2="' + t + '" y2="' + (BASE + 12) + '" stroke="var(--mango-ink)" stroke-width="2"/>';
+        ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct'].forEach(function (m, i) {
+          svg += '<text x="' + (60 + i * 120) + '" y="' + (BASE + 34) + '" text-anchor="middle" font-family="Outfit, sans-serif" font-size="16" fill="var(--mango-ink)">' + m + '</text>';
+        });
+        g.innerHTML = svg;
+
+        /* ---------- Datos ---------- */
+        var MESES = [];
+        for (var m = 0; m < 12; m++) MESES.push('2026-' + String(m + 1).padStart(2, '0'));
+        var ciudades = ['Lima', 'Bogotá', 'Quito', 'Santiago', 'Ciudad de México'];
+        var usuarios = MESES.map(function (mes, i) {
+          var row = { mes: mes };
+          ciudades.forEach(function (c, k) {
+            row[c] = Math.round(([31, 24, 18, 27, 22][k] + i * (0.6 + k * 0.25) + 2 * Math.sin(i + k)) * 10) / 10;
+          });
+          return row;
+        });
+        var filas = function (list, keys) {
+          return list.map(function (r) {
+            var o = {};
+            keys.forEach(function (k, i) {
+              o[k] = r[i];
+            });
+            return o;
+          });
+        };
+
+        crear('#g-ciudades', {
+          title: 'Usuarios activos por ciudad',
+          subtitle: 'Miles de personas, 2026',
+          data: usuarios,
+          xAxis: { field: 'mes', type: 'time' },
+          series: ciudades.map(function (c) {
+            return { type: 'line', field: c, name: c, smooth: true };
+          }),
+          endLabels: { value: true },
+          legend: false,
+          height: 340,
+        });
+
+        crear('#g-donut', {
+          data: filas([['Búsqueda', 0.41], ['Directo', 0.2], ['Redes', 0.18], ['Correo', 0.12], ['Referidos', 0.09]], ['canal', 'ventas']),
+          xAxis: { field: 'canal' },
+          yAxis: { format: 'percent' },
+          series: [{ type: 'donut', field: 'ventas', name: 'Ventas' }],
+          legend: false,
+          height: 240,
+          ariaLabel: 'Ventas por canal: Búsqueda 41 %, Directo 20 %, Redes 18 %, Correo 12 %, Referidos 9 %.',
+        });
+        crear('#g-radar', {
+          data: filas([['Batería', 8, 6], ['Cámara', 7, 9], ['Pantalla', 8, 8], ['Precio', 9, 5], ['Velocidad', 6, 9], ['Diseño', 7, 8]], ['criterio', 'a', 'b']),
+          xAxis: { field: 'criterio' },
+          yAxis: { min: 0, max: 10 },
+          series: [
+            { type: 'radar', field: 'a', name: 'Modelo A' },
+            { type: 'radar', field: 'b', name: 'Modelo B' },
+          ],
+          legend: false,
+          height: 240,
+        });
+        crear('#g-treemap', {
+          data: filas(
+            [
+              ['Laptops', 'Electrónica', 420000],
+              ['Teléfonos', 'Electrónica', 380000],
+              ['Tabletas', 'Electrónica', 142000],
+              ['Sofás', 'Hogar', 210000],
+              ['Colchones', 'Hogar', 168000],
+              ['Zapatillas', 'Moda', 176000],
+              ['Chaquetas', 'Moda', 122000],
+              ['Bicicletas', 'Deportes', 134000],
+            ],
+            ['producto', 'categoria', 'ventas'],
+          ),
+          xAxis: { field: 'producto' },
+          yAxis: { format: 'currency' },
+          series: [{ type: 'treemap', field: 'ventas', name: 'Ventas', group: 'categoria' }],
+          legend: false,
+          height: 240,
+        });
+        crear('#g-sankey', {
+          data: filas(
+            [
+              ['Búsqueda', 'Inicio', 5200],
+              ['Búsqueda', 'Producto', 7400],
+              ['Redes', 'Inicio', 2600],
+              ['Redes', 'Ofertas', 3100],
+              ['Directo', 'Inicio', 4300],
+              ['Inicio', 'Producto', 6900],
+              ['Inicio', 'Abandono', 5200],
+              ['Ofertas', 'Producto', 3800],
+              ['Ofertas', 'Abandono', 1500],
+              ['Producto', 'Compra', 6100],
+              ['Producto', 'Abandono', 12000],
+            ],
+            ['origen', 'destino', 'sesiones'],
+          ),
+          xAxis: { field: 'origen' },
+          series: [{ type: 'sankey', field: 'sesiones', name: 'Sesiones', to: 'destino' }],
+          height: 240,
+        });
+        crear('#g-mapa', {
+          data: filas(
+            [
+              ['MEX', 1830], ['BRA', 2650], ['COL', 980], ['ARG', 760], ['CHL', 410], ['PER', 520], ['ECU', 230], ['VEN', 180],
+              ['URY', 95], ['PRY', 80], ['BOL', 110], ['CRI', 70], ['PAN', 65], ['GTM', 120], ['DOM', 140], ['CUB', 40], ['HND', 55],
+            ],
+            ['pais', 'usuarios'],
+          ).map(function (o) {
+            return { pais: o.pais, usuarios: o.usuarios * 1000 };
+          }),
+          xAxis: { field: 'pais' },
+          yAxis: { format: 'compact' },
+          series: [{ type: 'choropleth', field: 'usuarios', name: 'Usuarios', fit: 'data' }],
+          height: 240,
+        });
+        var dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        var calor = [];
+        dias.forEach(function (dia, k) {
+          for (var h = 6; h < 24; h += 2) {
+            var curva = Math.max(0.05, Math.sin(((h - 6) / 18) * Math.PI));
+            calor.push({ hora: String(h).padStart(2, '0') + ':00', dia: dia.slice(0, 3), visitas: Math.round(900 * curva * (k < 5 ? 1 : 0.6) + 40 + ((k * 37 + h * 13) % 60)) });
+          }
+        });
+        crear('#g-calor', {
+          data: calor,
+          xAxis: { field: 'hora' },
+          series: [{ type: 'heatmap', field: 'visitas', name: 'Visitas', y: 'dia' }],
+          height: 240,
+        });
+
+        crear('#g-teclado', {
+          title: 'Lluvia en Bogotá',
+          subtitle: 'Milímetros por mes, datos de ejemplo',
+          data: filas(
+            [['ene', 46], ['feb', 62], ['mar', 88], ['abr', 118], ['may', 102], ['jun', 54], ['jul', 42], ['ago', 46], ['sep', 64], ['oct', 128], ['nov', 112], ['dic', 70]],
+            ['mes', 'lluvia'],
+          ),
+          xAxis: { field: 'mes' },
+          yAxis: { format: 'number' },
+          series: [{ type: 'bar', field: 'lluvia', name: 'Lluvia (mm)', color: 2 }],
+          annotations: [{ y: 80, label: 'Promedio' }],
+          height: 300,
+        });
+
+        /* ---------- Siembra de 100 000 puntos ---------- */
+        var surcoChart = null;
+        document.getElementById('sembrar').addEventListener('click', function () {
+          var data = new Array(100000);
+          var v = 50,
+            seed = 7;
+          for (var i = 0; i < data.length; i++) {
+            seed = (seed + 0x6d2b79f5) | 0;
+            var q = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            q = (q + Math.imul(q ^ (q >>> 7), 61 | q)) ^ q;
+            var azar = ((q ^ (q >>> 14)) >>> 0) / 4294967296;
+            v += (azar - 0.5) * 2 - (v - 50 - 12 * Math.sin(i / 9000)) * 0.004;
+            data[i] = { punto: i, valor: Math.round((v + (i >= 61000 && i < 61040 ? 30 : 0)) * 100) / 100 };
+          }
+          var surco = document.getElementById('surco');
+          if (surcoChart) {
+            surcoChart.destroy();
+            charts.splice(charts.indexOf(surcoChart), 1);
+          }
+          surco.innerHTML = '';
+          var t0 = performance.now();
+          surcoChart = crear(surco, {
+            title: '100 000 lecturas de un sensor',
+            subtitle: 'Hay un pico breve cerca de la lectura 61 000: búscalo',
+            data: data,
+            xAxis: { field: 'punto', type: 'linear', format: 'compact' },
+            series: [{ type: 'line', field: 'valor', name: 'Valor', color: 2 }],
+            zoom: true,
+            animate: false,
+            height: 300,
+          });
+          var ms = Math.round(performance.now() - t0);
+          document.getElementById('contador').innerHTML = ms + ' ms<small>tardó en tu navegador, ahora mismo</small>';
+          this.textContent = 'Sembrar otra vez';
+        });
+
+        /* ---------- Código ---------- */
+        var esc = function (s) {
+          return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        };
+        var CODIGO = {
+          script:
+            '<div id="grafico"></div>\n<script src="lozcharts.umd.js"></' + 'script>\n<script>\n  new LozChart(\'#grafico\', {\n    data: [{ mes: \'2026-01\', ventas: 42000 }, { mes: \'2026-02\', ventas: 45500 }],\n    xAxis: { field: \'mes\', type: \'time\' },\n    series: [{ type: \'bar\', field: \'ventas\', name: \'Ventas\' }],\n  });\n</' + 'script>',
+          import:
+            "import { LozChart } from 'lozcharts';\n\nconst chart = new LozChart(elemento, opciones);\n// al desmontar el componente:\nchart.destroy();",
+          react:
+            "import { Chart } from 'lozcharts/react';\n\nfunction Ventas({ filas }) {\n  return (\n    <Chart\n      title=\"Ventas\"\n      data={filas}\n      xAxis={{ field: 'mes', type: 'time' }}\n      series={[{ type: 'bar', field: 'ventas', name: 'Ventas' }]}\n      zoom\n    />\n  );\n}",
+          element:
+            "// Angular, Vue o Svelte: un elemento HTML estándar.\nimport 'lozcharts/element';\n\n<loz-chart [options]=\"opciones\" (lozzoom)=\"alHacerZoom($event)\"></loz-chart>",
+          htmx:
+            '<div data-lozchart="#opciones-ventas"></div>\n{{ opciones|json_script:"opciones-ventas" }}\n<script>\n  htmx.onLoad((el) => LozChart.initAll(el));\n</' + 'script>',
+        };
+        var pinta = function (s) {
+          return esc(s)
+            .replace(/(\/\/[^\n]*)/g, '<span class="c">$1</span>')
+            .replace(/('[^'\n]*')/g, '<span class="s">$1</span>');
+        };
+        var code = document.querySelector('#codigo code');
+        var tabs = document.querySelectorAll('.pestanas button');
+        var mostrar = function (k) {
+          code.innerHTML = pinta(CODIGO[k]);
+          tabs.forEach(function (b) {
+            b.setAttribute('aria-selected', b.dataset.c === k ? 'true' : 'false');
+            b.tabIndex = b.dataset.c === k ? 0 : -1;
+          });
+        };
+        tabs.forEach(function (b, i) {
+          b.addEventListener('click', function () {
+            mostrar(b.dataset.c);
+          });
+          b.addEventListener('keydown', function (e) {
+            var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+            if (!d) return;
+            var n = tabs[(i + d + tabs.length) % tabs.length];
+            n.focus();
+            mostrar(n.dataset.c);
+          });
+        });
+        mostrar('script');
+
+        /* ---------- Tema ---------- */
+        var boton = document.getElementById('tema');
+        var etiqueta = function () {
+          boton.setAttribute('aria-label', tema() === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+        };
+        etiqueta();
+        boton.addEventListener('click', function () {
+          root.dataset.theme = tema() === 'dark' ? 'light' : 'dark';
+          try {
+            localStorage.setItem('loz-09-tema', root.dataset.theme);
+          } catch (e) {}
+          etiqueta();
+          charts.forEach(function (c) {
+            c.setTheme(tema());
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

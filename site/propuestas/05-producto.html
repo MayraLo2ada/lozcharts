@@ -1,0 +1,1847 @@
+<!doctype html>
+<!--
+  Plan de diseño · 05 "Consola"
+  1. Concepto: la portada es un producto funcionando. Un tablero real de LozCharts (tres gráficos y unas cifras que se mueven juntos) y, al lado, el código que lo crea, que se reescribe solo cuando haces zoom o pasas el puntero.
+  2. Paleta del sitio: grafito ciruela (#131218, #1a1920, #2d2a36), texto lavanda pálido (#eeebf3 / #aaa5b8); en claro, papel lila (#f7f6f9) y tinta #16141b. El color de verdad lo ponen los datos: la paleta Coral completa, más una regla de 8 segmentos como firma.
+  3. Tipografías: Schibsted Grotesk (titulares y texto, apretada y precisa) y Martian Mono (código y cifras, ancha, con carácter de instrumento).
+  4. Layout: titular a la izquierda y texto a la derecha en una sola fila; debajo, una ventana ancha: tablero (2/3) + código vivo (1/3). Luego secciones de ancho completo separadas por filetes de 1 px, sin tarjetas.
+  5. Elemento audaz: el código que sigue al gráfico (el rango del zoom y el dato bajo el puntero aparecen en el código en tiempo real).
+  6. Qué cambié de lo obvio: en vez de negro + un neón, un grafito con matiz ciruela y ningún color de acento en la interfaz (el primario es claro sobre oscuro); en vez de un gráfico decorativo, un tablero que se sincroniza; y el rendimiento se mide en el equipo de quien visita, no se promete.
+-->
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Consola</title>
+    <meta name="description" content="Gráficos SVG en TypeScript, sin dependencias. Un tablero real, sincronizado, con su código al lado." />
+    <script>
+      (function () {
+        var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f7f6f9;
+        --raised: #ffffff;
+        --panel: #fbfafc;
+        --line: #e3e0e8;
+        --line-strong: #cfcad6;
+        --text: #16141b;
+        --muted: #57525f;
+        --faint: #6c6776;
+        --primary-bg: #16141b;
+        --primary-text: #f7f6f9;
+        --code-bg: #f1eff4;
+        --tok-k: #8a2a63;
+        --tok-s: #0d6f73;
+        --tok-p: #4a2a8c;
+        --tok-n: #9a4a12;
+        --tok-c: #6c6776;
+        --live: #e45934;
+        --live-bg: rgba(228, 89, 52, 0.12);
+        --focus: #c9461f;
+        --ok: #2f8a3a;
+        --c1: #e45934;
+        --c2: #009298;
+        --c3: #5e2dad;
+        --c4: #9c1854;
+        --c5: #4c99f8;
+        --c6: #31983d;
+        --c7: #db6ea5;
+        --c8: #e2aa00;
+        --shadow: 0 1px 0 rgba(22, 20, 27, 0.04), 0 24px 60px -30px rgba(40, 30, 60, 0.28);
+        --r: 10px;
+        --r-sm: 6px;
+        --gutter: clamp(16px, 4vw, 48px);
+        --max: 1280px;
+        --sans: 'Schibsted Grotesk', system-ui, sans-serif;
+        --mono: 'Martian Mono', ui-monospace, monospace;
+        color-scheme: light;
+      }
+      :root[data-theme='dark'] {
+        --bg: #131218;
+        --raised: #1a1920;
+        --panel: #17161c;
+        --line: #2d2a36;
+        --line-strong: #3d3948;
+        --text: #eeebf3;
+        --muted: #aaa5b8;
+        --faint: #8d889b;
+        --primary-bg: #eeebf3;
+        --primary-text: #131218;
+        --code-bg: #15141a;
+        --tok-k: #e48ab8;
+        --tok-s: #5fc4c6;
+        --tok-p: #b49af0;
+        --tok-n: #f0a46a;
+        --tok-c: #8d889b;
+        --live: #ff8a66;
+        --live-bg: rgba(224, 86, 48, 0.2);
+        --focus: #ff8a66;
+        --ok: #5cc267;
+        --c1: #e05630;
+        --c2: #0a999f;
+        --c3: #8b61e3;
+        --c4: #9d4e6b;
+        --c5: #4996f5;
+        --c6: #399e43;
+        --c7: #d1649c;
+        --c8: #b88a06;
+        --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 30px 80px -40px rgba(0, 0, 0, 0.7);
+        color-scheme: dark;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        font-size: 16px;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      a {
+        color: inherit;
+      }
+      :focus-visible {
+        outline: 2px solid var(--focus);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+      .skip:focus {
+        position: fixed;
+        top: 8px;
+        left: 8px;
+        width: auto;
+        height: auto;
+        clip: auto;
+        padding: 8px 12px;
+        background: var(--raised);
+        z-index: 10;
+      }
+      .wrap {
+        max-width: var(--max);
+        margin: 0 auto;
+        padding: 0 var(--gutter);
+      }
+      code,
+      pre,
+      .mono {
+        font-family: var(--mono);
+      }
+
+      /* Barra superior */
+      .top {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: color-mix(in srgb, var(--bg) 86%, transparent);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--line);
+      }
+      .top .wrap {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        height: 56px;
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 17px;
+        letter-spacing: -0.02em;
+      }
+      .brand svg {
+        width: 22px;
+        height: 22px;
+        flex: none;
+      }
+      .nav {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .nav a {
+        text-decoration: none;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 500;
+        padding: 6px 10px;
+        border-radius: var(--r-sm);
+      }
+      .nav a:hover {
+        color: var(--text);
+        background: var(--line);
+      }
+      .icon-btn {
+        width: 34px;
+        height: 34px;
+        display: inline-grid;
+        place-items: center;
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--text);
+        border-radius: var(--r-sm);
+        cursor: pointer;
+        margin-left: 6px;
+      }
+      .icon-btn:hover {
+        border-color: var(--line-strong);
+      }
+      .icon-btn svg {
+        width: 16px;
+        height: 16px;
+      }
+      [data-theme='dark'] .i-moon,
+      [data-theme='light'] .i-sun {
+        display: none;
+      }
+
+      /* Portada */
+      .hero {
+        padding-top: clamp(48px, 8vw, 104px);
+        padding-bottom: 40px;
+      }
+      .hero-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 48px;
+        align-items: end;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(2.5rem, 6.2vw, 5.4rem);
+        line-height: 0.98;
+        letter-spacing: -0.045em;
+        font-weight: 600;
+        max-width: 12ch;
+      }
+      .lead {
+        margin: 0 0 18px;
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.5;
+        max-width: 46ch;
+      }
+      .cta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 40px;
+        padding: 0 16px;
+        border-radius: var(--r-sm);
+        border: 1px solid var(--line-strong);
+        font: 500 15px/1 var(--sans);
+        text-decoration: none;
+        color: var(--text);
+        background: transparent;
+        cursor: pointer;
+      }
+      .btn:hover {
+        background: var(--line);
+      }
+      .btn.primary {
+        background: var(--primary-bg);
+        color: var(--primary-text);
+        border-color: var(--primary-bg);
+      }
+      .btn.primary:hover {
+        opacity: 0.9;
+      }
+      .install {
+        margin-top: 28px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px 14px;
+      }
+      .install-box {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        max-width: 100%;
+        border: 1px solid var(--line);
+        background: var(--raised);
+        border-radius: var(--r-sm);
+        padding: 6px 6px 6px 12px;
+        font: 400 12.5px/1.4 var(--mono);
+      }
+      .install-box code {
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none;
+      }
+      .install-box code span {
+        color: var(--faint);
+      }
+      .copy {
+        flex: none;
+        height: 28px;
+        padding: 0 10px;
+        border: 1px solid var(--line);
+        background: var(--bg);
+        color: var(--muted);
+        border-radius: 4px;
+        font: 500 12px/1 var(--sans);
+        cursor: pointer;
+      }
+      .copy:hover {
+        color: var(--text);
+      }
+      .install small {
+        color: var(--faint);
+        font-size: 13px;
+      }
+
+      /* La ventana */
+      .window {
+        margin-top: clamp(40px, 6vw, 64px);
+        border: 1px solid var(--line);
+        border-radius: var(--r);
+        background: var(--raised);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .spectrum {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        height: 2px;
+      }
+      .spectrum i:nth-child(1) { background: var(--c1); }
+      .spectrum i:nth-child(2) { background: var(--c2); }
+      .spectrum i:nth-child(3) { background: var(--c3); }
+      .spectrum i:nth-child(4) { background: var(--c4); }
+      .spectrum i:nth-child(5) { background: var(--c5); }
+      .spectrum i:nth-child(6) { background: var(--c6); }
+      .spectrum i:nth-child(7) { background: var(--c7); }
+      .spectrum i:nth-child(8) { background: var(--c8); }
+      .win-bar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--line);
+        flex-wrap: wrap;
+      }
+      .win-title {
+        font-weight: 600;
+        font-size: 14px;
+      }
+      .win-title span {
+        color: var(--faint);
+        font-weight: 400;
+        margin-left: 8px;
+      }
+      .seg {
+        margin-left: auto;
+        display: inline-flex;
+        border: 1px solid var(--line);
+        border-radius: var(--r-sm);
+        padding: 2px;
+        background: var(--bg);
+      }
+      .seg button {
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font: 500 13px/1 var(--sans);
+        padding: 7px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .seg button[aria-pressed='true'] {
+        background: var(--raised);
+        color: var(--text);
+        box-shadow: 0 0 0 1px var(--line-strong);
+      }
+      .win-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 448px;
+      }
+      .board {
+        padding: 6px 4px 12px;
+        min-width: 0;
+      }
+      .kpis {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        border-bottom: 1px solid var(--line);
+        margin: 0 10px;
+      }
+      .kpi {
+        padding: 12px 12px 14px 0;
+        min-width: 0;
+      }
+      .kpi + .kpi {
+        padding-left: 14px;
+        border-left: 1px solid var(--line);
+      }
+      .kpi dt {
+        font-size: 13px;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .kpi dt i {
+        width: 8px;
+        height: 8px;
+        border-radius: 2px;
+        flex: none;
+      }
+      .kpi dd {
+        margin: 4px 0 0;
+        font: 500 clamp(15px, 1.7vw, 21px) / 1.2 var(--mono);
+        letter-spacing: -0.03em;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .kpi-when {
+        margin: 10px 10px 0;
+        font-size: 13px;
+        color: var(--faint);
+        min-height: 20px;
+      }
+      .board-low {
+        display: grid;
+        grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+        border-top: 1px solid var(--line);
+        margin-top: 6px;
+      }
+      .board-low > div {
+        min-width: 0;
+        padding-top: 10px;
+      }
+      .board-low > div + div {
+        border-left: 1px solid var(--line);
+      }
+      #g-total .lc-zoom-reset {
+        display: none;
+      }
+      .panel-label {
+        font-size: 13px;
+        color: var(--muted);
+        margin: 0 10px 2px;
+        font-weight: 500;
+      }
+
+      .code {
+        border-left: 1px solid var(--line);
+        background: var(--code-bg);
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .code-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--line);
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .code-head .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--ok);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent);
+      }
+      .code-head b {
+        color: var(--text);
+        font-weight: 600;
+      }
+      pre {
+        margin: 0;
+        padding: 14px 16px 18px;
+        font-size: 11.5px;
+        line-height: 1.8;
+        overflow-x: auto;
+        tab-size: 2;
+        color: var(--text);
+      }
+      .t-k { color: var(--tok-k); }
+      .t-s { color: var(--tok-s); }
+      .t-p { color: var(--tok-p); }
+      .t-n { color: var(--tok-n); }
+      .t-c { color: var(--tok-c); font-style: normal; }
+      .t-g { color: var(--tok-k); }
+      .live {
+        border-radius: 3px;
+        transition: background-color 0.6s ease;
+      }
+      .live.flash {
+        background: var(--live-bg);
+        transition: none;
+      }
+      .code-foot {
+        margin-top: auto;
+        padding: 12px 16px;
+        border-top: 1px solid var(--line);
+        font-size: 13px;
+        color: var(--faint);
+      }
+
+      /* Secciones */
+      section.block {
+        border-top: 1px solid var(--line);
+        padding: clamp(56px, 8vw, 104px) 0;
+      }
+      .block-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 48px;
+        align-items: start;
+        margin-bottom: 40px;
+      }
+      h2 {
+        margin: 0;
+        font-size: clamp(1.9rem, 3.6vw, 3rem);
+        line-height: 1.04;
+        letter-spacing: -0.035em;
+        font-weight: 600;
+        max-width: 16ch;
+      }
+      .block-head p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 17px;
+        max-width: 48ch;
+      }
+
+      /* Rendimiento */
+      .perf {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        border: 1px solid var(--line);
+        border-radius: var(--r);
+        background: var(--raised);
+        overflow: hidden;
+      }
+      .perf-side {
+        padding: 22px;
+        border-right: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .readout {
+        font: 500 56px/1 var(--mono);
+        letter-spacing: -0.06em;
+        font-variant-numeric: tabular-nums;
+      }
+      .readout small {
+        font-size: 18px;
+        letter-spacing: 0;
+        color: var(--muted);
+        margin-left: 6px;
+      }
+      .readout-note {
+        color: var(--muted);
+        font-size: 14px;
+        margin: -8px 0 0;
+      }
+      .perf-facts {
+        margin: auto 0 0;
+        padding: 0;
+        list-style: none;
+        font-size: 14px;
+        color: var(--muted);
+        border-top: 1px solid var(--line);
+      }
+      .perf-facts li {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 9px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .perf-facts b {
+        font: 500 13px/1.6 var(--mono);
+        color: var(--text);
+      }
+      .perf-chart {
+        padding: 14px 8px 8px;
+        min-width: 0;
+        min-height: 300px;
+        position: relative;
+      }
+      .perf-empty {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        color: var(--faint);
+        font-size: 15px;
+        text-align: center;
+        padding: 20px;
+      }
+
+      /* Tipos */
+      .types {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1px;
+        background: var(--line);
+        border: 1px solid var(--line);
+        border-radius: var(--r);
+        overflow: hidden;
+      }
+      .type {
+        background: var(--bg);
+        padding: 16px 12px 8px;
+        min-width: 0;
+      }
+      .type h3 {
+        margin: 0 4px;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .type p {
+        margin: 2px 4px 6px;
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.4;
+        min-height: 2.8em;
+      }
+      .types-more {
+        margin: 22px 0 0;
+        color: var(--muted);
+        max-width: 80ch;
+        font-size: 15px;
+      }
+      .types-more a {
+        color: var(--text);
+        text-underline-offset: 3px;
+      }
+
+      /* Accesibilidad */
+      .a11y {
+        display: grid;
+        grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+        gap: 24px;
+        align-items: stretch;
+      }
+      .a11y-chart {
+        border: 1px solid var(--line);
+        border-radius: var(--r);
+        background: var(--raised);
+        padding: 14px 8px 6px;
+        min-width: 0;
+      }
+      .sr-log {
+        border: 1px solid var(--line);
+        border-radius: var(--r);
+        background: var(--code-bg);
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .sr-log h3 {
+        margin: 0;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--line);
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .sr-lines {
+        list-style: none;
+        margin: 0;
+        padding: 12px 16px;
+        font: 400 12.5px/1.7 var(--mono);
+        color: var(--muted);
+        flex: 1;
+        min-height: 180px;
+      }
+      .sr-lines li:last-child {
+        color: var(--text);
+      }
+      .keys {
+        padding: 12px 16px;
+        border-top: 1px solid var(--line);
+        font-size: 13px;
+        color: var(--muted);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        align-items: center;
+      }
+      kbd {
+        font: 500 11px/1 var(--mono);
+        border: 1px solid var(--line-strong);
+        border-bottom-width: 2px;
+        border-radius: 4px;
+        padding: 3px 5px;
+        color: var(--text);
+        background: var(--raised);
+      }
+      .swatches {
+        margin-top: 24px;
+        display: grid;
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+        gap: 1px;
+        border: 1px solid var(--line);
+        border-radius: var(--r);
+        overflow: hidden;
+        background: var(--line);
+      }
+      .sw {
+        background: var(--bg);
+        padding: 10px 10px 12px;
+        font-size: 13px;
+        min-width: 0;
+      }
+      .sw i {
+        display: block;
+        height: 36px;
+        border-radius: 4px;
+        margin-bottom: 8px;
+      }
+      .sw code {
+        display: block;
+        font-size: 11px;
+        color: var(--faint);
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .swatch-note {
+        margin: 14px 0 0;
+        font-size: 14px;
+        color: var(--muted);
+        max-width: 80ch;
+      }
+
+      /* Integraciones */
+      .integ {
+        border: 1px solid var(--line);
+        border-radius: var(--r);
+        overflow: hidden;
+        background: var(--code-bg);
+      }
+      .tabs {
+        display: flex;
+        gap: 2px;
+        border-bottom: 1px solid var(--line);
+        background: var(--raised);
+        padding: 0 8px;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .tabs button {
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font: 500 14px/1 var(--sans);
+        padding: 14px 12px 13px;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .tabs button[aria-selected='true'] {
+        color: var(--text);
+        border-bottom-color: var(--text);
+      }
+      .integ pre {
+        font-size: 12.5px;
+        min-height: 260px;
+        padding: 20px 22px;
+      }
+
+      /* Cierre */
+      .close {
+        border-top: 1px solid var(--line);
+        padding: clamp(64px, 10vw, 128px) 0;
+      }
+      .close h2 {
+        font-size: clamp(2.2rem, 5vw, 4.2rem);
+        max-width: 14ch;
+      }
+      .facts {
+        margin: 48px 0;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        border-top: 1px solid var(--line);
+      }
+      .fact {
+        padding: 18px 16px 0 0;
+      }
+      .fact + .fact {
+        padding-left: 18px;
+        border-left: 1px solid var(--line);
+      }
+      .fact b {
+        display: block;
+        font: 500 clamp(24px, 3vw, 36px) / 1.1 var(--mono);
+        letter-spacing: -0.05em;
+      }
+      .fact span {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      footer {
+        border-top: 1px solid var(--line);
+        padding: 24px 0 40px;
+        color: var(--faint);
+        font-size: 14px;
+      }
+      footer .wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 24px;
+        justify-content: space-between;
+      }
+
+      /* Pantallas medianas y pequeñas */
+      @media (max-width: 1100px) {
+        .win-body {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .code {
+          border-left: 0;
+          border-top: 1px solid var(--line);
+        }
+        .types {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 860px) {
+        .hero-row,
+        .block-head,
+        .a11y,
+        .perf {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 20px;
+        }
+        .perf-side {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+        .swatches {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+        .facts {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .fact:nth-child(3) {
+          padding-left: 0;
+          border-left: 0;
+        }
+        .fact:nth-child(n + 3) {
+          border-top: 1px solid var(--line);
+          margin-top: 18px;
+        }
+      }
+      @media (max-width: 600px) {
+        .nav a.hide-sm {
+          display: none;
+        }
+        .kpis {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .kpi:nth-child(3) {
+          padding-left: 0;
+          border-left: 0;
+        }
+        .kpi:nth-child(n + 3) {
+          border-top: 1px solid var(--line);
+        }
+        .board-low {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .board-low > div + div {
+          border-left: 0;
+          border-top: 1px solid var(--line);
+        }
+        .types {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .seg {
+          margin-left: 0;
+          width: 100%;
+        }
+        .seg button {
+          flex: 1;
+        }
+        .readout {
+          font-size: 44px;
+        }
+        .lead {
+          font-size: 17px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .live,
+        .live.flash {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="sr-only skip" href="#contenido">Saltar al contenido</a>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="#contenido" aria-label="LozCharts, inicio">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 1.8 22.2 12 12 22.2 1.8 12Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+            <path d="M5.2 13.6 9.4 10.6 12.6 13 17.4 7.6" fill="none" stroke="var(--c1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <circle cx="17.4" cy="7.6" r="1.9" fill="var(--c1)" />
+          </svg>
+          lozcharts
+        </a>
+        <nav class="nav" aria-label="Principal">
+          <a href="../galeria.html">Galería</a>
+          <a href="../docs.html">Documentación</a>
+          <a class="hide-sm" href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+          <button class="icon-btn" type="button" id="tema" aria-label="Cambiar a modo oscuro">
+            <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /></svg>
+            <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main id="contenido">
+      <section class="hero wrap" aria-labelledby="titulo">
+        <div class="hero-row">
+          <h1 id="titulo">Gráficos que aguantan una mirada de cerca.</h1>
+          <div>
+            <p class="lead">
+              Una librería de gráficos en SVG, escrita en TypeScript y sin dependencias. Se recorre con el teclado, se
+              describe a un lector de pantalla y es gratis, también para empresas.
+            </p>
+            <div class="cta">
+              <a class="btn primary" href="../galeria.html">Ver la galería</a>
+              <a class="btn" href="../docs.html">Leer la documentación</a>
+            </div>
+          </div>
+        </div>
+        <div class="install">
+          <div class="install-box">
+            <code id="cmd"><span>$ </span>npm install github:MayraLo2ada/lozcharts</code>
+            <button class="copy" type="button" id="copiar">Copiar</button>
+          </div>
+          <small>Todavía no está en npm. Por ahora se instala desde GitHub.</small>
+        </div>
+
+        <div class="window" role="group" aria-label="Tablero de ejemplo hecho con LozCharts">
+          <div class="spectrum" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="win-bar">
+            <div class="win-title">Visitas a una tienda en línea<span>Datos de ejemplo</span></div>
+            <div class="seg" role="group" aria-label="Tramo visible">
+              <button type="button" data-range="30">30 días</button>
+              <button type="button" data-range="90">90 días</button>
+              <button type="button" data-range="campana" aria-pressed="true">Campaña</button>
+              <button type="button" data-range="todo">Todo</button>
+            </div>
+          </div>
+          <div class="win-body">
+            <div class="board">
+              <dl class="kpis" aria-live="off">
+                <div class="kpi"><dt><i style="background: var(--c1)"></i>Web</dt><dd id="k-web">0</dd></div>
+                <div class="kpi"><dt><i style="background: var(--c2)"></i>App</dt><dd id="k-app">0</dd></div>
+                <div class="kpi"><dt>Parte de la app</dt><dd id="k-share">0 %</dd></div>
+                <div class="kpi"><dt>Día más alto</dt><dd id="k-peak">0</dd></div>
+              </dl>
+              <p class="kpi-when" id="k-when">Suma del tramo visible</p>
+              <div id="g-visitas"></div>
+              <div class="board-low">
+                <div>
+                  <p class="panel-label">Total por día</p>
+                  <div id="g-total"></div>
+                </div>
+                <div>
+                  <p class="panel-label">Reparto en el tramo</p>
+                  <div id="g-reparto"></div>
+                </div>
+              </div>
+            </div>
+            <aside class="code" aria-label="Código del tablero">
+              <div class="code-head"><span class="dot" aria-hidden="true"></span><b>tablero.js</b> se actualiza mientras usas el gráfico</div>
+              <pre><code id="live-code"></code></pre>
+              <div class="code-foot">Arrastra sobre el gráfico para acercar, o usa la barra de abajo. Doble clic vuelve a todo.</div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="block" aria-labelledby="t-perf">
+        <div class="wrap">
+          <div class="block-head">
+            <h2 id="t-perf">Cien mil puntos. Mídelo tú.</h2>
+            <p>
+              Dibuja solo lo que se ve. Por cada columna de píxeles guarda el primero, el mínimo, el máximo y el
+              último, así que ningún pico se pierde. El tiempo de abajo lo mide tu navegador, ahora.
+            </p>
+          </div>
+          <div class="perf">
+            <div class="perf-side">
+              <button class="btn primary" type="button" id="dibujar">Dibujar 100 000 puntos</button>
+              <div class="readout" aria-live="polite"><span id="ms">--</span><small>ms</small></div>
+              <p class="readout-note" id="ms-note">Lo que tarda en crear el gráfico, en tu equipo.</p>
+              <ul class="perf-facts">
+                <li>Datos <b>100 000</b></li>
+                <li>Comprimida <b>51 KB</b></li>
+                <li>Dependencias <b>0</b></li>
+              </ul>
+            </div>
+            <div class="perf-chart">
+              <div id="g-perf"></div>
+              <div class="perf-empty" id="perf-empty">Aquí aparece el gráfico. Luego puedes acercar y recorrerlo.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="block" aria-labelledby="t-tipos">
+        <div class="wrap">
+          <div class="block-head">
+            <h2 id="t-tipos">Diecinueve tipos, el mismo cuidado.</h2>
+            <p>
+              Todos comparten tooltip, teclado, modo oscuro y exportación a PNG, SVG y CSV. Estos ocho están vivos:
+              pasa el puntero.
+            </p>
+          </div>
+          <div class="types" id="tipos"></div>
+          <p class="types-more">
+            Además: líneas, barras verticales y horizontales, agrupadas o apiladas, áreas, escalones, bandas de rango,
+            dispersión, burbujas, OHLC, pie, donut, mapas de burbujas y small multiples.
+            <a href="../galeria.html">Verlos todos en la galería</a>.
+          </p>
+        </div>
+      </section>
+
+      <section class="block" aria-labelledby="t-a11y">
+        <div class="wrap">
+          <div class="block-head">
+            <h2 id="t-a11y">Se entiende también sin verlo.</h2>
+            <p>
+              Cada gráfico se describe a los lectores de pantalla y trae su tabla de datos. Haz clic en el gráfico y
+              muévete con las flechas. Junto al gráfico aparece lo que escucharía una persona ciega.
+            </p>
+          </div>
+          <div class="a11y">
+            <div class="a11y-chart" id="g-a11y"></div>
+            <div class="sr-log">
+              <h3>Lo que anuncia el lector de pantalla</h3>
+              <ol class="sr-lines" id="sr-lines" aria-hidden="true"><li>Esperando a que muevas el foco…</li></ol>
+              <div class="keys"><span><kbd>←</kbd> <kbd>→</kbd> recorren</span><span><kbd>Inicio</kbd> <kbd>Fin</kbd> extremos</span><span><kbd>Esc</kbd> cierra</span></div>
+            </div>
+          </div>
+          <div class="swatches" id="swatches"></div>
+          <p class="swatch-note">
+            La paleta Coral se diseñó en OKLCH y su orden se eligió para que los colores que más se usan juntos se
+            distingan con daltonismo. El modo oscuro tiene sus propios tonos: no es una inversión.
+          </p>
+        </div>
+      </section>
+
+      <section class="block" aria-labelledby="t-integ">
+        <div class="wrap">
+          <div class="block-head">
+            <h2 id="t-integ">Llega a donde ya trabajas.</h2>
+            <p>
+              Un <code>&lt;script&gt;</code> y listo, o un import. Para React hay componente; para Angular, Vue y Svelte,
+              el elemento <code>&lt;loz-chart&gt;</code>. Con Django y HTMX, un atributo.
+            </p>
+          </div>
+          <div class="integ">
+            <div class="tabs" role="tablist" aria-label="Formas de usarla" id="tabs"></div>
+            <pre role="tabpanel" id="tab-panel" tabindex="0"><code id="tab-code"></code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="close" aria-labelledby="t-close">
+        <div class="wrap">
+          <h2 id="t-close">Gratis, también para tu empresa.</h2>
+          <div class="facts">
+            <div class="fact"><b>51 KB</b><span>comprimida</span></div>
+            <div class="fact"><b>0</b><span>dependencias</span></div>
+            <div class="fact"><b>199</b><span>pruebas automáticas</span></div>
+            <div class="fact"><b>MIT</b><span>licencia</span></div>
+          </div>
+          <div class="cta">
+            <a class="btn primary" href="https://github.com/MayraLo2ada/lozcharts">Ver el código en GitHub</a>
+            <a class="btn" href="../docs.html">Leer la documentación</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <span>LozCharts, hecha por Mayra Lozada. Licencia MIT.</span>
+        <span>Escrita en español, de origen.</span>
+      </div>
+    </footer>
+
+    <script src="../lib/lozcharts.umd.js"></script>
+    <script src="../lib/maps/world.umd.js"></script>
+    <script>
+      (function () {
+        'use strict';
+        var root = document.documentElement;
+        var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var theme = function () {
+          return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+        };
+        var charts = [];
+        function reg(c) {
+          charts.push(c);
+          return c;
+        }
+        function base(extra) {
+          return Object.assign({ background: false, theme: theme(), animate: !reduce, locale: 'es' }, extra);
+        }
+
+        /* Tema */
+        var btnTema = document.getElementById('tema');
+        function syncTemaBtn() {
+          btnTema.setAttribute('aria-label', theme() === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+        }
+        syncTemaBtn();
+        btnTema.addEventListener('click', function () {
+          root.setAttribute('data-theme', theme() === 'dark' ? 'light' : 'dark');
+          syncTemaBtn();
+          charts.forEach(function (c) {
+            c.setTheme(theme());
+          });
+          pintarPaleta();
+        });
+
+        /* Copiar */
+        document.getElementById('copiar').addEventListener('click', function (e) {
+          var b = e.currentTarget;
+          var t = 'npm install github:MayraLo2ada/lozcharts';
+          (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(
+            function () {
+              b.textContent = 'Copiado';
+              setTimeout(function () {
+                b.textContent = 'Copiar';
+              }, 1600);
+            },
+            function () {
+              b.textContent = 'Selecciónalo';
+            },
+          );
+        });
+
+        /* Resaltado de código, mínimo */
+        var esc = function (s) {
+          return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        };
+        var TOK =
+          /(\/\/[^\n]*|#[^\n]*)|('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*")|(\b\d[\d_.]*\b)|\b(new|const|let|import|from|return|true|false|null|function|export|class|this|htmx)\b|([A-Za-z_$][\w$]*)(?=\s*:[^:])|(<\/?[a-zA-Z][\w-]*|\/?>)|(@@\w+@@)/g;
+        function hl(src, live) {
+          var out = '';
+          var last = 0;
+          src.replace(TOK, function (m, c, s, n, k, p, g, ph, i) {
+            out += esc(src.slice(last, i));
+            last = i + m.length;
+            if (c) out += '<span class="t-c">' + esc(m) + '</span>';
+            else if (s) out += '<span class="t-s">' + esc(m) + '</span>';
+            else if (n) out += '<span class="t-n">' + esc(m) + '</span>';
+            else if (k) out += '<span class="t-k">' + m + '</span>';
+            else if (p) out += '<span class="t-p">' + m + '</span>';
+            else if (g) out += '<span class="t-g">' + esc(m) + '</span>';
+            else if (ph) out += live && live[ph] !== undefined ? live[ph] : '';
+            return m;
+          });
+          return out + esc(src.slice(last));
+        }
+
+        /* Datos de ejemplo (los mismos de la galería) */
+        function rng(seed) {
+          return function () {
+            seed = (seed + 0x6d2b79f5) | 0;
+            var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+        var pad = function (n) {
+          return String(n).padStart(2, '0');
+        };
+        var iso = function (d) {
+          return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+        };
+        var r = rng(11);
+        var dias = [];
+        var porMs = {};
+        for (var d = 0; d < 365; d++) {
+          var f = new Date(2025, 10, 1 + d);
+          var semana = [0.8, 1, 1.05, 1.06, 1.03, 0.96, 0.77][f.getDay()];
+          var campana = d >= 240 && d < 262 ? 2600 * Math.sin(((d - 240) / 22) * Math.PI) : 0;
+          var web = Math.round((4200 + d * 9) * semana + campana + (r() - 0.5) * 700);
+          var app = Math.round((2100 + d * 6) * semana + (r() - 0.5) * 400);
+          var row = { fecha: iso(f), web: web, app: app, total: web + app };
+          dias.push(row);
+          porMs[f.getTime()] = row;
+        }
+        var nf = new Intl.NumberFormat('es');
+        var fechaLarga = function (ms) {
+          return new Date(ms).toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' });
+        };
+        var fechaCorta = function (ms) {
+          return new Date(ms).toLocaleDateString('es', { day: 'numeric', month: 'short' });
+        };
+        var msDe = function (s) {
+          var p = s.split('-');
+          return new Date(+p[0], +p[1] - 1, +p[2]).getTime();
+        };
+
+        /* Tablero sincronizado */
+        var CAMPANA = ['2026-06-29', '2026-07-21'];
+        var visitas, total, reparto;
+        var tramo = null; // [msDesde, msHasta] o null
+        var puntero = null;
+        var sincronizando = false;
+        var segBtns = document.querySelectorAll('[data-range]');
+
+        function filasDelTramo() {
+          if (!tramo) return dias;
+          return dias.filter(function (row) {
+            var t = msDe(row.fecha);
+            return t >= tramo[0] && t <= tramo[1];
+          });
+        }
+        function pintarCifras() {
+          var w = document.getElementById('k-web');
+          var a = document.getElementById('k-app');
+          var s = document.getElementById('k-share');
+          var p = document.getElementById('k-peak');
+          var when = document.getElementById('k-when');
+          var filas = filasDelTramo();
+          var pico = filas.reduce(function (m, x) {
+            return x.total > m.total ? x : m;
+          }, filas[0]);
+          p.textContent = pico ? fechaCorta(msDe(pico.fecha)) : '';
+          if (puntero && porMs[puntero]) {
+            var row = porMs[puntero];
+            w.textContent = nf.format(row.web);
+            a.textContent = nf.format(row.app);
+            s.textContent = Math.round((row.app / row.total) * 100) + ' %';
+            when.textContent = 'El ' + fechaLarga(puntero);
+            return;
+          }
+          var sw = 0,
+            sa = 0;
+          filas.forEach(function (x) {
+            sw += x.web;
+            sa += x.app;
+          });
+          w.textContent = nf.format(sw);
+          a.textContent = nf.format(sa);
+          s.textContent = Math.round((sa / (sw + sa || 1)) * 100) + ' %';
+          when.textContent = tramo
+            ? 'Suma del ' + fechaCorta(tramo[0]) + ' al ' + fechaCorta(tramo[1]) + ' (' + filas.length + ' días)'
+            : 'Suma del año completo';
+        }
+
+        var CODE = [
+          "const visitas = new LozChart('#visitas', {",
+          '  data: dias, // 365 filas: { fecha, web, app }',
+          "  xAxis: { field: 'fecha', type: 'time' },",
+          '  series: [',
+          "    { type: 'line', field: 'web', name: 'Web' },",
+          "    { type: 'line', field: 'app', name: 'App' },",
+          '  ],',
+          '  @@ZOOM@@',
+          '  endLabels: true,',
+          '  annotations: [',
+          "    { y: 8000, label: 'Meta diaria' },",
+          '  ],',
+          '  onHover: (x) => total.highlight(x),',
+          '  onZoom: (r) => total.zoomTo(...r),',
+          '});',
+          '',
+          '@@HOVER@@',
+        ].join('\n');
+        var antes = {};
+        function pintarCodigo() {
+          var zoom = tramo
+            ? '<span class="t-p">zoom</span>: { <span class="t-p">range</span>: [<span class="t-s live" data-k="a">\'' +
+              iso(new Date(tramo[0])) +
+              '\'</span>, <span class="t-s live" data-k="b">\'' +
+              iso(new Date(tramo[1])) +
+              "'</span>] },"
+            : '<span class="t-p">zoom</span>: <span class="t-k live" data-k="a">true</span>,';
+          var hover = puntero
+            ? '<span class="t-c">// puntero en </span><span class="t-s live" data-k="h">\'' + iso(new Date(puntero)) + "'</span>"
+            : '<span class="t-c">// pasa el puntero por el gráfico</span>';
+          var el = document.getElementById('live-code');
+          el.innerHTML = hl(CODE, { '@@ZOOM@@': zoom, '@@HOVER@@': hover });
+          el.querySelectorAll('.live').forEach(function (s) {
+            var k = s.getAttribute('data-k');
+            if (antes[k] !== s.textContent) {
+              s.classList.add('flash');
+              requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                  s.classList.remove('flash');
+                });
+              });
+            }
+            antes[k] = s.textContent;
+          });
+        }
+        function pintarReparto() {
+          var filas = filasDelTramo();
+          var sw = 0,
+            sa = 0;
+          filas.forEach(function (x) {
+            sw += x.web;
+            sa += x.app;
+          });
+          var data = [
+            { canal: 'Web', visitas: sw },
+            { canal: 'App', visitas: sa },
+          ];
+          if (reparto) reparto.setData(data);
+          return data;
+        }
+        function alZoom(origen, rango) {
+          if (sincronizando) return;
+          tramo = rango ? [rango[0], rango[1]] : null;
+          sincronizando = true;
+          var otro = origen === 'visitas' ? total : visitas;
+          if (otro) {
+            if (rango) otro.zoomTo(rango[0], rango[1]);
+            else otro.resetZoom();
+          }
+          sincronizando = false;
+          marcarBoton(null);
+          pintarCifras();
+          pintarCodigo();
+          pintarReparto();
+        }
+        function alPuntero(origen, x) {
+          puntero = x;
+          var otro = origen === 'visitas' ? total : visitas;
+          if (otro) otro.highlight(x);
+          pintarCifras();
+          pintarCodigo();
+        }
+
+        var alto = window.innerWidth < 600 ? 220 : 260;
+        visitas = reg(
+          new LozChart(
+            '#g-visitas',
+            base({
+              data: dias,
+              xAxis: { field: 'fecha', type: 'time' },
+              yAxis: { format: 'compact', width: 44 },
+              series: [
+                { type: 'line', field: 'web', name: 'Web' },
+                { type: 'line', field: 'app', name: 'App' },
+              ],
+              legend: false,
+              zoom: { range: CAMPANA },
+              endLabels: true,
+              annotations: [{ y: 8000, label: 'Meta diaria' }],
+              height: alto,
+              onHover: function (x) {
+                alPuntero('visitas', x);
+              },
+              onZoom: function (rg) {
+                alZoom('visitas', rg);
+              },
+            }),
+          ),
+        );
+        total = reg(
+          new LozChart(
+            '#g-total',
+            base({
+              data: dias,
+              xAxis: { field: 'fecha', type: 'time' },
+              yAxis: { format: 'compact', width: 44 },
+              series: [{ type: 'bar', field: 'total', name: 'Total', color: 3 }],
+              legend: false,
+              zoom: { scrollbar: false },
+              height: 150,
+              onHover: function (x) {
+                alPuntero('total', x);
+              },
+              onZoom: function (rg) {
+                alZoom('total', rg);
+              },
+            }),
+          ),
+        );
+        reparto = reg(
+          new LozChart(
+            '#g-reparto',
+            base({
+              data: pintarReparto(),
+              xAxis: { field: 'canal' },
+              series: [{ type: 'donut', field: 'visitas', name: 'Visitas', labels: false }],
+              legend: { position: 'bottom' },
+              height: 168,
+            }),
+          ),
+        );
+        // Estado inicial: la campaña en los dos gráficos.
+        tramo = visitas.zoomRange;
+        sincronizando = true;
+        if (tramo) total.zoomTo(tramo[0], tramo[1]);
+        sincronizando = false;
+        pintarCifras();
+        pintarCodigo();
+        pintarReparto();
+        marcarBoton('campana');
+
+        function marcarBoton(cual) {
+          segBtns.forEach(function (b) {
+            b.setAttribute('aria-pressed', String(b.getAttribute('data-range') === cual));
+          });
+        }
+        segBtns.forEach(function (b) {
+          b.addEventListener('click', function () {
+            var k = b.getAttribute('data-range');
+            var fin = dias[dias.length - 1].fecha;
+            if (k === 'todo') visitas.resetZoom();
+            else if (k === 'campana') visitas.zoomTo(CAMPANA[0], CAMPANA[1]);
+            else visitas.zoomTo(dias[dias.length - +k].fecha, fin);
+            marcarBoton(k);
+          });
+        });
+
+        /* Rendimiento: medido en el equipo de quien visita */
+        var perf = null;
+        document.getElementById('dibujar').addEventListener('click', function (e) {
+          var btn = e.currentTarget;
+          var rr = rng(7);
+          var n = 100000;
+          var data = new Array(n);
+          var v = 50;
+          for (var i = 0; i < n; i++) {
+            v += (rr() - 0.5) * 2 + (rr() < 0.0004 ? (rr() - 0.3) * 40 : 0);
+            data[i] = { x: i, valor: Math.round(v * 100) / 100 };
+          }
+          if (perf) {
+            charts.splice(charts.indexOf(perf), 1);
+            perf.destroy();
+          }
+          document.getElementById('perf-empty').hidden = true;
+          var t0 = performance.now();
+          perf = reg(
+            new LozChart(
+              '#g-perf',
+              base({
+                data: data,
+                xAxis: { field: 'x', type: 'linear', format: 'compact' },
+                yAxis: { format: 'number' },
+                series: [{ type: 'line', field: 'valor', name: 'Serie de prueba', color: 2 }],
+                animate: false,
+                zoom: true,
+                height: 260,
+              }),
+            ),
+          );
+          var ms = performance.now() - t0;
+          document.getElementById('ms').textContent = Math.round(ms);
+          document.getElementById('ms-note').textContent =
+            'Medido ahora en tu navegador. Vuelve a probar: cambia un poco cada vez.';
+          btn.textContent = 'Dibujar otra vez';
+        });
+
+        // Se dibuja solo la primera vez que la sección aparece en pantalla.
+        if ('IntersectionObserver' in window) {
+          var io = new IntersectionObserver(function (ents) {
+            if (ents[0].isIntersecting) {
+              io.disconnect();
+              if (!perf) document.getElementById('dibujar').click();
+            }
+          }, { threshold: 0.4 });
+          io.observe(document.querySelector('.perf'));
+        }
+
+        /* Ocho tipos vivos */
+        var precios = [];
+        var cierre = 182;
+        var rp = rng(3);
+        for (var p = 0; p < 40; p++) {
+          var fp = new Date(2026, 8, 1 + p);
+          if (fp.getDay() === 0 || fp.getDay() === 6) continue;
+          var ap = cierre + (rp() - 0.5) * 3;
+          cierre = ap + (rp() - 0.48) * 6;
+          precios.push({
+            fecha: iso(fp),
+            apertura: +ap.toFixed(2),
+            maximo: +(Math.max(ap, cierre) + rp() * 2.5).toFixed(2),
+            minimo: +(Math.min(ap, cierre) - rp() * 2.5).toFixed(2),
+            cierre: +cierre.toFixed(2),
+          });
+        }
+        var calor = [];
+        ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].forEach(function (dia, k) {
+          for (var h = 6; h < 24; h += 2) {
+            var curva = Math.max(0.05, Math.sin(((h - 6) / 18) * Math.PI));
+            calor.push({ hora: pad(h), dia: dia, visitas: Math.round((900 * curva * (k < 5 ? 1 : 0.6) + 40) * (0.9 + rp() * 0.2)) });
+          }
+        });
+        var filas = function (list, keys) {
+          return list.map(function (t) {
+            var o = {};
+            keys.forEach(function (k, i) {
+              o[k] = t[i];
+            });
+            return o;
+          });
+        };
+        var TIPOS = [
+          {
+            n: 'LozCandle',
+            d: 'Precios: apertura, máximo, mínimo y cierre.',
+            o: {
+              data: precios,
+              xAxis: { field: 'fecha', type: 'time' },
+              yAxis: { format: 'currency' },
+              series: [{ type: 'candlestick', field: 'cierre', open: 'apertura', high: 'maximo', low: 'minimo', name: 'AURF' }],
+            },
+          },
+          {
+            n: 'LozHeatmap',
+            d: 'Patrones en una rejilla, día por hora.',
+            o: { data: calor, xAxis: { field: 'hora' }, series: [{ type: 'heatmap', field: 'visitas', name: 'Visitas', y: 'dia' }] },
+          },
+          {
+            n: 'LozSankey',
+            d: 'Flujos entre etapas: de dónde a dónde.',
+            o: {
+              data: filas(
+                [
+                  ['Búsqueda', 'Producto', 7400],
+                  ['Redes', 'Ofertas', 3100],
+                  ['Directo', 'Inicio', 4300],
+                  ['Inicio', 'Producto', 3000],
+                  ['Ofertas', 'Producto', 2000],
+                  ['Producto', 'Compra', 6100],
+                  ['Producto', 'Abandono', 6300],
+                  ['Inicio', 'Abandono', 1300],
+                  ['Ofertas', 'Abandono', 1100],
+                ],
+                ['origen', 'destino', 'sesiones'],
+              ),
+              xAxis: { field: 'origen' },
+              series: [{ type: 'sankey', field: 'sesiones', name: 'Sesiones', to: 'destino' }],
+            },
+          },
+          {
+            n: 'LozRadar',
+            d: 'Perfiles en varias dimensiones.',
+            o: {
+              data: filas(
+                [
+                  ['Batería', 8, 6],
+                  ['Cámara', 7, 9],
+                  ['Pantalla', 8, 8],
+                  ['Precio', 9, 5],
+                  ['Velocidad', 6, 9],
+                ],
+                ['criterio', 'a', 'b'],
+              ),
+              xAxis: { field: 'criterio' },
+              yAxis: { min: 0, max: 10 },
+              series: [
+                { type: 'radar', field: 'a', name: 'Modelo A' },
+                { type: 'radar', field: 'b', name: 'Modelo B' },
+              ],
+            },
+          },
+          {
+            n: 'LozTreemap',
+            d: 'Partes de un todo con muchas categorías.',
+            o: {
+              data: filas(
+                [
+                  ['Laptops', 'Electrónica', 420000],
+                  ['Teléfonos', 'Electrónica', 380000],
+                  ['Tabletas', 'Electrónica', 142000],
+                  ['Sofás', 'Hogar', 210000],
+                  ['Colchones', 'Hogar', 168000],
+                  ['Zapatillas', 'Moda', 176000],
+                  ['Chaquetas', 'Moda', 122000],
+                ],
+                ['producto', 'categoria', 'ventas'],
+              ),
+              xAxis: { field: 'producto' },
+              yAxis: { format: 'currency' },
+              series: [{ type: 'treemap', field: 'ventas', name: 'Ventas', group: 'categoria' }],
+            },
+          },
+          {
+            n: 'LozGauge',
+            d: 'Un indicador contra su rango y su meta.',
+            o: {
+              data: [{ mes: 'Octubre', avance: 0.78 }],
+              xAxis: { field: 'mes' },
+              yAxis: { format: 'percent', min: 0, max: 1 },
+              series: [{ type: 'gauge', field: 'avance', name: 'Avance', target: 0.85 }],
+            },
+          },
+          {
+            n: 'LozFunnel',
+            d: 'Pasos de un proceso y su conversión.',
+            o: {
+              data: filas(
+                [
+                  ['Visitas', 48210],
+                  ['Vieron un producto', 21400],
+                  ['Al carrito', 6830],
+                  ['Compraron', 2540],
+                ],
+                ['paso', 'sesiones'],
+              ),
+              xAxis: { field: 'paso' },
+              series: [{ type: 'funnel', field: 'sesiones', name: 'Sesiones' }],
+            },
+          },
+          {
+            n: 'LozMap',
+            d: 'Un valor por país, coloreado.',
+            o: {
+              data: filas(
+                [
+                  ['MEX', 1830],
+                  ['BRA', 2650],
+                  ['COL', 980],
+                  ['ARG', 760],
+                  ['CHL', 410],
+                  ['PER', 520],
+                  ['ECU', 230],
+                  ['VEN', 180],
+                  ['URY', 95],
+                  ['PRY', 80],
+                  ['BOL', 110],
+                ],
+                ['pais', 'usuarios'],
+              ),
+              xAxis: { field: 'pais' },
+              yAxis: { format: 'compact' },
+              series: [{ type: 'choropleth', field: 'usuarios', name: 'Usuarios (miles)', fit: 'data' }],
+            },
+          },
+        ];
+        var cont = document.getElementById('tipos');
+        TIPOS.forEach(function (t, i) {
+          var cel = document.createElement('div');
+          cel.className = 'type';
+          cel.innerHTML = '<h3>' + t.n + '</h3><p>' + t.d + '</p><div id="tipo-' + i + '"></div>';
+          cont.appendChild(cel);
+          reg(new LozChart('#tipo-' + i, base(Object.assign({ height: 190, legend: false }, t.o))));
+        });
+
+        /* Accesibilidad: lo que anuncia el lector */
+        var MESES = [];
+        for (var m = 0; m < 12; m++) MESES.push('2026-' + pad(m + 1));
+        var rv = rng(11);
+        var ventas = MESES.map(function (mes, i) {
+          var k = [0.82, 0.78, 0.9, 0.94, 1, 0.97, 0.95, 1.02, 0.98, 1.06, 1.24, 1.42][i];
+          return {
+            mes: mes,
+            online: Math.round((41000 + i * 1900 + rv() * 6000) * k),
+            tienda: Math.round((33000 + rv() * 5000) * k),
+            meta: Math.round((74000 + i * 2600) * (i > 9 ? 1.18 : 1)),
+          };
+        });
+        reg(
+          new LozChart(
+            '#g-a11y',
+            base({
+              title: 'Ventas por mes',
+              subtitle: 'Tienda física y canal online frente a la meta',
+              data: ventas,
+              xAxis: { field: 'mes', type: 'time' },
+              yAxis: { format: 'currency' },
+              series: [
+                { type: 'bar', field: 'online', name: 'Online', stack: true },
+                { type: 'bar', field: 'tienda', name: 'Tienda', stack: true },
+                { type: 'line', field: 'meta', name: 'Meta', smooth: true },
+              ],
+              height: 300,
+            }),
+          ),
+        );
+        var srLines = document.getElementById('sr-lines');
+        var vivo = document.querySelector('#g-a11y [aria-live]');
+        if (vivo) {
+          new MutationObserver(function () {
+            var t = vivo.textContent.trim();
+            if (!t) return;
+            if (srLines.firstElementChild && srLines.firstElementChild.textContent.indexOf('Esperando') === 0) srLines.innerHTML = '';
+            var li = document.createElement('li');
+            li.textContent = t;
+            srLines.appendChild(li);
+            while (srLines.children.length > 6) srLines.removeChild(srLines.firstElementChild);
+          }).observe(vivo, { childList: true, characterData: true, subtree: true });
+        }
+
+        /* Paleta */
+        var PAL = {
+          light: ['#e45934', '#009298', '#5e2dad', '#9c1854', '#4c99f8', '#31983d', '#db6ea5', '#e2aa00'],
+          dark: ['#e05630', '#0a999f', '#8b61e3', '#9d4e6b', '#4996f5', '#399e43', '#d1649c', '#b88a06'],
+        };
+        var NOMBRES = ['Coral', 'Petróleo', 'Violeta', 'Vino', 'Cielo', 'Verde', 'Rosa', 'Ocre'];
+        function pintarPaleta() {
+          var t = theme();
+          document.getElementById('swatches').innerHTML = PAL[t]
+            .map(function (c, i) {
+              return '<div class="sw"><i style="background:' + c + '"></i>' + NOMBRES[i] + '<code>' + c + '</code></div>';
+            })
+            .join('');
+        }
+        pintarPaleta();
+
+        /* Pestañas de integración */
+        var SNIPPETS = [
+          {
+            n: 'Script',
+            c: [
+              '<div id="grafico"></div>',
+              '<script src="lozcharts.umd.js"></' + 'script>',
+              '<script>',
+              "  new LozChart('#grafico', {",
+              '    data: ventas,',
+              "    xAxis: { field: 'mes', type: 'time' },",
+              "    series: [{ type: 'bar', field: 'online', name: 'Online' }],",
+              '  });',
+              '</' + 'script>',
+            ].join('\n'),
+          },
+          {
+            n: 'Import',
+            c: [
+              "import { LozChart } from 'lozcharts';",
+              '',
+              'const chart = new LozChart(elemento, opciones);',
+              '// al desmontar el componente:',
+              'chart.destroy();',
+            ].join('\n'),
+          },
+          {
+            n: 'React',
+            c: [
+              "import { Chart } from 'lozcharts/react';",
+              '',
+              'function Ventas({ filas }) {',
+              '  const data = useMemo(() => filas, [filas]);',
+              '  return (',
+              '    <Chart',
+              '      title="Ventas"',
+              '      data={data}',
+              "      xAxis={{ field: 'mes', type: 'time' }}",
+              "      series={[{ type: 'bar', field: 'ventas', name: 'Ventas' }]}",
+              '      zoom',
+              '    />',
+              '  );',
+              '}',
+            ].join('\n'),
+          },
+          {
+            n: 'Angular, Vue, Svelte',
+            c: [
+              "import 'lozcharts/element';",
+              '',
+              '@Component({',
+              "  selector: 'app-ventas',",
+              '  standalone: true,',
+              '  schemas: [CUSTOM_ELEMENTS_SCHEMA],',
+              '  template: `<loz-chart [options]="opciones"></loz-chart>`,',
+              '})',
+              'export class VentasComponent {',
+              "  opciones = { data: [], xAxis: { field: 'mes', type: 'time' }, series: [{ type: 'line', field: 'ventas' }] };",
+              '}',
+            ].join('\n'),
+          },
+          {
+            n: 'Django + HTMX',
+            c: [
+              '<div data-lozchart="#opciones-ventas"></div>',
+              '{{ opciones|json_script:"opciones-ventas" }}',
+              '<script>',
+              '  htmx.onLoad((el) => LozChart.initAll(el));',
+              "  document.body.addEventListener('htmx:beforeSwap', (e) => LozChart.destroyAll(e.detail.target));",
+              '</' + 'script>',
+            ].join('\n'),
+          },
+        ];
+        var tabs = document.getElementById('tabs');
+        var tabCode = document.getElementById('tab-code');
+        function abrir(i, enfocar) {
+          tabs.querySelectorAll('[role=tab]').forEach(function (b, k) {
+            b.setAttribute('aria-selected', String(k === i));
+            b.tabIndex = k === i ? 0 : -1;
+            if (k === i && enfocar) b.focus();
+          });
+          document.getElementById('tab-panel').setAttribute('aria-labelledby', 'tab-' + i);
+          tabCode.innerHTML = hl(SNIPPETS[i].c);
+        }
+        SNIPPETS.forEach(function (s, i) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.setAttribute('role', 'tab');
+          b.id = 'tab-' + i;
+          b.setAttribute('aria-controls', 'tab-panel');
+          b.textContent = s.n;
+          b.addEventListener('click', function () {
+            abrir(i);
+          });
+          b.addEventListener('keydown', function (e) {
+            var n = SNIPPETS.length;
+            if (e.key === 'ArrowRight') abrir((i + 1) % n, true);
+            else if (e.key === 'ArrowLeft') abrir((i - 1 + n) % n, true);
+            else return;
+            e.preventDefault();
+          });
+          tabs.appendChild(b);
+        });
+        abrir(0);
+      })();
+    </script>
+  </body>
+</html>

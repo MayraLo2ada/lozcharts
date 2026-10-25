@@ -1,0 +1,1793 @@
+<!doctype html>
+<!--
+  Plan de diseño · 06 "Plano"
+  1. Concepto: la portada es el juego de láminas técnicas de LozCharts, como el cuaderno de una ingeniera. Cada lámina tiene un gráfico real y, encima, notas a mano y cotas calculadas en vivo sobre ese gráfico (posiciones, píxeles, pasos), que explican cómo funciona por dentro.
+  2. Paleta del sitio: en claro, papel vegetal azulado (#f1f5f7) con rejilla #d3e0e8, tinta azul de dibujo #12324d y lápiz rojo para las notas #b3341a. En oscuro, cianotipo: azul de Prusia #0d3557, líneas blancas #eaf3fb y tiza amarilla #ffd166. Los gráficos usan la paleta Coral, salvo los dos que explican la curva, que van en tinta (palette propia: así se distingue la curva de LozCharts de la que dibujo yo encima).
+  3. Tipografías: Barlow Condensed (rotulado técnico de títulos, cotas y cajetines), Barlow (texto), Architects Daughter (letra a mano de las notas).
+  4. Layout: láminas apiladas con marco, referencias de zona (1 a 6, A a D) y cajetín en la esquina. Cada lámina alterna figura grande y columna de notas; la última es una lista de piezas.
+  5. Elemento audaz: las anotaciones a mano no son dibujos fijos, se calculan sobre el SVG real del gráfico (vértices, rayas del eje, ancho en píxeles) y se recalculan al cambiar datos o tamaño.
+  6. Qué cambié de lo obvio: nada de "hero con titular gigante + gráfico decorativo"; la portada ya es una explicación técnica. Las cifras de las cotas no se escriben a mano en el HTML: las mide la página.
+-->
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Plano</title>
+    <meta name="description" content="Las láminas técnicas de LozCharts: gráficos reales con sus cotas y notas a mano, calculadas en vivo." />
+    <script>
+      (function () {
+        var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Barlow+Condensed:wght@400;500;600&family=Barlow:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --paper: #f1f5f7;
+        --sheet: #f7fafb;
+        --grid-minor: #e1eaef;
+        --grid-major: #ccdbe4;
+        --ink: #12324d;
+        --ink-2: #3f5a70;
+        --ink-3: #5a7184;
+        --note: #b3341a;
+        --note-soft: rgba(179, 52, 26, 0.1);
+        --dim: #2a5d86;
+        --chart-grid: #d5e1e8;
+        --code-bg: #e8eff3;
+        --focus: #b3341a;
+        --hand: 'Architects Daughter', 'Comic Sans MS', cursive;
+        --tech: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+        --body: 'Barlow', system-ui, sans-serif;
+        --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+        --gutter: clamp(16px, 3vw, 40px);
+        color-scheme: light;
+      }
+      :root[data-theme='dark'] {
+        --paper: #0b2e4c;
+        --sheet: #0d3557;
+        --grid-minor: rgba(234, 243, 251, 0.06);
+        --grid-major: rgba(234, 243, 251, 0.13);
+        --ink: #eaf3fb;
+        --ink-2: #c4d8e8;
+        --ink-3: #a3bfd5;
+        --note: #ffd166;
+        --note-soft: rgba(255, 209, 102, 0.12);
+        --dim: #9fd0f5;
+        --chart-grid: rgba(234, 243, 251, 0.16);
+        --code-bg: #0a2c49;
+        --focus: #ffd166;
+        color-scheme: dark;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        color: var(--ink);
+        font-family: var(--body);
+        font-size: 17px;
+        line-height: 1.55;
+        background-color: var(--paper);
+        background-image:
+          linear-gradient(var(--grid-major) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+          linear-gradient(var(--grid-minor) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px);
+        background-size:
+          40px 40px,
+          40px 40px,
+          8px 8px,
+          8px 8px;
+        overflow-x: hidden;
+      }
+      a {
+        color: inherit;
+      }
+      :focus-visible {
+        outline: 2px solid var(--focus);
+        outline-offset: 3px;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+      .skip:focus {
+        position: fixed;
+        top: 8px;
+        left: 8px;
+        width: auto;
+        height: auto;
+        clip: auto;
+        z-index: 10;
+        background: var(--sheet);
+        padding: 8px 12px;
+      }
+
+      /* Barra superior: una regla */
+      .top {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: var(--paper);
+        border-bottom: 1.5px solid var(--ink);
+      }
+      .top-in {
+        max-width: 1360px;
+        margin: 0 auto;
+        padding: 0 var(--gutter);
+        height: 58px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+      .ruler {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 7px;
+        background-image:
+          linear-gradient(90deg, var(--ink) 1px, transparent 1px),
+          linear-gradient(90deg, var(--ink-3) 1px, transparent 1px);
+        background-size:
+          40px 7px,
+          8px 4px;
+        background-repeat: repeat-x;
+        background-position: 0 100%;
+        opacity: 0.55;
+        pointer-events: none;
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        font: 600 22px/1 var(--tech);
+        letter-spacing: 0.01em;
+      }
+      .brand svg {
+        width: 34px;
+        height: 34px;
+        flex: none;
+      }
+      .nav {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
+      .nav a {
+        text-decoration: none;
+        font: 500 18px/1 var(--tech);
+        padding: 8px 10px;
+        color: var(--ink-2);
+      }
+      .nav a:hover {
+        color: var(--ink);
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
+      .icon-btn {
+        width: 36px;
+        height: 36px;
+        margin-left: 8px;
+        display: inline-grid;
+        place-items: center;
+        border: 1.5px solid var(--ink);
+        background: transparent;
+        color: var(--ink);
+        border-radius: 50%;
+        cursor: pointer;
+      }
+      .icon-btn svg {
+        width: 17px;
+        height: 17px;
+      }
+      [data-theme='dark'] .i-moon,
+      [data-theme='light'] .i-sun {
+        display: none;
+      }
+
+      /* Lámina */
+      main {
+        max-width: 1360px;
+        margin: 0 auto;
+        padding: 40px var(--gutter) 80px;
+      }
+      .sheet {
+        position: relative;
+        background: var(--sheet);
+        border: 1.5px solid var(--ink);
+        padding: 30px;
+        margin-bottom: 56px;
+      }
+      .sheet::before {
+        content: '';
+        position: absolute;
+        inset: 8px;
+        border: 0.75px solid var(--ink-3);
+        pointer-events: none;
+      }
+      .zones-x,
+      .zones-y {
+        position: absolute;
+        display: flex;
+        font: 500 12px/1 var(--tech);
+        color: var(--ink-3);
+        pointer-events: none;
+      }
+      .zones-x {
+        top: -1px;
+        left: 8px;
+        right: 8px;
+        height: 9px;
+      }
+      .zones-x span {
+        flex: 1;
+        text-align: center;
+        border-left: 0.75px solid var(--ink-3);
+        line-height: 9px;
+        font-size: 9px;
+      }
+      .zones-x span:first-child {
+        border-left: 0;
+      }
+      .zones-y {
+        top: 8px;
+        bottom: 8px;
+        left: -1px;
+        width: 9px;
+        flex-direction: column;
+      }
+      .zones-y span {
+        flex: 1;
+        display: grid;
+        place-items: center;
+        border-top: 0.75px solid var(--ink-3);
+        font-size: 9px;
+      }
+      .zones-y span:first-child {
+        border-top: 0;
+      }
+      .sheet-grid {
+        position: relative;
+        display: grid;
+        gap: 36px;
+        grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+        align-items: start;
+      }
+      .sheet-grid.flip {
+        grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+      }
+      .sheet-grid.two {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      }
+      .sheet-grid.full {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      h1,
+      h2,
+      h3 {
+        font-family: var(--tech);
+        font-weight: 600;
+        letter-spacing: 0;
+        margin: 0;
+      }
+      h1 {
+        font-size: clamp(3rem, 6.4vw, 6rem);
+        line-height: 0.92;
+        margin-top: 12px;
+      }
+      h2 {
+        font-size: clamp(2.1rem, 3.6vw, 3.2rem);
+        line-height: 0.98;
+      }
+      h3 {
+        font-size: 22px;
+        line-height: 1.1;
+      }
+      .num {
+        font: 500 15px/1 var(--tech);
+        color: var(--ink-3);
+        display: block;
+        margin-bottom: 10px;
+      }
+      .copy p {
+        margin: 14px 0 0;
+        color: var(--ink-2);
+        max-width: 44ch;
+      }
+      .copy p.hand,
+      .hand {
+        font-family: var(--hand);
+        color: var(--note);
+        font-size: 18px;
+        line-height: 1.45;
+      }
+      .cta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 26px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        min-height: 42px;
+        padding: 0 16px;
+        border: 1.5px solid var(--ink);
+        background: transparent;
+        color: var(--ink);
+        font: 500 19px/1 var(--tech);
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .btn:hover {
+        background: var(--note-soft);
+      }
+      .btn.solid {
+        background: var(--ink);
+        color: var(--sheet);
+      }
+      .btn.solid:hover {
+        opacity: 0.88;
+        background: var(--ink);
+      }
+
+      /* Figura con notas */
+      .fig {
+        position: relative;
+        padding: 74px 92px 56px 20px;
+        min-width: 0;
+      }
+      .fig .chart {
+        position: relative;
+        z-index: 1;
+      }
+      .ink {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 2;
+        pointer-events: none;
+        overflow: visible;
+        transition: opacity 0.25s ease;
+      }
+      .ink.wait {
+        opacity: 0;
+      }
+      .ink .n-line {
+        fill: none;
+        stroke: var(--note);
+        stroke-width: 1.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .ink .n-text {
+        fill: var(--note);
+        font-family: var(--hand);
+        font-size: 16px;
+      }
+      .ink .d-line {
+        fill: none;
+        stroke: var(--dim);
+        stroke-width: 1;
+      }
+      .ink .d-text {
+        fill: var(--dim);
+        font: 500 14px var(--tech);
+      }
+      .ink .d-bg {
+        fill: var(--sheet);
+      }
+      .ink .ghost {
+        fill: none;
+        stroke: var(--note);
+        stroke-width: 1.6;
+        stroke-dasharray: 5 5;
+      }
+      .ink .dot {
+        fill: var(--sheet);
+        stroke: var(--ink);
+        stroke-width: 1.6;
+      }
+      .ink .circle {
+        fill: none;
+        stroke: var(--note);
+        stroke-width: 1.6;
+      }
+      .fig-cap {
+        margin: 6px 0 0;
+        font: 400 15px/1.4 var(--tech);
+        color: var(--ink-3);
+      }
+      /* La rejilla de los gráficos toma el color del papel. */
+      .fig .lc-root line[stroke='#e7e6e1'],
+      .fig .lc-root line[stroke='#2f2f2d'] {
+        stroke: var(--chart-grid);
+      }
+
+      /* Cajetín */
+      .titleblock {
+        position: relative;
+        margin: 30px 0 0 auto;
+        width: min(100%, 460px);
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        border: 1.5px solid var(--ink);
+        font-family: var(--tech);
+      }
+      .titleblock div {
+        padding: 6px 10px 7px;
+        border-right: 0.75px solid var(--ink);
+        border-bottom: 0.75px solid var(--ink);
+        min-width: 0;
+      }
+      .titleblock div:nth-child(3n) {
+        border-right: 0;
+      }
+      .titleblock div:nth-last-child(-n + 3) {
+        border-bottom: 0;
+      }
+      .titleblock .wide {
+        grid-column: span 3;
+        border-right: 0;
+      }
+      .titleblock small {
+        display: block;
+        font-size: 12px;
+        color: var(--ink-3);
+        line-height: 1.1;
+      }
+      .titleblock b {
+        font-weight: 500;
+        font-size: 17px;
+        line-height: 1.2;
+      }
+
+      /* Lámina 2: notas de cuaderno */
+      .steps {
+        list-style: none;
+        padding: 0;
+        margin: 22px 0 0;
+        counter-reset: s;
+      }
+      .steps li {
+        position: relative;
+        padding: 0 0 14px 34px;
+        color: var(--ink-2);
+        max-width: 46ch;
+      }
+      .steps li::before {
+        counter-increment: s;
+        content: counter(s);
+        position: absolute;
+        left: 0;
+        top: 1px;
+        width: 22px;
+        height: 22px;
+        border: 1.2px solid var(--ink);
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font: 500 14px/1 var(--tech);
+        color: var(--ink);
+      }
+      .formula {
+        margin-top: 8px;
+        padding: 12px 14px;
+        border: 1px dashed var(--note);
+        font-family: var(--hand);
+        color: var(--note);
+        font-size: 17px;
+        line-height: 1.6;
+        max-width: 46ch;
+      }
+
+      /* Lámina 3: cálculo a mano */
+      .calc {
+        margin-top: 20px;
+        font-family: var(--hand);
+        color: var(--note);
+        font-size: 17px;
+        line-height: 1.75;
+        border-left: 1.5px solid var(--note);
+        padding-left: 14px;
+      }
+      .calc div {
+        display: block;
+      }
+      .calc span {
+        color: var(--ink-2);
+      }
+      .calc .ok {
+        margin-top: 6px;
+        font-family: var(--tech);
+        color: var(--ink);
+        font-size: 16px;
+      }
+      .slider {
+        margin-top: 22px;
+      }
+      .slider label {
+        font: 500 17px/1.2 var(--tech);
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .slider output {
+        font-variant-numeric: tabular-nums;
+      }
+      input[type='range'] {
+        width: 100%;
+        margin-top: 10px;
+        accent-color: var(--note);
+      }
+
+      /* Lámina 4: medidas */
+      .measures {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        border: 1.5px solid var(--ink);
+        margin-top: 8px;
+      }
+      .measures div {
+        padding: 10px 14px 12px;
+        border-right: 0.75px solid var(--ink);
+        min-width: 0;
+      }
+      .measures div:last-child {
+        border-right: 0;
+      }
+      .measures small {
+        display: block;
+        font: 400 14px/1.2 var(--tech);
+        color: var(--ink-3);
+      }
+      .measures b {
+        font: 500 clamp(26px, 3vw, 38px) / 1.1 var(--tech);
+        font-variant-numeric: tabular-nums;
+      }
+      .detail {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 28px;
+        align-items: start;
+      }
+      .inset {
+        border: 1.5px solid var(--ink);
+        border-radius: 50%;
+        aspect-ratio: 1;
+        width: 100%;
+        max-width: 300px;
+        margin: 0 auto;
+        display: block;
+        background: var(--sheet);
+      }
+      .inset-cap {
+        text-align: center;
+        font: 500 16px/1.3 var(--tech);
+        margin-top: 8px;
+      }
+
+      /* Lámina 5: lista de piezas */
+      table.bom {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: var(--tech);
+        font-size: 17px;
+        border: 1.5px solid var(--ink);
+      }
+      .bom th,
+      .bom td {
+        text-align: left;
+        padding: 5px 10px;
+        border-bottom: 0.75px solid var(--ink-3);
+        vertical-align: top;
+      }
+      .bom th {
+        font-weight: 600;
+        border-bottom: 1.5px solid var(--ink);
+      }
+      .bom td:first-child,
+      .bom th:first-child {
+        width: 3.2em;
+        color: var(--ink-3);
+        border-right: 0.75px solid var(--ink-3);
+      }
+      .bom td:nth-child(2) {
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .bom td:nth-child(3) {
+        color: var(--ink-2);
+        font-family: var(--body);
+        font-size: 15px;
+      }
+      .assembly {
+        display: flex;
+        flex-direction: column;
+        gap: 26px;
+      }
+      .assembly ol {
+        margin: 12px 0 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: s;
+      }
+      .assembly ol li {
+        position: relative;
+        padding: 0 0 16px 34px;
+        color: var(--ink-2);
+      }
+      .assembly ol li::before {
+        counter-increment: s;
+        content: counter(s);
+        position: absolute;
+        left: 0;
+        top: 1px;
+        width: 22px;
+        height: 22px;
+        border: 1.2px solid var(--ink);
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font: 500 14px/1 var(--tech);
+        color: var(--ink);
+      }
+      pre {
+        margin: 8px 0 0;
+        padding: 10px 12px;
+        background: var(--code-bg);
+        border-left: 2px solid var(--ink);
+        font: 13px/1.6 var(--mono);
+        color: var(--ink);
+        overflow-x: auto;
+        white-space: pre;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 0.86em;
+      }
+      .inks {
+        display: grid;
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+        border: 1.5px solid var(--ink);
+        margin-top: 10px;
+      }
+      .inks div {
+        border-right: 0.75px solid var(--ink-3);
+        padding: 6px 6px 8px;
+        font: 500 14px/1.2 var(--tech);
+        min-width: 0;
+      }
+      .inks div:last-child {
+        border-right: 0;
+      }
+      .inks i {
+        display: block;
+        height: 28px;
+        margin-bottom: 6px;
+      }
+      .specs {
+        list-style: none;
+        margin: 10px 0 0;
+        padding: 0;
+        color: var(--ink-2);
+      }
+      .specs li {
+        padding: 6px 0;
+        border-bottom: 0.75px dashed var(--ink-3);
+      }
+
+      .final {
+        gap: 0.75px;
+        background: var(--ink);
+        width: 100%;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        margin-top: 0;
+      }
+      .final div:nth-child(3n) {
+        border-right: 0.75px solid var(--ink);
+      }
+      .final div:nth-child(4n) {
+        border-right: 0;
+      }
+      .final div:nth-last-child(-n + 3) {
+        border-bottom: 0.75px solid var(--ink);
+      }
+      .final div:nth-last-child(-n + 4) {
+        border-bottom: 0;
+      }
+      .final div {
+        border: 0 !important;
+        background: var(--sheet);
+      }
+      .final .big {
+        grid-column: span 2;
+        grid-row: span 2;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 14px 16px;
+      }
+      .final .big b {
+        font: 600 clamp(28px, 3.4vw, 44px) / 1 var(--tech);
+      }
+      footer {
+        max-width: 1360px;
+        margin: 0 auto;
+        padding: 0 var(--gutter) 48px;
+        font: 400 16px/1.4 var(--tech);
+        color: var(--ink-3);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 24px;
+        justify-content: space-between;
+      }
+
+      @media (max-width: 980px) {
+        .sheet-grid,
+        .sheet-grid.flip,
+        .sheet-grid.two,
+        .detail {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .flip .copy {
+          order: -1;
+        }
+        .final {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .final .big {
+          grid-row: auto;
+        }
+        .final div:nth-child(n) {
+          border-right: 0.75px solid var(--ink);
+          border-bottom: 0.75px solid var(--ink);
+        }
+        .final div:nth-child(2n + 1) {
+          border-right: 0;
+        }
+      }
+      @media (max-width: 640px) {
+        body {
+          font-size: 16px;
+        }
+        .sheet {
+          padding: 22px 16px 20px;
+          margin-bottom: 36px;
+        }
+        main {
+          padding-top: 24px;
+        }
+        .nav a.hide-sm {
+          display: none;
+        }
+        .fig {
+          padding: 96px 8px 48px 0;
+        }
+        #fig-3 {
+          padding-right: 44px;
+        }
+        .formula {
+          font-size: 14px;
+        }
+        .ink .n-text {
+          font-size: 14px;
+        }
+        .measures {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .measures div:nth-child(2) {
+          border-right: 0;
+        }
+        .measures div:nth-child(-n + 2) {
+          border-bottom: 0.75px solid var(--ink);
+        }
+        .inks {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+        .inks div:nth-child(4) {
+          border-right: 0;
+        }
+        .inks div:nth-child(-n + 4) {
+          border-bottom: 0.75px solid var(--ink-3);
+        }
+        .bom td:nth-child(3) {
+          font-size: 14px;
+        }
+        .bom td,
+        .bom th {
+          padding: 5px 6px;
+        }
+        .final .big {
+          grid-column: span 2;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .ink {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="sr-only skip" href="#contenido">Saltar al contenido</a>
+    <header class="top">
+      <div class="top-in">
+        <a class="brand" href="#contenido" aria-label="LozCharts, inicio">
+          <svg viewBox="0 0 40 40" aria-hidden="true">
+            <circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" stroke-width="0.8" stroke-dasharray="2 2.5" opacity="0.7" />
+            <path d="M20 4v32M4 20h32" stroke="currentColor" stroke-width="0.6" opacity="0.6" />
+            <path d="M20 5 35 20 20 35 5 20Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+            <path d="M10 23c4-1 5-7 9-7s4 6 11-3" fill="none" stroke="var(--note)" stroke-width="2" stroke-linecap="round" />
+          </svg>
+          LozCharts
+        </a>
+        <nav class="nav" aria-label="Principal">
+          <a href="../galeria.html">Galería</a>
+          <a href="../docs.html">Documentación</a>
+          <a class="hide-sm" href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+          <button class="icon-btn" type="button" id="tema" aria-label="Cambiar a modo oscuro">
+            <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /></svg>
+            <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+          </button>
+        </nav>
+      </div>
+      <div class="ruler" aria-hidden="true"></div>
+    </header>
+
+    <main id="contenido">
+      <!-- Lámina 1: portada -->
+      <section class="sheet" aria-labelledby="t1">
+        <div class="zones-x" aria-hidden="true"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span></div>
+        <div class="zones-y" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>
+        <div class="sheet-grid">
+          <div class="copy">
+            <span class="num">Lámina 1 de 5</span>
+            <h1 id="t1">Así se dibuja un gráfico.</h1>
+            <p>
+              LozCharts es una librería de gráficos en SVG, escrita en TypeScript y sin dependencias. Diecinueve tipos,
+              accesibles desde el primero, gratis también para empresas.
+            </p>
+            <p>Estas son sus láminas de diseño: gráficos reales con las cotas a la vista.</p>
+            <p class="hand">Las notas a mano las mide la página sobre el gráfico. Cambia el ancho de la ventana y se recalculan.</p>
+            <div class="cta">
+              <a class="btn solid" href="../galeria.html">Abrir la galería</a>
+              <a class="btn" href="../docs.html">Leer la documentación</a>
+            </div>
+          </div>
+          <figure class="fig" style="margin: 0" id="fig-1">
+            <div class="chart" id="g-1"></div>
+            <svg class="ink wait" aria-hidden="true"></svg>
+            <figcaption class="sr-only">Ventas por mes, tienda física y online frente a la meta, con anotaciones sobre su construcción.</figcaption>
+          </figure>
+        </div>
+        <div class="titleblock">
+          <div class="wide"><small>Título</small><b>Ventas por mes, vista general</b></div>
+          <div><small>Lámina</small><b>1 de 5</b></div>
+          <div><small>Escala</small><b>1:1, en px</b></div>
+          <div><small>Dibujó</small><b>M. Lozada</b></div>
+        </div>
+      </section>
+
+      <!-- Lámina 2: curva monótona -->
+      <section class="sheet" aria-labelledby="t2">
+        <div class="zones-x" aria-hidden="true"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span></div>
+        <div class="zones-y" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>
+        <div class="sheet-grid flip">
+          <figure class="fig" style="margin: 0" id="fig-2">
+            <div class="chart" id="g-2"></div>
+            <svg class="ink wait" aria-hidden="true"></svg>
+            <figcaption class="fig-cap">En tinta, la curva de LozCharts. A trazos, la que dibujaría una spline común con los mismos puntos.</figcaption>
+          </figure>
+          <div class="copy">
+            <span class="num">Lámina 2 de 5</span>
+            <h2 id="t2">Una curva suave que no miente.</h2>
+            <p>
+              Una curva bonita puede pasarse de los datos: entre un 10 y un 50 dibuja un 52 que no existe. La línea
+              suave de LozCharts usa el método de Fritsch y Carlson, y nunca sale del rango entre dos puntos.
+            </p>
+            <ol class="steps">
+              <li>Calcula la pendiente de cada tramo.</li>
+              <li>En cada punto, la tangente es el promedio de las dos vecinas. Si cambian de signo, hay un pico: la tangente es cero y el punto queda plano.</li>
+              <li>Si una tangente es muy empinada para su tramo, la recorta.</li>
+            </ol>
+            <div class="formula">
+              <span style="white-space: nowrap">si d₍ᵢ₋₁₎ · dᵢ ≤ 0 entonces mᵢ = 0</span><br />
+              <span style="white-space: nowrap">si α² + β² &gt; 9 entonces τ = 3 / √(α² + β²)</span>
+            </div>
+            <div class="cta">
+              <button class="btn" type="button" id="otros">Probar con otros datos</button>
+            </div>
+          </div>
+        </div>
+        <div class="titleblock">
+          <div class="wide"><small>Título</small><b>Curva monótona, detalle</b></div>
+          <div><small>Lámina</small><b>2 de 5</b></div>
+          <div><small>Archivo</small><b>core/shapes.ts</b></div>
+          <div><small>Dibujó</small><b>M. Lozada</b></div>
+        </div>
+      </section>
+
+      <!-- Lámina 3: ticks bonitos -->
+      <section class="sheet" aria-labelledby="t3">
+        <div class="zones-x" aria-hidden="true"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span></div>
+        <div class="zones-y" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>
+        <div class="sheet-grid">
+          <div class="copy">
+            <span class="num">Lámina 3 de 5</span>
+            <h2 id="t3">Rayas del eje con números redondos.</h2>
+            <p>
+              El paso del eje siempre es 1, 2 o 5 por una potencia de diez. Mueve el dato más alto y mira la cuenta: la
+              hago a mano aquí y la compruebo con lo que dibujó el gráfico.
+            </p>
+            <div class="slider">
+              <label for="tope">Dato más alto <output id="tope-out" for="tope">8437</output></label>
+              <input type="range" id="tope" min="100" max="600" step="1" value="393" />
+            </div>
+            <div class="calc" id="calc" aria-live="polite"></div>
+          </div>
+          <figure class="fig" style="margin: 0" id="fig-3">
+            <div class="chart" id="g-3"></div>
+            <svg class="ink wait" aria-hidden="true"></svg>
+            <figcaption class="sr-only">Barras con el eje calculado a partir del dato más alto.</figcaption>
+          </figure>
+        </div>
+        <div class="titleblock">
+          <div class="wide"><small>Título</small><b>Ticks bonitos, cálculo</b></div>
+          <div><small>Lámina</small><b>3 de 5</b></div>
+          <div><small>Archivo</small><b>core/ticks.ts</b></div>
+          <div><small>Dibujó</small><b>M. Lozada</b></div>
+        </div>
+      </section>
+
+      <!-- Lámina 4: muchos datos -->
+      <section class="sheet" aria-labelledby="t4">
+        <div class="zones-x" aria-hidden="true"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span></div>
+        <div class="zones-y" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>
+        <div class="sheet-grid full">
+          <div class="copy">
+            <span class="num">Lámina 4 de 5</span>
+            <h2 id="t4">Cien mil puntos en lo que mide un píxel.</h2>
+            <p style="max-width: 70ch">
+              Si caben más de dos datos por columna de píxeles, LozCharts guarda solo cuatro de cada columna: el primero,
+              el mínimo, el máximo y el último. La línea se ve igual y ningún pico se pierde. Estas medidas son de tu
+              navegador, ahora mismo.
+            </p>
+          </div>
+          <div class="measures" aria-live="polite">
+            <div><small>Datos</small><b>100 000</b></div>
+            <div><small>Vértices dibujados</small><b id="m-v">…</b></div>
+            <div><small>Datos por columna</small><b id="m-c">…</b></div>
+            <div><small>Tiempo de dibujo</small><b id="m-t">…</b></div>
+          </div>
+          <div class="detail">
+            <figure class="fig" style="margin: 0; padding-right: 20px" id="fig-4">
+              <div class="chart" id="g-4"></div>
+              <svg class="ink wait" aria-hidden="true"></svg>
+              <figcaption class="fig-cap">Acerca con la rueda y Ctrl, o arrastrando. Al acercar, el detalle vuelve: se dibuja lo visible.</figcaption>
+            </figure>
+            <div>
+              <svg class="inset" viewBox="0 0 300 300" role="img" aria-label="Esquema de una columna de píxeles: de todos sus datos se conservan el primero, el mínimo, el máximo y el último">
+                <g id="inset-g"></g>
+              </svg>
+              <p class="inset-cap">Detalle A: una columna de píxeles (esquema)</p>
+              <p style="text-align: center; margin: 12px 0 0">
+                <button class="btn" type="button" id="redibujar">Volver a dibujar</button>
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="titleblock">
+          <div class="wide"><small>Título</small><b>Reducción de puntos por columna</b></div>
+          <div><small>Lámina</small><b>4 de 5</b></div>
+          <div><small>Archivo</small><b>core/decimate.ts</b></div>
+          <div><small>Dibujó</small><b>M. Lozada</b></div>
+        </div>
+      </section>
+
+      <!-- Lámina 5: lista de piezas y montaje -->
+      <section class="sheet" aria-labelledby="t5">
+        <div class="zones-x" aria-hidden="true"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span></div>
+        <div class="zones-y" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span></div>
+        <span class="num" style="position: relative">Lámina 5 de 5</span>
+        <h2 id="t5" style="position: relative; margin-bottom: 26px">Lista de piezas y montaje.</h2>
+        <div class="sheet-grid two" id="g5">
+          <table class="bom">
+            <caption class="sr-only">Los 19 tipos de gráfico de LozCharts</caption>
+            <thead>
+              <tr><th scope="col">Pos.</th><th scope="col">Pieza</th><th scope="col">Para qué sirve</th></tr>
+            </thead>
+            <tbody id="bom"></tbody>
+          </table>
+          <div class="assembly">
+            <div>
+              <h3>Montaje</h3>
+              <ol>
+                <li>
+                  Instálala desde GitHub. Todavía no está en npm.
+                  <pre>npm install github:MayraLo2ada/lozcharts</pre>
+                </li>
+                <li>
+                  Crea el gráfico. Con <code>&lt;script&gt;</code> o con import:
+                  <pre>new LozChart('#grafico', {
+  data: ventas,
+  xAxis: { field: 'mes', type: 'time' },
+  series: [{ type: 'line', field: 'online', smooth: true }],
+});</pre>
+                </li>
+                <li>
+                  En React, <code>lozcharts/react</code>. En Angular, Vue o Svelte, el elemento:
+                  <pre>&lt;loz-chart options='{"data": [...], ...}'&gt;&lt;/loz-chart&gt;</pre>
+                </li>
+                <li>
+                  Con Django y HTMX, las opciones van en un atributo:
+                  <pre>&lt;div data-lozchart="#opciones-ventas"&gt;&lt;/div&gt;</pre>
+                </li>
+              </ol>
+            </div>
+            <div>
+              <h3>Normas que cumple</h3>
+              <ul class="specs">
+                <li>Se describe a los lectores de pantalla y trae su tabla de datos.</li>
+                <li>Se recorre con el teclado: flechas, Inicio, Fin y Escape.</li>
+                <li>Respeta a quien pide menos movimiento.</li>
+                <li>Exporta PNG, SVG y CSV.</li>
+                <li>Paleta Coral, validada para daltonismo, con tonos propios para el modo oscuro.</li>
+              </ul>
+              <div class="inks" id="inks" aria-label="Paleta Coral"></div>
+            </div>
+          </div>
+        </div>
+        <div class="titleblock final" style="margin-top: 34px">
+          <div class="big"><small>Proyecto</small><b>LozCharts</b><span class="hand" style="font-size: 16px">Hecha en español, desde el primer commit.</span></div>
+          <div><small>Material</small><b>TypeScript, sin dependencias</b></div>
+          <div><small>Peso</small><b>51 KB comprimida</b></div>
+          <div><small>Ensayos</small><b>199 pruebas automáticas</b></div>
+          <div><small>Licencia</small><b>MIT, gratis también para empresas</b></div>
+          <div><small>Dibujó</small><b>Mayra Lozada</b></div>
+          <div><small>Código</small><b><a href="https://github.com/MayraLo2ada/lozcharts">Ver en GitHub</a></b></div>
+          <div><small>Exporta</small><b>PNG, SVG y CSV</b></div>
+          <div><small>Estado</small><b>Aún no está en npm</b></div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>LozCharts, de Mayra Lozada. Licencia MIT.</span>
+      <span>Datos de ejemplo en todas las láminas.</span>
+    </footer>
+
+    <script src="../lib/lozcharts.umd.js"></script>
+    <script>
+      (function () {
+        'use strict';
+        var root = document.documentElement;
+        var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var NS = 'http://www.w3.org/2000/svg';
+        var theme = function () {
+          return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+        };
+        var charts = [];
+        function reg(c) {
+          charts.push(c);
+          return c;
+        }
+        function base(extra) {
+          return Object.assign({ background: false, theme: theme(), animate: !reduce, locale: 'es' }, extra);
+        }
+        // En tinta: para que la curva de LozCharts se distinga de la que dibujo encima.
+        var TINTA = { light: ['#12324d', '#2a5d86'], dark: ['#eaf3fb', '#9fd0f5'] };
+        var nf = new Intl.NumberFormat('es');
+        var nf1 = new Intl.NumberFormat('es', { maximumFractionDigits: 2 });
+
+        /* Tema */
+        var btnTema = document.getElementById('tema');
+        function syncTemaBtn() {
+          btnTema.setAttribute('aria-label', theme() === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+        }
+        syncTemaBtn();
+        btnTema.addEventListener('click', function () {
+          root.setAttribute('data-theme', theme() === 'dark' ? 'light' : 'dark');
+          syncTemaBtn();
+          charts.forEach(function (c) {
+            c.setTheme(theme());
+          });
+          pintarTintas();
+        });
+
+        /* ---------- Utilidades de dibujo sobre el gráfico real ---------- */
+        function el(tag, attrs, parent) {
+          var n = document.createElementNS(NS, tag);
+          for (var k in attrs) n.setAttribute(k, attrs[k]);
+          if (parent) parent.appendChild(n);
+          return n;
+        }
+        function geo(fig) {
+          var fr = fig.getBoundingClientRect();
+          var svg = fig.querySelector('.chart svg');
+          return { fr: fr, svg: svg, W: fr.width, H: fr.height };
+        }
+        function toFig(node, x, y, fr) {
+          var m = node.getScreenCTM();
+          var p = new DOMPoint(x, y).matrixTransform(m);
+          return [p.x - fr.left, p.y - fr.top];
+        }
+        // Área de datos: la extensión de las líneas horizontales de la rejilla.
+        function plot(g) {
+          var L = Infinity,
+            R = -Infinity,
+            T = Infinity,
+            B = -Infinity;
+          g.svg.querySelectorAll('line').forEach(function (ln) {
+            var y1 = ln.getAttribute('y1'),
+              y2 = ln.getAttribute('y2');
+            var x1 = +ln.getAttribute('x1'),
+              x2 = +ln.getAttribute('x2');
+            if (y1 !== y2 || Math.abs(x2 - x1) < 60) return;
+            var b = ln.getBoundingClientRect();
+            L = Math.min(L, b.left - g.fr.left);
+            R = Math.max(R, b.right - g.fr.left);
+            T = Math.min(T, b.top - g.fr.top);
+            B = Math.max(B, b.bottom - g.fr.top);
+          });
+          return { L: L, R: R, T: T, B: B, w: R - L, h: B - T };
+        }
+        // Vértices de una línea (M x,y C … x,y o L x,y), en coordenadas de la figura.
+        function vertices(path, fr) {
+          var d = path.getAttribute('d') || '';
+          var tok = d.match(/[MLCHVZ]|-?\d*\.?\d+(?:e-?\d+)?/gi) || [];
+          var out = [];
+          var cmd = '';
+          var nums = [];
+          function flush() {
+            if (cmd === 'M' || cmd === 'L') for (var i = 0; i + 1 < nums.length; i += 2) out.push([+nums[i], +nums[i + 1]]);
+            else if (cmd === 'C') for (var j = 0; j + 5 < nums.length; j += 6) out.push([+nums[j + 4], +nums[j + 5]]);
+            nums = [];
+          }
+          tok.forEach(function (t) {
+            if (/^[A-Za-z]$/.test(t)) {
+              flush();
+              cmd = t.toUpperCase();
+            } else nums.push(t);
+          });
+          flush();
+          return out.map(function (p) {
+            return toFig(path, p[0], p[1], fr);
+          });
+        }
+        function linePaths(svg) {
+          return Array.prototype.filter
+            .call(svg.querySelectorAll('path'), function (p) {
+              var s = p.getAttribute('stroke');
+              return p.getAttribute('fill') === 'none' && s && s !== 'none' && /[CL]/.test(p.getAttribute('d') || '');
+            })
+            .sort(function (a, b) {
+              return (b.getAttribute('d') || '').length - (a.getAttribute('d') || '').length;
+            });
+        }
+        function inkLayer(fig) {
+          var s = fig.querySelector('.ink');
+          var g = geo(fig);
+          s.setAttribute('viewBox', '0 0 ' + g.W + ' ' + g.H);
+          s.innerHTML = '';
+          var id = 'fl-' + fig.id;
+          var defs = el('defs', {}, s);
+          var mk = el('marker', { id: id, viewBox: '0 0 10 10', refX: '9', refY: '5', markerWidth: '9', markerHeight: '9', orient: 'auto-start-reverse' }, defs);
+          el('path', { d: 'M1 1.5 9 5 1 8.5', fill: 'none', stroke: 'var(--note)', 'stroke-width': '1.6', 'stroke-linecap': 'round' }, mk);
+          return { s: s, g: g, arrow: 'url(#' + id + ')' };
+        }
+        // Una nota a mano: texto y una flecha curva hasta el punto.
+        function note(L, tx, ty, lines, x, y, opts) {
+          opts = opts || {};
+          var anchor = opts.anchor || 'start';
+          var lh = opts.lh || 19;
+          var t = el('text', { class: 'n-text', x: tx, y: ty, 'text-anchor': anchor }, L.s);
+          lines.forEach(function (ln, i) {
+            var sp = el('tspan', { x: tx, dy: i ? lh : 0 }, t);
+            sp.textContent = ln;
+          });
+          if (x === undefined) return t;
+          var bb = t.getBBox();
+          // Sale del borde del texto más cercano al punto.
+          var sx = Math.max(bb.x, Math.min(x, bb.x + bb.width));
+          var sy = y > bb.y + bb.height ? bb.y + bb.height + 5 : y < bb.y ? bb.y - 4 : bb.y + bb.height / 2;
+          if (y >= bb.y && y <= bb.y + bb.height) sx = x < bb.x ? bb.x - 6 : bb.x + bb.width + 6;
+          var mx = (sx + x) / 2,
+            my = (sy + y) / 2;
+          var dx = x - sx,
+            dy = y - sy;
+          var bend = opts.bend === undefined ? 0.22 : opts.bend;
+          var cx = mx - dy * bend,
+            cy = my + dx * bend;
+          // Un poco antes del punto, para no taparlo.
+          var len = Math.hypot(x - cx, y - cy) || 1;
+          var ex = x - ((x - cx) / len) * 5,
+            ey = y - ((y - cy) / len) * 5;
+          el('path', { class: 'n-line', d: 'M' + sx + ' ' + sy + ' Q' + cx + ' ' + cy + ' ' + ex + ' ' + ey, 'marker-end': L.arrow }, L.s);
+          return t;
+        }
+        // Cota: línea con remates oblicuos y el número en medio.
+        function cota(L, x1, y1, x2, y2, label, vertical) {
+          el('path', { class: 'd-line', d: 'M' + x1 + ' ' + y1 + 'L' + x2 + ' ' + y2 }, L.s);
+          [
+            [x1, y1],
+            [x2, y2],
+          ].forEach(function (p) {
+            el('path', { class: 'd-line', d: 'M' + (p[0] - 4) + ' ' + (p[1] + 4) + 'L' + (p[0] + 4) + ' ' + (p[1] - 4), 'stroke-width': 1.4 }, L.s);
+          });
+          var mx = (x1 + x2) / 2,
+            my = (y1 + y2) / 2;
+          var t = el('text', { class: 'd-text', x: mx, y: my, 'text-anchor': 'middle', 'dominant-baseline': 'central' }, L.s);
+          t.textContent = label;
+          if (vertical) t.setAttribute('transform', 'rotate(-90 ' + mx + ' ' + my + ')');
+          var bb = t.getBBox();
+          var bg = el('rect', { class: 'd-bg', x: bb.x - 4, y: bb.y - 1, width: bb.width + 8, height: bb.height + 2 }, null);
+          if (vertical) bg.setAttribute('transform', 'rotate(-90 ' + mx + ' ' + my + ')');
+          L.s.insertBefore(bg, t);
+        }
+        // Línea de referencia fina (extensión de cota).
+        function ext(L, x1, y1, x2, y2) {
+          el('path', { class: 'd-line', d: 'M' + x1 + ' ' + y1 + 'L' + x2 + ' ' + y2, opacity: 0.6 }, L.s);
+        }
+        function cuandoQuieto(fn, extra) {
+          return setTimeout(fn, reduce ? 30 : 700 + (extra || 0));
+        }
+        function observar(fig, fn) {
+          var t;
+          var w = 0;
+          new ResizeObserver(function (e) {
+            var nw = Math.round(e[0].contentRect.width);
+            if (nw === w) return;
+            w = nw;
+            fig.querySelector('.ink').classList.add('wait');
+            clearTimeout(t);
+            t = setTimeout(fn, 320);
+          }).observe(fig);
+        }
+        function rng(seed) {
+          return function () {
+            seed = (seed + 0x6d2b79f5) | 0;
+            var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+        var pad = function (n) {
+          return String(n).padStart(2, '0');
+        };
+        // Paso bonito: el mismo criterio de core/ticks.ts.
+        function niceStep(span, count) {
+          var raw = span / count;
+          var power = Math.pow(10, Math.floor(Math.log10(raw)));
+          var err = raw / power;
+          var factor = err >= 7.07 ? 10 : err >= 3.16 ? 5 : err >= 1.41 ? 2 : 1;
+          return { raw: raw, power: power, err: err, factor: factor, step: factor * power };
+        }
+
+        /* ---------- Lámina 1 ---------- */
+        var r = rng(11);
+        var ventas = [];
+        for (var m = 0; m < 12; m++) {
+          var k = [0.82, 0.78, 0.9, 0.94, 1, 0.97, 0.95, 1.02, 0.98, 1.06, 1.24, 1.42][m];
+          ventas.push({
+            mes: '2026-' + pad(m + 1),
+            online: Math.round((41000 + m * 1900 + r() * 6000) * k),
+            tienda: Math.round((33000 + r() * 5000) * k),
+            meta: Math.round((74000 + m * 2600) * (m > 9 ? 1.18 : 1)),
+          });
+        }
+        var H1 = 360;
+        reg(
+          new LozChart(
+            '#g-1',
+            base({
+              data: ventas,
+              xAxis: { field: 'mes', type: 'time' },
+              yAxis: { format: 'compact' },
+              series: [
+                { type: 'bar', field: 'online', name: 'Online', stack: true },
+                { type: 'bar', field: 'tienda', name: 'Tienda', stack: true },
+                { type: 'line', field: 'meta', name: 'Meta', smooth: true, color: 3 },
+              ],
+              height: H1,
+            }),
+          ),
+        );
+        var fig1 = document.getElementById('fig-1');
+        function notas1() {
+          var L = inkLayer(fig1);
+          var g = L.g;
+          if (!g.svg) return;
+          var P = plot(g);
+          var angosto = g.W < 560;
+          // Cota del alto del área de datos (a la derecha) y del ancho (abajo).
+          var cx = P.R + (angosto ? 0 : 30);
+          if (!angosto) {
+            ext(L, P.R + 4, P.T, cx + 6, P.T);
+            ext(L, P.R + 4, P.B, cx + 6, P.B);
+            cota(L, cx, P.T, cx, P.B, Math.round(P.h) + ' px de datos', true);
+          }
+          var cy = g.H - 22;
+          ext(L, P.L, P.B + 30, P.L, cy + 6);
+          ext(L, P.R, P.B + 30, P.R, cy + 6);
+          cota(L, P.L, cy, P.R, cy, Math.round(P.w) + ' px: lo que mida el contenedor');
+          // Rayas del eje: el paso con la regla 1, 2 o 5 × 10ⁿ.
+          var maxV = Math.max.apply(
+            null,
+            ventas.map(function (v) {
+              return Math.max(v.online + v.tienda, v.meta);
+            }),
+          );
+          var count = Math.max(2, Math.round((H1 - 40) / 56));
+          var s1 = niceStep(maxV, count).step;
+          var hi = Math.ceil(maxV / s1) * s1;
+          var s2 = niceStep(hi, count);
+          var exp = Math.round(Math.log10(s2.power));
+          var sup = String(exp)
+            .split('')
+            .map(function (c) {
+              return '⁰¹²³⁴⁵⁶⁷⁸⁹'[+c];
+            })
+            .join('');
+          note(L, P.L - 6, angosto ? 22 : 30, angosto ? ['paso ' + s2.factor + ' × 10' + sup] : ['rayas cada ' + nf.format(s2.step) + ':', s2.factor + ' × 10' + sup + ', siempre 1, 2 o 5'], P.L - 14, P.T - 2, { bend: -0.25 });
+          // La meta, curva monótona.
+          var lines = linePaths(g.svg);
+          if (lines[0]) {
+            var v = vertices(lines[0], g.fr);
+            var pt = v[Math.min(v.length - 1, 6)];
+            if (pt) note(L, angosto ? g.W * 0.36 : P.L + P.w * 0.36, angosto ? 66 : 22, angosto ? ['meta: curva monótona'] : ['meta: curva monótona,', 'suave sin inventar picos'], pt[0], pt[1], { bend: 0.2 });
+          }
+          // La última barra: punta redondeada, base recta.
+          var barras = Array.prototype.filter.call(g.svg.querySelectorAll('path'), function (p) {
+            var f = p.getAttribute('fill');
+            return f && f !== 'none' && !p.closest('defs');
+          });
+          // Cada serie de barras es un solo path: se mide cada barra (subtrazo) por separado.
+          var ult = null;
+          barras.forEach(function (b) {
+            (b.getAttribute('d') || '').split(/(?=M)/).forEach(function (sub) {
+              if (!sub) return;
+              var tmp = el('path', { d: sub, fill: 'none' }, b.parentNode);
+              var bb = tmp.getBoundingClientRect();
+              tmp.remove();
+              if (bb.width < 3 || bb.height < 3) return;
+              if (!ult || bb.right > ult.right + 1 || (Math.abs(bb.right - ult.right) <= 1 && bb.top < ult.top)) ult = bb;
+            });
+          });
+          if (ult) {
+            var bx = ult.left - g.fr.left + ult.width / 2,
+              by = ult.top - g.fr.top;
+            note(L, angosto ? g.W - 4 : g.W - 6, angosto ? 22 : 30, angosto ? ['punta de 4 px'] : ['punta redonda de 4 px,', 'base recta'], bx, by - 2, { anchor: 'end', bend: -0.2 });
+          }
+          L.s.classList.remove('wait');
+        }
+
+        /* ---------- Lámina 2 ---------- */
+        var MESES2 = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct'];
+        var BASE2 = [12, 13, 12.5, 41, 43, 18, 19, 47, 46.5, 15];
+        function datos2(vals) {
+          return vals.map(function (v, i) {
+            return { mes: MESES2[i], valor: v };
+          });
+        }
+        var g2 = reg(
+          new LozChart(
+            '#g-2',
+            base({
+              data: datos2(BASE2),
+              xAxis: { field: 'mes' },
+              yAxis: { min: 0, max: 60 },
+              series: [{ type: 'line', field: 'valor', name: 'Valor', smooth: true }],
+              palette: TINTA,
+              legend: false,
+              height: 380,
+            }),
+          ),
+        );
+        var fig2 = document.getElementById('fig-2');
+        function catmull(p) {
+          // Spline de Catmull-Rom uniforme, convertida a Béziers.
+          var d = 'M' + p[0][0] + ' ' + p[0][1];
+          var samples = [];
+          for (var i = 0; i < p.length - 1; i++) {
+            var p0 = p[i - 1] || p[i],
+              p1 = p[i],
+              p2 = p[i + 1],
+              p3 = p[i + 2] || p[i + 1];
+            var c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+            var c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+            d += 'C' + c1[0] + ' ' + c1[1] + ' ' + c2[0] + ' ' + c2[1] + ' ' + p2[0] + ' ' + p2[1];
+            for (var t = 0; t <= 1; t += 0.02) {
+              var u = 1 - t;
+              samples.push({
+                i: i,
+                x: u * u * u * p1[0] + 3 * u * u * t * c1[0] + 3 * u * t * t * c2[0] + t * t * t * p2[0],
+                y: u * u * u * p1[1] + 3 * u * u * t * c1[1] + 3 * u * t * t * c2[1] + t * t * t * p2[1],
+              });
+            }
+          }
+          return { d: d, samples: samples };
+        }
+        function notas2() {
+          var L = inkLayer(fig2);
+          var g = L.g;
+          if (!g.svg) return;
+          var angosto = g.W < 560;
+          var line = linePaths(g.svg)[0];
+          if (!line) return;
+          var v = vertices(line, g.fr);
+          var cr = catmull(v);
+          el('path', { class: 'ghost', d: cr.d }, L.s);
+          // El mayor exceso: dónde la spline sale del rango entre sus dos puntos.
+          var peor = null;
+          cr.samples.forEach(function (s) {
+            var a = v[s.i],
+              b = v[s.i + 1];
+            var top = Math.min(a[1], b[1]),
+              bot = Math.max(a[1], b[1]);
+            var exceso = Math.max(top - s.y, s.y - bot, 0);
+            if (exceso > 0.5 && (!peor || exceso > peor.e)) peor = { e: exceso, x: s.x, y: s.y, up: s.y < top };
+          });
+          v.forEach(function (p) {
+            el('circle', { class: 'dot', cx: p[0], cy: p[1], r: 4 }, L.s);
+          });
+          // Un pico de los datos: ahí la monótona queda plana.
+          // El primer pico de izquierda a derecha.
+          var pico = -1;
+          for (var i = 1; i < v.length - 1 && pico < 0; i++) if (v[i][1] < v[i - 1][1] && v[i][1] <= v[i + 1][1]) pico = i;
+          var pp = pico >= 0 ? v[pico] : null;
+          // Dos huecos para las notas, arriba del área: izquierda y derecha.
+          var P2 = plot(g);
+          var slotIzq = { x: P2.L, y: angosto ? 20 : 26, a: 'start' };
+          var slotDer = { x: P2.R, y: angosto ? 62 : 26, a: 'end' };
+          var picoIzq = !peor || (pp && pp[0] <= peor.x);
+          if (peor) {
+            el('circle', { class: 'circle', cx: peor.x, cy: peor.y, r: 13 }, L.s);
+            var sp = picoIzq ? slotDer : slotIzq;
+            note(L, sp.x, sp.y, angosto ? ['la común se pasa ' + Math.round(peor.e) + ' px'] : ['la spline común se pasa ' + Math.round(peor.e) + ' px:', 'dibuja un dato que no existe'], peor.x, peor.y + (peor.up ? -14 : 14), { anchor: sp.a, bend: sp.a === 'end' ? -0.2 : 0.2 });
+          }
+          if (pp) {
+            el('path', { class: 'n-line', d: 'M' + (pp[0] - 26) + ' ' + pp[1] + 'L' + (pp[0] + 26) + ' ' + pp[1], 'stroke-dasharray': '2 4' }, L.s);
+            var sq = picoIzq ? slotIzq : slotDer;
+            note(L, sq.x, sq.y, angosto ? ['plana en el pico'] : ['en el pico la tangente es 0:', 'la curva queda plana'], pp[0], pp[1] - 6, { anchor: sq.a, bend: sq.a === 'end' ? -0.2 : 0.2 });
+          }
+          L.s.classList.remove('wait');
+        }
+        var semilla2 = 5;
+        document.getElementById('otros').addEventListener('click', function () {
+          var rr = rng(semilla2++);
+          var vals = [];
+          var nivel = 10 + rr() * 10;
+          for (var i = 0; i < 10; i++) {
+            if (rr() < 0.45) nivel = 6 + rr() * 48;
+            vals.push(Math.round((nivel + (rr() - 0.5) * 3) * 10) / 10);
+          }
+          fig2.querySelector('.ink').classList.add('wait');
+          g2.setData(datos2(vals));
+          cuandoQuieto(notas2);
+        });
+
+        /* ---------- Lámina 3 ---------- */
+        var H3 = 320;
+        var FORMA = [0.42, 0.63, 0.55, 0.81, 1, 0.74];
+        var NOMBRES3 = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+        function datos3(top) {
+          return FORMA.map(function (f, i) {
+            return { dia: NOMBRES3[i], valor: Math.round(top * f) };
+          });
+        }
+        var tope = document.getElementById('tope');
+        var topeOut = document.getElementById('tope-out');
+        function valorTope() {
+          var s = +tope.value;
+          return Math.round(Math.pow(10, s / 100));
+        }
+        var g3 = reg(
+          new LozChart(
+            '#g-3',
+            base({
+              data: datos3(valorTope()),
+              xAxis: { field: 'dia' },
+              yAxis: { format: 'number' },
+              series: [{ type: 'bar', field: 'valor', name: 'Valor', color: 2 }],
+              legend: false,
+              height: H3,
+            }),
+          ),
+        );
+        var fig3 = document.getElementById('fig-3');
+        var calc = document.getElementById('calc');
+        function cuenta() {
+          var top = valorTope();
+          topeOut.textContent = nf.format(top);
+          var count = Math.max(2, Math.round((H3 - 40) / 56));
+          var a = niceStep(top, count);
+          var hi = Math.ceil(top / a.step) * a.step;
+          var b = niceStep(hi, count);
+          var paso = b.step;
+          var hi2 = Math.ceil(top / paso) * paso;
+          var umbral = a.factor === 10 ? '≥ 7,07' : a.factor === 5 ? '≥ 3,16' : a.factor === 2 ? '≥ 1,41' : '< 1,41';
+          var filas = [
+            ['rayas que caben', '(' + H3 + ' − 40) / 56 ≈ ' + count],
+            ['paso crudo', nf.format(top) + ' / ' + count + ' = ' + nf1.format(a.raw)],
+            ['entre 10ⁿ', nf1.format(a.raw) + ' / ' + nf.format(a.power) + ' = ' + nf1.format(a.err) + ' ' + umbral + ' → ' + a.factor],
+            ['paso', a.factor + ' × ' + nf.format(a.power) + ' = ' + nf.format(a.step) + ', eje de 0 a ' + nf.format(hi)],
+          ];
+          if (b.step !== a.step) filas.push(['segunda pasada', nf.format(hi) + ' / ' + count + ' → paso ' + nf.format(paso) + ', de 0 a ' + nf.format(hi2)]);
+          else filas.push(['segunda pasada', 'el paso se queda en ' + nf.format(paso)]);
+          calc.innerHTML = filas
+            .map(function (f) {
+              return '<div><span>' + f[0] + ':</span> ' + f[1] + '</div>';
+            })
+            .join('');
+          return { paso: paso, hi: hi2 };
+        }
+        function notas3(esperado) {
+          var L = inkLayer(fig3);
+          var g = L.g;
+          if (!g.svg) return;
+          var P = plot(g);
+          // Las rayas reales: líneas horizontales de la rejilla.
+          var ys = [];
+          g.svg.querySelectorAll('line').forEach(function (ln) {
+            if (ln.getAttribute('y1') !== ln.getAttribute('y2')) return;
+            if (Math.abs(+ln.getAttribute('x2') - +ln.getAttribute('x1')) < 60) return;
+            var b = ln.getBoundingClientRect();
+            ys.push(b.top - g.fr.top + b.height / 2);
+          });
+          ys.sort(function (a, b) {
+            return a - b;
+          });
+          // Cotas entre rayas consecutivas (a la derecha).
+          var cx = P.R + 22;
+          for (var i = 0; i + 1 < ys.length; i++) {
+            ext(L, P.R + 4, ys[i], cx + 6, ys[i]);
+            if (i + 2 === ys.length) ext(L, P.R + 4, ys[i + 1], cx + 6, ys[i + 1]);
+            cota(L, cx, ys[i], cx, ys[i + 1], nf.format(esperado.paso), true);
+          }
+          // Comprobación con lo que dibujó el gráfico.
+          var rayas = ys.length;
+          var ok = rayas === Math.round(esperado.hi / esperado.paso) + 1;
+          var linea = document.createElement('div');
+          linea.className = 'ok';
+          linea.textContent = ok
+            ? 'El gráfico dibujó ' + rayas + ' rayas, de 0 a ' + nf.format(esperado.hi) + '. Cuadra.'
+            : 'El gráfico dibujó ' + rayas + ' rayas.';
+          calc.appendChild(linea);
+          note(L, cx - 20, 30, g.W < 560 ? ['paso: ' + nf.format(esperado.paso)] : ['cada tramo vale ' + nf.format(esperado.paso)], cx - 2, ys[0] - 4, { anchor: 'end', bend: -0.3 });
+          L.s.classList.remove('wait');
+        }
+        var t3;
+        tope.addEventListener('input', function () {
+          var e = cuenta();
+          fig3.querySelector('.ink').classList.add('wait');
+          g3.setData(datos3(valorTope()));
+          clearTimeout(t3);
+          t3 = cuandoQuieto(function () {
+            notas3(e);
+          });
+        });
+
+        /* ---------- Lámina 4 ---------- */
+        var fig4 = document.getElementById('fig-4');
+        var g4 = null;
+        var datos4 = null;
+        var t4;
+        function crear4() {
+          if (!datos4) {
+            var rr = rng(7);
+            datos4 = new Array(100000);
+            var v = 50;
+            for (var i = 0; i < 100000; i++) {
+              v += (rr() - 0.5) * 2;
+              if (i === 61800) v += 110;
+              if (i === 61812) v -= 110;
+              datos4[i] = { x: i, valor: Math.round(v * 100) / 100 };
+            }
+          }
+          if (g4) {
+            charts.splice(charts.indexOf(g4), 1);
+            g4.destroy();
+          }
+          var t0 = performance.now();
+          g4 = reg(
+            new LozChart(
+              '#g-4',
+              base({
+                data: datos4,
+                xAxis: { field: 'x', type: 'linear', format: 'compact' },
+                yAxis: { format: 'number' },
+                series: [{ type: 'line', field: 'valor', name: 'Serie de prueba' }],
+                legend: false,
+                animate: false,
+                zoom: true,
+                height: 300,
+                onZoom: function () {
+                  fig4.querySelector('.ink').classList.add('wait');
+                  clearTimeout(t4);
+                  t4 = setTimeout(notas4, 320);
+                },
+              }),
+            ),
+          );
+          var ms = performance.now() - t0;
+          document.getElementById('m-t').textContent = Math.round(ms) + ' ms';
+          requestAnimationFrame(notas4);
+        }
+        function notas4() {
+          var L = inkLayer(fig4);
+          var g = L.g;
+          if (!g.svg) return;
+          var P = plot(g);
+          var line = linePaths(g.svg)[0];
+          if (!line) return;
+          var d = line.getAttribute('d') || '';
+          var nv = (d.match(/[ML]/g) || []).length;
+          document.getElementById('m-v').textContent = nf.format(nv);
+          document.getElementById('m-c').textContent = '≈ ' + nf.format(Math.round(100000 / Math.max(1, P.w)));
+          // El pico angosto (12 datos de 100 000): se conserva.
+          var v = vertices(line, g.fr);
+          // El vértice más alto cerca de la posición del pico (dato 61 806).
+          var rango = g4.zoomRange || [0, 99999];
+          var fx = (61806 - rango[0]) / Math.max(1, rango[1] - rango[0]);
+          var px = P.L + fx * P.w;
+          var top = null;
+          v.forEach(function (q) {
+            if (Math.abs(q[0] - px) < 6 && (!top || q[1] < top[1])) top = q;
+          });
+          if (top) {
+            el('circle', { class: 'circle', cx: top[0], cy: top[1] + 10, r: 22 }, L.s);
+            var izq = top[0] > g.W * 0.55;
+            note(L, izq ? top[0] - 34 : top[0] + 34, Math.max(26, top[1] - 26), g.W < 560 ? ['pico de 12 datos:', 'sigue ahí'] : ['un pico de 12 datos entre 100 000:', 'sigue ahí. Detalle A'], top[0] + (izq ? -20 : 20), top[1] + 2, { anchor: izq ? 'end' : 'start', bend: 0.2 });
+          }
+          L.s.classList.remove('wait');
+        }
+        document.getElementById('redibujar').addEventListener('click', crear4);
+        // Esquema de una columna de píxeles.
+        (function () {
+          var gI = document.getElementById('inset-g');
+          // 26 datos que caen en la misma columna: en x apenas se mueven, en y van y vienen.
+          var Y = [150, 132, 171, 118, 96, 140, 188, 162, 121, 84, 110, 156, 203, 226, 190, 147, 131, 175, 160, 122, 104, 139, 166, 151, 128, 136];
+          var pts = Y.map(function (y, i) {
+            return [100 + i * 4, y];
+          });
+          var iMin = 0,
+            iMax = 0;
+          pts.forEach(function (p, i) {
+            if (p[1] > pts[iMax][1]) iMax = i;
+            if (p[1] < pts[iMin][1]) iMin = i;
+          });
+          // En pantalla, y menor es valor mayor: iMin es el máximo del dato.
+          var html = '';
+          html += '<rect x="92" y="54" width="116" height="196" fill="var(--note-soft)" stroke="var(--note)" stroke-dasharray="4 4"/>';
+          html += '<text x="150" y="42" text-anchor="middle" font-family="Barlow Condensed" font-size="14" fill="var(--ink-3)">1 px de ancho, ampliado</text>';
+          pts.forEach(function (p) {
+            html += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="2.6" fill="var(--ink-3)" opacity="0.6"/>';
+          });
+          var keep = [
+            [0, 'primero', 'izq'],
+            [iMin, 'máximo', 'der'],
+            [iMax, 'mínimo', 'der'],
+            [pts.length - 1, 'último', 'der'],
+          ];
+          var ord = keep.slice().sort(function (a, b) {
+            return a[0] - b[0];
+          });
+          html +=
+            '<path d="M' +
+            ord
+              .map(function (k) {
+                return pts[k[0]][0] + ' ' + pts[k[0]][1];
+              })
+              .join(' L') +
+            '" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round"/>';
+          keep.forEach(function (k) {
+            var p = pts[k[0]];
+            html += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="5" fill="var(--sheet)" stroke="var(--note)" stroke-width="2"/>';
+            var izq = k[2] === 'izq';
+            var lx = izq ? 84 : 216;
+            html += '<path d="M' + lx + ' ' + p[1] + ' L' + (izq ? p[0] - 7 : p[0] + 7) + ' ' + p[1] + '" stroke="var(--note)" stroke-width="1.2"/>';
+            html += '<text x="' + (izq ? lx - 4 : lx + 4) + '" y="' + (p[1] + 5) + '" text-anchor="' + (izq ? 'end' : 'start') + '" font-family="Architects Daughter" font-size="15" fill="var(--note)">' + k[1] + '</text>';
+          });
+          html += '<text x="150" y="272" text-anchor="middle" font-family="Barlow Condensed" font-size="14" fill="var(--ink-3)">26 datos, se dibujan 4</text>';
+          gI.innerHTML = html;
+        })();
+
+        /* ---------- Lámina 5 ---------- */
+        var PIEZAS = [
+          ['LozLine', 'Evolución de un valor'],
+          ['LozBar', 'Comparar cantidades, agrupadas o apiladas'],
+          ['LozArea', 'Volumen acumulado'],
+          ['LozStep', 'Valores que cambian de golpe'],
+          ['LozRange', 'Banda entre un mínimo y un máximo'],
+          ['LozScatter', 'Relación entre dos números'],
+          ['LozBubble', 'Dispersión con un tercer valor como tamaño'],
+          ['LozCandle', 'Precios: apertura, máximo, mínimo y cierre'],
+          ['LozOHLC', 'Lo mismo que las velas, en trazos'],
+          ['LozPie', 'Partes de un todo, pocas categorías'],
+          ['LozDonut', 'Como el pie, con el total al centro'],
+          ['LozGauge', 'Un indicador contra su rango y su meta'],
+          ['LozRadar', 'Perfiles en varias dimensiones'],
+          ['LozFunnel', 'Pasos de un proceso y su conversión'],
+          ['LozHeatmap', 'Patrones en una rejilla, día por hora'],
+          ['LozTreemap', 'Partes de un todo con muchas categorías'],
+          ['LozSankey', 'Flujos entre etapas'],
+          ['LozMap', 'Mapas coropléticos y de burbujas'],
+          ['LozMultiples', 'Cuadrícula de gráficos pequeños'],
+        ];
+        document.getElementById('bom').innerHTML = PIEZAS.map(function (p, i) {
+          return '<tr><td>' + (i + 1) + '</td><td>' + p[0] + '</td><td>' + p[1] + '</td></tr>';
+        }).join('');
+        var PAL = {
+          light: ['#e45934', '#009298', '#5e2dad', '#9c1854', '#4c99f8', '#31983d', '#db6ea5', '#e2aa00'],
+          dark: ['#e05630', '#0a999f', '#8b61e3', '#9d4e6b', '#4996f5', '#399e43', '#d1649c', '#b88a06'],
+        };
+        var NOMBRES = ['Coral', 'Petróleo', 'Violeta', 'Vino', 'Cielo', 'Verde', 'Rosa', 'Ocre'];
+        function pintarTintas() {
+          document.getElementById('inks').innerHTML = PAL[theme()]
+            .map(function (c, i) {
+              return '<div><i style="background:' + c + '"></i>' + NOMBRES[i] + '</div>';
+            })
+            .join('');
+        }
+        pintarTintas();
+
+        /* ---------- Arranque ---------- */
+        function todas() {
+          notas1();
+          notas2();
+          notas3(cuenta());
+        }
+        var listo = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+        listo.then(function () {
+          cuandoQuieto(function () {
+            todas();
+            observar(fig1, notas1);
+            observar(fig2, notas2);
+            observar(fig3, function () {
+              notas3(cuenta());
+            });
+            observar(fig4, notas4);
+          }, 100);
+        });
+        // La lámina 4 se dibuja cuando se acerca a la pantalla (100 000 puntos no se calculan de balde).
+        if ('IntersectionObserver' in window) {
+          var io = new IntersectionObserver(
+            function (ents) {
+              if (ents[0].isIntersecting) {
+                io.disconnect();
+                crear4();
+              }
+            },
+            { rootMargin: '400px' },
+          );
+          io.observe(fig4);
+        } else crear4();
+      })();
+    </script>
+  </body>
+</html>

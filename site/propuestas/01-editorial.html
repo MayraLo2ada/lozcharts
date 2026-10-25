@@ -1,0 +1,1356 @@
+<!doctype html>
+<!--
+  Plan de diseño, propuesta 01 "Número uno"
+  1. Concepto: la portada es la portada de una revista de datos, número 1. La "foto de portada" es un gráfico real de la galería (visitas diarias de un año) y la historia que cuenta es la del titular.
+  2. Paleta: papel neutro frío #f4f4f1 (no crema), tinta #121211, gris de pie de foto #56544f, filetes en tinta; la única tinta de color es el coral #e45934 de la marca, como una tinta directa de imprenta. Oscuro: papel #171716, tinta #efeee9.
+  3. Tipografías: Bodoni Moda (cabecera y titulares, alto contraste de revista de moda), Newsreader (texto corrido y entradillas), Libre Franklin (pies de foto, menú y etiquetas de los gráficos, con números tabulares).
+  4. Layout: rejilla de 12 columnas como una maqueta impresa: cabecera a todo el ancho, gráfico a sangre, sumarios con número de página, reportajes a dos o tres columnas con capitular, colofón al final.
+  5. Lo audaz: la cabecera "LozCharts" gigante queda DETRÁS del gráfico, como el nombre de la revista detrás de la cabeza de la modelo; la curva de visitas la cruza en julio y en octubre.
+  6. Qué cambié de lo obvio: nada de hero con texto a la izquierda y demo a la derecha, ni tarjetas de beneficios; el gráfico es la portada, los beneficios son artículos con titular, y la cifra de rendimiento se mide en vivo en el equipo de quien lee.
+-->
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts, número uno</title>
+    <meta name="description" content="LozCharts: gráficos en SVG, sin dependencias, accesibles y en español. Propuesta editorial de portada." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..700&family=Libre+Franklin:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --papel: #f4f4f1;
+        --tinta: #121211;
+        --gris: #56544f;
+        --filete: #121211;
+        --filete-suave: #cfcec8;
+        --coral: #e45934;
+        --coral-texto: #b83d1b; /* coral oscurecido para texto chico: 5,2:1 sobre el papel */
+        --codigo: #e9e8e3;
+        --foco: #e45934;
+        --serif-display: 'Bodoni Moda', 'Didot', Georgia, serif;
+        --serif: 'Newsreader', Georgia, serif;
+        --sans: 'Libre Franklin', 'Helvetica Neue', Arial, sans-serif;
+        --margen: clamp(16px, 4vw, 56px);
+        --gutter: clamp(16px, 2vw, 28px);
+        --max: 1360px;
+        color-scheme: light;
+      }
+      :root[data-theme='dark'] {
+        --papel: #171716;
+        --tinta: #efeee9;
+        --gris: #b9b8ae;
+        --filete: #efeee9;
+        --filete-suave: #3a3a37;
+        --coral: #e05630;
+        --coral-texto: #f07a55;
+        --codigo: #222220;
+        --foco: #f07a55;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--papel);
+        color: var(--tinta);
+        font-family: var(--serif);
+        font-size: 19px;
+        line-height: 1.5;
+        overflow-x: hidden;
+      }
+      a {
+        color: inherit;
+      }
+      :focus-visible {
+        outline: 2px solid var(--foco);
+        outline-offset: 3px;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+      .saltar:focus {
+        position: fixed;
+        top: 8px;
+        left: 8px;
+        width: auto;
+        height: auto;
+        clip: auto;
+        background: var(--papel);
+        padding: 8px 12px;
+        z-index: 10;
+        font-family: var(--sans);
+      }
+      .hoja {
+        max-width: var(--max);
+        margin: 0 auto;
+        padding: 0 var(--margen);
+      }
+
+      /* Folio: la línea fina de arriba de la revista */
+      .folio {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 0 12px;
+        border-bottom: 1px solid var(--filete);
+        font-family: var(--sans);
+        font-size: 13px;
+      }
+      .folio p {
+        margin: 0;
+      }
+      .folio nav {
+        display: flex;
+        align-items: center;
+        gap: clamp(12px, 2vw, 28px);
+      }
+      .folio nav a {
+        text-decoration: none;
+        font-weight: 500;
+        padding: 6px 0;
+      }
+      .folio nav a:hover {
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
+      .tema {
+        width: 36px;
+        height: 36px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--filete);
+        border-radius: 50%;
+        background: transparent;
+        color: var(--tinta);
+        cursor: pointer;
+      }
+      .tema svg {
+        width: 18px;
+        height: 18px;
+      }
+      .tema .luna {
+        display: none;
+      }
+      :root[data-theme='dark'] .tema .sol {
+        display: none;
+      }
+      :root[data-theme='dark'] .tema .luna {
+        display: block;
+      }
+
+      /* Portada */
+      .portada {
+        position: relative;
+        padding-top: clamp(4px, 1vw, 12px);
+      }
+      .cabecera {
+        position: relative;
+        z-index: 0;
+        margin: 0;
+        font-family: var(--serif-display);
+        font-optical-sizing: auto;
+        font-variation-settings: 'opsz' 96;
+        font-weight: 800;
+        font-size: clamp(64px, 17.6vw, 246px);
+        line-height: 0.86;
+        letter-spacing: -0.035em;
+        text-align: center;
+        white-space: nowrap;
+        user-select: none;
+      }
+      .numero {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 0 0 clamp(6px, 1vw, 14px);
+        padding: 8px 0;
+        font-family: var(--sans);
+        font-size: 13px;
+        color: var(--gris);
+        border-bottom: 3px double var(--filete);
+      }
+      .numero span:nth-child(2) {
+        text-align: center;
+      }
+      .foto {
+        position: relative;
+        margin: 0;
+      }
+      #grafico-portada {
+        position: relative;
+        z-index: 1;
+        font-family: var(--sans);
+        margin-top: clamp(-150px, -10vw, -40px); /* el gráfico sube y pasa por encima de la cabecera */
+      }
+      .sobre {
+        position: absolute;
+        z-index: 2;
+        left: 52px;
+        top: calc(clamp(40px, 10vw, 150px) + clamp(28px, 3.4vw, 52px));
+        width: 48%;
+        margin: 0;
+        pointer-events: none;
+        font-family: var(--serif-display);
+        font-variation-settings: 'opsz' 96;
+        font-weight: 700;
+        font-size: clamp(34px, 3.7vw, 56px);
+        line-height: 0.98;
+        letter-spacing: -0.02em;
+        text-shadow:
+          0 0 4px var(--papel),
+          0 0 8px var(--papel),
+          0 0 14px var(--papel);
+      }
+      .bajo {
+        display: grid;
+        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+        gap: calc(var(--gutter) * 1.6);
+        align-items: start;
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--filete);
+      }
+      .bajo .entradilla {
+        margin: 0;
+        font-size: clamp(18px, 1.6vw, 23px);
+        line-height: 1.42;
+        font-style: italic;
+        color: var(--gris);
+      }
+      .pie {
+        margin: 0;
+        font-family: var(--sans);
+        font-size: 13px;
+        line-height: 1.45;
+        color: var(--gris);
+        max-width: 70em;
+      }
+      .pie b {
+        color: var(--tinta);
+        font-weight: 600;
+      }
+
+      /* Sumarios: los titulares de la portada que llevan a cada página */
+      .sumarios {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--gutter);
+        margin: clamp(28px, 4vw, 48px) 0 0;
+        padding: 0;
+        list-style: none;
+        border-top: 1px solid var(--filete);
+      }
+      .sumarios li {
+        padding-top: 14px;
+      }
+      .sumarios a {
+        display: block;
+        text-decoration: none;
+      }
+      .sumarios .pag {
+        font-family: var(--sans);
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--coral-texto);
+        font-variant-numeric: tabular-nums;
+      }
+      .sumarios strong {
+        display: block;
+        margin-top: 4px;
+        font-family: var(--serif-display);
+        font-variation-settings: 'opsz' 48;
+        font-weight: 600;
+        font-size: clamp(22px, 2vw, 28px);
+        line-height: 1.08;
+      }
+      .sumarios span:last-child {
+        display: block;
+        margin-top: 6px;
+        font-size: 16px;
+        line-height: 1.4;
+        color: var(--gris);
+      }
+      .sumarios a:hover strong {
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 5px;
+      }
+
+      /* Artículos */
+      .articulo {
+        padding: clamp(56px, 8vw, 112px) 0 0;
+      }
+      .cintillo {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 0;
+        border-top: 3px solid var(--filete);
+        border-bottom: 1px solid var(--filete);
+        font-family: var(--sans);
+        font-size: 13px;
+      }
+      .cintillo span:last-child {
+        font-variant-numeric: tabular-nums;
+      }
+      .articulo h2 {
+        margin: clamp(20px, 3vw, 36px) 0 0;
+        max-width: 15em;
+        font-family: var(--serif-display);
+        font-variation-settings: 'opsz' 96;
+        font-weight: 700;
+        font-size: clamp(42px, 6.4vw, 96px);
+        line-height: 0.96;
+        letter-spacing: -0.025em;
+      }
+      .articulo .entradilla {
+        margin: 18px 0 0;
+        max-width: 34em;
+        font-size: clamp(19px, 1.7vw, 24px);
+        line-height: 1.38;
+        font-style: italic;
+        color: var(--gris);
+      }
+      .columnas {
+        columns: 2 18em;
+        column-gap: calc(var(--gutter) * 1.6);
+        column-rule: 1px solid var(--filete-suave);
+        margin-top: 28px;
+        max-width: 64em;
+      }
+      .columnas p {
+        margin: 0 0 0.9em;
+        hyphens: auto;
+      }
+      .capitular::first-letter {
+        float: left;
+        font-family: var(--serif-display);
+        font-variation-settings: 'opsz' 96;
+        font-weight: 700;
+        font-size: 4.6em;
+        line-height: 0.82;
+        padding: 0.06em 0.08em 0 0;
+        color: var(--coral);
+      }
+
+      /* Reportaje gráfico: maqueta irregular de fotos */
+      .maqueta {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: clamp(28px, 3vw, 44px) var(--gutter);
+        margin-top: clamp(32px, 4vw, 56px);
+      }
+      .maqueta figure {
+        margin: 0;
+        min-width: 0;
+      }
+      .maqueta .lienzo {
+        font-family: var(--sans);
+        border-top: 1px solid var(--filete);
+        padding-top: 10px;
+      }
+      .maqueta figcaption {
+        margin-top: 8px;
+        font-family: var(--sans);
+        font-size: 13px;
+        line-height: 1.45;
+        color: var(--gris);
+      }
+      .maqueta figcaption b {
+        color: var(--tinta);
+        font-weight: 600;
+      }
+      .a7 {
+        grid-column: span 7;
+      }
+      .a5 {
+        grid-column: span 5;
+      }
+      .a4 {
+        grid-column: span 4;
+      }
+      .a8 {
+        grid-column: span 8;
+      }
+      .a6 {
+        grid-column: span 6;
+      }
+      .cita {
+        grid-column: span 4;
+        align-self: center;
+        margin: 0;
+        padding: 18px 0;
+        border-top: 3px solid var(--filete);
+        border-bottom: 1px solid var(--filete);
+        font-family: var(--serif-display);
+        font-variation-settings: 'opsz' 60;
+        font-weight: 500;
+        font-style: italic;
+        font-size: clamp(26px, 2.4vw, 34px);
+        line-height: 1.12;
+      }
+      .cita p {
+        margin: 0;
+      }
+      .cita a {
+        display: inline-block;
+        margin-top: 14px;
+        font-family: var(--sans);
+        font-style: normal;
+        font-size: 15px;
+        font-weight: 600;
+        text-underline-offset: 4px;
+      }
+
+      /* Rendimiento */
+      .cifra-grande {
+        display: grid;
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+        gap: var(--gutter);
+        align-items: end;
+        margin-top: clamp(24px, 3vw, 40px);
+      }
+      .cifra {
+        margin: 0;
+        font-family: var(--serif-display);
+        font-variation-settings: 'opsz' 96;
+        font-weight: 800;
+        font-size: clamp(110px, 17vw, 250px);
+        line-height: 0.8;
+        letter-spacing: -0.04em;
+        font-variant-numeric: lining-nums;
+        white-space: nowrap;
+      }
+      .cifra small {
+        font-size: 0.32em;
+        font-weight: 600;
+        letter-spacing: 0;
+        margin-left: 0.08em;
+      }
+      .cifra-nota {
+        margin: 14px 0 0;
+        font-family: var(--sans);
+        font-size: 14px;
+        color: var(--gris);
+      }
+      .cifra-nota button {
+        font: inherit;
+        font-weight: 600;
+        color: var(--tinta);
+        background: none;
+        border: 0;
+        border-bottom: 1px solid currentColor;
+        padding: 2px 0;
+        cursor: pointer;
+      }
+      #grafico-cien {
+        font-family: var(--sans);
+        border-top: 1px solid var(--filete);
+        padding-top: 10px;
+      }
+
+      /* Accesibilidad */
+      .oido {
+        display: grid;
+        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+        gap: calc(var(--gutter) * 1.6);
+        margin-top: clamp(28px, 3vw, 44px);
+        align-items: start;
+      }
+      #grafico-oido {
+        font-family: var(--sans);
+        border-top: 1px solid var(--filete);
+        padding-top: 10px;
+      }
+      .transcripcion {
+        border-left: 3px solid var(--coral);
+        padding: 2px 0 2px 20px;
+      }
+      .transcripcion h3 {
+        margin: 0;
+        font-family: var(--sans);
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .transcripcion .dice {
+        margin: 10px 0 0;
+        font-family: var(--serif-display);
+        font-variation-settings: 'opsz' 40;
+        font-style: italic;
+        font-size: clamp(21px, 1.8vw, 26px);
+        line-height: 1.3;
+        min-height: 4.2em;
+      }
+      .transcripcion .ayuda {
+        margin: 14px 0 0;
+        font-family: var(--sans);
+        font-size: 14px;
+        color: var(--gris);
+      }
+      kbd {
+        font-family: var(--sans);
+        font-size: 12px;
+        font-weight: 600;
+        border: 1px solid var(--filete-suave);
+        border-bottom-width: 2px;
+        border-radius: 4px;
+        padding: 1px 6px;
+        color: var(--tinta);
+      }
+      .carta {
+        margin-top: 28px;
+      }
+      .carta h3 {
+        margin: 0 0 10px;
+        font-family: var(--sans);
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .tintas {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 4px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .tintas li {
+        aspect-ratio: 1 / 1.25;
+        border-radius: 2px;
+        position: relative;
+      }
+      .tintas li span {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(100% + 6px);
+        font-family: var(--sans);
+        font-size: 11px;
+        color: var(--gris);
+        text-align: center;
+      }
+      .carta p {
+        margin: 34px 0 0;
+        font-size: 16px;
+        color: var(--gris);
+      }
+
+      /* Recetario */
+      .recetas {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 40px var(--gutter);
+        margin-top: clamp(28px, 3vw, 44px);
+      }
+      .receta {
+        min-width: 0;
+        border-top: 1px solid var(--filete);
+        padding-top: 12px;
+      }
+      .receta h3 {
+        margin: 0;
+        font-family: var(--serif-display);
+        font-variation-settings: 'opsz' 40;
+        font-weight: 600;
+        font-size: 26px;
+        line-height: 1.1;
+      }
+      .receta p {
+        margin: 6px 0 12px;
+        font-size: 16px;
+        color: var(--gris);
+      }
+      .receta pre {
+        margin: 0;
+        padding: 14px 16px;
+        background: var(--codigo);
+        border-radius: 2px;
+        overflow-x: auto;
+        font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+      .receta.ancha {
+        grid-column: span 2;
+      }
+
+      /* Colofón */
+      .colofon {
+        margin-top: clamp(72px, 10vw, 140px);
+        border-top: 3px double var(--filete);
+        padding: clamp(28px, 4vw, 48px) 0 clamp(40px, 5vw, 64px);
+        display: grid;
+        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+        gap: calc(var(--gutter) * 2);
+      }
+      .colofon h2 {
+        margin: 0;
+        font-family: var(--serif-display);
+        font-variation-settings: 'opsz' 96;
+        font-weight: 700;
+        font-size: clamp(40px, 5vw, 72px);
+        line-height: 1;
+        letter-spacing: -0.02em;
+      }
+      .colofon p {
+        margin: 18px 0 0;
+        max-width: 32em;
+      }
+      .colofon dl {
+        margin: 0;
+        font-family: var(--sans);
+        font-size: 15px;
+      }
+      .colofon dl div {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--filete-suave);
+      }
+      .colofon dt {
+        color: var(--gris);
+      }
+      .colofon dd {
+        margin: 0;
+        font-weight: 600;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      .acciones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 28px;
+      }
+      .boton {
+        display: inline-block;
+        padding: 12px 20px;
+        font-family: var(--sans);
+        font-size: 15px;
+        font-weight: 600;
+        text-decoration: none;
+        border: 1px solid var(--tinta);
+        border-radius: 999px;
+      }
+      .boton.lleno {
+        background: var(--tinta);
+        color: var(--papel);
+      }
+      .boton:hover {
+        background: var(--coral);
+        border-color: var(--coral);
+        color: #fff;
+      }
+      .firma {
+        margin-top: 24px;
+        font-family: var(--sans);
+        font-size: 13px;
+        color: var(--gris);
+      }
+
+      /* Tableta */
+      @media (max-width: 1000px) {
+        .a7,
+        .a5,
+        .a8,
+        .a6 {
+          grid-column: span 12;
+        }
+        .a4,
+        .cita {
+          grid-column: span 6;
+        }
+        .sumarios {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .recetas {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .receta.ancha {
+          grid-column: span 2;
+        }
+      }
+      /* Móvil */
+      @media (max-width: 720px) {
+        body {
+          font-size: 18px;
+        }
+        .folio p {
+          display: none;
+        }
+        .folio {
+          justify-content: flex-end;
+        }
+        .numero span:nth-child(2) {
+          display: none;
+        }
+        #grafico-portada {
+          margin-top: 16px;
+        }
+        .sobre {
+          position: static;
+          width: auto;
+          margin-top: 20px;
+          font-size: clamp(34px, 9vw, 44px);
+          text-shadow: none;
+        }
+        .bajo {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 14px;
+        }
+        .a4,
+        .cita {
+          grid-column: span 12;
+        }
+        .cifra-grande,
+        .oido,
+        .colofon {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .recetas {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .receta.ancha {
+          grid-column: auto;
+        }
+        .sumarios {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 0;
+        }
+        .sumarios li {
+          padding: 14px 0;
+          border-bottom: 1px solid var(--filete-suave);
+        }
+        .columnas {
+          columns: 1;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          scroll-behavior: auto !important;
+          transition: none !important;
+          animation: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="sr-only saltar" href="#contenido">Saltar al contenido</a>
+    <div class="hoja">
+      <header class="folio">
+        <p>Número 1, otoño de 2026. Gratis, también para empresas.</p>
+        <nav aria-label="Principal">
+          <a href="../galeria.html">Galería</a>
+          <a href="../docs.html">Documentación</a>
+          <a href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+          <button class="tema" type="button" aria-label="Cambiar a modo oscuro">
+            <svg class="sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4.2" />
+              <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" />
+            </svg>
+            <svg class="luna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19.5 14.6A8 8 0 0 1 9.4 4.5a8 8 0 1 0 10.1 10.1Z" />
+            </svg>
+          </button>
+        </nav>
+      </header>
+
+      <main id="contenido">
+        <section class="portada" aria-labelledby="titular">
+          <p class="numero">
+            <span>Gráficos en SVG, en español</span>
+            <span>TypeScript, cero dependencias, 51 KB</span>
+            <span>Número 1</span>
+          </p>
+          <p class="cabecera" aria-hidden="true">LozCharts</p>
+          <figure class="foto">
+            <h1 class="sobre" id="titular">La meta se cruzó en julio. En octubre, sola.</h1>
+            <div id="grafico-portada"></div>
+            <div class="bajo">
+              <p class="entradilla">
+                La campaña de verano empujó la web por encima de las 8000 visitas diarias. Tres meses después llegó ahí por
+                su cuenta: pasó de 3177 a 5759 visitas al día en un año.
+              </p>
+              <figcaption class="pie">
+                <b>En portada.</b> Visitas diarias a la web y a la app, de noviembre de 2025 a octubre de 2026 (datos de
+                ejemplo de la galería). Arrastra sobre el gráfico para acercar un tramo; la barra de abajo lo mueve. Hecho
+                con LozLine, zoom, una franja y una línea de meta.
+              </figcaption>
+            </div>
+          </figure>
+
+          <ul class="sumarios" aria-label="En este número">
+            <li>
+              <a href="#formas"
+                ><span class="pag">Pág. 2</span><strong>Diecinueve formas de contar algo</strong
+                ><span>De la barra de siempre al sankey y al mapa.</span></a
+              >
+            </li>
+            <li>
+              <a href="#cien-mil"
+                ><span class="pag">Pág. 3</span><strong>Cien mil puntos sin pestañear</strong
+                ><span>Lo medimos en tu equipo mientras leías.</span></a
+              >
+            </li>
+            <li>
+              <a href="#oido"
+                ><span class="pag">Pág. 4</span><strong>Un gráfico que también se escucha</strong
+                ><span>Lectores de pantalla, teclado y daltonismo.</span></a
+              >
+            </li>
+            <li>
+              <a href="#recetas"
+                ><span class="pag">Pág. 5</span><strong>Cinco maneras de invitarla a tu proyecto</strong
+                ><span>De un script suelto a Django con HTMX.</span></a
+              >
+            </li>
+          </ul>
+        </section>
+
+        <!-- Pág. 2 -->
+        <article class="articulo" id="formas" aria-labelledby="t-formas">
+          <div class="cintillo"><span>Reportaje</span><span>Pág. 2</span></div>
+          <h2 id="t-formas">Diecinueve formas de contar algo</h2>
+          <p class="entradilla">Cada dato tiene su forma. Aquí van ocho de las diecinueve, con los mismos datos de la galería.</p>
+          <div class="columnas">
+            <p class="capitular">
+              Una barra compara. Una línea cuenta lo que pasó en el tiempo. Un sankey dice de dónde vino la gente y a dónde
+              se fue. LozCharts trae diecinueve tipos y todos se comportan igual: el mismo tooltip, la misma leyenda, el
+              mismo teclado, la misma paleta.
+            </p>
+            <p>
+              Velas y OHLC para precios. Mapa de calor para días y horas. Treemap cuando las categorías son muchas. Mapas
+              del mundo, coloreados o con burbujas. Y small multiples cuando cinco líneas en un mismo gráfico ya se
+              enredan.
+            </p>
+          </div>
+          <div class="maqueta">
+            <figure class="a7">
+              <div class="lienzo" id="g-sankey"></div>
+              <figcaption><b>LozSankey.</b> Recorrido de las visitas: de dónde llegan y cómo terminan.</figcaption>
+            </figure>
+            <figure class="a5">
+              <div class="lienzo" id="g-treemap"></div>
+              <figcaption><b>LozTreemap.</b> Ventas por producto, agrupadas por categoría.</figcaption>
+            </figure>
+            <figure class="a8">
+              <div class="lienzo" id="g-calor"></div>
+              <figcaption><b>LozHeatmap.</b> Visitas por día y hora. El fin de semana se nota.</figcaption>
+            </figure>
+            <figure class="a4">
+              <div class="lienzo" id="g-gauge"></div>
+              <figcaption><b>LozGauge.</b> Avance de la meta anual en octubre. La marca es la meta.</figcaption>
+            </figure>
+            <figure class="a4">
+              <div class="lienzo" id="g-mapa"></div>
+              <figcaption><b>LozMap.</b> Usuarios activos por país en Latinoamérica.</figcaption>
+            </figure>
+            <figure class="a4">
+              <div class="lienzo" id="g-radar"></div>
+              <figcaption><b>LozRadar.</b> Dos modelos de teléfono en seis criterios.</figcaption>
+            </figure>
+            <blockquote class="cita">
+              <p>Diecinueve tipos, un solo comportamiento.</p>
+              <a href="../galeria.html">Los diecinueve, en la galería</a>
+            </blockquote>
+            <figure class="a8">
+              <div class="lienzo" id="g-velas"></div>
+              <figcaption><b>LozCandle.</b> Precio de una acción de ejemplo. La vela que sube es hueca.</figcaption>
+            </figure>
+            <figure class="a4">
+              <div class="lienzo" id="g-embudo"></div>
+              <figcaption><b>LozFunnel.</b> Embudo de compra, con la conversión entre pasos.</figcaption>
+            </figure>
+          </div>
+        </article>
+
+        <!-- Pág. 3 -->
+        <article class="articulo" id="cien-mil" aria-labelledby="t-cien">
+          <div class="cintillo"><span>Rendimiento</span><span>Pág. 3</span></div>
+          <h2 id="t-cien">Cien mil puntos sin pestañear</h2>
+          <div class="cifra-grande">
+            <div>
+              <p class="cifra" aria-live="polite"><span id="ms">--</span><small>ms</small></p>
+              <p class="cifra-nota">
+                Lo que tardó tu navegador en dibujar el gráfico de abajo.
+                <button type="button" id="medir">Medir otra vez</button>
+              </p>
+            </div>
+            <div class="columnas" style="margin-top: 0">
+              <p class="capitular">
+                El gráfico de abajo tiene 100 000 puntos. LozCharts solo dibuja lo que se ve y, en cada columna de
+                píxeles, guarda el primero, el mínimo, el máximo y el último. El trazo queda igual y ningún pico se
+                pierde.
+              </p>
+              <p>Acerca un tramo y verás el detalle completo. Los datos siguen ahí; la tabla y el CSV los traen todos.</p>
+            </div>
+          </div>
+          <div id="grafico-cien" style="margin-top: 32px"></div>
+        </article>
+
+        <!-- Pág. 4 -->
+        <article class="articulo" id="oido" aria-labelledby="t-oido">
+          <div class="cintillo"><span>Accesibilidad</span><span>Pág. 4</span></div>
+          <h2 id="t-oido">Un gráfico que también se escucha</h2>
+          <p class="entradilla">
+            Cada gráfico se describe solo a los lectores de pantalla, trae su tabla de datos y se recorre con el teclado.
+          </p>
+          <div class="oido">
+            <div>
+              <div id="grafico-oido"></div>
+            </div>
+            <div>
+              <div class="transcripcion">
+                <h3>Esto es lo que oye un lector de pantalla</h3>
+                <p class="dice" id="dice">Cargando…</p>
+                <p class="ayuda">
+                  Haz clic en el gráfico o llega con <kbd>Tab</kbd>, y muévete con <kbd>↑</kbd> <kbd>↓</kbd>. Cada paso
+                  se anuncia y aparece aquí.
+                </p>
+              </div>
+              <div class="carta">
+                <h3>La paleta Coral, en su orden fijo</h3>
+                <ul class="tintas" id="tintas"></ul>
+                <p>
+                  Ocho colores pensados para que se distingan también con daltonismo. El modo oscuro tiene los suyos: no
+                  es una inversión.
+                </p>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Pág. 5 -->
+        <article class="articulo" id="recetas" aria-labelledby="t-recetas">
+          <div class="cintillo"><span>Recetario</span><span>Pág. 5</span></div>
+          <h2 id="t-recetas">Cinco maneras de invitarla a tu proyecto</h2>
+          <p class="entradilla">Funciona en lo que ya usas. Sin adaptadores raros ni otra librería detrás.</p>
+          <div class="recetas">
+            <section class="receta ancha">
+              <h3>Con un script</h3>
+              <p>Sin servidor y sin build. Abres el archivo y listo.</p>
+              <pre><code>&lt;script src="lozcharts.umd.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  new LozChart('#grafico', {
+    data: ventas,
+    xAxis: { field: 'mes', type: 'time' },
+    series: [{ type: 'bar', field: 'online', name: 'Online' }],
+  });
+&lt;/script&gt;</code></pre>
+            </section>
+            <section class="receta">
+              <h3>Con import</h3>
+              <p>Vite, webpack o Node.</p>
+              <pre><code>import { LozChart } from 'lozcharts';
+const chart = new LozChart(el, opciones);
+chart.destroy();</code></pre>
+            </section>
+            <section class="receta">
+              <h3>En React</h3>
+              <p>Las opciones van como props.</p>
+              <pre><code>import { Chart } from 'lozcharts/react';
+
+&lt;Chart data={data} series={series} zoom /&gt;</code></pre>
+            </section>
+            <section class="receta">
+              <h3>En Angular, Vue o Svelte</h3>
+              <p>Un elemento HTML estándar.</p>
+              <pre><code>&lt;loz-chart [options]="opciones"&gt;
+&lt;/loz-chart&gt;</code></pre>
+            </section>
+            <section class="receta">
+              <h3>Con Django y HTMX</h3>
+              <p>Opciones en JSON y listo en cada swap.</p>
+              <pre><code>&lt;div data-lozchart="#opciones"&gt;&lt;/div&gt;
+{{ opciones|json_script:"opciones" }}
+htmx.onLoad((el) =&gt; LozChart.initAll(el));</code></pre>
+            </section>
+          </div>
+        </article>
+
+        <footer class="colofon" aria-labelledby="t-colofon">
+          <div>
+            <h2 id="t-colofon">Colofón</h2>
+            <p>
+              LozCharts está escrita en TypeScript, sin dependencias, por Mayra Lozada. Exporta a PNG, SVG y CSV, y tiene
+              modo oscuro propio. Licencia MIT: gratis, también para empresas. Todavía no está en npm; por ahora se
+              instala desde GitHub.
+            </p>
+            <div class="acciones">
+              <a class="boton lleno" href="../docs.html">Leer la documentación</a>
+              <a class="boton" href="https://github.com/MayraLo2ada/lozcharts">Ver el código en GitHub</a>
+            </div>
+          </div>
+          <div>
+            <dl>
+              <div><dt>Tipos de gráfico</dt><dd>19</dd></div>
+              <div><dt>Dependencias</dt><dd>0</dd></div>
+              <div><dt>Tamaño comprimida</dt><dd>51 KB</dd></div>
+              <div><dt>Pruebas automáticas</dt><dd>199</dd></div>
+              <div><dt>Idioma de nacimiento</dt><dd>Español</dd></div>
+              <div><dt>Licencia</dt><dd>MIT</dd></div>
+            </dl>
+            <p class="firma">Esta portada usa la librería de verdad: todos los gráficos están vivos.</p>
+          </div>
+        </footer>
+      </main>
+    </div>
+
+    <script src="../lib/lozcharts.umd.js"></script>
+    <script src="../lib/maps/world.umd.js"></script>
+    <script>
+      (function () {
+        // Datos de ejemplo de la galería (site/assets/ejemplos.js), con la misma semilla.
+        function rng(seed) {
+          return function () {
+            seed = (seed + 0x6d2b79f5) | 0;
+            var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+        var pad = function (n) {
+          return String(n).padStart(2, '0');
+        };
+        var filas = function (list, keys) {
+          return list.map(function (r) {
+            var o = {};
+            keys.forEach(function (k, i) {
+              o[k] = r[i];
+            });
+            return o;
+          });
+        };
+        var r = rng(11);
+        // La galería consume 24 números antes de las visitas diarias (las ventas): se respetan para dar los mismos datos.
+        for (var s = 0; s < 24; s++) r();
+        var dias = [];
+        for (var d = 0; d < 365; d++) {
+          var f = new Date(2025, 10, 1 + d);
+          var semana = [0.8, 1, 1.05, 1.06, 1.03, 0.96, 0.77][f.getDay()];
+          var campana = d >= 240 && d < 262 ? 2600 * Math.sin(((d - 240) / 22) * Math.PI) : 0;
+          dias.push({
+            fecha: f.getFullYear() + '-' + pad(f.getMonth() + 1) + '-' + pad(f.getDate()),
+            web: Math.round((4200 + d * 9) * semana + campana + (r() - 0.5) * 700),
+            app: Math.round((2100 + d * 6) * semana + (r() - 0.5) * 400),
+          });
+        }
+        var precios = [];
+        var cierre = 182;
+        for (var p = 0; p < 40; p++) {
+          var fp = new Date(2026, 8, 1 + p);
+          if (fp.getDay() === 0 || fp.getDay() === 6) continue;
+          var apertura = cierre + (r() - 0.5) * 3;
+          cierre = apertura + (r() - 0.48) * 6;
+          precios.push({
+            fecha: fp.getFullYear() + '-' + pad(fp.getMonth() + 1) + '-' + pad(fp.getDate()),
+            apertura: +apertura.toFixed(2),
+            maximo: +(Math.max(apertura, cierre) + r() * 2.5).toFixed(2),
+            minimo: +(Math.min(apertura, cierre) - r() * 2.5).toFixed(2),
+            cierre: +cierre.toFixed(2),
+          });
+        }
+        var visitasHora = [];
+        ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].forEach(function (dia, k) {
+          for (var h = 0; h < 24; h++) {
+            var curva = Math.max(0.05, Math.sin(((h - 6) / 18) * Math.PI)) * (h >= 6 ? 1 : 0.3);
+            visitasHora.push({
+              hora: pad(h) + ':00',
+              dia: dia,
+              visitas: Math.round((900 * curva * (k < 5 ? 1 : 0.6) + 40) * (0.9 + r() * 0.2)),
+            });
+          }
+        });
+
+        var root = document.documentElement;
+        var oscuro = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
+        var tema = oscuro ? 'dark' : 'light';
+        root.dataset.theme = tema;
+        var reducido = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var charts = [];
+        var ancho = function () {
+          return window.innerWidth;
+        };
+        function crear(sel, o) {
+          var c = new LozChart(sel, Object.assign({ background: false, theme: tema, animate: !reducido }, o));
+          charts.push(c);
+          return c;
+        }
+
+        // Portada: el gráfico es la foto.
+        var movil = ancho() < 720;
+        crear('#grafico-portada', {
+          data: dias,
+          xAxis: { field: 'fecha', type: 'time' },
+          yAxis: { format: 'compact' },
+          series: [
+            { type: 'line', field: 'web', name: 'Web' },
+            { type: 'line', field: 'app', name: 'App' },
+          ],
+          zoom: true,
+          endLabels: true,
+          legend: false,
+          height: movil ? 400 : Math.min(720, Math.max(520, Math.round(ancho() * 0.46))),
+          annotations: [
+            { x: ['2026-06-29', '2026-07-20'], label: 'Campaña de verano' },
+            { y: 8000, label: 'Meta diaria' },
+          ],
+          ariaLabel:
+            'Visitas diarias a la web y a la app durante un año. La web pasa la meta de 8000 visitas en julio, con la campaña de verano, y otra vez en octubre.',
+        });
+
+        // Pág. 2: el reportaje gráfico.
+        crear('#g-sankey', {
+          height: 340,
+          data: filas(
+            [
+              ['Búsqueda', 'Inicio', 5200],
+              ['Búsqueda', 'Producto', 7400],
+              ['Redes', 'Inicio', 2600],
+              ['Redes', 'Ofertas', 3100],
+              ['Correo', 'Ofertas', 2200],
+              ['Directo', 'Inicio', 4300],
+              ['Inicio', 'Producto', 6900],
+              ['Inicio', 'Abandono', 5200],
+              ['Ofertas', 'Producto', 3800],
+              ['Ofertas', 'Abandono', 1500],
+              ['Producto', 'Compra', 6100],
+              ['Producto', 'Abandono', 12000],
+            ],
+            ['origen', 'destino', 'sesiones'],
+          ),
+          xAxis: { field: 'origen' },
+          series: [{ type: 'sankey', field: 'sesiones', name: 'Sesiones', to: 'destino' }],
+        });
+        crear('#g-treemap', {
+          height: 340,
+          data: filas(
+            [
+              ['Laptops', 'Electrónica', 420000],
+              ['Teléfonos', 'Electrónica', 380000],
+              ['Tabletas', 'Electrónica', 142000],
+              ['Audífonos', 'Electrónica', 96000],
+              ['Sofás', 'Hogar', 210000],
+              ['Colchones', 'Hogar', 168000],
+              ['Cocina', 'Hogar', 88000],
+              ['Zapatillas', 'Moda', 176000],
+              ['Chaquetas', 'Moda', 122000],
+              ['Bicicletas', 'Deportes', 134000],
+              ['Camping', 'Deportes', 61000],
+            ],
+            ['producto', 'categoria', 'ventas'],
+          ),
+          xAxis: { field: 'producto' },
+          yAxis: { format: 'currency' },
+          series: [{ type: 'treemap', field: 'ventas', name: 'Ventas', group: 'categoria' }],
+        });
+        crear('#g-calor', {
+          height: 300,
+          data: visitasHora,
+          xAxis: { field: 'hora' },
+          yAxis: { width: 76 },
+          series: [{ type: 'heatmap', field: 'visitas', name: 'Visitas', y: 'dia' }],
+        });
+        crear('#g-gauge', {
+          height: 300,
+          data: [{ mes: 'Octubre', avance: 0.78 }],
+          xAxis: { field: 'mes' },
+          yAxis: { format: 'percent', min: 0, max: 1 },
+          series: [{ type: 'gauge', field: 'avance', name: 'Avance', target: 0.85 }],
+        });
+        crear('#g-mapa', {
+          height: 300,
+          data: filas(
+            [
+              ['MEX', 1830],
+              ['BRA', 2650],
+              ['COL', 980],
+              ['ARG', 760],
+              ['CHL', 410],
+              ['PER', 520],
+              ['ECU', 230],
+              ['VEN', 180],
+              ['URY', 95],
+              ['PRY', 80],
+              ['BOL', 110],
+              ['CRI', 70],
+              ['PAN', 65],
+              ['GTM', 120],
+              ['DOM', 140],
+              ['CUB', 40],
+              ['HND', 55],
+            ],
+            ['pais', 'usuarios'],
+          ).map(function (o) {
+            return { pais: o.pais, usuarios: o.usuarios * 1000 };
+          }),
+          xAxis: { field: 'pais' },
+          yAxis: { format: 'compact' },
+          series: [{ type: 'choropleth', field: 'usuarios', name: 'Usuarios', fit: 'data' }],
+        });
+        crear('#g-radar', {
+          height: 300,
+          data: filas(
+            [
+              ['Batería', 8, 6],
+              ['Cámara', 7, 9],
+              ['Pantalla', 8, 8],
+              ['Precio', 9, 5],
+              ['Velocidad', 6, 9],
+              ['Diseño', 7, 8],
+            ],
+            ['criterio', 'a', 'b'],
+          ),
+          xAxis: { field: 'criterio' },
+          yAxis: { min: 0, max: 10 },
+          series: [
+            { type: 'radar', field: 'a', name: 'Modelo A' },
+            { type: 'radar', field: 'b', name: 'Modelo B' },
+          ],
+        });
+        crear('#g-velas', {
+          height: 300,
+          data: precios,
+          xAxis: { field: 'fecha', type: 'time' },
+          yAxis: { format: 'currency' },
+          series: [{ type: 'candlestick', field: 'cierre', open: 'apertura', high: 'maximo', low: 'minimo', name: 'AURF' }],
+        });
+        crear('#g-embudo', {
+          height: 300,
+          data: filas(
+            [
+              ['Visitas', 48210],
+              ['Vieron un producto', 21400],
+              ['Al carrito', 6830],
+              ['Iniciaron el pago', 3120],
+              ['Compraron', 2540],
+            ],
+            ['paso', 'sesiones'],
+          ),
+          xAxis: { field: 'paso' },
+          series: [{ type: 'funnel', field: 'sesiones', name: 'Sesiones' }],
+        });
+
+        // Pág. 3: cien mil puntos, medidos en vivo.
+        var rr = rng(7);
+        var cien = new Array(100000);
+        var v = 500;
+        for (var i = 0; i < 100000; i++) {
+          v += (rr() - 0.5) * 8 + Math.sin(i / 9000) * 0.05;
+          cien[i] = { n: i, valor: Math.round(v * 10) / 10 };
+        }
+        var grafCien = null;
+        function medir() {
+          if (grafCien) {
+            charts.splice(charts.indexOf(grafCien), 1);
+            grafCien.destroy();
+          }
+          var t0 = performance.now();
+          grafCien = new LozChart('#grafico-cien', {
+            background: false,
+            theme: tema,
+            animate: false,
+            data: cien,
+            xAxis: { field: 'n', type: 'linear' },
+            yAxis: { format: 'number' },
+            series: [{ type: 'line', field: 'valor', name: 'Serie de 100 000 puntos' }],
+            zoom: true,
+            height: ancho() < 720 ? 260 : 340,
+          });
+          var t1 = performance.now();
+          charts.push(grafCien);
+          document.getElementById('ms').textContent = Math.max(1, Math.round(t1 - t0));
+        }
+        document.getElementById('medir').addEventListener('click', medir);
+        // Se mide cuando ya cargó todo, para no contar las fuentes ni los otros gráficos.
+        window.addEventListener('load', function () {
+          setTimeout(medir, 60);
+        });
+
+        // Pág. 4: lo que oye un lector de pantalla.
+        var oidoEl = document.getElementById('grafico-oido');
+        crear(oidoEl, {
+          height: 320,
+          orientation: 'horizontal',
+          data: filas(
+            [
+              ['Inicio', 48210],
+              ['Catálogo de productos', 31840],
+              ['Ofertas de temporada', 27390],
+              ['Preguntas frecuentes', 15620],
+              ['Carrito', 12950],
+              ['Blog', 9430],
+            ],
+            ['pagina', 'visitas'],
+          ),
+          xAxis: { field: 'pagina' },
+          series: [{ type: 'bar', field: 'visitas', name: 'Visitas' }],
+          title: 'Páginas más visitadas',
+          subtitle: 'Visitas únicas en octubre',
+        });
+        var dice = document.getElementById('dice');
+        var svg = oidoEl.querySelector('svg[aria-label]') || oidoEl.querySelector('[aria-label]');
+        if (svg) dice.textContent = svg.getAttribute('aria-label');
+        var vivo = oidoEl.querySelector('[aria-live]');
+        if (vivo) {
+          new MutationObserver(function () {
+            var t = vivo.textContent.trim();
+            if (t) dice.textContent = t;
+          }).observe(vivo, { childList: true, characterData: true, subtree: true });
+        }
+
+        // La carta de colores.
+        var CORAL = {
+          light: ['#e45934', '#009298', '#5e2dad', '#9c1854', '#4c99f8', '#31983d', '#db6ea5', '#e2aa00'],
+          dark: ['#e05630', '#0a999f', '#8b61e3', '#9d4e6b', '#4996f5', '#399e43', '#d1649c', '#b88a06'],
+        };
+        var NOMBRES = ['coral', 'petróleo', 'violeta', 'vino', 'cielo', 'verde', 'rosa', 'ocre'];
+        var tintas = document.getElementById('tintas');
+        function pintarTintas() {
+          tintas.innerHTML = '';
+          CORAL[tema].forEach(function (c, k) {
+            var li = document.createElement('li');
+            li.style.background = c;
+            li.title = NOMBRES[k] + ' ' + c;
+            var sp = document.createElement('span');
+            sp.textContent = NOMBRES[k];
+            li.appendChild(sp);
+            tintas.appendChild(li);
+          });
+        }
+        pintarTintas();
+
+        // Tema: un solo botón.
+        var boton = document.querySelector('.tema');
+        function aplicar() {
+          root.dataset.theme = tema;
+          boton.setAttribute('aria-label', tema === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+          charts.forEach(function (c) {
+            c.setTheme(tema);
+          });
+          pintarTintas();
+        }
+        boton.addEventListener('click', function () {
+          tema = tema === 'dark' ? 'light' : 'dark';
+          aplicar();
+        });
+        aplicar();
+      })();
+    </script>
+  </body>
+</html>

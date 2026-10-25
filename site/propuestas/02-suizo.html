@@ -1,0 +1,1021 @@
+<!doctype html>
+<!--
+  Plan de diseño, propuesta 02 "Sistema"
+  1. Concepto: estilo tipográfico internacional. La librería es un sistema y la portada lo muestra como un cartel suizo: los 19 tipos vivos, cada uno en su módulo de una rejilla de 12 columnas, con la rejilla a la vista.
+  2. Paleta: blanco #ffffff, tinta #0a0a0a, gris #6b6a66, filete #dcdcd8; un solo acento, el coral #e45934. Oscuro: #111110, tinta #f2f2ef, coral #e05630. Los gráficos usan `palette` en coral, tinta y grises: se justifica porque el concepto es un solo color de acento (rompe la paleta Coral de 8 colores; en los tipos con muchas categorías la identidad la dan las etiquetas y el tooltip, no el color).
+  3. Tipografía: una sola familia, Archivo (grotesca variable con eje de ancho): 800 semicondensada para los titulares gigantes, 400 y 600 normal para el texto. Escala 13 / 16 / 20 / 32 / 15vw.
+  4. Layout: rejilla estricta de 12 columnas (24 px de medianil); títulos de sección en las columnas 1 a 3, contenido de la 4 a la 12; alineado a la izquierda, bandera a la derecha, mucho blanco.
+  5. Lo audaz: la matriz de 19 gráficos vivos más un módulo coral macizo con el número 19; es lo único con color de fondo en toda la página.
+  6. Qué cambié de lo obvio: en vez de un gráfico protagonista, todos los tipos a la vez como piezas iguales; nada de tarjetas con sombra ni radios: filetes de 1 px; el logo es una L hecha con los dos ejes de un gráfico y un dato coral.
+-->
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts, el sistema</title>
+    <meta name="description" content="LozCharts: diecinueve tipos de gráfico en SVG, sin dependencias. Propuesta de portada en estilo suizo." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --fondo: #ffffff;
+        --tinta: #0a0a0a;
+        --gris: #6b6a66;
+        --filete: #dcdcd8;
+        --guia: rgba(10, 10, 10, 0.07);
+        --acento: #e45934;
+        --sobre-acento: #ffffff;
+        --codigo: #f3f3f1;
+        --letra: 'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        --medianil: 24px;
+        --margen: clamp(16px, 3.4vw, 48px);
+        color-scheme: light;
+      }
+      :root[data-theme='dark'] {
+        --fondo: #111110;
+        --tinta: #f2f2ef;
+        --gris: #a9a8a1;
+        --filete: #2f2f2d;
+        --guia: rgba(242, 242, 239, 0.08);
+        --acento: #e05630;
+        --sobre-acento: #ffffff;
+        --codigo: #1b1b1a;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--fondo);
+        color: var(--tinta);
+        font-family: var(--letra);
+        font-size: 16px;
+        line-height: 1.5;
+        overflow-x: hidden;
+      }
+      a {
+        color: inherit;
+      }
+      :focus-visible {
+        outline: 2px solid var(--acento);
+        outline-offset: 3px;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+      .saltar:focus {
+        position: fixed;
+        top: 8px;
+        left: 8px;
+        width: auto;
+        height: auto;
+        clip: auto;
+        background: var(--fondo);
+        padding: 8px 12px;
+        z-index: 10;
+      }
+      .rejilla {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        column-gap: var(--medianil);
+        padding: 0 var(--margen);
+        max-width: 1600px;
+        margin: 0 auto;
+        position: relative;
+      }
+
+      /* Guías de la rejilla, a la vista en la portada */
+      .guias {
+        position: absolute;
+        inset: 0 var(--margen);
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        column-gap: var(--medianil);
+        pointer-events: none;
+        z-index: 0;
+      }
+      .guias span {
+        border-left: 1px solid var(--guia);
+        border-right: 1px solid var(--guia);
+      }
+
+      /* Barra superior */
+      .barra {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: subgrid;
+        align-items: center;
+        padding: 20px 0;
+        position: relative;
+        z-index: 1;
+      }
+      .marca {
+        grid-column: 1 / 4;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 19px;
+        letter-spacing: -0.01em;
+      }
+      .marca svg {
+        width: 26px;
+        height: 26px;
+        flex: none;
+      }
+      .barra nav {
+        grid-column: 4 / -1;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: clamp(16px, 2.4vw, 36px);
+        font-size: 15px;
+        font-weight: 500;
+      }
+      .barra nav a {
+        text-decoration: none;
+        padding: 6px 0;
+      }
+      .barra nav a:hover {
+        text-decoration: underline;
+        text-underline-offset: 5px;
+        text-decoration-thickness: 2px;
+      }
+      .barra nav .corto {
+        display: none;
+      }
+      .tema {
+        width: 40px;
+        height: 40px;
+        display: grid;
+        place-items: center;
+        background: var(--tinta);
+        color: var(--fondo);
+        border: 0;
+        cursor: pointer;
+      }
+      .tema svg {
+        width: 18px;
+        height: 18px;
+      }
+      .tema .luna {
+        display: none;
+      }
+      :root[data-theme='dark'] .tema .sol {
+        display: none;
+      }
+      :root[data-theme='dark'] .tema .luna {
+        display: block;
+      }
+
+      /* Portada */
+      .portada {
+        position: relative;
+        padding-bottom: clamp(48px, 6vw, 96px);
+      }
+      .portada > * {
+        position: relative;
+        z-index: 1;
+      }
+      .portada h1 {
+        grid-column: 1 / -1;
+        margin: clamp(40px, 7vw, 120px) 0 0;
+        font-weight: 800;
+        font-stretch: 82%;
+        font-variation-settings: 'wdth' 82;
+        font-size: clamp(58px, 13.4vw, 228px);
+        line-height: 0.84;
+        letter-spacing: -0.045em;
+      }
+      .portada .lead {
+        grid-column: 7 / 12;
+        margin: clamp(28px, 3vw, 48px) 0 0;
+        font-size: clamp(19px, 1.6vw, 24px);
+        line-height: 1.32;
+        font-weight: 400;
+      }
+      .datos {
+        grid-column: 1 / 6;
+        grid-row: 3;
+        align-self: end;
+        display: grid;
+        grid-template-columns: repeat(3, auto);
+        justify-content: start;
+        gap: 0 clamp(20px, 3vw, 44px);
+        margin: clamp(28px, 3vw, 48px) 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .datos li {
+        font-size: 13px;
+        color: var(--gris);
+        line-height: 1.3;
+      }
+      .datos b {
+        display: block;
+        color: var(--tinta);
+        font-size: clamp(26px, 2.6vw, 40px);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* La matriz: 19 módulos y el bloque coral */
+      .matriz {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 36px var(--medianil);
+        margin: clamp(48px, 6vw, 96px) 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .modulo {
+        min-width: 0;
+        border-top: 2px solid var(--tinta);
+        padding-top: 8px;
+      }
+      .modulo h2 {
+        margin: 0;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.3;
+      }
+      .modulo h2 span {
+        font-weight: 400;
+        color: var(--gris);
+      }
+      .modulo .g {
+        margin-top: 10px;
+        font-size: 12px;
+      }
+      .matriz > li:last-child {
+        display: flex;
+      }
+      .diecinueve {
+        flex: 1;
+        background: var(--acento);
+        color: var(--sobre-acento);
+        border-top: 2px solid var(--acento);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 8px 14px 14px;
+        min-height: 190px;
+        text-decoration: none;
+      }
+      .diecinueve span {
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .diecinueve strong {
+        font-weight: 800;
+        font-variation-settings: 'wdth' 70;
+        font-size: clamp(96px, 9vw, 150px);
+        line-height: 0.8;
+        letter-spacing: -0.05em;
+      }
+      .diecinueve:hover span {
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
+
+      /* Secciones */
+      .seccion {
+        padding: clamp(64px, 8vw, 128px) 0 0;
+      }
+      .seccion .rotulo {
+        grid-column: 1 / 4;
+        margin: 0;
+        padding-top: 10px;
+        border-top: 2px solid var(--tinta);
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 1.3;
+        align-self: start;
+      }
+      .seccion .cuerpo {
+        grid-column: 4 / -1;
+        min-width: 0;
+        border-top: 2px solid var(--tinta);
+        padding-top: 10px;
+      }
+      .grande {
+        margin: 0;
+        font-weight: 800;
+        font-variation-settings: 'wdth' 78;
+        font-size: clamp(64px, 12vw, 200px);
+        line-height: 0.82;
+        letter-spacing: -0.05em;
+        font-variant-numeric: tabular-nums;
+      }
+      .sub {
+        margin: 16px 0 0;
+        max-width: 26em;
+        font-size: clamp(20px, 2vw, 30px);
+        font-weight: 600;
+        line-height: 1.15;
+        letter-spacing: -0.015em;
+      }
+      .texto {
+        display: grid;
+        grid-template-columns: repeat(9, minmax(0, 1fr));
+        column-gap: var(--medianil);
+        margin-top: 28px;
+      }
+      .texto p {
+        grid-column: span 4;
+        margin: 0;
+        max-width: 34em;
+      }
+      .nota {
+        font-size: 13px;
+        color: var(--gris);
+      }
+      .nota button {
+        font: inherit;
+        font-weight: 600;
+        color: var(--tinta);
+        background: none;
+        border: 0;
+        border-bottom: 1px solid currentColor;
+        padding: 2px 0;
+        margin-left: 6px;
+        cursor: pointer;
+      }
+      .g-ancho {
+        margin-top: 36px;
+        font-size: 12px;
+      }
+
+      /* Accesibilidad: hechos en filas */
+      .filas {
+        margin: 24px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .filas li {
+        display: grid;
+        grid-template-columns: repeat(9, minmax(0, 1fr));
+        column-gap: var(--medianil);
+        padding: 14px 0;
+        border-bottom: 1px solid var(--filete);
+      }
+      .filas b {
+        grid-column: span 3;
+        font-weight: 600;
+      }
+      .filas span {
+        grid-column: span 6;
+        color: var(--gris);
+      }
+      .muestras {
+        display: grid;
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+        gap: 0;
+        margin: 40px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .muestras li {
+        min-width: 0;
+      }
+      .muestras i {
+        display: block;
+        height: clamp(56px, 6vw, 96px);
+      }
+      .muestras i + i {
+        height: clamp(20px, 2vw, 32px);
+      }
+      .muestras span {
+        display: block;
+        padding: 8px 6px 0 0;
+        font-size: 12px;
+        line-height: 1.35;
+        color: var(--gris);
+        font-variant-numeric: tabular-nums;
+        overflow-wrap: anywhere;
+      }
+      .muestras span b {
+        color: var(--tinta);
+        font-weight: 600;
+      }
+
+      /* Código */
+      .codigos {
+        margin: 24px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .codigos li {
+        display: grid;
+        grid-template-columns: repeat(9, minmax(0, 1fr));
+        column-gap: var(--medianil);
+        padding: 16px 0;
+        border-bottom: 1px solid var(--filete);
+        align-items: baseline;
+      }
+      .codigos b {
+        grid-column: span 2;
+        font-weight: 600;
+      }
+      .codigos pre {
+        grid-column: span 7;
+        margin: 0;
+        min-width: 0;
+        overflow-x: auto;
+        font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 13.5px;
+        line-height: 1.6;
+      }
+
+      /* Cierre */
+      .cierre {
+        padding: clamp(80px, 10vw, 160px) 0 clamp(40px, 5vw, 72px);
+      }
+      .cierre .grande {
+        grid-column: 1 / -1;
+      }
+      .cierre .lead {
+        grid-column: 4 / 10;
+        margin: 32px 0 0;
+        font-size: clamp(19px, 1.6vw, 24px);
+        line-height: 1.35;
+      }
+      .acciones {
+        grid-column: 4 / -1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 32px;
+      }
+      .boton {
+        display: inline-block;
+        padding: 14px 22px;
+        font-size: 15px;
+        font-weight: 600;
+        text-decoration: none;
+        border: 2px solid var(--tinta);
+      }
+      .boton.lleno {
+        background: var(--tinta);
+        color: var(--fondo);
+      }
+      .boton:hover {
+        background: var(--acento);
+        border-color: var(--acento);
+        color: #fff;
+      }
+      .pie {
+        grid-column: 1 / -1;
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px 24px;
+        margin-top: clamp(64px, 8vw, 120px);
+        padding-top: 12px;
+        border-top: 1px solid var(--filete);
+        font-size: 13px;
+        color: var(--gris);
+      }
+
+      @media (max-width: 1100px) {
+        .matriz {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+        .portada .lead {
+          grid-column: 6 / -1;
+        }
+      }
+      @media (max-width: 820px) {
+        .matriz {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .seccion .rotulo,
+        .seccion .cuerpo {
+          grid-column: 1 / -1;
+        }
+        .seccion .cuerpo {
+          border-top: 0;
+          padding-top: 16px;
+        }
+        .cierre .lead,
+        .acciones {
+          grid-column: 1 / -1;
+        }
+      }
+      @media (max-width: 640px) {
+        :root {
+          --medianil: 16px;
+        }
+        .marca {
+          grid-column: 1 / 6;
+        }
+        .barra nav {
+          grid-column: 6 / -1;
+          gap: 14px;
+          font-size: 14px;
+        }
+        .barra nav .largo {
+          display: none;
+        }
+        .barra nav .corto {
+          display: inline;
+        }
+        .portada .lead,
+        .datos {
+          grid-column: 1 / -1;
+        }
+        .datos {
+          grid-row: auto;
+        }
+        .matriz {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 28px var(--medianil);
+        }
+        .diecinueve {
+          min-height: 150px;
+        }
+        .texto p,
+        .filas b,
+        .filas span {
+          grid-column: 1 / -1;
+        }
+        .texto p + p {
+          margin-top: 1em;
+        }
+        .codigos b,
+        .codigos pre {
+          grid-column: 1 / -1;
+        }
+        .codigos pre {
+          margin-top: 6px;
+        }
+        .muestras {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          row-gap: 16px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+          animation: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="sr-only saltar" href="#contenido">Saltar al contenido</a>
+
+    <header class="portada">
+      <div class="rejilla">
+        <div class="guias" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="barra">
+          <a class="marca" href="./02-suizo.html" aria-label="LozCharts, inicio">
+            <svg viewBox="0 0 26 26" aria-hidden="true">
+              <rect x="0" y="0" width="5" height="26" fill="currentColor" />
+              <rect x="0" y="21" width="26" height="5" fill="currentColor" />
+              <rect x="12" y="7" width="7" height="7" fill="var(--acento)" />
+            </svg>
+            LozCharts
+          </a>
+          <nav aria-label="Principal">
+            <a href="../galeria.html">Galería</a>
+            <a href="../docs.html"><span class="largo">Documentación</span><span class="corto">Docs</span></a>
+            <a href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+            <button class="tema" type="button" aria-label="Cambiar a modo oscuro">
+              <svg class="sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" />
+              </svg>
+              <svg class="luna" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" />
+              </svg>
+            </button>
+          </nav>
+        </div>
+
+        <h1 id="contenido">Cada dato en su sitio.</h1>
+        <p class="lead">
+          LozCharts es una librería de gráficos en SVG, escrita en TypeScript. Sin dependencias, accesible y en español.
+          Gratis, también para empresas.
+        </p>
+        <ul class="datos" aria-label="En cifras">
+          <li><b>19</b>tipos</li>
+          <li><b>51 KB</b>comprimida</li>
+          <li><b>199</b>pruebas</li>
+        </ul>
+
+        <ul class="matriz" id="matriz" aria-label="Los diecinueve tipos de gráfico, en vivo"></ul>
+      </div>
+    </header>
+
+    <main>
+      <section class="seccion" aria-labelledby="s-rend">
+        <div class="rejilla">
+          <h2 class="rotulo" id="s-rend">Rendimiento</h2>
+          <div class="cuerpo">
+            <p class="grande">100 000</p>
+            <p class="sub">puntos en unos 25 a 40 ms. Solo se dibuja lo que se ve, y ningún pico se pierde.</p>
+            <div class="g-ancho" id="g-cien"></div>
+            <p class="nota" aria-live="polite">
+              <span id="medida">Midiendo en tu equipo…</span><button type="button" id="medir">Medir otra vez</button>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="seccion" aria-labelledby="s-enfasis">
+        <div class="rejilla">
+          <h2 class="rotulo" id="s-enfasis">Énfasis</h2>
+          <div class="cuerpo">
+            <p class="sub" style="margin-top: 0">Una serie en color. Las demás, en gris, dan contexto.</p>
+            <div class="texto">
+              <p>
+                Con <code>emphasis</code> se destaca lo que importa sin borrar lo demás. El nombre va al final de cada línea,
+                así no hace falta ir y volver a la leyenda.
+              </p>
+              <p>Pasa el puntero o usa las flechas: el tooltip sigue mostrando todas las ciudades.</p>
+            </div>
+            <div class="g-ancho" id="g-enfasis"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="seccion" aria-labelledby="s-acc">
+        <div class="rejilla">
+          <h2 class="rotulo" id="s-acc">Accesibilidad</h2>
+          <div class="cuerpo">
+            <p class="sub" style="margin-top: 0">Un gráfico que también se escucha, se recorre con el teclado y se lee con daltonismo.</p>
+            <ul class="filas">
+              <li><b>Lectores de pantalla</b><span>Cada gráfico se describe solo y anuncia cada dato al recorrerlo.</span></li>
+              <li><b>Tabla de datos</b><span>Va oculta junto al gráfico, con todos los valores.</span></li>
+              <li><b>Teclado</b><span>Flechas para recorrer, Inicio y Fin para los extremos, + y − para el zoom.</span></li>
+              <li><b>Modo oscuro propio</b><span>Con sus propios colores. No es una inversión.</span></li>
+              <li><b>Movimiento</b><span>Si pides menos movimiento, no anima.</span></li>
+            </ul>
+            <ul class="muestras" id="muestras" aria-label="Paleta Coral, claro y oscuro"></ul>
+            <p class="nota" style="margin-top: 14px">
+              La paleta Coral de la librería, en su orden fijo: arriba el tono para modo claro, abajo el del oscuro. Validada
+              para daltonismo.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="seccion" aria-labelledby="s-cod">
+        <div class="rejilla">
+          <h2 class="rotulo" id="s-cod">Dónde funciona</h2>
+          <div class="cuerpo">
+            <p class="sub" style="margin-top: 0">En lo que ya usas. Exporta a PNG, SVG y CSV.</p>
+            <ul class="codigos">
+              <li><b>Script</b><pre><code>&lt;script src="lozcharts.umd.js"&gt;&lt;/script&gt;  new LozChart('#grafico', opciones)</code></pre></li>
+              <li><b>Import</b><pre><code>import { LozChart } from 'lozcharts'</code></pre></li>
+              <li><b>React</b><pre><code>import { Chart } from 'lozcharts/react'</code></pre></li>
+              <li><b>Angular, Vue, Svelte</b><pre><code>&lt;loz-chart [options]="opciones"&gt;&lt;/loz-chart&gt;</code></pre></li>
+              <li><b>Django + HTMX</b><pre><code>htmx.onLoad((el) =&gt; LozChart.initAll(el))</code></pre></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="cierre" aria-labelledby="s-mit">
+        <div class="rejilla">
+          <p class="grande" id="s-mit">Gratis.</p>
+          <p class="lead">
+            Licencia MIT, también para empresas. Hecha por Mayra Lozada. Todavía no está en npm: por ahora se instala desde
+            GitHub.
+          </p>
+          <div class="acciones">
+            <a class="boton lleno" href="../docs.html">Leer la documentación</a>
+            <a class="boton" href="../galeria.html">Ver la galería</a>
+            <a class="boton" href="https://github.com/MayraLo2ada/lozcharts">Código en GitHub</a>
+          </div>
+          <footer class="pie">
+            <span>LozCharts. TypeScript, cero dependencias.</span>
+            <span>Todos los gráficos de esta página están vivos.</span>
+          </footer>
+        </div>
+      </section>
+    </main>
+
+    <script src="../lib/lozcharts.umd.js"></script>
+    <script src="../lib/maps/world.umd.js"></script>
+    <script>
+      (function () {
+        // Datos de ejemplo de la galería (site/assets/ejemplos.js), con la misma semilla.
+        function rng(seed) {
+          return function () {
+            seed = (seed + 0x6d2b79f5) | 0;
+            var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+        var pad = function (n) {
+          return String(n).padStart(2, '0');
+        };
+        var filas = function (list, keys) {
+          return list.map(function (r) {
+            var o = {};
+            keys.forEach(function (k, i) {
+              o[k] = r[i];
+            });
+            return o;
+          });
+        };
+        var MESES = [];
+        for (var m = 0; m < 12; m++) MESES.push('2026-' + pad(m + 1));
+        var r = rng(11);
+        var ventas = MESES.map(function (mes, i) {
+          var k = [0.82, 0.78, 0.9, 0.94, 1, 0.97, 0.95, 1.02, 0.98, 1.06, 1.24, 1.42][i];
+          return {
+            mes: mes,
+            online: Math.round((41000 + i * 1900 + r() * 6000) * k),
+            tienda: Math.round((33000 + r() * 5000) * k),
+          };
+        });
+        var ciudades = ['Lima', 'Bogotá', 'Quito', 'Santiago', 'Ciudad de México'];
+        var usuarios = MESES.map(function (mes, i) {
+          var row = { mes: mes };
+          ciudades.forEach(function (c, k) {
+            row[c] = Math.round(([31, 24, 18, 27, 22][k] + i * (0.6 + k * 0.25) + 2 * Math.sin(i + k)) * 10) / 10;
+          });
+          return row;
+        });
+        var dias = [];
+        for (var d = 0; d < 365; d++) {
+          var f = new Date(2025, 10, 1 + d);
+          var semana = [0.8, 1, 1.05, 1.06, 1.03, 0.96, 0.77][f.getDay()];
+          var campana = d >= 240 && d < 262 ? 2600 * Math.sin(((d - 240) / 22) * Math.PI) : 0;
+          dias.push({
+            fecha: f.getFullYear() + '-' + pad(f.getMonth() + 1) + '-' + pad(f.getDate()),
+            web: Math.round((4200 + d * 9) * semana + campana + (r() - 0.5) * 700),
+            app: Math.round((2100 + d * 6) * semana + (r() - 0.5) * 400),
+          });
+        }
+        var precios = [];
+        var cierre = 182;
+        for (var p = 0; p < 40; p++) {
+          var fp = new Date(2026, 8, 1 + p);
+          if (fp.getDay() === 0 || fp.getDay() === 6) continue;
+          var apertura = cierre + (r() - 0.5) * 3;
+          cierre = apertura + (r() - 0.48) * 6;
+          precios.push({
+            fecha: fp.getFullYear() + '-' + pad(fp.getMonth() + 1) + '-' + pad(fp.getDate()),
+            apertura: +apertura.toFixed(2),
+            maximo: +(Math.max(apertura, cierre) + r() * 2.5).toFixed(2),
+            minimo: +(Math.min(apertura, cierre) - r() * 2.5).toFixed(2),
+            cierre: +cierre.toFixed(2),
+          });
+        }
+        var visitasHora = [];
+        ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].forEach(function (dia, k) {
+          for (var h = 0; h < 24; h++) {
+            var curva = Math.max(0.05, Math.sin(((h - 6) / 18) * Math.PI)) * (h >= 6 ? 1 : 0.3);
+            visitasHora.push({
+              hora: pad(h) + ':00',
+              dia: dia,
+              visitas: Math.round((900 * curva * (k < 5 ? 1 : 0.6) + 40) * (0.9 + r() * 0.2)),
+            });
+          }
+        });
+        // Banda de rango: mínimo y máximo de visitas web de cada mes.
+        var rango = [];
+        dias.forEach(function (x) {
+          var mes = x.fecha.slice(0, 7);
+          var u = rango[rango.length - 1];
+          if (!u || u.mes !== mes) rango.push((u = { mes: mes, min: x.web, max: x.web, suma: 0, n: 0 }));
+          u.min = Math.min(u.min, x.web);
+          u.max = Math.max(u.max, x.web);
+          u.suma += x.web;
+          u.n++;
+        });
+        rango.forEach(function (u) {
+          u.media = Math.round(u.suma / u.n);
+        });
+        var canales = filas(
+          [
+            ['Búsqueda', 4100],
+            ['Directo', 2000],
+            ['Redes', 1800],
+            ['Correo', 1200],
+            ['Referidos', 900],
+          ],
+          ['canal', 'ventas'],
+        );
+        var tiendas = filas(
+          [
+            [0.6, 0.39, 1200, 'Sur'],
+            [0.9, 0.35, 2400, 'Centro'],
+            [1.2, 0.31, 3800, 'Centro'],
+            [1.4, 0.26, 2100, 'Sur'],
+            [1.7, 0.29, 4100, 'Norte'],
+            [2.2, 0.34, 5200, 'Norte'],
+            [2.8, 0.28, 7600, 'Centro'],
+            [3.1, 0.31, 8100, 'Sur'],
+            [3.6, 0.24, 9800, 'Norte'],
+          ],
+          ['ventas', 'margen', 'clientes', 'zona'],
+        );
+        var regiones = ['Norte', 'Sur', 'Este', 'Oeste', 'Centro', 'Costa'];
+        var porRegion = MESES.map(function (mes, i) {
+          var row = { mes: mes };
+          regiones.forEach(function (rg, k) {
+            row[rg] = Math.round(50 + k * 6 + i * (k - 2) * 1.6 + 8 * Math.sin(i * 0.8 + k));
+          });
+          return row;
+        });
+
+        // Un solo acento: coral, tinta y grises (ver el plan arriba).
+        var PALETA = {
+          light: ['#e45934', '#0a0a0a', '#8f8e89', '#4a4945', '#bdbcb6', '#2a2a28', '#6d6c68', '#a6a59f'],
+          dark: ['#e05630', '#f2f2ef', '#8a8984', '#c9c8c2', '#5c5b57', '#e0dfda', '#a9a8a1', '#73726d'],
+        };
+        var root = document.documentElement;
+        var tema = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        root.dataset.theme = tema;
+        var reducido = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var charts = [];
+        var base = function () {
+          return { background: false, theme: tema, palette: PALETA, animate: !reducido };
+        };
+        function modulo(o) {
+          // Mezcla las opciones mínimas de un módulo con las del gráfico.
+          var x = Object.assign(base(), { legend: false, height: 150 }, o);
+          x.xAxis = Object.assign({ labels: false }, o.xAxis || {});
+          x.yAxis = Object.assign({ labels: false }, o.yAxis || {});
+          return x;
+        }
+
+        var MODULOS = [
+          ['LozLine', 'line', modulo({ data: usuarios, xAxis: { field: 'mes', type: 'time' }, emphasis: 'Bogotá', series: ciudades.map(function (c, k) { return { type: 'line', field: c, name: c, color: c === 'Bogotá' ? 1 : k === 0 ? 2 : k + 1 }; }) })],
+          ['LozBar', 'bar', modulo({ data: ventas, xAxis: { field: 'mes', type: 'time' }, yAxis: { format: 'currency' }, series: [{ type: 'bar', field: 'online', name: 'Online', stack: true }, { type: 'bar', field: 'tienda', name: 'Tienda', stack: true }] })],
+          ['LozArea', 'area', modulo({ data: MESES.map(function (mes, i) { return { mes: mes, movil: 5200 + i * 310, escritorio: 4100 - i * 60, tableta: 900 + i * 20 }; }), xAxis: { field: 'mes', type: 'time' }, series: [{ type: 'area', field: 'movil', name: 'Móvil', stack: true, smooth: true }, { type: 'area', field: 'escritorio', name: 'Escritorio', stack: true, smooth: true }, { type: 'area', field: 'tableta', name: 'Tableta', stack: true, smooth: true }] })],
+          ['LozStep', 'step', modulo({ data: filas([['2025-01', 0.1125], ['2025-03', 0.105], ['2025-06', 0.0975], ['2025-09', 0.0925], ['2025-12', 0.09], ['2026-03', 0.0875], ['2026-07', 0.0825], ['2026-10', 0.08]], ['mes', 'tasa']), xAxis: { field: 'mes', type: 'time' }, yAxis: { format: 'percent' }, series: [{ type: 'step', field: 'tasa', name: 'Tasa' }] })],
+          ['LozRange', 'range', modulo({ data: rango, xAxis: { field: 'mes', type: 'time' }, series: [{ type: 'range', field: 'max', low: 'min', name: 'Mínimo y máximo' }, { type: 'line', field: 'media', name: 'Media', color: 1 }] })],
+          ['LozScatter', 'scatter', modulo({ data: tiendas, xAxis: { field: 'ventas', type: 'linear' }, yAxis: { format: 'percent' }, series: [{ type: 'scatter', field: 'margen', name: 'Margen' }] })],
+          ['LozBubble', 'bubble', modulo({ data: tiendas.map(function (t) { var o = { ventas: t.ventas }; o[t.zona] = t.margen; o['c' + t.zona] = t.clientes; return o; }), xAxis: { field: 'ventas', type: 'linear' }, yAxis: { format: 'percent' }, series: ['Norte', 'Centro', 'Sur'].map(function (z) { return { type: 'bubble', field: z, size: 'c' + z, sizeName: 'Clientes', name: 'Zona ' + z.toLowerCase() }; }) })],
+          ['LozCandle', 'candlestick', modulo({ data: precios, xAxis: { field: 'fecha', type: 'time' }, yAxis: { format: 'currency' }, series: [{ type: 'candlestick', field: 'cierre', open: 'apertura', high: 'maximo', low: 'minimo', name: 'AURF' }] })],
+          ['LozOHLC', 'ohlc', modulo({ data: precios, xAxis: { field: 'fecha', type: 'time' }, yAxis: { format: 'currency' }, series: [{ type: 'ohlc', field: 'cierre', open: 'apertura', high: 'maximo', low: 'minimo', name: 'AURF' }] })],
+          ['LozPie', 'pie', modulo({ data: canales, xAxis: { field: 'canal' }, series: [{ type: 'pie', field: 'ventas', name: 'Ventas', labels: false }] })],
+          ['LozDonut', 'donut', modulo({ data: canales, xAxis: { field: 'canal' }, series: [{ type: 'donut', field: 'ventas', name: 'Ventas', labels: false }] })],
+          ['LozGauge', 'gauge', modulo({ data: [{ mes: 'Octubre', avance: 0.78 }], xAxis: { field: 'mes' }, yAxis: { format: 'percent', min: 0, max: 1 }, series: [{ type: 'gauge', field: 'avance', name: 'Avance', target: 0.85 }] })],
+          ['LozRadar', 'radar', modulo({ data: filas([['Batería', 8, 6], ['Cámara', 7, 9], ['Pantalla', 8, 8], ['Precio', 9, 5], ['Velocidad', 6, 9], ['Diseño', 7, 8]], ['criterio', 'a', 'b']), xAxis: { field: 'criterio' }, yAxis: { min: 0, max: 10 }, series: [{ type: 'radar', field: 'a', name: 'Modelo A' }, { type: 'radar', field: 'b', name: 'Modelo B' }] })],
+          ['LozFunnel', 'funnel', modulo({ data: filas([['Visitas', 48210], ['Producto', 21400], ['Carrito', 6830], ['Pago', 3120], ['Compra', 2540]], ['paso', 'sesiones']), xAxis: { field: 'paso' }, series: [{ type: 'funnel', field: 'sesiones', name: 'Sesiones' }] })],
+          ['LozHeatmap', 'heatmap', modulo({ data: visitasHora, xAxis: { field: 'hora' }, series: [{ type: 'heatmap', field: 'visitas', name: 'Visitas', y: 'dia' }] })],
+          ['LozTreemap', 'treemap', modulo({ data: filas([['Laptops', 'Electrónica', 420000], ['Teléfonos', 'Electrónica', 380000], ['Tabletas', 'Electrónica', 142000], ['Sofás', 'Hogar', 210000], ['Colchones', 'Hogar', 168000], ['Zapatillas', 'Moda', 176000], ['Chaquetas', 'Moda', 122000], ['Bicicletas', 'Deportes', 134000]], ['producto', 'categoria', 'ventas']), xAxis: { field: 'producto' }, yAxis: { format: 'currency' }, series: [{ type: 'treemap', field: 'ventas', name: 'Ventas', group: 'categoria' }] })],
+          ['LozSankey', 'sankey', modulo({ data: filas([['Búsqueda', 'Producto', 7400], ['Búsqueda', 'Inicio', 5200], ['Redes', 'Inicio', 2600], ['Directo', 'Inicio', 4300], ['Inicio', 'Producto', 6900], ['Inicio', 'Abandono', 5200], ['Producto', 'Compra', 6100], ['Producto', 'Abandono', 8200]], ['origen', 'destino', 'sesiones']), xAxis: { field: 'origen' }, series: [{ type: 'sankey', field: 'sesiones', name: 'Sesiones', to: 'destino' }] })],
+          ['LozMap', 'choropleth', modulo({ data: filas([['MEX', 1830], ['BRA', 2650], ['COL', 980], ['ARG', 760], ['CHL', 410], ['PER', 520], ['ECU', 230], ['VEN', 180], ['URY', 95], ['PRY', 80], ['BOL', 110], ['GTM', 120]], ['pais', 'usuarios']), xAxis: { field: 'pais' }, series: [{ type: 'choropleth', field: 'usuarios', name: 'Usuarios (miles)', fit: 'data' }] })],
+          ['LozMultiples', 'multiples', null],
+        ];
+
+        var matriz = document.getElementById('matriz');
+        MODULOS.forEach(function (mod, k) {
+          var li = document.createElement('li');
+          li.className = 'modulo';
+          var h = document.createElement('h2');
+          h.textContent = mod[0];
+          var t = document.createElement('span');
+          t.textContent = mod[1];
+          h.appendChild(t);
+          var g = document.createElement('div');
+          g.className = 'g';
+          li.appendChild(h);
+          li.appendChild(g);
+          matriz.appendChild(li);
+          if (mod[2]) {
+            charts.push(new LozChart(g, mod[2]));
+          } else {
+            charts.push(
+              LozChart.multiples(
+                g,
+                Object.assign(base(), {
+                  facet: 'series',
+                  context: true,
+                  data: porRegion,
+                  xAxis: { field: 'mes', type: 'time', labels: false },
+                  yAxis: { labels: false },
+                  series: regiones.slice(0, 4).map(function (rg) {
+                    return { type: 'line', field: rg, name: rg };
+                  }),
+                  columns: 2,
+                  minWidth: 60,
+                  height: 58,
+                  legend: false,
+                }),
+              ),
+            );
+          }
+        });
+        var bloque = document.createElement('li');
+        var enlace = document.createElement('a');
+        enlace.className = 'diecinueve';
+        enlace.href = '../galeria.html';
+        enlace.innerHTML = '<span>Los 19, en la galería</span><strong>19</strong>';
+        bloque.appendChild(enlace);
+        matriz.appendChild(bloque);
+
+        // Rendimiento: 100 000 puntos, medidos en vivo.
+        var rr = rng(7);
+        var cien = new Array(100000);
+        var v = 0;
+        for (var i = 0; i < 100000; i++) {
+          v += (rr() - 0.5) * 6;
+          cien[i] = { n: i, valor: Math.round(v * 10) / 10 };
+        }
+        var gc = null;
+        function medir() {
+          if (gc) {
+            charts.splice(charts.indexOf(gc), 1);
+            gc.destroy();
+          }
+          var t0 = performance.now();
+          gc = new LozChart('#g-cien', Object.assign(base(), {
+            animate: false,
+            data: cien,
+            xAxis: { field: 'n', type: 'linear' },
+            yAxis: { format: 'number' },
+            series: [{ type: 'line', field: 'valor', name: '100 000 puntos' }],
+            zoom: true,
+            height: window.innerWidth < 640 ? 220 : 280,
+          }));
+          var ms = Math.max(1, Math.round(performance.now() - t0));
+          charts.push(gc);
+          document.getElementById('medida').textContent = 'En tu equipo, ahora: ' + ms + ' ms. Arrastra para acercar.';
+        }
+        document.getElementById('medir').addEventListener('click', medir);
+        window.addEventListener('load', function () {
+          setTimeout(medir, 60);
+        });
+
+        // Énfasis.
+        charts.push(
+          new LozChart('#g-enfasis', Object.assign(base(), {
+            data: usuarios,
+            xAxis: { field: 'mes', type: 'time' },
+            yAxis: { format: 'number' },
+            series: ciudades.map(function (c, k) {
+              return { type: 'line', field: c, name: c, color: c === 'Bogotá' ? 1 : k === 0 ? 2 : k + 1 };
+            }),
+            emphasis: 'Bogotá',
+            endLabels: { value: true },
+            legend: false,
+            height: window.innerWidth < 640 ? 260 : 340,
+            ariaLabel: 'Usuarios activos por ciudad, en miles, con Bogotá destacada.',
+          })),
+        );
+
+        // Muestras de la paleta Coral.
+        var CL = ['#e45934', '#009298', '#5e2dad', '#9c1854', '#4c99f8', '#31983d', '#db6ea5', '#e2aa00'];
+        var CO = ['#e05630', '#0a999f', '#8b61e3', '#9d4e6b', '#4996f5', '#399e43', '#d1649c', '#b88a06'];
+        var NOM = ['coral', 'petróleo', 'violeta', 'vino', 'cielo', 'verde', 'rosa', 'ocre'];
+        var mu = document.getElementById('muestras');
+        CL.forEach(function (c, k) {
+          var li = document.createElement('li');
+          var a = document.createElement('i');
+          a.style.background = c;
+          var b = document.createElement('i');
+          b.style.background = CO[k];
+          var s = document.createElement('span');
+          s.innerHTML = '<b></b><br>';
+          s.firstChild.textContent = NOM[k];
+          s.appendChild(document.createTextNode(c));
+          li.appendChild(a);
+          li.appendChild(b);
+          li.appendChild(s);
+          mu.appendChild(li);
+        });
+
+        // Tema: un solo botón.
+        var boton = document.querySelector('.tema');
+        function aplicar() {
+          root.dataset.theme = tema;
+          boton.setAttribute('aria-label', tema === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+          charts.forEach(function (c) {
+            c.setTheme(tema);
+          });
+        }
+        boton.addEventListener('click', function () {
+          tema = tema === 'dark' ? 'light' : 'dark';
+          aplicar();
+        });
+        aplicar();
+      })();
+    </script>
+  </body>
+</html>

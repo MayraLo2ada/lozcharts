@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Propuestas de portada · LozCharts</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --surface: #f4f3ef;
+        --card: #ffffff;
+        --ink: #0b0b0b;
+        --muted: #5a5954;
+        --line: #e2e0da;
+        --coral: #b8401b;
+        color-scheme: light;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--surface);
+        color: var(--ink);
+        font: 400 15px/1.5 'Hanken Grotesk', system-ui, sans-serif;
+      }
+      header {
+        padding: 40px max(16px, calc((100% - 1320px) / 2)) 24px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px 32px;
+        align-items: end;
+        justify-content: space-between;
+      }
+      h1 {
+        margin: 0;
+        font-size: 32px;
+        letter-spacing: -0.02em;
+      }
+      header p {
+        margin: 6px 0 0;
+        color: var(--muted);
+      }
+      .favs {
+        font-weight: 600;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(400px, 100%), 1fr));
+        gap: 28px;
+        padding: 0 max(16px, calc((100% - 1320px) / 2)) 64px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .card.fav {
+        outline: 3px solid var(--coral);
+        outline-offset: -1px;
+      }
+      .thumb {
+        position: relative;
+        aspect-ratio: 1440 / 900;
+        overflow: hidden;
+        background: #ddd;
+      }
+      .thumb iframe {
+        position: absolute;
+        inset: 0 auto auto 0;
+        width: 1440px;
+        height: 900px;
+        border: 0;
+        transform-origin: 0 0;
+        pointer-events: none;
+      }
+      .thumb a {
+        position: absolute;
+        inset: 0;
+      }
+      .info {
+        padding: 14px 16px 16px;
+        display: grid;
+        gap: 6px;
+      }
+      .info h2 {
+        margin: 0;
+        font-size: 17px;
+      }
+      .info p {
+        margin: 0;
+        color: var(--muted);
+        min-height: 3em;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 6px;
+      }
+      .actions a,
+      .actions button {
+        min-height: 40px;
+        padding: 8px 14px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--ink);
+        font: 600 14px/1.2 inherit;
+        font-family: inherit;
+        text-decoration: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+      }
+      .actions button[aria-pressed='true'] {
+        background: var(--coral);
+        border-color: var(--coral);
+        color: #fff;
+      }
+      :focus-visible {
+        outline: 2px solid var(--coral);
+        outline-offset: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>Propuestas de portada</h1>
+        <p>Doce ideas distintas, todas con gráficos reales. Ábrelas, juega y marca las que te gusten.</p>
+      </div>
+      <p class="favs" id="favs" aria-live="polite"></p>
+    </header>
+    <main class="grid" id="grid"></main>
+    <script>
+      // Nombre y archivo de cada propuesta; la descripción la escribe cada diseñadora.
+      var PROPUESTAS = [
+        ['01-editorial', 'Número uno', 'Una revista de datos: el gráfico es la foto de portada y su pico atraviesa la cabecera gigante.'],
+        ['02-suizo', 'Sistema', 'Rejilla de 12 columnas a la vista y los 19 tipos vivos como módulos. Usa una paleta propia (coral y grises), no la validada.'],
+        ['03-data-art', 'Sala', 'Una sala de exposición: 40 líneas reales que se abren como una lente bajo el puntero, y fichas de museo.'],
+        ['04-premium', 'Vitrina', 'Calma premium: titulares finos y enormes, cada gráfico como una joya y un botón para verlo con daltonismo.'],
+        ['05-producto', 'Consola', 'Un tablero real en grafito y ciruela: los gráficos se sincronizan y el código de al lado se reescribe mientras lo usas.'],
+        ['06-plano', 'Plano', 'Láminas técnicas en papel vegetal (cianotipo en oscuro): cotas y notas a mano medidas sobre los gráficos reales.'],
+        ['07-brutal', 'A lo bruto', 'Bordes gruesos, bloques de color y un titular enorme. Se toca: mezclas los datos y cronometras 100 000 puntos en tu equipo.'],
+        ['08-retro', 'Modelo LZ-19', 'El manual de un instrumento de los 70: una perilla cambia el trazo y la medición sale en cinta de calculadora.'],
+        ['09-lozana', 'Lozana', 'Un jardín que crece, hecho con formas de gráfico. El logo es una L, eje de un gráfico, con un brote.'],
+        ['10-juego', 'Mezcladora', 'La portada es una mesa de mezclas: mueves faders bajo cada columna y el código marca la línea que cambiaste.'],
+        ['11-mapa', 'Atlas', 'Un mapa en vivo que muestra dónde es de día ahora mismo, en un marco de atlas con su índice de 20 gráficos.'],
+        ['12-honesto', 'Sin trampas', 'Un manifiesto: barras que mienten y se corrigen solas, y cada trampa al lado de lo que LozCharts hace por defecto.'],
+      ];
+      var KEY = 'lozcharts-favoritas';
+      var favs = [];
+      try {
+        favs = JSON.parse(localStorage.getItem(KEY) || '[]');
+      } catch (e) {
+        favs = [];
+      }
+      function guardar() {
+        try {
+          localStorage.setItem(KEY, JSON.stringify(favs));
+        } catch (e) {
+          /* sin almacenamiento: las favoritas duran esta visita */
+        }
+        document.getElementById('favs').textContent = favs.length
+          ? 'Favoritas: ' +
+            favs
+              .map(function (id) {
+                return PROPUESTAS.find(function (p) {
+                  return p[0] === id;
+                })[1];
+              })
+              .join(', ')
+          : 'Aún no marcas favoritas';
+      }
+      var grid = document.getElementById('grid');
+      PROPUESTAS.forEach(function (p) {
+        var href = p[0] + '.html';
+        var card = document.createElement('article');
+        card.className = 'card' + (favs.indexOf(p[0]) >= 0 ? ' fav' : '');
+        card.innerHTML =
+          '<div class="thumb"><iframe loading="lazy" tabindex="-1" aria-hidden="true"></iframe><a aria-hidden="true" tabindex="-1"></a></div>' +
+          '<div class="info"><h2></h2><p></p><div class="actions"><a class="abrir">Abrir</a><button type="button" aria-pressed="false">Me gusta</button></div></div>';
+        card.querySelector('iframe').src = href;
+        card.querySelector('.thumb a').href = href;
+        card.querySelector('.abrir').href = href;
+        card.querySelector('h2').textContent = p[1];
+        card.querySelector('p').textContent = p[2];
+        var btn = card.querySelector('button');
+        btn.setAttribute('aria-label', 'Me gusta ' + p[1]);
+        btn.setAttribute('aria-pressed', String(favs.indexOf(p[0]) >= 0));
+        btn.addEventListener('click', function () {
+          var i = favs.indexOf(p[0]);
+          if (i >= 0) favs.splice(i, 1);
+          else favs.push(p[0]);
+          btn.setAttribute('aria-pressed', String(i < 0));
+          card.classList.toggle('fav', i < 0);
+          guardar();
+        });
+        grid.appendChild(card);
+      });
+      // La miniatura escala la página de 1440 px al ancho de la tarjeta.
+      function escalar() {
+        document.querySelectorAll('.thumb').forEach(function (t) {
+          t.querySelector('iframe').style.transform = 'scale(' + t.clientWidth / 1440 + ')';
+        });
+      }
+      window.addEventListener('resize', escalar);
+      escalar();
+      guardar();
+    </script>
+  </body>
+</html>

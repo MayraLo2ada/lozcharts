@@ -1,0 +1,960 @@
+<!doctype html>
+<!--
+  Plan 03 · "Sala de LozCharts" (data art)
+  1. Concepto: el sitio es una sala de exposición. Cada gráfico es una obra colgada en el muro con su ficha de museo; el hero es una obra generativa hecha con 5 gráficos de líneas reales (40 líneas) que se abren como una lente alrededor del puntero.
+  2. Paleta del sitio: muro blanco frío #f2f3f5, tinta #15171c, gris ficha #5b606b, línea #d9dce2; sala oscura #101216 / #eceef2 / #a3a8b3 / #262a31. El color lo ponen solo las obras (la paleta Coral completa, sin cambios).
+  3. Tipografías: Syne (800) para el nombre y los títulos, con aire de cartel de galería; Atkinson Hyperlegible Next para el texto, elegida por legibilidad: la accesibilidad es un tema de la librería.
+  4. Layout: hero a pantalla completa con las líneas arriba y el texto abajo; después muros con obras de distintos tamaños colgadas en salón (no tarjetas iguales), una franja de 100 000 puntos de borde a borde, una pared para el teclado y un cierre corto.
+  5. Único elemento audaz: la lente de 40 líneas que reacciona al puntero (y respira sola si nadie la toca). El resto: silencio, texto mínimo, fichas pequeñas.
+  6. Qué cambié de lo obvio: nada de hero "texto a la izquierda, gráfico a la derecha" ni de tarjetas con sombra; las líneas se agrupan en 8 bandas de color (5 líneas por tono) repartiendo una línea por gráfico, en vez de repetir el arcoíris de la paleta 5 veces.
+-->
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Sala</title>
+    <meta name="description" content="LozCharts: librería de gráficos en SVG, sin dependencias y gratis. Una sala de obras hechas con gráficos reales." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;700&family=Syne:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --muro: #f2f3f5;
+        --muro-2: #e9ebef;
+        --tinta: #15171c;
+        --ficha: #5b606b;
+        --linea: #d9dce2;
+        --boton: #15171c;
+        --boton-texto: #f2f3f5;
+        --foco: #5e2dad;
+        --gutter: clamp(16px, 4vw, 56px);
+        --display: 'Syne', 'Arial Black', sans-serif;
+        --texto: 'Atkinson Hyperlegible Next', system-ui, sans-serif;
+        --radio: 4px;
+        color-scheme: light;
+      }
+      :root[data-theme='dark'] {
+        --muro: #101216;
+        --muro-2: #171a1f;
+        --tinta: #eceef2;
+        --ficha: #a3a8b3;
+        --linea: #2a2e36;
+        --boton: #eceef2;
+        --boton-texto: #101216;
+        --foco: #8b61e3;
+        color-scheme: dark;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--muro);
+        color: var(--tinta);
+        font-family: var(--texto);
+        font-size: 17px;
+        line-height: 1.55;
+        overflow-x: hidden;
+        transition: background-color 0.3s, color 0.3s;
+      }
+      a {
+        color: inherit;
+      }
+      :focus-visible {
+        outline: 2px solid var(--foco);
+        outline-offset: 3px;
+        border-radius: 2px;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+      .saltar:focus {
+        position: fixed;
+        top: 8px;
+        left: 8px;
+        width: auto;
+        height: auto;
+        clip: auto;
+        z-index: 50;
+        padding: 8px 12px;
+        background: var(--tinta);
+        color: var(--muro);
+      }
+
+      /* Cabecera: flota sobre la obra, sin caja. */
+      .top {
+        position: absolute;
+        inset: 0 0 auto 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px var(--gutter);
+      }
+      .marca {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 17px;
+        letter-spacing: -0.01em;
+      }
+      .marca svg {
+        display: block;
+      }
+      .nav {
+        display: flex;
+        align-items: center;
+        gap: clamp(12px, 2.4vw, 28px);
+        font-size: 15px;
+      }
+      .nav a {
+        text-decoration: none;
+        padding: 6px 0;
+        border-bottom: 1px solid transparent;
+      }
+      .nav a:hover {
+        border-bottom-color: currentColor;
+      }
+      .tema {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--linea);
+        border-radius: 50%;
+        background: var(--muro);
+        color: var(--tinta);
+        cursor: pointer;
+      }
+      .tema .luna {
+        display: none;
+      }
+      [data-theme='dark'] .tema .sol {
+        display: none;
+      }
+      [data-theme='dark'] .tema .luna {
+        display: block;
+      }
+
+      /* Hero: la obra. */
+      .obra {
+        position: relative;
+        min-height: max(620px, 100svh);
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 0 var(--gutter) clamp(28px, 5vh, 56px);
+        overflow: hidden;
+        touch-action: pan-y;
+      }
+      .lienzo {
+        position: absolute;
+        inset: 0 -60px 0 -8px;
+      }
+      .capa {
+        position: absolute;
+        inset: 0;
+      }
+      .capa .lc-root {
+        height: 100%;
+      }
+      /* La obra no lleva rejilla ni ejes: solo las líneas. */
+      .lienzo .lc-svg > g > g:nth-child(1),
+      .lienzo .lc-svg > g > g:nth-child(4) {
+        display: none;
+      }
+      .lienzo path {
+        stroke-width: 1.35px;
+      }
+      .lienzo .lc-svg:focus {
+        outline: none;
+      }
+      .pie-obra {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 220px;
+        align-items: end;
+        gap: 24px 48px;
+        pointer-events: none;
+      }
+      .pie-obra > * {
+        pointer-events: auto;
+      }
+      h1 {
+        margin: 0;
+        font-family: var(--display);
+        font-weight: 800;
+        font-size: clamp(40px, 9.8vw, 160px);
+        line-height: 0.86;
+        letter-spacing: -0.045em;
+      }
+      .bajada {
+        margin: 18px 0 0;
+        max-width: 34ch;
+        font-size: clamp(17px, 1.5vw, 21px);
+        line-height: 1.4;
+      }
+      .acciones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 22px;
+        align-items: center;
+        margin-top: 22px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        min-height: 46px;
+        padding: 0 22px;
+        border-radius: 999px;
+        background: var(--boton);
+        color: var(--boton-texto);
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 16px;
+        border: 0;
+        font-family: inherit;
+        cursor: pointer;
+      }
+      .enlace {
+        font-weight: 500;
+        text-underline-offset: 4px;
+      }
+      .ficha {
+        font-size: 13px;
+        line-height: 1.45;
+        color: var(--ficha);
+        max-width: 30ch;
+      }
+      .ficha b {
+        display: block;
+        color: var(--tinta);
+        font-weight: 700;
+        font-size: 14px;
+      }
+      .ficha i {
+        font-style: italic;
+      }
+      .pie-obra .ficha {
+        padding-left: 14px;
+        border-left: 1px solid var(--linea);
+        margin-bottom: 6px;
+      }
+
+      /* Muros */
+      .muro {
+        padding: clamp(72px, 12vw, 160px) var(--gutter);
+      }
+      h2 {
+        margin: 0;
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: clamp(34px, 5.4vw, 78px);
+        line-height: 0.98;
+        letter-spacing: -0.035em;
+        max-width: 14ch;
+      }
+      .muro > p,
+      .texto p {
+        max-width: 46ch;
+        margin: 18px 0 0;
+        color: var(--ficha);
+        font-size: 18px;
+      }
+      .salon {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: clamp(40px, 6vw, 88px) clamp(20px, 3vw, 48px);
+        margin-top: clamp(48px, 7vw, 96px);
+        align-items: end;
+      }
+      .pieza {
+        margin: 0;
+        min-width: 0;
+      }
+      .pieza figcaption {
+        margin-top: 14px;
+      }
+      .p-sankey {
+        grid-column: 1 / span 8;
+      }
+      .p-treemap {
+        grid-column: 9 / span 4;
+        align-self: start;
+      }
+      .p-radar {
+        grid-column: 2 / span 4;
+      }
+      .p-donut {
+        grid-column: 7 / span 4;
+        align-self: center;
+      }
+      .mas {
+        margin-top: clamp(40px, 6vw, 72px);
+      }
+
+      /* Franja de 100 000 puntos, de borde a borde. */
+      .franja {
+        padding: clamp(72px, 12vw, 160px) 0;
+        background: var(--muro-2);
+      }
+      .franja .cabeza {
+        padding: 0 var(--gutter);
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: end;
+        gap: 24px;
+      }
+      .cifra {
+        font-family: var(--display);
+        font-weight: 800;
+        font-size: clamp(64px, 14vw, 220px);
+        line-height: 0.82;
+        letter-spacing: -0.05em;
+        margin: 0;
+      }
+      .medida {
+        margin: 0;
+        font-size: 18px;
+        max-width: 28ch;
+      }
+      .medida strong {
+        font-family: var(--display);
+        font-size: 1.25em;
+      }
+      #cien-mil {
+        margin-top: clamp(32px, 5vw, 64px);
+      }
+      #cien-mil .lc-svg > g > g:nth-child(1),
+      #cien-mil .lc-svg > g > g:nth-child(4) {
+        display: none;
+      }
+      #cien-mil path {
+        stroke-width: 1px;
+      }
+      .franja .pie {
+        padding: 24px var(--gutter) 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px 32px;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .btn.borde {
+        background: transparent;
+        color: var(--tinta);
+        border: 1px solid var(--tinta);
+      }
+
+      /* Teclado */
+      .teclado {
+        display: grid;
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+        gap: clamp(32px, 6vw, 96px);
+        align-items: center;
+      }
+      .teclas {
+        display: flex;
+        gap: 6px;
+        margin-top: 28px;
+      }
+      kbd {
+        display: grid;
+        place-items: center;
+        min-width: 40px;
+        height: 40px;
+        border: 1px solid var(--linea);
+        border-bottom-width: 3px;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 17px;
+      }
+
+      /* Código */
+      .codigo {
+        display: grid;
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+        gap: clamp(32px, 6vw, 96px);
+        align-items: start;
+      }
+      pre {
+        margin: 0;
+        padding: clamp(20px, 3vw, 36px);
+        border-radius: var(--radio);
+        background: var(--tinta);
+        color: var(--muro);
+        font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+        font-size: 14px;
+        line-height: 1.7;
+        overflow-x: auto;
+        max-width: 100%;
+      }
+      pre .c {
+        opacity: 0.6;
+      }
+      .entornos {
+        margin: 28px 0 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .entornos li {
+        padding: 6px 12px;
+        border: 1px solid var(--linea);
+        border-radius: 999px;
+        font-size: 15px;
+      }
+
+      /* Cierre */
+      .cierre {
+        padding: clamp(80px, 14vw, 200px) var(--gutter) 48px;
+        border-top: 1px solid var(--linea);
+      }
+      .cierre h2 {
+        font-size: clamp(56px, 11vw, 168px);
+        max-width: none;
+        line-height: 0.88;
+      }
+      .cierre p {
+        max-width: 40ch;
+        font-size: 19px;
+        margin: 22px 0 0;
+      }
+      .firma {
+        margin-top: clamp(64px, 10vw, 128px);
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 14px;
+        color: var(--ficha);
+      }
+
+      @media (max-width: 900px) {
+        .salon {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .p-sankey,
+        .p-treemap,
+        .p-radar,
+        .p-donut {
+          grid-column: 1;
+        }
+        .teclado,
+        .codigo {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      @media (max-width: 640px) {
+        .nav .opcional {
+          display: none;
+        }
+        .pie-obra {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .pie-obra .ficha {
+          display: none;
+        }
+        .nav {
+          font-size: 14px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        body {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="sr-only saltar" href="#contenido">Saltar al contenido</a>
+
+    <header class="top">
+      <a class="marca" href="../index.html" aria-label="LozCharts, inicio">
+        <!-- Símbolo: ocho hilos, uno por color de la paleta Coral, que se doblan en una L. -->
+        <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+          <g fill="none" stroke-width="1.6" stroke-linecap="round">
+            <path d="M3 2v23h23" stroke="#e45934" />
+            <path d="M6 2v20h20" stroke="#009298" />
+            <path d="M9 2v17h17" stroke="#5e2dad" />
+            <path d="M12 2v14h14" stroke="#9c1854" />
+            <path d="M15 2v11h11" stroke="#4c99f8" />
+            <path d="M18 2v8h8" stroke="#31983d" />
+            <path d="M21 2v5h5" stroke="#db6ea5" />
+            <path d="M24 2v2h2" stroke="#e2aa00" />
+          </g>
+        </svg>
+        <span>LozCharts</span>
+      </a>
+      <nav class="nav" aria-label="Principal">
+        <a href="../galeria.html">Galería</a>
+        <a href="../docs.html">Documentación</a>
+        <a class="opcional" href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+        <button class="tema" type="button" aria-label="Cambiar a modo oscuro">
+          <svg class="sol" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.2" />
+            <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" />
+          </svg>
+          <svg class="luna" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
+          </svg>
+        </button>
+      </nav>
+    </header>
+
+    <main id="contenido">
+      <section class="obra" aria-labelledby="titulo">
+        <div class="lienzo" id="lienzo" aria-hidden="true"></div>
+        <div class="pie-obra">
+          <div>
+            <h1 id="titulo">LozCharts</h1>
+            <p class="bajada">Gráficos para la web. En SVG, sin dependencias y gratis.</p>
+            <div class="acciones">
+              <a class="btn" href="../galeria.html">Ver la galería</a>
+              <a class="enlace" href="../docs.html">Leer la documentación</a>
+            </div>
+          </div>
+          <p class="ficha">
+            <b>Sin título (40 líneas), 2026</b>
+            Cinco gráficos de líneas de LozCharts, uno encima del otro. <i>Los datos los mueve tu puntero.</i>
+          </p>
+        </div>
+      </section>
+
+      <section class="muro" aria-labelledby="formas">
+        <h2 id="formas">Diecinueve formas de mirar un dato.</h2>
+        <p>Barras, áreas, velas, mapas, embudos. Estas cuatro están vivas: pasa el puntero.</p>
+        <div class="salon">
+          <figure class="pieza p-sankey">
+            <div id="obra-sankey"></div>
+            <figcaption class="ficha"><b>Sankey</b>De dónde llegan las visitas y cómo terminan. Doce flujos.</figcaption>
+          </figure>
+          <figure class="pieza p-treemap">
+            <div id="obra-treemap"></div>
+            <figcaption class="ficha"><b>Treemap</b>Ventas por producto. El área es el valor.</figcaption>
+          </figure>
+          <figure class="pieza p-radar">
+            <div id="obra-radar"></div>
+            <figcaption class="ficha"><b>Radar</b>Dos teléfonos, seis criterios.</figcaption>
+          </figure>
+          <figure class="pieza p-donut">
+            <div id="obra-donut"></div>
+            <figcaption class="ficha"><b>Donut</b>Ventas por canal, con el total al centro.</figcaption>
+          </figure>
+        </div>
+        <p class="mas"><a class="enlace" href="../galeria.html">Ver las diecinueve en la galería</a></p>
+      </section>
+
+      <section class="franja" aria-labelledby="cien">
+        <div class="cabeza">
+          <h2 id="cien" class="cifra">100 000</h2>
+          <p class="medida" id="medida" aria-live="polite">puntos en una sola línea.</p>
+        </div>
+        <div id="cien-mil"></div>
+        <div class="pie">
+          <p class="ficha" style="max-width: 52ch">
+            <b>Ruido, 2026</b>Solo dibuja lo que se ve y guarda los picos de cada columna de píxeles. Ninguno se pierde.
+          </p>
+          <button class="btn borde" type="button" id="redibujar">Dibujar otros 100 000</button>
+        </div>
+      </section>
+
+      <section class="muro teclado" aria-labelledby="todos">
+        <div class="texto">
+          <h2 id="todos">Para todos los ojos.</h2>
+          <p>Haz clic en la rejilla y recórrela con las flechas. Un lector de pantalla oye cada celda.</p>
+          <p>La paleta Coral se distingue con daltonismo y tiene su propio modo oscuro.</p>
+          <div class="teclas" aria-hidden="true"><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd></div>
+        </div>
+        <figure class="pieza">
+          <div id="obra-heatmap"></div>
+          <figcaption class="ficha"><b>Mapa de calor</b>Visitas por día y hora. Una semana, 168 celdas.</figcaption>
+        </figure>
+      </section>
+
+      <section class="muro codigo" aria-labelledby="poco">
+        <div class="texto">
+          <h2 id="poco">Pocas líneas.</h2>
+          <p>Un archivo de 51 KB comprimido. Funciona donde ya trabajas.</p>
+          <ul class="entornos" aria-label="Dónde funciona">
+            <li>&lt;script&gt;</li>
+            <li>import</li>
+            <li>React</li>
+            <li>Angular</li>
+            <li>Vue</li>
+            <li>Svelte</li>
+            <li>Django + HTMX</li>
+          </ul>
+        </div>
+        <pre><code><span class="c">&lt;script src="lozcharts.umd.js"&gt;&lt;/script&gt;</span>
+new LozChart('#ventas', {
+  data: ventas,
+  xAxis: { field: 'mes', type: 'time' },
+  series: [{ type: 'line', field: 'online' }],
+});</code></pre>
+      </section>
+
+      <section class="cierre" aria-labelledby="tuya">
+        <h2 id="tuya">Llévatela.</h2>
+        <p>Licencia MIT: gratis también para tu empresa. Exporta a PNG, SVG y CSV.</p>
+        <div class="acciones">
+          <a class="btn" href="../docs.html">Empezar</a>
+          <a class="enlace" href="https://github.com/MayraLo2ada/lozcharts">Código en GitHub</a>
+        </div>
+        <div class="firma">
+          <span>LozCharts, por Mayra Lozada.</span>
+          <span>TypeScript, sin dependencias.</span>
+        </div>
+      </section>
+    </main>
+
+    <script src="../lib/lozcharts.umd.js"></script>
+    <script>
+      (function () {
+        var root = document.documentElement;
+        var quieto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var tema = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        var graficos = [];
+        var boton = document.querySelector('.tema');
+
+        function aplicarTema(t) {
+          tema = t;
+          root.setAttribute('data-theme', t);
+          boton.setAttribute('aria-label', t === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+          graficos.forEach(function (g) {
+            g.setTheme(t);
+          });
+        }
+        aplicarTema(tema);
+        boton.addEventListener('click', function () {
+          aplicarTema(tema === 'dark' ? 'light' : 'dark');
+        });
+
+        function crear(el, opciones) {
+          var g = new LozChart(el, Object.assign({ background: false, theme: tema, animate: !quieto }, opciones));
+          graficos.push(g);
+          return g;
+        }
+
+        /* ---------- La obra: 40 líneas en 5 gráficos ---------- */
+        var CAPAS = 5;
+        var BANDAS = 8; // 8 colores de la paleta, 5 líneas por color
+        var N = CAPAS * BANDAS;
+        var PUNTOS = 97;
+        var lienzo = document.getElementById('lienzo');
+        var obra = document.querySelector('.obra');
+        var capas = [];
+        var lente = { x: 0.62, y: 0.42 };
+        var t = 0;
+
+        function rango() {
+          // Las líneas viven arriba; el texto, abajo. En móvil dejan más aire.
+          var angosto = window.innerWidth < 640;
+          return { min: angosto ? -22 : -22, max: N + (angosto ? 10 : 6) };
+        }
+
+        function datosDe(capa) {
+          var r = rango();
+          var px = lente.x * (PUNTOS - 1);
+          // La altura del puntero, traducida a la línea que tiene más cerca.
+          var pk = r.max - lente.y * (r.max - r.min);
+          var filas = [];
+          for (var i = 0; i < PUNTOS; i++) {
+            var fila = { x: i };
+            for (var b = 0; b < BANDAS; b++) {
+              var k = b * CAPAS + capa; // línea k de 40, de abajo hacia arriba
+              var dx = (i - px) / 12;
+              var abre = Math.exp(-dx * dx);
+              var lado = k >= pk ? 1 : -1;
+              var cerca = Math.exp(-Math.abs(k - pk) / 9);
+              var onda = 0.7 * Math.sin(i / 11 + t + k * 0.22) + 0.35 * Math.sin(i / 4.3 - t * 1.3 + k * 0.5);
+              fila['l' + b] = +(k + lado * 10 * abre * cerca + onda * (1 - 0.6 * abre)).toFixed(3);
+            }
+            filas.push(fila);
+          }
+          return filas;
+        }
+
+        function opcionesCapa(capa) {
+          var r = rango();
+          var series = [];
+          for (var b = 0; b < BANDAS; b++) series.push({ type: 'line', field: 'l' + b, name: 'Línea ' + (b * CAPAS + capa + 1), smooth: true });
+          return {
+            data: datosDe(capa),
+            height: obra.clientHeight,
+            xAxis: { field: 'x', type: 'linear', labels: false },
+            yAxis: { min: r.min, max: r.max, labels: false },
+            series: series,
+            legend: false,
+            tooltip: false,
+          };
+        }
+
+        for (var c = 0; c < CAPAS; c++) {
+          var div = document.createElement('div');
+          div.className = 'capa';
+          lienzo.appendChild(div);
+          capas.push(crear(div, opcionesCapa(c)));
+        }
+        // Es una obra: no se recorre con el teclado (los datos están en las secciones de abajo).
+        lienzo.querySelectorAll('.lc-svg').forEach(function (s) {
+          s.setAttribute('tabindex', '-1');
+        });
+
+        var ultimo = 0;
+        var pendiente = false;
+        function recomponer() {
+          var ahora = performance.now();
+          if (ahora - ultimo < 620) {
+            if (!pendiente) {
+              pendiente = true;
+              setTimeout(function () {
+                pendiente = false;
+                recomponer();
+              }, 620 - (ahora - ultimo));
+            }
+            return;
+          }
+          ultimo = ahora;
+          capas.forEach(function (g, i) {
+            g.setData(datosDe(i));
+          });
+        }
+
+        var tocado = 0;
+        obra.addEventListener('pointermove', function (e) {
+          var r = obra.getBoundingClientRect();
+          lente.x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+          lente.y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+          tocado = performance.now();
+          recomponer();
+        });
+
+        // Si nadie la toca, la lente pasea sola (salvo con movimiento reducido).
+        if (!quieto) {
+          setInterval(function () {
+            t += 0.5;
+            if (performance.now() - tocado > 2500) {
+              lente.x = 0.5 + 0.34 * Math.sin(t * 0.37);
+              lente.y = 0.36 + 0.16 * Math.sin(t * 0.53 + 1);
+            }
+            if (!document.hidden) recomponer();
+          }, 1300);
+        }
+
+        var anchoPrevio = window.innerWidth;
+        var altoPrevio = obra.clientHeight;
+        var espera;
+        window.addEventListener('resize', function () {
+          clearTimeout(espera);
+          espera = setTimeout(function () {
+            if (window.innerWidth === anchoPrevio && Math.abs(obra.clientHeight - altoPrevio) < 2) return;
+            anchoPrevio = window.innerWidth;
+            altoPrevio = obra.clientHeight;
+            capas.forEach(function (g, i) {
+              g.setOptions(opcionesCapa(i), false);
+            });
+          }, 200);
+        });
+
+        /* ---------- Salón ---------- */
+        function filas(lista, campos) {
+          return lista.map(function (r) {
+            var o = {};
+            campos.forEach(function (k, i) {
+              o[k] = r[i];
+            });
+            return o;
+          });
+        }
+        var flujos = filas(
+          [
+            ['Búsqueda', 'Inicio', 5200],
+            ['Búsqueda', 'Producto', 7400],
+            ['Redes', 'Inicio', 2600],
+            ['Redes', 'Ofertas', 3100],
+            ['Correo', 'Ofertas', 2200],
+            ['Directo', 'Inicio', 4300],
+            ['Inicio', 'Producto', 6900],
+            ['Inicio', 'Abandono', 5200],
+            ['Ofertas', 'Producto', 3800],
+            ['Ofertas', 'Abandono', 1500],
+            ['Producto', 'Compra', 6100],
+            ['Producto', 'Abandono', 12000],
+          ],
+          ['origen', 'destino', 'sesiones'],
+        );
+        var sankey = crear('#obra-sankey', {
+          data: flujos,
+          height: 440,
+          xAxis: { field: 'origen' },
+          series: [{ type: 'sankey', field: 'sesiones', name: 'Sesiones', to: 'destino' }],
+          ariaLabel: 'Sankey: recorrido de las visitas, de dónde llegan y cómo terminan.',
+        });
+        // El sankey también respira: los flujos cambian un poco cada pocos segundos.
+        if (!quieto) {
+          var paso = 0;
+          setInterval(function () {
+            if (document.hidden) return;
+            paso++;
+            sankey.setData(
+              flujos.map(function (f, i) {
+                return { origen: f.origen, destino: f.destino, sesiones: Math.round(f.sesiones * (1 + 0.28 * Math.sin(paso * 0.9 + i * 1.7))) };
+              }),
+            );
+          }, 3200);
+        }
+
+        crear('#obra-treemap', {
+          data: filas(
+            [
+              ['Laptops', 'Electrónica', 420000],
+              ['Teléfonos', 'Electrónica', 380000],
+              ['Tabletas', 'Electrónica', 142000],
+              ['Audífonos', 'Electrónica', 96000],
+              ['Sofás', 'Hogar', 210000],
+              ['Colchones', 'Hogar', 168000],
+              ['Cocina', 'Hogar', 88000],
+              ['Zapatillas', 'Moda', 176000],
+              ['Chaquetas', 'Moda', 122000],
+              ['Bicicletas', 'Deportes', 134000],
+              ['Camping', 'Deportes', 61000],
+            ],
+            ['producto', 'categoria', 'ventas'],
+          ),
+          height: 340,
+          xAxis: { field: 'producto' },
+          yAxis: { format: 'currency' },
+          series: [{ type: 'treemap', field: 'ventas', name: 'Ventas', group: 'categoria' }],
+          legend: false,
+        });
+
+        crear('#obra-radar', {
+          data: filas(
+            [
+              ['Batería', 8, 6],
+              ['Cámara', 7, 9],
+              ['Pantalla', 8, 8],
+              ['Precio', 9, 5],
+              ['Velocidad', 6, 9],
+              ['Diseño', 7, 8],
+            ],
+            ['criterio', 'a', 'b'],
+          ),
+          height: 320,
+          xAxis: { field: 'criterio' },
+          yAxis: { min: 0, max: 10 },
+          series: [
+            { type: 'radar', field: 'a', name: 'Modelo A' },
+            { type: 'radar', field: 'b', name: 'Modelo B' },
+          ],
+        });
+
+        crear('#obra-donut', {
+          data: filas(
+            [
+              ['Búsqueda', 0.41],
+              ['Directo', 0.2],
+              ['Redes', 0.18],
+              ['Correo', 0.12],
+              ['Referidos', 0.09],
+            ],
+            ['canal', 'ventas'],
+          ),
+          height: 280,
+          xAxis: { field: 'canal' },
+          yAxis: { format: 'percent' },
+          series: [{ type: 'donut', field: 'ventas', name: 'Ventas' }],
+          legend: false,
+        });
+
+        /* ---------- 100 000 puntos ---------- */
+        var semilla = 7;
+        function azar() {
+          semilla = (semilla + 0x6d2b79f5) | 0;
+          var x = Math.imul(semilla ^ (semilla >>> 15), 1 | semilla);
+          x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+          return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+        }
+        function ruido() {
+          var d = new Array(100000);
+          var v = 0;
+          for (var i = 0; i < 100000; i++) {
+            // Un sismógrafo: ruido que vuelve al centro, con temblores que crecen y se apagan.
+            var temblor = Math.pow(Math.max(0, Math.sin(i / 5200 + 0.4) * Math.sin(i / 1900)), 2);
+            v = v * 0.985 + (azar() - 0.5) * (1 + 14 * temblor);
+            var pico = azar() < 0.00006 ? (azar() - 0.5) * 120 : 0; // picos sueltos: no se pierden
+            d[i] = { i: i, v: +(v + pico).toFixed(2) };
+          }
+          return d;
+        }
+        var cienMil = null;
+        var medida = document.getElementById('medida');
+        function dibujarCienMil() {
+          var datos = ruido();
+          var t0 = performance.now();
+          if (cienMil) {
+            cienMil.setOptions({ data: datos }, false);
+          } else {
+            cienMil = crear('#cien-mil', {
+              data: datos,
+              height: window.innerWidth < 640 ? 200 : 300,
+              xAxis: { field: 'i', type: 'linear', labels: false },
+              yAxis: { labels: false },
+              series: [{ type: 'line', field: 'v', name: 'Ruido', color: 2 }],
+              animate: false,
+              ariaLabel: 'Una línea de 100 000 puntos de ruido aleatorio.',
+            });
+          }
+          var ms = Math.round(performance.now() - t0);
+          medida.innerHTML = 'puntos en una sola línea. Tu navegador la dibujó en <strong>' + ms + ' ms</strong>.';
+        }
+        dibujarCienMil();
+        document.getElementById('redibujar').addEventListener('click', function () {
+          semilla = Math.floor(Math.random() * 1e9);
+          dibujarCienMil();
+        });
+
+        /* ---------- Teclado ---------- */
+        var dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        var calor = [];
+        semilla = 3;
+        dias.forEach(function (dia, k) {
+          for (var h = 0; h < 24; h++) {
+            var curva = Math.max(0.05, Math.sin(((h - 6) / 18) * Math.PI)) * (h >= 6 ? 1 : 0.3);
+            calor.push({
+              hora: String(h).padStart(2, '0') + ':00',
+              dia: dia,
+              visitas: Math.round((900 * curva * (k < 5 ? 1 : 0.6) + 40) * (0.9 + azar() * 0.2)),
+            });
+          }
+        });
+        crear('#obra-heatmap', {
+          data: calor,
+          height: window.innerWidth < 640 ? 300 : 380,
+          xAxis: { field: 'hora' },
+          series: [{ type: 'heatmap', field: 'visitas', name: 'Visitas', y: 'dia', color: 3 }],
+        });
+      })();
+    </script>
+  </body>
