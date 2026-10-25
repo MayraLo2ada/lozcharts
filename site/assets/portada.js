@@ -11,45 +11,28 @@
 
   // ------------------------------------------------------------ El globo
 
-  var USUARIOS = [
-    ['USA', 4210],
-    ['MEX', 1830],
-    ['BRA', 2650],
-    ['COL', 980],
-    ['ARG', 760],
-    ['CHL', 410],
-    ['PER', 520],
-    ['ECU', 230],
-    ['CAN', 560],
-    ['ESP', 1120],
-    ['FRA', 640],
-    ['DEU', 890],
-    ['GBR', 720],
-    ['ITA', 450],
-    ['IND', 1540],
-    ['CHN', 1260],
-    ['JPN', 610],
-    ['AUS', 330],
-    ['ZAF', 210],
-    ['NGA', 280],
-    ['EGY', 190],
-    ['IDN', 470],
-    ['TUR', 260],
-    ['SAU', 150],
-    ['VEN', 180],
-    ['URY', 95],
-    ['BOL', 110],
-    ['CRI', 70],
-    ['GTM', 120],
-    ['DOM', 140],
-    ['KOR', 380],
-    ['PHL', 240],
-  ].map(function (r) {
-    return { pais: r[0], usuarios: r[1] * 1000 };
-  });
+  // Datos de ejemplo para todos los países del mapa (el globo nunca queda vacío al girar). Unos
+  // pocos con valores a mano; el resto, un número estable que sale de su código ISO.
+  var A_MANO = { USA: 4210, MEX: 1830, BRA: 2650, COL: 980, ESP: 1120, IND: 3540, CHN: 3260, DEU: 890, JPN: 1610, ARG: 760 };
+  var paises = (window.LozChartWorld || { objects: { countries: { geometries: [] } } }).objects.countries.geometries;
+  var USUARIOS = paises
+    .map(function (g) {
+      return g.properties.iso3;
+    })
+    .filter(function (iso) {
+      return iso && iso !== 'ATA';
+    })
+    .map(function (iso) {
+      var h = 0;
+      for (var i = 0; i < iso.length; i++) h = (h * 31 + iso.charCodeAt(i)) % 9973;
+      var miles = A_MANO[iso] || 150 + (h % 1000) * 3;
+      return { pais: iso, usuarios: miles * 1000 };
+    });
   var rot = [-70, 12];
   var serie = function () {
-    return [{ type: 'choropleth', field: 'usuarios', name: 'Usuarios', projection: 'orthographic', rotate: rot.slice() }];
+    return [
+      { type: 'choropleth', field: 'usuarios', name: 'Usuarios', projection: 'orthographic', rotate: rot.slice(), labels: false },
+    ];
   };
   var globoEl = byId('globo');
   var globo = siteChart(

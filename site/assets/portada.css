@@ -130,9 +130,11 @@
   justify-items: end;
 }
 .globe {
-  width: min(54vw, 86svh, 1400px);
+  width: min(50vw, 80svh, 1400px);
   aspect-ratio: 1;
-  margin-right: max(-7vw, -160px);
+  margin-right: max(-3vw, -60px);
+  /* Una atmósfera: halo violeta y rosa alrededor del globo. */
+  filter: drop-shadow(0 0 40px rgba(123, 92, 255, 0.35)) drop-shadow(0 0 120px rgba(255, 79, 154, 0.18));
   cursor: grab;
   touch-action: pan-y;
 }

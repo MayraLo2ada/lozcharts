@@ -102,7 +102,7 @@ export interface SeriesOptions {
   innerRadius?: number;
   /** Gauge: valor de la meta, marcado sobre el arco. */
   target?: number;
-  /** Pie, donut y embudo: mostrar las etiquetas junto a cada parte. Por defecto true. */
+  /** Pie, donut y embudo: mostrar las etiquetas junto a cada parte; mapas: la escala de color. Por defecto true. */
   labels?: boolean;
   /** Mapa de calor: campo de cada fila que da la fila del mapa (el eje vertical); la X da la columna. */
   y?: string;

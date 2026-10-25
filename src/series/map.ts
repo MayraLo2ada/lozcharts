@@ -62,6 +62,7 @@ const warned = new WeakSet<PreparedSeries>();
 
 /** Lugares del mapa, proyección ajustada y cruce con los datos; se rehace solo si cambia el área. */
 function setup(ctx: DrawContext, legend: boolean): MapSetup | null {
+  legend = legend && showScale(ctx);
   const ps = ctx.frame.ps;
   const name = ps.options.map ?? 'mundo';
   const all = getMap(name);
@@ -183,6 +184,11 @@ function placeName(ps: PreparedSeries, _i: number, x: string): string {
   return typeof nombre === 'string' && nombre ? nombre : x;
 }
 
+/** La escala de color se muestra salvo `labels: false` (un mapa decorativo, o con su propia leyenda afuera). */
+function showScale(ctx: DrawContext): boolean {
+  return ctx.frame.ps.options.labels !== false;
+}
+
 /** Barra de la escala de color con sus números, abajo a la izquierda. */
 function legendMarkup(ctx: DrawContext, d: Domain, plotH: number): string {
   const spec = legendSpec(d, ctx.compact);
@@ -261,7 +267,7 @@ export const choropleth: SeriesImpl = {
       const c = paint(ramp, position(domain, v));
       s += `<path${attrs({ d: sh.d, fill: c.fill, 'fill-opacity': c.opacity, stroke: ctx.theme.surface, 'stroke-width': 0.5, 'stroke-linejoin': 'round' })}/>`;
     });
-    return s + (domain ? legendMarkup(ctx, domain, S.plotH) : '');
+    return s + (domain && showScale(ctx) ? legendMarkup(ctx, domain, S.plotH) : '');
   },
   hit(ctx, px, py) {
     const S = setup(ctx, true);
