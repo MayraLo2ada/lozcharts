@@ -348,3 +348,25 @@ test('tooltip: más de tres vecinos se resumen', () => {
   const t = network.tooltip!(series(rows), model(rows).nodeRow[0], format)!;
   assert.deepEqual(t.details?.[1], ['Vecinos principales', 'B (5), C (4), D (3) y 2 más']);
 });
+
+test('muestra del tooltip: el color del grupo del nodo, el mismo del círculo', () => {
+  const m = model(TEAM);
+  for (const theme of [LIGHT, DARK]) {
+    const ctx = context(series(TEAM), TEAM, 640, 360, undefined, theme);
+    m.nodeRow.forEach((i, v) => {
+      if (i < 0) return;
+      const swatch = network.swatch!(ctx, i);
+      assert.equal(swatch, m.slots[v] >= 0 ? theme.palette[m.slots[v]] : theme.other);
+      assert.ok(network.hover!(ctx, i).includes(`fill="${swatch}"`), `${m.names[v]} en ${swatch}`);
+    });
+  }
+  // Dos equipos, dos muestras distintas.
+  const ctx = context(series(TEAM), TEAM);
+  const row = (name: string) => m.nodeRow[m.names.indexOf(name)];
+  assert.notEqual(network.swatch!(ctx, row('Ana')), network.swatch!(ctx, row('Pedro')));
+  // Sin grupos, todos en el color de la serie.
+  const plain = TEAM.map(([a, b, v]): Row => [a, b, v, '']);
+  const pm = model(plain);
+  const pc = context(series(plain), plain);
+  for (const i of pm.nodeRow) if (i >= 0) assert.equal(network.swatch!(pc, i), pc.color);
+});

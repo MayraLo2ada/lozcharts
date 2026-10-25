@@ -21,12 +21,14 @@ import { fitText } from '../core/axis';
 import {
   type Domain,
   type LegendSpec,
+  type Paint,
   type Ramp,
   colorDomain,
   legendSpec,
   legendWidth,
   makeRamp,
   paint,
+  paintColor,
   position,
   textOn,
 } from '../core/color';
@@ -295,10 +297,21 @@ interface Setup {
   values: string[] | null;
 }
 
+/** Dominio y rampa del color: los mismos para las celdas, la leyenda y la muestra del tooltip. */
+function colorScale(ctx: DrawContext): Pick<Setup, 'domain' | 'ramp'> {
+  const domain = colorDomain(ctx.frame.ps.values);
+  return { domain, ramp: domain ? makeRamp(domain.kind, ctx.theme, ctx.color) : null };
+}
+
+/** Color de la celda i con el valor de este cuadro, o null si no tiene valor. */
+function cellPaint({ domain, ramp }: Pick<Setup, 'domain' | 'ramp'>, y1: readonly number[], i: number): Paint | null {
+  return domain && ramp && isFinite(y1[i]) ? paint(ramp, position(domain, y1[i])) : null;
+}
+
 function setup(ctx: DrawContext): Setup {
   const ps = ctx.frame.ps;
   const grid = gridOf(ps);
-  const domain = colorDomain(ps.values);
+  const { domain, ramp } = colorScale(ctx);
   const legend = domain ? legendSpec(domain, ctx.format) : null;
   const colTexts = grid.first.map((i) => ctx.label(i));
   const colWidths = colTexts.map((t) => ctx.measure(t));
@@ -330,7 +343,7 @@ function setup(ctx: DrawContext): Setup {
     grid,
     L,
     domain,
-    ramp: domain ? makeRamp(domain.kind, ctx.theme, ctx.color) : null,
+    ramp,
     legend,
     rowTexts,
     colTexts,
@@ -378,7 +391,7 @@ export const heatmap: SeriesImpl = {
   texts: (o, x) => ({ y: o.y, x }),
   draw(ctx) {
     const S = setup(ctx);
-    const { grid, L, domain, ramp } = S;
+    const { grid, L } = S;
     if (!grid.cols.length || L.cellW <= 0 || L.cellH <= 0) return '';
     const th = ctx.theme;
     const radius = Math.min(RADIUS, L.cellW / 4, L.cellH / 4);
@@ -389,8 +402,8 @@ export const heatmap: SeriesImpl = {
       for (let c = 0; c < grid.cols.length; c++) {
         const i = grid.cell[r * grid.cols.length + c];
         // Los colores salen del valor animado: un cambio de datos se ve como un cambio de color.
-        if (i < 0 || !domain || !ramp || !isFinite(y1[i])) continue;
-        const p = paint(ramp, position(domain, y1[i]));
+        const p = i < 0 ? null : cellPaint(S, y1, i);
+        if (!p) continue;
         const b = cellRect(L, c, r);
         cells += rect(b.x, b.y, b.w, b.h, { rx: r2(radius), fill: p.fill, 'fill-opacity': p.opacity });
         const v = S.values?.[i];
@@ -413,6 +426,11 @@ export const heatmap: SeriesImpl = {
       axes += text(t.x, L.colLabelY, S.colTexts[t.c], th.textMuted, { 'text-anchor': t.anchor });
     }
     return cells + labels + axes + legendMarkup(ctx, S);
+  },
+  // El color de la celda en la rampa: dice cuánto vale, no solo de qué serie es.
+  swatch(ctx, i) {
+    const p = cellPaint(colorScale(ctx), ctx.frame.y1, i);
+    return p && paintColor(p);
   },
   hit(ctx, px, py) {
     const { grid, L } = setup(ctx);

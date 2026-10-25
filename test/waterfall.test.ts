@@ -452,3 +452,20 @@ test('textos escapados y opción labels: false', () => {
   const off = waterfall.draw(context(series(RESULTADOS, { labels: false })));
   assert.ok(off.includes('<path') && !off.includes('<text'));
 });
+
+test('muestra del tooltip: un total en el gris de su barra; con varias cascadas, la serie', () => {
+  const ps = series(RESULTADOS);
+  for (const theme of [LIGHT, DARK]) {
+    const ctx = context(ps, { theme });
+    assert.ok(waterfall.draw(ctx).includes(`fill="${theme.other}"`));
+    // Subidas y bajadas (la hueca también, rellena en la muestra) van en el color de la serie.
+    assert.deepEqual(
+      RESULTADOS.map((_, i) => waterfall.swatch!(ctx, i)),
+      [null, null, theme.other, null, null, null, theme.other],
+    );
+  }
+  // Lado a lado, los totales se distinguen por la punta del color de su serie: la muestra también.
+  const base = context(ps);
+  const clustered: DrawContext = { ...base, frame: { ...base.frame, slot: 0, slots: 2 } };
+  assert.ok(RESULTADOS.every((_, i) => waterfall.swatch!(clustered, i) === null));
+});

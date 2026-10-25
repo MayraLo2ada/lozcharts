@@ -13,14 +13,15 @@
  */
 import type { Datum, FormatSpec, LozChartOptions, LozChartUpdate, MultiplesOptions, ThemeName, XValue } from './types';
 import type { LozMultiples } from './multiples';
-import type {
-  DrawContext,
-  PolarPlane,
-  PreparedSeries,
-  SeriesFrame,
-  SeriesImpl,
-  TooltipFormat,
-  TooltipValue,
+import {
+  swatchOf,
+  type DrawContext,
+  type PolarPlane,
+  type PreparedSeries,
+  type SeriesFrame,
+  type SeriesImpl,
+  type TooltipFormat,
+  type TooltipValue,
 } from './core/series';
 import { injectStyles, LIGHT, MAX_COLORS, resolveTheme, themeVars, type Theme } from './core/theme';
 import { BandScale, ContinuousScale, LinearScale, type XScale } from './core/scales';
@@ -1852,6 +1853,17 @@ export class LozChart {
     return this.prepared.xType === 'linear' && title ? `${title}: ${label}` : label;
   }
 
+  /**
+   * Muestra de color de la serie s en el índice i: la pide al tipo con el cuadro destino, el que
+   * describen los valores del tooltip, así una celda o una rama muestran el color en el que quedan.
+   */
+  private swatchColor(s: PreparedSeries, i: number): string {
+    const L = this.layout;
+    const f = L && this.target.series.find((x) => x.ps === s);
+    if (f) return swatchOf(this.drawContext(f, L, this.target), i);
+    return this.prepared.pointLegend ? this.pointColor(i) : this.colorOf(s);
+  }
+
   /** El tooltip se arma con textContent: los datos del usuario nunca pasan por innerHTML. */
   private fillTooltip(i: number): void {
     // En dispersión, solo las series con dato en ese punto.
@@ -1864,7 +1876,7 @@ export class LozChart {
     for (const r of rows) {
       const row = html('div', { class: 'lc-tt-row' });
       const key = html('span', { class: 'lc-tt-key' });
-      key.style.background = this.prepared.pointLegend ? this.pointColor(i) : this.colorOf(r.s);
+      key.style.background = this.swatchColor(r.s, i);
       row.append(key, html('span', { class: 'lc-tt-val' }, r.text.value), html('span', { class: 'lc-tt-name' }, r.s.name));
       nodes.push(row);
       for (const [label, value] of r.text.details ?? []) {

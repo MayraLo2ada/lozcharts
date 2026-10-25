@@ -30,7 +30,17 @@ import {
   rawProjection,
   type GeoFeature,
 } from '../core/geo';
-import { colorDomain, legendSpec, legendWidth, makeRamp, paint, position, type Domain } from '../core/color';
+import {
+  colorDomain,
+  legendSpec,
+  legendWidth,
+  makeRamp,
+  paint,
+  paintColor,
+  position,
+  type Domain,
+  type Paint,
+} from '../core/color';
 
 const FONT = 11;
 const LEGEND_BAR_H = 8;
@@ -240,6 +250,19 @@ const tooltip = (ps: PreparedSeries, i: number, format: TooltipFormat) => ({
   value: isFinite(ps.values[i]) ? format.value(ps.values[i]) : 'Sin dato',
 });
 
+/** Color de cada lugar con el valor de este cuadro: el de su fila (si una fila se repite, la última). */
+function placePaints(ctx: DrawContext, S: MapSetup): Map<number, Paint> {
+  const out = new Map<number, Paint>();
+  const domain = colorDomain(ctx.frame.ps.values);
+  if (!domain) return out;
+  const ramp = makeRamp(domain.kind, ctx.theme, ctx.color);
+  const y1 = ctx.frame.y1;
+  S.place.forEach((k, i) => {
+    if (k >= 0 && isFinite(y1[i])) out.set(k, paint(ramp, position(domain, y1[i])));
+  });
+  return out;
+}
+
 export const choropleth: SeriesImpl = {
   coords: 'free',
   label: 'mapa coroplético',
@@ -248,23 +271,16 @@ export const choropleth: SeriesImpl = {
   draw(ctx) {
     const S = setup(ctx, true);
     if (!S) return '';
-    const ps = ctx.frame.ps;
-    const domain = colorDomain(ps.values);
-    const ramp = domain && makeRamp(domain.kind, ctx.theme, ctx.color);
-    // Valor de cada lugar: el de su fila (si una fila se repite, la última).
-    const valueOf = new Map<number, number>();
-    S.place.forEach((k, i) => {
-      if (k >= 0 && isFinite(ctx.frame.y1[i])) valueOf.set(k, ctx.frame.y1[i]);
-    });
+    const domain = colorDomain(ctx.frame.ps.values);
+    const paints = placePaints(ctx, S);
     let s = sphereMarkup(S, ctx);
     S.shapes.forEach((sh, k) => {
       if (!sh.d) return;
-      const v = valueOf.get(k);
-      if (v === undefined || !domain || !ramp) {
+      const c = paints.get(k);
+      if (!c) {
         s += basePath(sh.d, ctx);
         return;
       }
-      const c = paint(ramp, position(domain, v));
       s += `<path${attrs({ d: sh.d, fill: c.fill, 'fill-opacity': c.opacity, stroke: ctx.theme.surface, 'stroke-width': 0.5, 'stroke-linejoin': 'round' })}/>`;
     });
     return s + (domain && showScale(ctx) ? legendMarkup(ctx, domain, S.plotH) : '');
@@ -283,6 +299,13 @@ export const choropleth: SeriesImpl = {
     const k = S?.place[i] ?? -1;
     if (!S || k < 0) return '';
     return `<path${attrs({ d: S.shapes[k].d, fill: 'none', stroke: ctx.theme.text, 'stroke-width': 1.5, 'stroke-linejoin': 'round' })}/>`;
+  },
+  // El color del lugar en la rampa, como en el mapa.
+  swatch(ctx, i) {
+    const S = setup(ctx, true);
+    const k = S?.place[i] ?? -1;
+    const c = S && k >= 0 ? placePaints(ctx, S).get(k) : undefined;
+    return c ? paintColor(c) : null;
   },
   navigable: (ps) => ranked(ps, setups.get(ps)?.place),
   headline: (ps, i, x) => placeName(ps, i, x),

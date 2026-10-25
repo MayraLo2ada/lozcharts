@@ -754,6 +754,12 @@ export const sankey: SeriesImpl = {
     const to = ps.texts.to?.[i] ?? '';
     return to ? `${x} → ${to}` : x;
   },
+  // El flujo va en el color de su nodo de origen, como su cinta.
+  swatch(ctx, i) {
+    const m = modelOf(ctx.frame.ps);
+    const l = m.byRow.get(i);
+    return l ? colorOf(ctx, m, l.source) : null;
+  },
   navigable(ps) {
     return linkOrder(modelOf(ps));
   },

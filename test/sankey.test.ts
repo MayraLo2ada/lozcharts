@@ -388,3 +388,31 @@ test('tooltip de flujos que no se dibujan', () => {
   assert.deepEqual(sankey.tooltip!(ps, 2, format), { value: '0' });
   assert.ok(!sankey.navigable!(ps).includes(2));
 });
+
+test('muestra del tooltip: el color del nodo de origen, el mismo de la cinta', () => {
+  const m = model(WEB);
+  for (const theme of [LIGHT, DARK]) {
+    const ctx = context(series(WEB), WEB, 640, 320, undefined, theme);
+    WEB.forEach(([from], i) => {
+      const s = m.slots[m.names.indexOf(from)];
+      const swatch = sankey.swatch!(ctx, i);
+      assert.equal(swatch, s >= 0 ? theme.palette[s] : theme.other);
+      assert.ok(sankey.hover!(ctx, i).includes(`fill="${swatch}"`), `cinta ${i} en ${swatch}`);
+    });
+  }
+  // Dos orígenes distintos, dos muestras distintas: no es el color de la serie.
+  const ctx = context(series(WEB), WEB);
+  assert.notEqual(sankey.swatch!(ctx, 0), sankey.swatch!(ctx, 2));
+  // Un flujo que no se dibuja (cierra un ciclo) no tiene color propio: el de la serie.
+  const loop: Row[] = [
+    ['A', 'B', 5],
+    ['B', 'A', 2],
+  ];
+  const warn = console.warn;
+  console.warn = () => {};
+  try {
+    assert.equal(sankey.swatch!(context(series(loop), loop), 1), null);
+  } finally {
+    console.warn = warn;
+  }
+});

@@ -521,3 +521,25 @@ test('tooltip de filas que no se dibujan o que son parte de un nodo', () => {
   assert.equal(sunburst.headline!(ps, 2, 'fila 3'), 'fila 3');
   assert.equal(sunburst.headline!(ps, 0, ''), 'A › x › y');
 });
+
+test('muestra del tooltip: el color del segmento, también en los nodos interiores', () => {
+  const m = model(VENTAS);
+  for (const theme of [LIGHT, DARK]) {
+    const ctx = context(series(VENTAS), 480, 480, undefined, theme);
+    m.nodes.forEach((node, id) => {
+      const ref = refOf(m, id);
+      const swatch = sunburst.swatch!(ctx, ref);
+      assert.equal(swatch, nodeColor(node.slot, node.depth, theme), node.name);
+      assert.ok(sunburst.hover!(ctx, ref).includes(`fill="${swatch}"`), `${node.name} en ${swatch}`);
+    });
+  }
+  // Cada rama con su color y, dentro de ella, aclarado por nivel.
+  const ctx = context(series(VENTAS));
+  const at = (name: string) => sunburst.swatch!(ctx, refOf(m, byName(m, name)));
+  assert.notEqual(at('América'), at('Europa'));
+  assert.notEqual(at('Europa'), at('Madrid'));
+  assert.equal(at('España'), sunburst.swatch!(ctx, VENTAS.length + byName(m, 'España')));
+  // Una fila que no se dibuja no tiene color propio.
+  const rows: Row[] = [...VENTAS, ['Asia', 'Corea', 'Seúl', 0]];
+  assert.equal(sunburst.swatch!(context(series(rows)), rows.length - 1), null);
+});

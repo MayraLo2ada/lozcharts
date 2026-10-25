@@ -176,6 +176,11 @@ export function paint(r: Ramp, p: number): Paint {
   return mixPaint(r.base, q < 0 ? r.neg : r.pos, Math.abs(q));
 }
 
+/** Un relleno como color CSS (la muestra del tooltip): con opacidad, mezclado con lo de atrás. */
+export function paintColor(p: Paint): string {
+  return p.opacity === undefined ? p.fill : `color-mix(in srgb, ${p.fill} ${r2(p.opacity * 100)}%, transparent)`;
+}
+
 /** Leyenda: qué tramo de la rampa muestra la barra y qué números van debajo (texto y lugar de 0 a 1). */
 export interface LegendSpec {
   from: number;

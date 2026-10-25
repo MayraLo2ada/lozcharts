@@ -494,3 +494,26 @@ test('textos escapados', () => {
   assert.ok(d.includes('l&#39;été'));
   assert.ok(!d.includes('<b>'));
 });
+
+test('muestra del tooltip: la tinta de la palabra, la misma con la que se escribe', () => {
+  for (const theme of [LIGHT, DARK]) {
+    for (const ps of [series(SURVEY, { group: 'g' }), series(SURVEY)]) {
+      const ctx = context(ps, 640, 360, ps.values, theme);
+      for (const i of wordcloud.navigable!(ps)) {
+        const swatch = wordcloud.swatch!(ctx, i);
+        assert.ok(swatch && wordcloud.hover!(ctx, i).includes(`fill="${swatch}"`), `${SURVEY[i][0]} en ${swatch}`);
+      }
+    }
+  }
+  // Con grupos: por grupo, y una fila sumada en otra palabra lleva la tinta de esa palabra.
+  const grouped = context(series(SURVEY, { group: 'g' }));
+  const g = (i: number) => wordcloud.swatch!(grouped, i);
+  assert.equal(g(5), g(0));
+  assert.equal(g(2), g(0));
+  assert.notEqual(g(1), g(0));
+  // Sin grupos: la intensidad según el peso, no siempre el color de la serie.
+  const plain = context(series(SURVEY));
+  assert.notEqual(wordcloud.swatch!(plain, 0), wordcloud.swatch!(plain, 6));
+  // Sin palabra no hay qué pintar.
+  assert.equal(wordcloud.swatch!(grouped, 7), null);
+});

@@ -815,6 +815,12 @@ export const timeline: SeriesImpl = {
   headline(ps, i, x) {
     return ps.texts.name?.[i] || x;
   },
+  // El color del carril del tramo (con grupos), como su barra o su rombo.
+  swatch(ctx, i) {
+    const m = modelOf(ctx.frame.ps);
+    const sp = m.byRow.get(i);
+    return sp ? colorOf(ctx, m, sp.lane) : null;
+  },
   navigable(ps) {
     return modelOf(ps).spans.map((sp) => sp.index);
   },

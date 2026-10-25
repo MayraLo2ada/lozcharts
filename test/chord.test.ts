@@ -504,3 +504,31 @@ test('área vacía o diminuta: nada que dibujar, sin errores', () => {
   const tiny = chord.draw(context(ps, MIGRA, 30, 30));
   assert.ok(!tiny.includes('NaN') && !tiny.includes('<text'));
 });
+
+test('muestra del tooltip: el color del nodo de origen, el mismo de la cinta', () => {
+  const m = model(MIGRA);
+  for (const theme of [LIGHT, DARK]) {
+    const ctx = context(series(MIGRA), MIGRA, 640, 360, undefined, theme);
+    MIGRA.forEach(([from], i) => {
+      const s = m.slots[m.names.indexOf(from)];
+      const swatch = chord.swatch!(ctx, i);
+      assert.equal(swatch, s >= 0 ? theme.palette[s] : theme.other);
+      assert.ok(chord.hover!(ctx, i).includes(`fill="${swatch}"`), `cinta ${i} en ${swatch}`);
+    });
+  }
+  // Sur → Centro va en el color de Sur, no en el de la serie.
+  const sur = MIGRA.findIndex(([from, to]) => from === 'Sur' && to === 'Centro');
+  assert.equal(chord.swatch!(context(series(MIGRA), MIGRA), sur), LIGHT.palette[2]);
+  // Un bucle no se dibuja: sin color propio.
+  const rows: Row[] = [
+    ['A', 'B', 5],
+    ['B', 'B', 2],
+  ];
+  const warn = console.warn;
+  console.warn = () => {};
+  try {
+    assert.equal(chord.swatch!(context(series(rows), rows), 1), null);
+  } finally {
+    console.warn = warn;
+  }
+});

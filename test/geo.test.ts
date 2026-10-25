@@ -13,10 +13,15 @@ import {
   projectOnGlobe,
   normalizeKey,
   rawProjection,
+  registerMap,
   type Topology,
 } from '../src/core/geo';
 import { world } from '../src/maps/world';
-import { bubbleRadius } from '../src/series/map';
+import { bubbleRadius, choropleth } from '../src/series/map';
+import { colorDomain, makeRamp, paint, position } from '../src/core/color';
+import type { DrawContext, PreparedSeries } from '../src/core/series';
+import { BandScale, LinearScale } from '../src/core/scales';
+import { DARK, LIGHT } from '../src/core/theme';
 
 const near = (a: number, b: number, eps = 1e-6) => Math.abs(a - b) < eps;
 
@@ -368,4 +373,58 @@ test('globo: el frente se ve, la espalda no, y lo de atrás abraza el horizonte'
   });
   assert.deepEqual(projectOnGlobe(back[0], g), []);
   assert.match(graticule(g), /^M/);
+});
+
+test('mapa coroplético: la muestra del tooltip es el color del lugar en la rampa', () => {
+  registerMap('prueba', world);
+  const places = ['Canada', 'Fiji', 'Tanzania', 'Atlántida'];
+  const values = [10, 40, 25, 30];
+  const ps: PreparedSeries = {
+    key: 'v',
+    name: 'Índice',
+    impl: choropleth,
+    slot: 0,
+    options: { type: 'choropleth', field: 'v', map: 'prueba' },
+    values,
+    columns: {},
+    texts: {},
+    stackKey: null,
+    axis: 'left',
+  };
+  for (const theme of [LIGHT, DARK]) {
+    const ctx: DrawContext = {
+      frame: { ps, y0: values.map(() => 0), y1: values, cols: {}, alpha: 1, slot: 0, slots: 1, outer: [] },
+      color: theme.palette[0],
+      pointColor: () => theme.palette[0],
+      x: new BandScale(places.length, 640),
+      y: new LinearScale(0, 1, 360, 0),
+      theme,
+      width: 640,
+      height: 360,
+      n: places.length,
+      isHidden: () => false,
+      label: (i) => places[i],
+      measure: (s) => s.length * 7,
+      format: String,
+      compact: String,
+      percent: String,
+    };
+    const warn = console.warn;
+    console.warn = () => {};
+    try {
+      const d = choropleth.draw(ctx);
+      const domain = colorDomain(values)!;
+      const ramp = makeRamp(domain.kind, theme, ctx.color);
+      for (let i = 0; i < 3; i++) {
+        const swatch = choropleth.swatch!(ctx, i);
+        assert.equal(swatch, paint(ramp, position(domain, values[i])).fill);
+        assert.ok(d.includes(`fill="${swatch}"`), `${places[i]} en ${swatch}`);
+      }
+      assert.notEqual(choropleth.swatch!(ctx, 0), choropleth.swatch!(ctx, 1));
+      // Un lugar que no está en el mapa no se pinta.
+      assert.equal(choropleth.swatch!(ctx, 3), null);
+    } finally {
+      console.warn = warn;
+    }
+  }
 });

@@ -210,4 +210,18 @@ export interface SeriesImpl {
   hover?(ctx: DrawContext, i: number): string;
   /** Texto del tooltip en el índice i, si no basta con el valor principal formateado. */
   tooltip?(ps: PreparedSeries, i: number, format: TooltipFormat): TooltipValue | null;
+  /**
+   * Color de la muestra del tooltip en el índice i (también en los virtuales, desde n), para los
+   * tipos en los que cada dato tiene su propio color: la rama de un sunburst, el grupo de un
+   * treemap, el nodo de origen de un sankey. Recibe el mismo contexto que draw y debe salir de la
+   * misma función con la que se pinta el dato: así la muestra nunca se desincroniza del dibujo.
+   * null o ausente: el color de la serie (o el de la categoría, con legendBy: 'points').
+   */
+  swatch?(ctx: DrawContext, i: number): string | null;
+}
+
+/** Color de la muestra del índice i: el del dato si el tipo lo da; si no, el de la serie o la categoría. */
+export function swatchOf(ctx: DrawContext, i: number): string {
+  const impl = ctx.frame.ps.impl;
+  return impl.swatch?.(ctx, i) ?? (impl.legendBy === 'points' ? ctx.pointColor(i) : ctx.color);
 }

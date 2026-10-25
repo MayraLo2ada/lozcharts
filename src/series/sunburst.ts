@@ -641,6 +641,13 @@ export const sunburst: SeriesImpl = {
     const m = modelOf(ps);
     return m.order.map((id) => refOf(m, id));
   },
+  // El color del segmento: su rama, aclarada por nivel. Una fila que es parte de un nodo, el de él.
+  swatch(ctx, i) {
+    const m = modelOf(ctx.frame.ps);
+    const ref = nodeOfRef(m, i);
+    const id = ref >= 0 ? ref : (m.rowNode[i] ?? -1);
+    return id >= 0 ? nodeColor(m.nodes[id].slot, m.nodes[id].depth, ctx.theme) : null;
+  },
   step(ps, i, key) {
     if (key !== 'ArrowUp' && key !== 'ArrowDown') return undefined;
     const m = modelOf(ps);

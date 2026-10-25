@@ -406,6 +406,11 @@ export const treemap: SeriesImpl = {
   hit(ctx, px, py) {
     return hitCell(layoutOf(ctx).cells, px, py);
   },
+  // El relleno del rectángulo: el color de su grupo.
+  swatch(ctx, i) {
+    const groups = groupsOf(ctx.frame.ps);
+    return fillOf(ctx, groups, groups && groupSlots(groups), i);
+  },
   anchor(ctx, i) {
     const t = layoutOf(ctx).tiles[i];
     return t ? [t.x + t.w / 2, t.y] : [ctx.width / 2, ctx.height / 2];

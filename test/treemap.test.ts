@@ -327,3 +327,21 @@ test('muchos datos y pantalla angosta: sin errores ni rectángulos fuera del ár
   );
   assert.ok(!d.includes('NaN'));
 });
+
+test('muestra del tooltip: el color del grupo, el mismo del rectángulo', () => {
+  const slots = groupSlots(GROUPS);
+  for (const theme of [LIGHT, DARK]) {
+    const ctx = context(VALUES, GROUPS, 600, 360, NAMES, theme);
+    const d = treemap.draw(ctx);
+    NAMES.forEach((name, i) => {
+      const swatch = treemap.swatch!(ctx, i);
+      assert.equal(swatch, groupColor(slots.get(GROUPS[i])!, theme.palette, theme.other), name);
+      assert.ok(d.includes(`fill="${swatch}"`), `${name} en ${swatch}`);
+    });
+  }
+  const ctx = context(VALUES, GROUPS);
+  assert.notEqual(treemap.swatch!(ctx, 0), treemap.swatch!(ctx, 3));
+  // Sin grupos, el color de la serie.
+  const plain = context(VALUES);
+  for (let i = 0; i < VALUES.length; i++) assert.equal(treemap.swatch!(plain, i), plain.color);
+});

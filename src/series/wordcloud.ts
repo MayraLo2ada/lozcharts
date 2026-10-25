@@ -727,6 +727,12 @@ export const wordcloud: SeriesImpl = {
     const k = m.rowWord[i];
     return k >= 0 ? m.words[k].text : x;
   },
+  // La tinta de la palabra: la de su grupo o la de su intensidad. Una fila sumada en otra, la de esa.
+  swatch(ctx, i) {
+    const m = modelOf(ctx.frame.ps);
+    const k = m.rowWord[i];
+    return k >= 0 ? colorsOf(ctx, m)[k] : null;
+  },
   navigable(ps) {
     const m = modelOf(ps);
     const out = omittedOf.get(m);

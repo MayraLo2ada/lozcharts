@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { chooseTimeInterval, detectTimeUnit, niceDomain, niceStep, numberTicks, timeTicks } from '../src/core/ticks';
 import { axisFormatter, parseTime, timeFullLabel, timeTickLabel, valueFormatter } from '../src/core/format';
 import { linePath } from '../src/core/shapes';
+import { swatchOf, type DrawContext, type SeriesImpl } from '../src/core/series';
 
 /** Intl separa número y unidad con espacios de no separación; para comparar, espacios normales. */
 const plain = (s: string) => s.replace(/[  ]/g, ' ');
@@ -85,4 +86,16 @@ test('los números chicos conservan sus cifras: 0,0049 no se lee "0"', () => {
   assert.equal(valueFormatter('number', es)(0.0049), '0,0049');
   assert.equal(valueFormatter('number', es)(0.25), '0,25');
   assert.equal(valueFormatter('number', es)(1234.5678), '1.234,57');
+});
+
+test('muestra del tooltip: la del dato si el tipo la da; si no, la de la serie o la categoría', () => {
+  const ctx = (impl: SeriesImpl) =>
+    ({ frame: { ps: { impl } }, color: '#serie', pointColor: (i: number) => `#punto${i}` }) as unknown as DrawContext;
+  const draw = () => '';
+  assert.equal(swatchOf(ctx({ draw }), 2), '#serie');
+  assert.equal(swatchOf(ctx({ draw, legendBy: 'points' }), 2), '#punto2');
+  assert.equal(swatchOf(ctx({ draw, swatch: (_, i) => `#dato${i}` }), 7), '#dato7');
+  // null: el tipo no tiene color propio para ese dato.
+  assert.equal(swatchOf(ctx({ draw, swatch: () => null }), 2), '#serie');
+  assert.equal(swatchOf(ctx({ draw, legendBy: 'points', swatch: () => null }), 2), '#punto2');
 });

@@ -393,3 +393,23 @@ test('divergente en el dibujo: leyenda con el cero y cero neutro', () => {
   assert.ok(d.includes(`fill="${LIGHT.palette[1]}"`), 'el −4 en el color de los negativos');
   assert.ok(d.includes('>-4<') && d.includes('>0<') && d.includes('>4<'), 'leyenda simétrica −4 · 0 · 4');
 });
+
+test('muestra del tooltip: el color de la celda en la rampa, el mismo del dibujo', () => {
+  for (const theme of [LIGHT, DARK]) {
+    const ctx = context(CELLS, 390, 240, { theme });
+    const d = heatmap.draw(ctx);
+    const domain = colorDomain(ctx.frame.ps.values)!;
+    const ramp = makeRamp(domain.kind, theme, ctx.color);
+    CELLS.forEach((c, i) => {
+      const swatch = heatmap.swatch!(ctx, i);
+      assert.equal(swatch, paint(ramp, position(domain, c.v)).fill);
+      assert.ok(d.includes(`fill="${swatch}"`), `${c.y} ${c.x} en ${swatch}`);
+    });
+  }
+  // Más valor, otro color; y sigue al cuadro de la animación, como el dibujo.
+  const ctx = context(CELLS);
+  assert.notEqual(heatmap.swatch!(ctx, 0), heatmap.swatch!(ctx, 3));
+  assert.equal(heatmap.swatch!(context(CELLS, 390, 240, { y1: [40, 20, 30, 40] }), 0), heatmap.swatch!(ctx, 3));
+  // Sin valor no hay color.
+  assert.equal(heatmap.swatch!(context([...CELLS, { x: 'mar', y: 'Sur', v: NaN }]), 4), null);
+});

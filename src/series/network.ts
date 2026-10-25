@@ -887,6 +887,13 @@ export const network: SeriesImpl = {
   navigable(ps) {
     return nodeStops(modelOf(ps));
   },
+  // Un nodo, en el color de su grupo; un vínculo, en el gris de sus líneas.
+  swatch(ctx, i) {
+    const m = modelOf(ctx.frame.ps);
+    const v = m.rowNode[i];
+    if (v >= 0) return colorOf(ctx, m, v);
+    return m.rowLink[i] >= 0 ? ctx.theme.textMuted : null;
+  },
   tooltip(ps: PreparedSeries, i: number, format: TooltipFormat): TooltipValue | null {
     const m = modelOf(ps);
     const v = m.rowNode[i];

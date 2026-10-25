@@ -289,6 +289,11 @@ function deltasOf(ps: PreparedSeries): number[] {
   return ps.columns.delta ?? ps.values;
 }
 
+/** ¿Hay varias cascadas lado a lado? Sus totales grises llevan la punta del color de la serie. */
+function isClustered(ctx: DrawContext): boolean {
+  return Math.round(ctx.frame.slots) > 1;
+}
+
 /** ¿El plano está reflejado? En horizontal, el valor crece hacia px mayores. */
 function isHorizontal(ctx: DrawContext): boolean {
   return ctx.y.map(ctx.y.d1) > ctx.y.map(ctx.y.d0);
@@ -331,6 +336,14 @@ export const waterfall: SeriesImpl = {
     return levels;
   },
   navigable: (ps) => ps.values.map((v, i) => (isFinite(v) ? i : -1)).filter((i) => i >= 0),
+  // Un total, en el gris neutro de su barra; con varias cascadas, en el color de la serie, como
+  // la punta que dice de cuál es. Una bajada, aunque se dibuje hueca, lleva la muestra rellena:
+  // hueca se leería como una serie oculta, igual que en la leyenda.
+  swatch(ctx, i) {
+    const ps = ctx.frame.ps;
+    const total = kindOf(deltasOf(ps)[i], totalsOf(ps)[i]) === 'total';
+    return total && !isClustered(ctx) ? ctx.theme.other : null;
+  },
   draw(ctx) {
     const { ps, deltas, tramos, kinds, width, offset, group } = frameModel(ctx);
     const { x, y, theme } = ctx;
@@ -338,7 +351,7 @@ export const waterfall: SeriesImpl = {
     let down = '';
     let total = '';
     let caps = '';
-    const clustered = Math.round(ctx.frame.slots) > 1;
+    const clustered = isClustered(ctx);
     tramos.forEach((t, i) => {
       if (!t) return;
       const base = y.map(t.from);

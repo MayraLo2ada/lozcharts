@@ -511,3 +511,21 @@ test('rombo: cuatro vértices alrededor del centro', () => {
   assert.equal(diamondPath(10, 20, 5), 'M10,15L15,20L10,25L5,20Z');
   assert.equal(diamondPath(10, 20, 0), '');
 });
+
+test('muestra del tooltip: el color del carril, el mismo de la barra o el rombo', () => {
+  const ps = series(PROJECT, { group: 'equipo' });
+  // Carriles por aparición en el tiempo: Producto, Diseño, Ingeniería, Marketing.
+  const lane = [0, 1, 2, 2, 2, 0, 3];
+  for (const theme of [LIGHT, DARK]) {
+    const ctx = context(ps, 800, 320, theme);
+    PROJECT.forEach(([name], i) => {
+      const swatch = timeline.swatch!(ctx, i);
+      assert.equal(swatch, theme.palette[lane[i]], name);
+      assert.ok(timeline.hover!(ctx, i).includes(`fill="${swatch}"`), `${name} en ${swatch}`);
+    });
+  }
+  // Sin grupos, el color de la serie; una fila sin fecha válida no tiene color propio.
+  const plain = context(series(PROJECT));
+  for (let i = 0; i < PROJECT.length; i++) assert.equal(timeline.swatch!(plain, i), plain.color);
+  assert.equal(timeline.swatch!(context(series([['Sin fecha', 'pronto']])), 0), null);
+});
