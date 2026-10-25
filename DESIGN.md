@@ -6,7 +6,8 @@ Reglas fijas para todos los tipos de gráfico. Los valores viven en `src/core/th
 ## Nombres
 
 Cada tipo tiene un nombre de la familia: LozLine, LozBar, LozArea, LozStep, LozRange, LozScatter,
-LozBubble, LozCandle, LozOHLC, LozPie, LozDonut, LozGauge, LozRadar, LozFunnel, LozHeatmap, LozTreemap, LozSankey, LozMap y LozMultiples. En la galería aparecen como etiquetas de 12 px con
+LozBubble, LozCandle, LozOHLC, LozPie, LozDonut, LozGauge, LozRadar, LozFunnel, LozHeatmap, LozTreemap, LozSankey, LozWaterfall, LozBullet, LozSunburst, LozChord, LozNetwork,
+LozTimeline, LozWordcloud, LozMap y LozMultiples. En la galería aparecen como etiquetas de 12 px con
 borde redondeado, en texto secundario (sin mayúsculas sostenidas). En el código, el tipo usa su
 nombre corto (`type: 'bar'`).
 
@@ -97,6 +98,49 @@ El oscuro tiene sus propios valores; no es una inversión.
 - Sankey: nodos de 12 px con radio 2, flujos con el color de su origen al 35 % (38 % en oscuro);
   al pasar el puntero, un velo de superficie atenúa el resto y el flujo activo sube al 65 %.
   Etiquetas de 12 px con halo de superficie: nombre en texto principal, valor en secundario.
+- Cascada: barras de las marcas de siempre (24 px, punta de 4 px hacia donde se movió el
+  acumulado). Subida rellena del color de la serie, bajada hueca con borde de 1,5 px del mismo
+  color, total en el gris neutro (`other`); con varias cascadas, el total lleva una punta de 3 px
+  del color de su serie. Conectores de 1 px en el color de la línea del cero, de grupo a grupo.
+  Etiquetas de 12 px en texto secundario con halo y signo +/− (menos tipográfico), del lado al
+  que se movió el acumulado; todas exactas o todas compactas; las variaciones todas o ninguna, los
+  totales uno por uno. El eje deja un 8 % de aire para las etiquetas de los extremos.
+- Bala: una fila por indicador, escala compartida con un solo eje abajo y su rejilla entre las
+  filas. Nombres en texto principal, recortados al 40 % del ancho. Rangos de 24 px como máximo
+  (60 % de la fila) en grises mezclados en OKLab desde la superficie hacia el texto, el peor el más
+  intenso (claro: 17 % a 5,5 %; oscuro: 21 % a 7 %), nunca semáforo. El valor es una barra de un
+  tercio de ese grosor, del color de la serie, con punta redondeada 2 px y anillo de 1 px de
+  superficie. La meta, una marca de 3 px en texto principal con halo, siempre más alta que la
+  barra. La etiqueta del valor nunca pisa la meta: salta al otro lado o no va.
+- Sunburst: desde arriba en sentido horario, hermanos de mayor a menor, 2 px de superficie entre
+  segmentos y anillos. Cada rama de primer nivel con su color en orden (más de 8: 7 y el resto en
+  "Otros"); los anillos de afuera lo mezclan en OKLab hacia la superficie (16 % por nivel en claro,
+  tope 56 %; 12 % en oscuro, tope 40 %). Agujero de 0,6 con un anillo y menos con más niveles, con
+  el total al centro. Etiquetas adentro de 12 px/500 en la tinta de mayor contraste, tangenciales o
+  radiales (la más horizontal), nunca de cabeza. Segmentos de menos de 3 px de arco: una banda sin
+  etiqueta, pero apuntable. Hover: velo de superficie y la ruta hasta la raíz encima.
+- Cuerdas: arcos de 10 px en el orden de los datos, desde arriba en sentido horario, con 5 px de
+  hueco (máximo 25 % de la vuelta); largo = entrada + salida. Cintas cuadráticas por el centro, del
+  color de su origen al 35 % (38 % en oscuro); el extremo de origen toca el arco y el de destino
+  queda 4 px adentro. Etiquetas horizontales de 12 px por fuera con halo; el círculo conserva al
+  menos el 60 % de su radio. Los bucles no se dibujan.
+- Red: nodos con área según su grado (de 3 a 18 px de radio según el espacio), anillo de 1,5 px de
+  superficie, los grandes abajo y los chicos encima. Vínculos de 0,75 a 3 px según su peso, en
+  texto secundario al 28 % (34 % en oscuro). Con `group`, la paleta en orden y leyenda arriba; sin
+  grupo, el color de la serie. Etiquetas de 12 px con halo, a la derecha o a la izquierda del nodo,
+  nunca encimadas, hasta 30. Hover: velo de superficie, los vínculos del nodo en su color al 75 % y
+  sus vecinos con nombre.
+- Línea de tiempo: barras de hasta 24 px con radio 4 en filas de hasta 34 px; hitos en rombo de
+  16 px con anillo de 1,5 px de superficie. Con `group`, un carril por grupo en el orden de la
+  paleta, con su nombre en texto principal y una muestra de 10 px, separados por una línea de la
+  rejilla. Rejilla vertical en cada fecha del eje. Nombres adentro si caben, a la derecha antes de
+  la marca siguiente o recortados si conservan el 70 %; si no, no van. Hover: anillo de 2 px y
+  guías de 1 px hasta el eje en el inicio y el fin.
+- Nube de palabras: cuerpo con la raíz del peso (el área va con el peso), mínimo de 12 px, la más
+  pesada al centro, todas horizontales, en espiral desde el centro con la forma del área. 500 para
+  el texto y 600 desde 24 px; 2 px de aire entre cajas. Sin grupo, el color de la serie en 3
+  intensidades; con grupo, la paleta en orden y leyenda arriba. Todo color ajustado a 4,5:1 contra
+  la superficie. Hover: velo de superficie al 72 % y la palabra activa con fondo de resaltado.
 - Mapas: Equal Earth por defecto (áreas iguales: honesta al colorear superficies). Países con
   datos en la escala del mapa de calor, sin datos en el gris de la rejilla, fronteras de 0,5 px
   del color de la superficie; la Antártida se omite si no tiene datos. Burbujas al 70 % con

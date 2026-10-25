@@ -1,5 +1,14 @@
 # Cambios
 
+## Sin publicar
+
+- **Siete tipos nuevos:** cascada (`waterfall`), bala (`bullet`), sunburst, cuerdas (`chord`),
+  red (`network`), línea de tiempo (`timeline`) y nube de palabras (`wordcloud`), con tooltip,
+  teclado, tabla de datos, tema oscuro y animación como los demás.
+- **Para crear tipos:** `derive` en `SeriesImpl` calcula los valores del eje con la serie completa
+  (la cascada lo usa para los acumulados). `onHover` recibe `null` en los nodos que no son filas
+  de datos (los interiores del sunburst).
+
 ## 1.0.0 (25 de octubre de 2026)
 
 Primera versión completa.

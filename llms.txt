@@ -44,6 +44,16 @@
 - 'heatmap': `xAxis.field` (columna), `y` (campo de la fila), `field` (valor).
 - 'treemap': `xAxis.field` (nombre), `field` (tamaño), `group` opcional.
 - 'sankey': `xAxis.field` (origen), `to` (destino), `field` (cantidad).
+- 'chord': `xAxis.field` (origen), `to` (destino), `field` (cantidad); flujos con dirección.
+- 'network': `xAxis.field` y `to` (los dos extremos, sin dirección), `field` (peso, opcional),
+  `group` (color del nodo de origen, opcional). Sin `to`, la fila solo declara el nodo.
+- 'sunburst': `field` (valor de cada hoja), `levels: ['region', 'pais', 'ciudad']` (la ruta).
+- 'waterfall': `xAxis.field` (paso), `field` (variación), `total` (campo verdadero en subtotales y totales).
+- 'bullet': `xAxis.field` (indicador), `field` (valor), `targetField` (meta), `ranges: [50, 75, 100]`;
+  una serie por gráfico.
+- 'timeline': `xAxis.field` (inicio, fecha), `end` (fin; sin fin es un hito), `field` (nombre del
+  tramo), `group` (un carril por grupo). Usa `xAxis.type: 'time'`.
+- 'wordcloud': `xAxis.field` (palabra), `field` (peso), `group` opcional.
 - 'choropleth': `xAxis.field` (país: ISO de 3 letras, numérico o nombre en inglés o español),
   `field`; `fit: 'data'` para encuadrar una región; `projection: 'equalEarth'|'mercator'|'orthographic'`;
   `rotate: [lon, lat]` para el globo.

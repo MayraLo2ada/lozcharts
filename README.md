@@ -114,11 +114,18 @@ const chart = new LozChart('#grafico', {
 | LozPie       | `pie`         | Partes de un todo (pocas categorías)             | `xAxis.field` (categoría), `field` (valor)                       |
 | LozDonut     | `donut`       | Como el pie, con el total al centro              | igual que `pie`; `innerRadius` (0,6)                             |
 | LozGauge     | `gauge`       | Un indicador contra su rango y su meta           | `field`; `target`; rango con `yAxis.min` y `yAxis.max`           |
+| LozBullet    | `bullet`      | Indicadores contra su meta y sus rangos          | `xAxis.field` (indicador), `field`; `targetField`, `ranges`      |
 | LozRadar     | `radar`       | Perfiles en varias dimensiones                   | `xAxis.field` (criterio), `field` por serie                      |
 | LozFunnel    | `funnel`      | Pasos de un proceso y su conversión              | `xAxis.field` (paso), `field` (cantidad)                         |
+| LozWaterfall | `waterfall`   | Cómo se llega de un número a otro (puente)       | `field` (variación); `total` marca subtotales y totales          |
 | LozHeatmap   | `heatmap`     | Patrones en una rejilla (día × hora)             | `xAxis.field` (columna), `y` (fila), `field` (valor)             |
 | LozTreemap   | `treemap`     | Partes de un todo con muchas categorías          | `xAxis.field` (nombre), `field` (tamaño); `group` opcional       |
+| LozSunburst  | `sunburst`    | Jerarquía en anillos (región › país › ciudad)    | `field` (valor); `levels` con los campos de la ruta              |
 | LozSankey    | `sankey`      | Flujos entre etapas (de dónde a dónde)           | `xAxis.field` (origen), `to` (destino), `field` (cantidad)       |
+| LozChord     | `chord`       | Flujos con dirección entre nodos                 | `xAxis.field` (origen), `to` (destino), `field` (cantidad)       |
+| LozNetwork   | `network`     | Relaciones sin dirección (quién con quién)       | `xAxis.field`, `to`; `field` (peso) y `group` opcionales         |
+| LozTimeline  | `timeline`    | Tramos e hitos en el tiempo                      | `xAxis.field` (inicio), `end` (fin), `field` (nombre); `group`   |
+| LozWordcloud | `wordcloud`   | Palabras según su peso                           | `xAxis.field` (palabra), `field` (peso); `group` opcional        |
 | LozMap       | `choropleth`  | Un valor por país, coloreado                     | `xAxis.field` (país), `field`; ver [Mapas](#mapas)               |
 | LozMap       | `mapbubble`   | Cantidades sobre el mapa                         | `xAxis.field`, `field`; `lat` y `lon` opcionales                 |
 | LozMultiples | —             | Cuadrícula de gráficos pequeños                  | `LozChart.multiples(…)`; ver [Small multiples](#small-multiples) |
@@ -198,6 +205,117 @@ new LozChart('#recorrido', {
   para cruzar lo menos posible. Cada flujo lleva el color de su origen. Si los datos tienen un
   ciclo, el flujo que lo cierra no se dibuja y se avisa en la consola. El tooltip dice qué parte
   del origen y del destino representa cada flujo.
+
+## Cascada, bala y línea de tiempo
+
+```js
+// Cascada: cada fila es una variación; las marcadas en `total` parten del cero.
+new LozChart('#resultado', {
+  title: 'De las ventas a la utilidad',
+  data: [
+    { paso: 'Ventas', monto: 1200 },
+    { paso: 'Costo de ventas', monto: -500 },
+    { paso: 'Utilidad bruta', total: true },
+    { paso: 'Gastos', monto: -300 },
+    { paso: 'Impuestos', monto: -135 },
+    { paso: 'Utilidad neta', total: true },
+  ],
+  xAxis: { field: 'paso' },
+  series: [{ type: 'waterfall', field: 'monto', name: 'Resultado', total: 'total' }],
+});
+
+// Bala: una fila por indicador, con su meta y los rangos de calidad de fondo.
+new LozChart('#kpi', {
+  title: 'Ventas del trimestre por región',
+  data: [
+    { region: 'Norte', ventas: 512, meta: 480 },
+    { region: 'Sur', ventas: 297, meta: 420 },
+  ],
+  xAxis: { field: 'region' },
+  series: [{ type: 'bullet', field: 'ventas', name: 'Ventas', targetField: 'meta', ranges: [300, 450, 600] }],
+});
+
+// Línea de tiempo: cada fila va de la X a `end`; sin fin es un hito.
+new LozChart('#plan', {
+  title: 'Lanzamiento 2026',
+  data: [
+    { tarea: 'Investigación', inicio: '2026-01-12', fin: '2026-02-27', equipo: 'Producto' },
+    { tarea: 'App móvil', inicio: '2026-04-20', fin: '2026-08-28', equipo: 'Ingeniería' },
+    { tarea: 'Lanzamiento', inicio: '2026-09-15', equipo: 'Marketing' },
+  ],
+  xAxis: { field: 'inicio', type: 'time' },
+  series: [{ type: 'timeline', field: 'tarea', end: 'fin', group: 'equipo', name: 'Plan' }],
+});
+```
+
+- **Cascada:** al eje van los acumulados, así cruzar el cero funciona y una bajada grande no
+  estira la escala. La subida va rellena, la bajada hueca y el total en gris, con la punta hacia
+  donde se movió el acumulado y el signo en la etiqueta: la dirección nunca depende de verde y
+  rojo. Un total sin valor muestra el acumulado; con valor, ese valor manda y, si no cuadra, se
+  avisa en la consola y el tooltip da la diferencia.
+- **Bala:** la escala es una para todas las filas (los rangos valen para todas); si tus
+  indicadores tienen unidades distintas, usa un gráfico por indicador. Los rangos van en grises,
+  más intensos cuanto peor, nunca en semáforo. El tooltip da la meta, la diferencia con signo y %
+  y el rango en que cae el valor. Una serie por gráfico.
+- **Línea de tiempo:** el nombre de cada tramo sale de `field`. Con `group`, un carril por grupo
+  con su color; sin grupos, los tramos que se solapan bajan a otra fila, en el mínimo de filas
+  posible. El eje pasa de horas a siglos según el rango, sin bajar de la precisión de los datos,
+  y el tooltip da el rango y la duración ("4 meses y 8 días"). Un fin anterior al inicio se
+  invierte con un aviso en la consola.
+
+## Sunburst, cuerdas, red y nube de palabras
+
+```js
+// Sunburst: cada fila es una hoja con su ruta; los nodos interiores suman a sus hijos.
+new LozChart('#ventas', {
+  data: ventas, // { region: 'América', pais: 'México', ciudad: 'Monterrey', ventas: 182000 }
+  xAxis: { field: 'ciudad' },
+  series: [{ type: 'sunburst', field: 'ventas', name: 'Ventas', levels: ['region', 'pais', 'ciudad'] }],
+});
+
+// Cuerdas: una fila por flujo con dirección, de `xAxis.field` a `to`.
+new LozChart('#migracion', {
+  title: 'Mudanzas entre regiones',
+  data: mudanzas, // { origen: 'Capital', destino: 'Centro', personas: 182 }
+  xAxis: { field: 'origen' },
+  series: [{ type: 'chord', field: 'personas', name: 'Personas', to: 'destino' }],
+});
+
+// Red: una fila por vínculo; sin destino, solo declara el nodo.
+new LozChart('#equipo', {
+  title: 'Quién trabaja con quién',
+  data: mensajes, // { persona: 'Ana', con: 'Luis', mensajes: 8, area: 'Diseño' }
+  xAxis: { field: 'persona' },
+  series: [{ type: 'network', field: 'mensajes', name: 'Mensajes', to: 'con', group: 'area' }],
+});
+
+// Nube de palabras: el área de cada palabra va con su peso.
+new LozChart('#nube', {
+  title: '¿Qué destacan los clientes?',
+  data: menciones, // { palabra: 'atención', menciones: 412, tema: 'Servicio' }
+  xAxis: { field: 'palabra' },
+  series: [{ type: 'wordcloud', field: 'menciones', name: 'Menciones', group: 'tema' }],
+});
+```
+
+- **Sunburst:** empieza arriba y avanza en sentido horario, los hermanos de mayor a menor. Cada
+  rama de primer nivel lleva su color y los anillos de afuera lo heredan en tonos más claros. Sin
+  `levels`, un solo anillo (como un donut). Al pasar el puntero se resalta la ruta hasta la raíz;
+  con el teclado, ← → recorren y ↑ ↓ suben o bajan de nivel.
+- **Cuerdas:** cada nodo es un arco (lo que sale más lo que entra) y cada flujo una cinta del
+  color de su origen; el extremo de destino queda separado del arco, así A → B y B → A se
+  distinguen. Los arcos van en el orden de los datos: ordénalos. Los bucles (de un nodo a sí
+  mismo) no se dibujan.
+- **Red:** sin dirección (A → B y B → A suman al mismo vínculo). El acomodo es por fuerzas y
+  determinista: los mismos datos dan siempre el mismo dibujo. El área de cada nodo va con su
+  grado y el grosor del vínculo con su peso; sin `field`, se cuentan vínculos. El teclado y el
+  tooltip hablan de nodos, con sus vecinos principales.
+- **Nube de palabras:** todas horizontales, para que se lean. Las repetidas se suman; lo que no
+  cabe se omite desde las más livianas (con un aviso en la consola) y sigue en la tabla. Todo
+  color de palabra se ajusta a 4,5:1 contra el fondo.
+
+Los valores cero, negativos o vacíos no se dibujan en estos tipos; la tabla de datos los lista
+igual. `labels: false` quita las etiquetas.
 
 ## Mapas
 
