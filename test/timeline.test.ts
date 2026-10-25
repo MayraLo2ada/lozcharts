@@ -20,6 +20,7 @@ import {
   timePrecision,
   timeToPx,
   timeline,
+  todayMark,
   type Geometry,
 } from '../src/series/timeline';
 import type { DrawContext, PreparedSeries, TooltipFormat } from '../src/core/series';
@@ -528,4 +529,64 @@ test('muestra del tooltip: el color del carril, el mismo de la barra o el rombo'
   const plain = context(series(PROJECT));
   for (let i = 0; i < PROJECT.length; i++) assert.equal(timeline.swatch!(plain, i), plain.color);
   assert.equal(timeline.swatch!(context(series([['Sin fecha', 'pronto']])), 0), null);
+});
+
+test('label: el nombre del tramo sale de otro campo y `field` queda libre', () => {
+  const t = timeline.texts!({ type: 'timeline', field: 'avance', label: 'tarea', end: 'fin' }, 'inicio');
+  assert.equal(t.name, 'tarea');
+  assert.equal(timeline.texts!({ type: 'timeline', field: 'tarea' }, 'inicio').name, 'tarea', 'por defecto, field');
+});
+
+test('idioma: fechas, duración y eje en el locale del gráfico', () => {
+  assert.equal(formatTime(local(2026, 3, 3), 'day', 'en'), 'Mar 3, 2026');
+  assert.equal(durationText(local(2026, 3, 3), local(2026, 6, 15), 'day', 'en'), '3 months and 12 days');
+  assert.equal(durationText(local(2026, 3, 3), local(2026, 6, 15), 'day'), '3 meses y 12 días', 'español por defecto');
+  const ticks = axisTicks(local(2026, 1, 1), local(2026, 12, 31), 0, 800, 0, 800, 'day', measure, 'en');
+  assert.ok(ticks.some((t) => /^Jun/.test(t.label)));
+  // El tooltip toma el idioma del formato que le pasa el núcleo.
+  const ps = series(PROJECT);
+  const tip = timeline.tooltip!(ps, 0, { ...format, locale: 'en' })!;
+  assert.match(tip.value, /Jan 12/);
+  assert.deepEqual(tip.details![0], ['Duración', '1 month and 15 days']);
+});
+
+test('hoy: línea en el día de hoy o en una fecha dada, con su texto', () => {
+  const now = local(2026, 5, 20, 15, 42);
+  assert.deepEqual(todayMark(true, 'day', 'es', now), { time: local(2026, 5, 20), text: 'Hoy' });
+  assert.deepEqual(todayMark(true, 'day', 'en', now), { time: local(2026, 5, 20), text: 'Today' });
+  assert.equal(todayMark(true, 'minute', 'es', now)!.time, local(2026, 5, 20, 15, 42), 'con horas, el minuto actual');
+  assert.deepEqual(todayMark('2026-06-15', 'month'), { time: local(2026, 6, 15), text: '15 jun 2026' });
+  assert.equal(todayMark('2026-12-01', 'day', 'en')!.text, 'Dec 1, 2026', 'con día, aunque sea el 1');
+  assert.equal(todayMark('2026-12', 'day')!.text, 'dic 2026');
+  assert.equal(todayMark(false, 'day'), null);
+  assert.equal(todayMark(undefined, 'day'), null);
+  assert.equal(todayMark('no es fecha', 'day'), null);
+});
+
+test('hoy: dentro del eje reserva su franja arriba; fuera, no cambia nada', () => {
+  const m = model(PROJECT, true);
+  const plain = layoutTimeline(m, 800, 320, measure, [], true);
+  const inside = layoutTimeline(m, 800, 320, measure, [], true, { time: local(2026, 5, 20), text: 'Hoy' });
+  assert.equal(plain.today, null);
+  assert.equal(plain.top, 0);
+  assert.ok(inside.today && Math.abs(inside.today.x - timeToPx(inside, local(2026, 5, 20))) < 1e-9);
+  assert.equal(inside.today.anchor, 'middle');
+  assert.ok(inside.top > 0 && inside.marks.every((mk) => mk.rowTop >= inside.top));
+  const outside = layoutTimeline(m, 800, 320, measure, [], true, { time: local(2030, 1, 1), text: 'Hoy' });
+  assert.deepEqual(
+    outside.marks.map((mk) => mk.y),
+    plain.marks.map((mk) => mk.y),
+  );
+  // Contra un borde, el texto se corre hacia adentro.
+  const edge = layoutTimeline(m, 800, 320, measure, [], true, { time: m.t1, text: 'Lanzamiento final' });
+  assert.equal(edge.today!.anchor, 'end');
+});
+
+test('hoy: se dibuja discontinua (4 3) en texto secundario, con su texto', () => {
+  const ps = series(PROJECT, { today: '2026-05-20' });
+  const out = timeline.draw(context(ps));
+  assert.match(out, /stroke-dasharray="4 3"/);
+  assert.match(out, new RegExp(`stroke="${LIGHT.textMuted}"[^>]*stroke-dasharray`));
+  assert.match(out, />20 may 2026</);
+  assert.ok(!/stroke-dasharray/.test(timeline.draw(context(series(PROJECT)))), 'sin today, nada');
 });
