@@ -142,6 +142,7 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
       options,
       values: column(options.field),
       columns: extraColumns(options, impl, column),
+      texts: textColumns(options, impl, rows),
       stackKey: stackKeyOf(options, impl, axis),
       axis,
     };
@@ -158,6 +159,7 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
       options: { ...first, name: OTHERS },
       values: rows.map((_, i) => parts.reduce((sum, col) => sum + (isFinite(col[i]) ? col[i] : 0), 0)),
       columns: {},
+      texts: {},
       stackKey: stackKeyOf(first, registry.get(first.type)!, axisOf(first)),
       axis: axisOf(first),
     });
@@ -185,6 +187,15 @@ function extraColumns(options: SeriesOptions, impl: SeriesImpl, column: (field: 
   const out: Record<string, number[]> = {};
   for (const [name, field] of Object.entries(impl.columns?.(options) ?? {})) {
     out[name] = field ? column(field) : column(options.field).map(() => NaN);
+  }
+  return out;
+}
+
+/** Columnas de texto que pide el tipo de serie; vacío o ausente es ''. */
+function textColumns(options: SeriesOptions, impl: SeriesImpl, rows: Datum[]): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const [name, field] of Object.entries(impl.texts?.(options) ?? {})) {
+    out[name] = rows.map((r) => (field && r[field] !== null && r[field] !== undefined ? String(r[field]) : ''));
   }
   return out;
 }

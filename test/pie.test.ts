@@ -30,6 +30,7 @@ function series(values: number[], options: Partial<SeriesOptions> = {}, impl: Se
     options: { field: 'v', ...options } as SeriesOptions,
     values,
     columns: {},
+    texts: {},
     stackKey: null,
     axis: 'left',
   };

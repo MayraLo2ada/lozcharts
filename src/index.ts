@@ -12,6 +12,9 @@ import { donut, pie } from './series/pie';
 import { gauge } from './series/gauge';
 import { radar } from './series/radar';
 import { funnel } from './series/funnel';
+import { heatmap } from './series/heatmap';
+import { treemap } from './series/treemap';
+import { sankey } from './series/sankey';
 
 LozChart.registerSeries('line', line);
 LozChart.registerSeries('bar', bar);
@@ -27,6 +30,9 @@ LozChart.registerSeries('donut', donut);
 LozChart.registerSeries('gauge', gauge);
 LozChart.registerSeries('radar', radar);
 LozChart.registerSeries('funnel', funnel);
+LozChart.registerSeries('heatmap', heatmap);
+LozChart.registerSeries('treemap', treemap);
+LozChart.registerSeries('sankey', sankey);
 
 LozChart.multiples = (target, options) => new LozMultiples(target, options);
 

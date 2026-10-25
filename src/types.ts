@@ -80,7 +80,8 @@ export interface YAxisOptions {
 export interface SeriesOptions {
   /**
    * Tipo registrado: 'line', 'bar', 'area', 'step', 'range', 'scatter', 'bubble',
-   * 'candlestick', 'ohlc', 'pie', 'donut', 'gauge', 'radar', 'funnel' o uno propio.
+   * 'candlestick', 'ohlc', 'pie', 'donut', 'gauge', 'radar', 'funnel', 'heatmap', 'treemap',
+   * 'sankey' o uno propio.
    */
   type: string;
   /** Campo numérico de cada fila. En velas y OHLC es el cierre; en 'range', el límite superior. */
@@ -103,6 +104,12 @@ export interface SeriesOptions {
   target?: number;
   /** Pie, donut y embudo: mostrar las etiquetas junto a cada parte. Por defecto true. */
   labels?: boolean;
+  /** Mapa de calor: campo de cada fila que da la fila del mapa (el eje vertical); la X da la columna. */
+  y?: string;
+  /** Treemap: campo que agrupa los rectángulos (cada grupo con su color y su título). */
+  group?: string;
+  /** Sankey: campo con el destino de cada flujo; el origen es el campo de la X. */
+  to?: string;
   /** Velas y OHLC: campos de apertura, máximo y mínimo. 'range': `low` es el límite inferior. */
   open?: string;
   high?: string;

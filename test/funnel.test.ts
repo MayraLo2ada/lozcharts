@@ -29,6 +29,7 @@ function series(values: number[], labels?: boolean): PreparedSeries {
     options: { type: 'funnel', field: 'v', labels },
     values,
     columns: {},
+    texts: {},
     stackKey: null,
     axis: 'left',
   };

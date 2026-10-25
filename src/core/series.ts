@@ -29,6 +29,8 @@ export interface PreparedSeries {
   raw?: number[];
   /** Columnas extra que pidió el tipo de serie (ver SeriesImpl.columns). */
   columns: Record<string, number[]>;
+  /** Columnas de texto que pidió el tipo de serie (ver SeriesImpl.texts); vacío es ''. */
+  texts: Record<string, string[]>;
   /** Grupo de apilado, o null. */
   stackKey: string | null;
   /** Eje del valor: el izquierdo, o el derecho (yAxis2). */
@@ -157,12 +159,12 @@ export interface SeriesImpl {
   includeZero?: boolean;
   /** Orden de dibujo: menor va abajo. Barras 0, áreas 1, líneas 2, puntos 3. */
   layer?: number;
-  /** Muestra en leyenda: cuadrado (barras, áreas), trazo (líneas) o punto (dispersión). */
   /**
    * Admite etiqueta al final (opción endLabels): series que terminan en un punto a la derecha,
    * como líneas, áreas y escalones. Se ubica en la punta (y1) del último dato visible.
    */
   endLabel?: boolean;
+  /** Muestra en leyenda: cuadrado (barras, áreas), trazo (líneas) o punto (dispersión). */
   legendSymbol?: 'line' | 'square' | 'dot';
   /** Nombre para la descripción accesible ("barras", "líneas"…). */
   label?: string;
@@ -176,6 +178,16 @@ export interface SeriesImpl {
    * pide { open: o.open, high: o.high, low: o.low }. Quedan en `ps.columns` y `frame.cols`.
    */
   columns?(options: SeriesOptions): Record<string, string | undefined>;
+  /**
+   * Columnas de texto que lee de cada fila, como { nombre: campo }: categorías que no son la X,
+   * como la fila de un mapa de calor o el destino de un sankey. Quedan en `ps.texts`.
+   */
+  texts?(options: SeriesOptions): Record<string, string | undefined>;
+  /**
+   * Encabezado del tooltip y de la descripción del dato i, en lugar del texto de la X
+   * ("Lima → Bogotá"). `x` es ese texto, por si se quiere usar.
+   */
+  headline?(ps: PreparedSeries, i: number, x: string): string;
   /** Valores fijos que también deben caber en el eje (por ejemplo, la meta de un gauge). */
   domainValues?(options: SeriesOptions): number[];
   /** Columnas que están en unidades del eje Y: cuentan para el dominio y se encogen al ocultarse. */

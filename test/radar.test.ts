@@ -75,6 +75,7 @@ function context(values: number[]): DrawContext {
         options: { name: 'a', type: 'radar', field: 'v' },
         values,
         columns: {},
+        texts: {},
         stackKey: null,
         axis: 'left',
       },

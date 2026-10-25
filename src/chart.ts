@@ -1512,7 +1512,8 @@ export class LozChart {
     for (let i = 0; i < p.n; i++) {
       const row = html('tr');
       const hiddenMark = p.pointLegend && this.hiddenIdx.has(i) ? ' (oculta)' : '';
-      row.appendChild(html('th', { scope: 'row' }, xLabel(p, i, false, ctx) + hiddenMark));
+      const own = p.series[0]?.impl.headline?.(p.series[0], i, xLabel(p, i, false, ctx));
+      row.appendChild(html('th', { scope: 'row' }, (own || xLabel(p, i, false, ctx)) + hiddenMark));
       for (const s of p.series) {
         const t = this.valueText(s, i);
         const details = t.details ? ` (${t.details.map(([k, v]) => `${k}: ${v}`).join('; ')})` : '';
@@ -1778,6 +1779,10 @@ export class LozChart {
   /** Encabezado del tooltip: la X completa; si es un número con título de eje, también el título. */
   private headline(i: number): string {
     const label = xLabel(this.prepared, i, false, this.xContext());
+    // Un tipo puede nombrar su dato de otra forma ("Lima → Bogotá" en un sankey).
+    const s = this.prepared.series[0];
+    const own = s?.impl.headline?.(s, i, label);
+    if (own) return own;
     const title = this.opts.xAxis.title;
     return this.prepared.xType === 'linear' && title ? `${title}: ${label}` : label;
   }
