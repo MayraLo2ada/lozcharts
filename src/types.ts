@@ -81,7 +81,7 @@ export interface SeriesOptions {
   /**
    * Tipo registrado: 'line', 'bar', 'area', 'step', 'range', 'scatter', 'bubble',
    * 'candlestick', 'ohlc', 'pie', 'donut', 'gauge', 'radar', 'funnel', 'heatmap', 'treemap',
-   * 'sankey' o uno propio.
+   * 'sankey', 'choropleth', 'mapbubble' o uno propio.
    */
   type: string;
   /** Campo numérico de cada fila. En velas y OHLC es el cierre; en 'range', el límite superior. */
@@ -110,6 +110,15 @@ export interface SeriesOptions {
   group?: string;
   /** Sankey: campo con el destino de cada flujo; el origen es el campo de la X. */
   to?: string;
+  /** Mapas: nombre del mapa registrado (por defecto 'mundo'). */
+  map?: string;
+  /** Mapas: 'all' (por defecto) encuadra todo el mapa; 'data', solo los lugares con datos (una región). */
+  fit?: 'all' | 'data';
+  /** Mapas: 'equalEarth' (por defecto, áreas iguales) o 'mercator'. */
+  projection?: 'equalEarth' | 'mercator';
+  /** Mapa de burbujas: campos de latitud y longitud (si faltan, la burbuja va al centro del país). */
+  lat?: string;
+  lon?: string;
   /** Velas y OHLC: campos de apertura, máximo y mínimo. 'range': `low` es el límite inferior. */
   open?: string;
   high?: string;

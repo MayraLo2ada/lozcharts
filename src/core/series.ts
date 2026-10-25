@@ -148,7 +148,7 @@ export interface SeriesImpl {
   /** En 'free': índice del dato bajo el punto (px, py) del área, o -1. */
   hit?(ctx: DrawContext, px: number, py: number): number;
   /** En 'free': dónde apoyar el tooltip del dato i (px del área). */
-  anchor?(ctx: DrawContext, i: number): [number, number];
+  anchor?(ctx: DrawContext, i: number): [number, number] | null;
   /** Necesita escala de banda en X (barras, velas). */
   band?: boolean;
   /** Ocupa una posición dentro del grupo de la banda (barras agrupadas). */
@@ -180,9 +180,15 @@ export interface SeriesImpl {
   columns?(options: SeriesOptions): Record<string, string | undefined>;
   /**
    * Columnas de texto que lee de cada fila, como { nombre: campo }: categorías que no son la X,
-   * como la fila de un mapa de calor o el destino de un sankey. Quedan en `ps.texts`.
+   * como la fila de un mapa de calor o el destino de un sankey. Quedan en `ps.texts`. `xField`
+   * es el campo de la X, por si también se lo quiere como texto (el origen de un sankey).
    */
-  texts?(options: SeriesOptions): Record<string, string | undefined>;
+  texts?(options: SeriesOptions, xField: string): Record<string, string | undefined>;
+  /**
+   * En 'free': el dato al que lleva una flecha desde el dato i ('ArrowDown'…), para recorridos en
+   * dos dimensiones (en un mapa de calor, ↓ va a la fila siguiente). undefined: el recorrido lineal.
+   */
+  step?(ps: PreparedSeries, i: number, key: string): number | undefined;
   /**
    * Encabezado del tooltip y de la descripción del dato i, en lugar del texto de la X
    * ("Lima → Bogotá"). `x` es ese texto, por si se quiere usar.

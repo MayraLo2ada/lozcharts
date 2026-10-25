@@ -58,6 +58,7 @@
     <div id="casos"></div>
 
     <script src="../dist/lozcharts.umd.js"></script>
+    <script src="../dist/maps/world.umd.js"></script>
     <script>
       (function () {
         var meses = ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08'];
@@ -88,6 +89,9 @@
               high: v + 12,
               low: v - 9,
               size: 100 + i * 80,
+              fila: ['Mañana', 'Tarde', 'Noche'][i % 3],
+              destino: ['Compra', 'Abandono', 'Carrito'][i % 3],
+              pais: ['COL', 'MEX', 'BRA', 'ARG', 'CHL', 'PER', 'ECU', 'URY'][i],
             };
             if (variante === 'huecos' && i % 3 === 1) f.a = f.b = f.close = f.hi = null;
             if (variante === 'ceros') f.a = f.b = f.c = f.hi = f.lo = f.size = 0;
@@ -190,6 +194,11 @@
               { type: 'line', field: 'b', name: 'Visitas', axis: 'right' },
             ],
           }),
+          heatmap: Object.assign({}, cat, { series: [{ type: 'heatmap', field: 'a', name: 'Valor', y: 'fila' }] }),
+          treemap: Object.assign({}, cat, { series: [{ type: 'treemap', field: 'a', name: 'Ventas' }] }),
+          sankey: Object.assign({}, cat, { series: [{ type: 'sankey', field: 'a', name: 'Flujo', to: 'destino' }] }),
+          choropleth: { xAxis: { field: 'pais' }, series: [{ type: 'choropleth', field: 'a', name: 'Valor', fit: 'data' }] },
+          mapbubble: { xAxis: { field: 'pais' }, series: [{ type: 'mapbubble', field: 'a', name: 'Valor' }] },
           'índice 100': Object.assign({}, base, {
             yAxis: { index: true },
             series: [

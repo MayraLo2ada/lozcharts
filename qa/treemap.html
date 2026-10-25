@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Treemap</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+        background: #fcfcfb;
+        color: #0b0b0b;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #1a1a19;
+          color: #f0efec;
+        }
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(560px, 100%), 1fr));
+        gap: 40px 32px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>LozTreemap</h1>
+    <div id="ventas" style="margin-bottom: 40px"></div>
+    <div class="grid">
+      <div id="presupuesto"></div>
+      <div id="muchos"></div>
+      <div id="uno"></div>
+      <div id="bordes"></div>
+      <div id="largos"></div>
+      <div id="sesenta"></div>
+    </div>
+
+    <script src="../dist/lozcharts.umd.js"></script>
+    <script>
+      var ventas = [
+        ['Laptops', 'Electrónica', 420000],
+        ['Teléfonos', 'Electrónica', 385000],
+        ['Tabletas', 'Electrónica', 160000],
+        ['Monitores', 'Electrónica', 118000],
+        ['Audífonos', 'Electrónica', 64000],
+        ['Cámaras', 'Electrónica', 41000],
+        ['Sofás', 'Hogar', 210000],
+        ['Colchones', 'Hogar', 176000],
+        ['Mesas', 'Hogar', 82000],
+        ['Sillas', 'Hogar', 69000],
+        ['Lámparas', 'Hogar', 27000],
+        ['Refrigeradores', 'Cocina', 240000],
+        ['Lavavajillas', 'Cocina', 98000],
+        ['Cafeteras', 'Cocina', 56000],
+        ['Licuadoras', 'Cocina', 31000],
+        ['Sartenes', 'Cocina', 18000],
+        ['Bicicletas', 'Deportes', 134000],
+        ['Caminadoras', 'Deportes', 88000],
+        ['Pesas', 'Deportes', 36000],
+        ['Tiendas de campaña', 'Deportes', 22000],
+        ['Novelas', 'Libros', 46000],
+        ['Infantiles', 'Libros', 31000],
+        ['Cocina y recetas', 'Libros', 17000],
+        ['Viajes', 'Libros', 12000],
+        ['Cómics', 'Libros', 9000],
+      ].map(function (r) {
+        return { producto: r[0], categoria: r[1], ventas: r[2] };
+      });
+
+      var qa = (window.qa = {});
+      qa.ventas = new LozChart('#ventas', {
+        title: 'Ventas por producto',
+        subtitle: 'Año 2026, agrupadas por categoría',
+        height: 440,
+        data: ventas,
+        xAxis: { field: 'producto' },
+        yAxis: { format: 'currency' },
+        series: [{ type: 'treemap', field: 'ventas', name: 'Ventas', group: 'categoria' }],
+      });
+
+      qa.presupuesto = new LozChart('#presupuesto', {
+        title: 'Presupuesto por departamento',
+        height: 320,
+        data: [
+          { depto: 'Ingeniería', monto: 2400000 },
+          { depto: 'Ventas', monto: 1350000 },
+          { depto: 'Marketing', monto: 860000 },
+          { depto: 'Operaciones', monto: 720000 },
+          { depto: 'Soporte', monto: 410000 },
+          { depto: 'Finanzas', monto: 290000 },
+          { depto: 'Recursos humanos', monto: 240000 },
+          { depto: 'Legal', monto: 150000 },
+          { depto: 'Calidad', monto: 95000 },
+        ],
+        xAxis: { field: 'depto' },
+        yAxis: { format: 'currency' },
+        series: [{ type: 'treemap', field: 'monto', name: 'Presupuesto' }],
+      });
+
+      // 11 grupos: los 8 primeros con color, el resto en el gris de "Otros".
+      var paises = [
+        'México',
+        'Colombia',
+        'Argentina',
+        'Chile',
+        'Perú',
+        'España',
+        'Uruguay',
+        'Ecuador',
+        'Bolivia',
+        'Paraguay',
+        'Panamá',
+      ];
+      var visitas = [];
+      paises.forEach(function (p, k) {
+        ['Web', 'App', 'Tienda'].forEach(function (canal, j) {
+          visitas.push({ canal: p + ' · ' + canal, pais: p, n: Math.round((5200 / (k + 1.5)) * [1, 0.6, 0.3][j]) });
+        });
+      });
+      qa.muchos = new LozChart('#muchos', {
+        title: 'Visitas por país y canal',
+        subtitle: 'Más de 8 grupos',
+        height: 360,
+        data: visitas,
+        xAxis: { field: 'canal' },
+        series: [{ type: 'treemap', field: 'n', name: 'Visitas', group: 'pais' }],
+      });
+
+      qa.uno = new LozChart('#uno', {
+        title: 'Un solo dato',
+        height: 200,
+        data: [{ x: 'Total', v: 1250 }],
+        xAxis: { field: 'x' },
+        series: [{ type: 'treemap', field: 'v', name: 'Pedidos' }],
+      });
+
+      qa.bordes = new LozChart('#bordes', {
+        title: 'Ceros, negativos y faltantes',
+        subtitle: 'Solo Norte, Sur y Este tienen área; los demás siguen en la tabla',
+        height: 240,
+        data: [
+          { zona: 'Norte', v: 500 },
+          { zona: 'Sur', v: 300 },
+          { zona: 'Centro', v: 0 },
+          { zona: 'Oeste', v: -120 },
+          { zona: 'Islas', v: null },
+          { zona: 'Este', v: 80 },
+        ],
+        xAxis: { field: 'zona' },
+        series: [{ type: 'treemap', field: 'v', name: 'Pedidos' }],
+      });
+
+      qa.largos = new LozChart('#largos', {
+        title: 'Nombres largos',
+        height: 260,
+        data: [
+          { n: 'Servicio de mantenimiento preventivo anual', g: 'Contratos de largo plazo con renovación', v: 900 },
+          { n: 'Instalación y configuración inicial', g: 'Contratos de largo plazo con renovación', v: 420 },
+          { n: 'Capacitación del personal en sitio', g: 'Servicios puntuales', v: 260 },
+          { n: 'Consultoría <especial> & "otros"', g: 'Servicios puntuales', v: 140 },
+        ],
+        xAxis: { field: 'n' },
+        series: [{ type: 'treemap', field: 'v', name: 'Ingresos', group: 'g' }],
+      });
+
+      var sesenta = [];
+      for (var i = 0; i < 60; i++)
+        sesenta.push({
+          sku: 'Artículo ' + (i + 1),
+          linea: 'Línea ' + 'ABCDE'[i % 5],
+          v: Math.round(9000 / Math.pow(i + 1, 0.9)),
+        });
+      qa.sesenta = new LozChart('#sesenta', {
+        title: '60 artículos en 5 líneas',
+        height: 360,
+        data: sesenta,
+        xAxis: { field: 'sku' },
+        series: [{ type: 'treemap', field: 'v', name: 'Unidades', group: 'linea' }],
+      });
+    </script>
+  </body>
+</html>

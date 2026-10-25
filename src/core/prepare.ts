@@ -142,7 +142,7 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
       options,
       values: column(options.field),
       columns: extraColumns(options, impl, column),
-      texts: textColumns(options, impl, rows),
+      texts: textColumns(options, impl, rows, xField),
       stackKey: stackKeyOf(options, impl, axis),
       axis,
     };
@@ -192,9 +192,9 @@ function extraColumns(options: SeriesOptions, impl: SeriesImpl, column: (field: 
 }
 
 /** Columnas de texto que pide el tipo de serie; vacío o ausente es ''. */
-function textColumns(options: SeriesOptions, impl: SeriesImpl, rows: Datum[]): Record<string, string[]> {
+function textColumns(options: SeriesOptions, impl: SeriesImpl, rows: Datum[], xField: string): Record<string, string[]> {
   const out: Record<string, string[]> = {};
-  for (const [name, field] of Object.entries(impl.texts?.(options) ?? {})) {
+  for (const [name, field] of Object.entries(impl.texts?.(options, xField) ?? {})) {
     out[name] = rows.map((r) => (field && r[field] !== null && r[field] !== undefined ? String(r[field]) : ''));
   }
   return out;

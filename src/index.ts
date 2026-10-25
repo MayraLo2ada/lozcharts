@@ -15,6 +15,7 @@ import { funnel } from './series/funnel';
 import { heatmap } from './series/heatmap';
 import { treemap } from './series/treemap';
 import { sankey } from './series/sankey';
+import { choropleth, mapbubble } from './series/map';
 
 LozChart.registerSeries('line', line);
 LozChart.registerSeries('bar', bar);
@@ -33,6 +34,8 @@ LozChart.registerSeries('funnel', funnel);
 LozChart.registerSeries('heatmap', heatmap);
 LozChart.registerSeries('treemap', treemap);
 LozChart.registerSeries('sankey', sankey);
+LozChart.registerSeries('choropleth', choropleth);
+LozChart.registerSeries('mapbubble', mapbubble);
 
 LozChart.multiples = (target, options) => new LozMultiples(target, options);
 
@@ -42,6 +45,7 @@ export { LIGHT, DARK } from './core/theme';
 export type { Theme } from './core/theme';
 export type { SeriesImpl, DrawContext, SeriesFrame, PreparedSeries, TooltipValue } from './core/series';
 export type { XScale } from './core/scales';
+export type { MapSource, Topology, GeoJSON } from './core/geo';
 export { LinearScale, BandScale, ContinuousScale } from './core/scales';
 export { linePath, areaPath, barPath, stepPath } from './core/shapes';
 export type * from './types';

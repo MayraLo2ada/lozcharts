@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Sankey</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+        background: #fcfcfb;
+        color: #0b0b0b;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #1a1a19;
+          color: #f0efec;
+        }
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(560px, 100%), 1fr));
+        gap: 40px 32px;
+      }
+      .wide {
+        grid-column: 1 / -1;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>LozSankey</h1>
+    <div class="grid">
+      <div id="trafico" class="wide"></div>
+      <div id="presupuesto"></div>
+      <div id="origenes"></div>
+      <div id="ciclo"></div>
+      <div id="uno"></div>
+      <div id="largos"></div>
+      <div id="ceros"></div>
+    </div>
+
+    <script src="../dist/lozcharts.umd.js"></script>
+    <script>
+      var charts = {};
+      var sankey = function (title, subtitle, data, extra) {
+        return Object.assign(
+          {
+            title: title,
+            subtitle: subtitle,
+            data: data,
+            height: 360,
+            xAxis: { field: 'origen' },
+            series: [{ type: 'sankey', field: 'valor', name: 'Sesiones', to: 'destino' }],
+          },
+          extra || {},
+        );
+      };
+      var f = function (origen, destino, valor) {
+        return { origen: origen, destino: destino, valor: valor };
+      };
+
+      // Tráfico web de un mes: fuente → página de entrada → resultado.
+      charts.trafico = new LozChart(
+        '#trafico',
+        sankey(
+          'Del primer clic a la compra',
+          'Sesiones de septiembre por fuente, página de entrada y resultado',
+          [
+            f('Búsqueda', 'Inicio', 5200),
+            f('Búsqueda', 'Producto', 8400),
+            f('Búsqueda', 'Blog', 2600),
+            f('Redes sociales', 'Blog', 3900),
+            f('Redes sociales', 'Producto', 1700),
+            f('Correo', 'Producto', 2300),
+            f('Correo', 'Ofertas', 1900),
+            f('Directo', 'Inicio', 4100),
+            f('Anuncios', 'Ofertas', 3600),
+            f('Anuncios', 'Producto', 1200),
+            f('Inicio', 'Producto', 4800),
+            f('Inicio', 'Abandono', 4500),
+            f('Blog', 'Producto', 1500),
+            f('Blog', 'Abandono', 5000),
+            f('Ofertas', 'Carrito', 2700),
+            f('Ofertas', 'Abandono', 2800),
+            f('Producto', 'Carrito', 9100),
+            f('Producto', 'Abandono', 10800),
+            f('Carrito', 'Compra', 7300),
+            f('Carrito', 'Abandono', 4500),
+          ],
+          { height: 440 },
+        ),
+      );
+
+      // Presupuesto municipal: ingresos → áreas → partidas (en millones).
+      charts.presupuesto = new LozChart(
+        '#presupuesto',
+        sankey(
+          'Presupuesto 2027',
+          'Millones, de la fuente de ingreso a cada partida',
+          [
+            f('Impuestos', 'Educación', 410),
+            f('Impuestos', 'Salud', 320),
+            f('Impuestos', 'Transporte', 150),
+            f('Transferencias', 'Salud', 180),
+            f('Transferencias', 'Educación', 120),
+            f('Transferencias', 'Cultura', 40),
+            f('Tasas', 'Transporte', 90),
+            f('Tasas', 'Cultura', 25),
+            f('Educación', 'Salarios', 360),
+            f('Educación', 'Infraestructura', 120),
+            f('Educación', 'Materiales', 50),
+            f('Salud', 'Salarios', 290),
+            f('Salud', 'Insumos', 160),
+            f('Salud', 'Infraestructura', 50),
+            f('Transporte', 'Infraestructura', 170),
+            f('Transporte', 'Operación', 70),
+            f('Cultura', 'Operación', 45),
+            f('Cultura', 'Salarios', 20),
+          ],
+          {
+            currency: 'MXN',
+            series: [{ type: 'sankey', field: 'valor', name: 'Presupuesto', to: 'destino', format: 'currency' }],
+          },
+        ),
+      );
+
+      // Doce orígenes: del noveno en adelante, gris (nunca se repite un color).
+      var tiendas = ['Norte', 'Sur', 'Centro', 'Este', 'Oeste', 'Puerto', 'Valle', 'Lago', 'Sierra', 'Playa', 'Bosque', 'Llano'];
+      var ventas = [];
+      tiendas.forEach(function (t, k) {
+        ventas.push(f(t, 'En línea', 300 - k * 18));
+        ventas.push(f(t, 'Mostrador', 180 + ((k * 37) % 90)));
+      });
+      ventas.push(f('En línea', 'Entregado', 2500), f('En línea', 'Devuelto', 380));
+      ventas.push(f('Mostrador', 'Entregado', 2500));
+      charts.origenes = new LozChart('#origenes', sankey('Pedidos por tienda', 'Doce orígenes, ocho colores', ventas));
+
+      // Un ciclo: Soporte → Ventas → Soporte. El segundo no se dibuja y se avisa en consola.
+      charts.ciclo = new LozChart(
+        '#ciclo',
+        sankey('Con un ciclo', 'El flujo que cierra el ciclo no se dibuja (ver consola)', [
+          f('Formulario', 'Ventas', 120),
+          f('Ventas', 'Soporte', 40),
+          f('Soporte', 'Ventas', 15),
+          f('Ventas', 'Cliente', 70),
+          f('Soporte', 'Cliente', 30),
+        ]),
+      );
+
+      charts.uno = new LozChart('#uno', sankey('Un solo flujo', '', [f('Prueba gratis', 'Suscripción', 840)], { height: 200 }));
+
+      charts.largos = new LozChart(
+        '#largos',
+        sankey('Nombres largos', 'Se recortan con "…"; el tooltip los da completos', [
+          f('Campaña de otoño en buscadores y redes sociales', 'Página de aterrizaje del catálogo completo', 900),
+          f('Campaña de otoño en buscadores y redes sociales', 'Formulario de contacto comercial', 300),
+          f('Recomendación de clientes frecuentes', 'Página de aterrizaje del catálogo completo', 500),
+          f('Página de aterrizaje del catálogo completo', 'Solicitud de cotización enviada', 600),
+          f('Página de aterrizaje del catálogo completo', 'Salida sin interacción', 800),
+          f('Formulario de contacto comercial', 'Solicitud de cotización enviada', 300),
+        ]),
+      );
+
+      charts.ceros = new LozChart(
+        '#ceros',
+        sankey('Ceros y huecos', 'Los flujos en cero, vacíos o sin destino no se dibujan', [
+          f('App', 'Registro', 400),
+          f('App', 'Error', 0),
+          f('Web', 'Registro', 250),
+          f('Web', '', 90),
+          f('Web', 'Error', null),
+          f('Kiosco', 'Kiosco', 30),
+          f('Registro', 'Activo', 520),
+        ]),
+      );
+      window.qa = charts;
+    </script>
+  </body>
+</html>

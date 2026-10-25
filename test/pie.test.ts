@@ -232,7 +232,7 @@ test('hit y anchor sobre el contexto: agujero, porción y apoyo en el borde exte
   const cy = ctx.height / 2;
   assert.equal(donut.hit!(ctx, cx, cy), -1);
   assert.equal(pie.hit!(ctx, cx + 1, cy - 1), 0);
-  const [ax, ay] = pie.anchor!(ctx, 1);
+  const [ax, ay] = pie.anchor!(ctx, 1)!;
   assert.ok(ax > cx && ay > cy);
   assert.ok(pie.hover!(ctx, 0).includes(`stroke="${LIGHT.surface}"`));
 });

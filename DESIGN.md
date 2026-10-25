@@ -6,7 +6,7 @@ Reglas fijas para todos los tipos de gráfico. Los valores viven en `src/core/th
 ## Nombres
 
 Cada tipo tiene un nombre de la familia: LozLine, LozBar, LozArea, LozStep, LozRange, LozScatter,
-LozBubble, LozCandle, LozOHLC, LozPie, LozDonut, LozGauge, LozRadar, LozFunnel y LozMultiples. En la galería aparecen como etiquetas de 12 px con
+LozBubble, LozCandle, LozOHLC, LozPie, LozDonut, LozGauge, LozRadar, LozFunnel, LozHeatmap, LozTreemap, LozSankey, LozMap y LozMultiples. En la galería aparecen como etiquetas de 12 px con
 borde redondeado, en texto secundario (sin mayúsculas sostenidas). En el código, el tipo usa su
 nombre corto (`type: 'bar'`).
 
@@ -86,6 +86,22 @@ El oscuro tiene sus propios valores; no es una inversión.
   de 3 categorías), anillo del cero marcado y números del valor con halo de superficie.
 - Embudo: barras rectas centradas (no trapecios: comparar largos es más preciso), del color de la
   serie, 2 px entre pasos; a la derecha el valor y la parte del inicio, y entre pasos la conversión.
+- Mapa de calor: celdas con radio 2 y 2 px de aire (1 px si el paso es menor de 6 px). Un solo
+  tono mezclado en OKLab desde la superficie (el mínimo arranca al 14 %, distinto de una celda
+  vacía). Con negativos, divergente y simétrica: el cero en el gris de la rejilla, los negativos
+  hacia el segundo color. Leyenda de 120 px arriba a la derecha. Valores dentro de las celdas solo
+  si caben y hay 120 celdas o menos; todos exactos o todos compactos, nunca mezclados.
+- Treemap: _squarified_; 2 px entre rectángulos y 4 px entre grupos (cada grupo se lee como un
+  bloque); radio 2 px; franja de grupo de 20 px con el nombre en 600 y el total en secundario.
+  El texto adentro usa el color del tema de mayor contraste con el relleno (≥ 4,5:1 salvo el
+  violeta del oscuro, 4,1:1).
+- Sankey: nodos de 12 px con radio 2, flujos con el color de su origen al 35 % (38 % en oscuro);
+  al pasar el puntero, un velo de superficie atenúa el resto y el flujo activo sube al 65 %.
+  Etiquetas de 12 px con halo de superficie: nombre en texto principal, valor en secundario.
+- Mapas: Equal Earth por defecto (áreas iguales: honesta al colorear superficies). Países con
+  datos en la escala del mapa de calor, sin datos en el gris de la rejilla, fronteras de 0,5 px
+  del color de la superficie; la Antártida se omite si no tiene datos. Burbujas al 70 % con
+  anillo de superficie, la mayor de hasta 28 px de radio, las chicas encima.
 
 ## Texto
 

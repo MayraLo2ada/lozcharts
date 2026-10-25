@@ -1,0 +1,302 @@
+/**
+ * Mapas (LozMap): países coloreados por su valor (coropletas) y burbujas sobre el mapa.
+ *
+ * Los contornos vienen de un mapa registrado (`LozChart.registerMap('mundo', topología)`; el del
+ * mundo está en 'lozcharts/maps/world'). Cada fila de datos se cruza con un lugar por el campo
+ * de la X: sirve el código ISO de 3 letras, el numérico o el nombre en inglés o en español, sin
+ * importar mayúsculas ni acentos.
+ *
+ * - 'choropleth': cada país con datos se pinta con la escala de un solo tono de la serie
+ *   (divergente si hay negativos), la misma del mapa de calor; sin datos, en gris. La proyección
+ *   por defecto es Equal Earth, de áreas iguales: al colorear superficies, el tamaño aparente no
+ *   debe exagerar a los países del norte como lo hace Mercator.
+ * - 'mapbubble': el mapa en gris y un círculo por fila, en su latitud y longitud (o en el centro
+ *   del país si no las trae), con el área proporcional al valor.
+ */
+import type { DrawContext, PreparedSeries, SeriesImpl, TooltipFormat } from '../core/series';
+import { attrs, esc } from '../core/dom';
+import {
+  contains,
+  normalizeKey as normalize,
+  featureCenter,
+  featureIndex,
+  fitProjection,
+  geoPath,
+  getMap,
+  projectFeature,
+  rawProjection,
+  type GeoFeature,
+} from '../core/geo';
+import { colorDomain, legendSpec, legendWidth, makeRamp, paint, position, type Domain } from '../core/color';
+
+const FONT = 11;
+const LEGEND_BAR_H = 8;
+/** Alto que se reserva abajo para la leyenda de color (barra y números). */
+const LEGEND_H = LEGEND_BAR_H + 6 + FONT + 6;
+const LEGEND_STEPS = 24;
+/** Radio de la burbuja mayor como fracción del lado menor del área (y nunca más de 28 px). */
+const BUBBLE_SHARE = 0.06;
+const MAX_BUBBLE = 28;
+const MIN_BUBBLE = 2;
+/** Lugares que no se dibujan salvo que tengan datos: la Antártida ocupa mucho y casi nunca es tema. */
+const DEFAULT_EXCLUDE = ['ATA'];
+
+interface MapSetup {
+  key: string;
+  features: GeoFeature[];
+  /** Anillos en px, caminos SVG y centro de cada lugar dibujado. */
+  shapes: { polys: [number, number][][][]; d: string; center: [number, number]; box: [number, number, number, number] }[];
+  /** Lugar de cada fila de datos (-1 si no se encontró). */
+  place: number[];
+  project: (lon: number, lat: number) => [number, number];
+  plotH: number;
+}
+
+const setups = new WeakMap<PreparedSeries, MapSetup>();
+const warned = new WeakSet<PreparedSeries>();
+
+/** Lugares del mapa, proyección ajustada y cruce con los datos; se rehace solo si cambia el área. */
+function setup(ctx: DrawContext, legend: boolean): MapSetup | null {
+  const ps = ctx.frame.ps;
+  const name = ps.options.map ?? 'mundo';
+  const all = getMap(name);
+  if (!all) {
+    if (!warned.has(ps)) {
+      warned.add(ps);
+      console.warn(`LozChart: no hay un mapa registrado como "${name}". Usa LozChart.registerMap('${name}', …).`);
+    }
+    return null;
+  }
+  const plotH = Math.max(40, ctx.height - (legend ? LEGEND_H : 0));
+  const projection = ps.options.projection ?? 'equalEarth';
+  const fit = ps.options.fit ?? 'all';
+  const key = `${name}|${ctx.width}|${plotH}|${projection}|${fit}|${ctx.n}`;
+  const cached = setups.get(ps);
+  if (cached && cached.key === key) return cached;
+
+  const index = featureIndex(all);
+  const place = Array.from({ length: ctx.n }, (_, i) => index.get(normalize(ctx.label(i))) ?? -1);
+  // Una burbuja con latitud y longitud no necesita estar en el mapa.
+  const { lat, lon } = ps.columns;
+  const located = (i: number) => !!lat && !!lon && isFinite(lat[i]) && isFinite(lon[i]);
+  const missing = place.map((p, i) => (p < 0 && !located(i) ? ctx.label(i) : '')).filter(Boolean);
+  if (missing.length && !warned.has(ps)) {
+    warned.add(ps);
+    console.warn(
+      `LozChart: estos lugares no están en el mapa "${name}": ${missing.slice(0, 8).join(', ')}${missing.length > 8 ? '…' : ''}`,
+    );
+  }
+  // Se excluye lo que no tiene datos y está en la lista de excluidos (la Antártida).
+  const used = new Set(place);
+  const exclude = new Set(DEFAULT_EXCLUDE.map(normalize));
+  const features = all.filter((f, k) => used.has(k) || !Object.values(f.properties).some((v) => exclude.has(normalize(v))));
+  const remap = new Map(features.map((f, k) => [all.indexOf(f), k]));
+  // Con fit 'data' se encuadran solo los lugares con datos; los demás se dibujan igual y el
+  // recorte del área esconde lo que queda fuera.
+  const framed = fit === 'data' ? features.filter((f) => used.has(all.indexOf(f))) : features;
+  const project = fitProjection(rawProjection(projection), framed.length ? framed : features, ctx.width, plotH);
+  const shapes = features.map((f) => {
+    const polys = projectFeature(f, project);
+    let x0 = Infinity;
+    let y0 = Infinity;
+    let x1 = -Infinity;
+    let y1 = -Infinity;
+    for (const poly of polys)
+      for (const [x, y] of poly[0] ?? []) {
+        x0 = Math.min(x0, x);
+        y0 = Math.min(y0, y);
+        x1 = Math.max(x1, x);
+        y1 = Math.max(y1, y);
+      }
+    return { polys, d: geoPath(polys), center: featureCenter(polys), box: [x0, y0, x1, y1] as [number, number, number, number] };
+  });
+  const out: MapSetup = { key, features, shapes, place: place.map((p) => remap.get(p) ?? -1), project, plotH };
+  setups.set(ps, out);
+  return out;
+}
+
+/** Índice de claves de cada mapa (se arma una vez por mapa registrado). */
+const indexes = new WeakMap<GeoFeature[], Map<string, number>>();
+
+/**
+ * Nombre del lugar para el tooltip y la tabla: en español si el mapa lo trae. No depende del
+ * dibujo: la tabla se arma antes del primer cuadro.
+ */
+function placeName(ps: PreparedSeries, _i: number, x: string): string {
+  const all = getMap(ps.options.map ?? 'mundo');
+  if (!all) return x;
+  if (!indexes.has(all)) indexes.set(all, featureIndex(all));
+  const k = indexes.get(all)!.get(normalize(x));
+  const f = k === undefined ? null : all[k];
+  const nombre = f?.properties.nombre ?? f?.properties.name;
+  return typeof nombre === 'string' && nombre ? nombre : x;
+}
+
+/** Barra de la escala de color con sus números, abajo a la izquierda. */
+function legendMarkup(ctx: DrawContext, d: Domain, plotH: number): string {
+  const spec = legendSpec(d, ctx.compact);
+  const w = Math.min(legendWidth(spec, ctx.measure), ctx.width - 8);
+  const ramp = makeRamp(d.kind, ctx.theme, ctx.color);
+  const y = plotH + 6;
+  let s = '';
+  for (let k = 0; k < LEGEND_STEPS; k++) {
+    const p = spec.from + ((spec.to - spec.from) * (k + 0.5)) / LEGEND_STEPS;
+    const c = paint(ramp, p);
+    s += `<rect${attrs({ x: ((w * k) / LEGEND_STEPS).toFixed(1), y, width: (w / LEGEND_STEPS + 0.5).toFixed(1), height: LEGEND_BAR_H, fill: c.fill, 'fill-opacity': c.opacity })}/>`;
+  }
+  for (const [text, at] of spec.labels) {
+    const anchor = at === 0 ? 'start' : at === 1 ? 'end' : 'middle';
+    s += `<text${attrs({ x: (w * at).toFixed(1), y: y + LEGEND_BAR_H + 4, fill: ctx.theme.textMuted, 'font-size': FONT, 'text-anchor': anchor, 'dominant-baseline': 'hanging' })}>${esc(text)}</text>`;
+  }
+  return s;
+}
+
+/** Contorno de un lugar sin datos (o de fondo, en burbujas). */
+function basePath(d: string, ctx: DrawContext): string {
+  return `<path${attrs({ d, fill: ctx.theme.grid, stroke: ctx.theme.surface, 'stroke-width': 0.5, 'stroke-linejoin': 'round' })}/>`;
+}
+
+function hitPlace(S: MapSetup, px: number, py: number, rows: readonly number[]): number {
+  for (const i of rows) {
+    const k = S.place[i];
+    if (k < 0) continue;
+    const sh = S.shapes[k];
+    const [x0, y0, x1, y1] = sh.box;
+    if (px < x0 || px > x1 || py < y0 || py > y1) continue;
+    if (contains(sh.polys, px, py)) return i;
+  }
+  return -1;
+}
+
+/** Filas con lugar y valor, de mayor a menor (el orden del teclado). */
+function ranked(ps: PreparedSeries, place?: readonly number[]): number[] {
+  return ps.values
+    .map((_, i) => i)
+    .filter((i) => isFinite(ps.values[i]) && (!place || place[i] >= 0))
+    .sort((a, b) => ps.values[b] - ps.values[a]);
+}
+
+const tooltip = (ps: PreparedSeries, i: number, format: TooltipFormat) => ({
+  value: isFinite(ps.values[i]) ? format.value(ps.values[i]) : 'Sin dato',
+});
+
+export const choropleth: SeriesImpl = {
+  coords: 'free',
+  label: 'mapa coroplético',
+  legendSymbol: 'square',
+  items: ['lugar', 'lugares'],
+  draw(ctx) {
+    const S = setup(ctx, true);
+    if (!S) return '';
+    const ps = ctx.frame.ps;
+    const domain = colorDomain(ps.values);
+    const ramp = domain && makeRamp(domain.kind, ctx.theme, ctx.color);
+    // Valor de cada lugar: el de su fila (si una fila se repite, la última).
+    const valueOf = new Map<number, number>();
+    S.place.forEach((k, i) => {
+      if (k >= 0 && isFinite(ctx.frame.y1[i])) valueOf.set(k, ctx.frame.y1[i]);
+    });
+    let s = '';
+    S.shapes.forEach((sh, k) => {
+      const v = valueOf.get(k);
+      if (v === undefined || !domain || !ramp) {
+        s += basePath(sh.d, ctx);
+        return;
+      }
+      const c = paint(ramp, position(domain, v));
+      s += `<path${attrs({ d: sh.d, fill: c.fill, 'fill-opacity': c.opacity, stroke: ctx.theme.surface, 'stroke-width': 0.5, 'stroke-linejoin': 'round' })}/>`;
+    });
+    return s + (domain ? legendMarkup(ctx, domain, S.plotH) : '');
+  },
+  hit(ctx, px, py) {
+    const S = setup(ctx, true);
+    return S ? hitPlace(S, px, py, ranked(ctx.frame.ps, S.place)) : -1;
+  },
+  anchor(ctx, i) {
+    const S = setup(ctx, true);
+    const k = S?.place[i] ?? -1;
+    return S && k >= 0 ? S.shapes[k].center : null;
+  },
+  hover(ctx, i) {
+    const S = setup(ctx, true);
+    const k = S?.place[i] ?? -1;
+    if (!S || k < 0) return '';
+    return `<path${attrs({ d: S.shapes[k].d, fill: 'none', stroke: ctx.theme.text, 'stroke-width': 1.5, 'stroke-linejoin': 'round' })}/>`;
+  },
+  navigable: (ps) => ranked(ps, setups.get(ps)?.place),
+  headline: (ps, i, x) => placeName(ps, i, x),
+  tooltip,
+};
+
+/** Radio de cada burbuja: área proporcional al valor respecto del mayor. */
+export function bubbleRadius(v: number, max: number, largest: number): number {
+  if (!(v > 0) || !(max > 0)) return 0;
+  return Math.max(MIN_BUBBLE, largest * Math.sqrt(v / max));
+}
+
+/** Centro de cada burbuja: su latitud y longitud, o el centro de su país. */
+function bubbleCenters(ctx: DrawContext, S: MapSetup): ([number, number] | null)[] {
+  const { lat, lon } = ctx.frame.ps.columns;
+  return Array.from({ length: ctx.n }, (_, i) => {
+    if (lat && lon && isFinite(lat[i]) && isFinite(lon[i])) return S.project(lon[i], lat[i]);
+    const k = S.place[i];
+    return k >= 0 ? S.shapes[k].center : null;
+  });
+}
+
+function bubbleScale(ctx: DrawContext, S: MapSetup) {
+  const max = Math.max(0, ...ctx.frame.ps.values.filter((v) => isFinite(v)));
+  const largest = Math.min(MAX_BUBBLE, Math.min(ctx.width, S.plotH) * BUBBLE_SHARE);
+  return { max, largest, centers: bubbleCenters(ctx, S) };
+}
+
+export const mapbubble: SeriesImpl = {
+  coords: 'free',
+  label: 'mapa de burbujas',
+  legendSymbol: 'dot',
+  items: ['lugar', 'lugares'],
+  columns: (o) => ({ lat: o.lat, lon: o.lon }),
+  draw(ctx) {
+    const S = setup(ctx, false);
+    if (!S) return '';
+    const { max, largest, centers } = bubbleScale(ctx, S);
+    let s = S.shapes.map((sh) => basePath(sh.d, ctx)).join('');
+    // Las grandes primero: las chicas quedan encima y se pueden señalar.
+    const order = ranked(ctx.frame.ps);
+    for (const i of order) {
+      const c = centers[i];
+      const r = bubbleRadius(ctx.frame.y1[i], max, largest);
+      if (!c || !r) continue;
+      s += `<circle${attrs({ cx: c[0].toFixed(1), cy: c[1].toFixed(1), r: r.toFixed(2), fill: ctx.color, 'fill-opacity': 0.7, stroke: ctx.theme.surface, 'stroke-width': 1 })}/>`;
+    }
+    return s;
+  },
+  hit(ctx, px, py) {
+    const S = setup(ctx, false);
+    if (!S) return -1;
+    const { max, largest, centers } = bubbleScale(ctx, S);
+    // De la más chica a la más grande: la de encima gana.
+    for (const i of ranked(ctx.frame.ps).reverse()) {
+      const c = centers[i];
+      const r = bubbleRadius(ctx.frame.y1[i], max, largest);
+      if (c && r && Math.hypot(px - c[0], py - c[1]) <= Math.max(r, 6)) return i;
+    }
+    return -1;
+  },
+  anchor(ctx, i) {
+    const S = setup(ctx, false);
+    return S ? bubbleCenters(ctx, S)[i] : null;
+  },
+  hover(ctx, i) {
+    const S = setup(ctx, false);
+    if (!S) return '';
+    const { max, largest, centers } = bubbleScale(ctx, S);
+    const c = centers[i];
+    const r = bubbleRadius(ctx.frame.y1[i], max, largest);
+    if (!c || !r) return '';
+    return `<circle${attrs({ cx: c[0].toFixed(1), cy: c[1].toFixed(1), r: (r + 1).toFixed(2), fill: 'none', stroke: ctx.theme.text, 'stroke-width': 2 })}/>`;
+  },
+  navigable: (ps) => ranked(ps),
+  headline: (ps, i, x) => placeName(ps, i, x),
+  tooltip,
+};

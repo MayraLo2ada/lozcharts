@@ -4,15 +4,18 @@ Gráficos SVG interactivos, accesibles y sin dependencias, escritos en TypeScrip
 llama LozCharts y cada gráfico que creas es un `LozChart`.
 Modo claro, oscuro y automático; tooltip, leyenda, teclado, animación y exportación a SVG/PNG.
 
-> Estado: **fase 3**: líneas, barras (verticales u horizontales, agrupadas y apiladas), áreas,
-> líneas escalonadas, bandas de rango, dispersión, burbujas, velas, OHLC, small multiples, pie, donut, gauge, radar y embudo.
+Tipos: líneas, barras (verticales u horizontales, agrupadas y apiladas), áreas, líneas
+escalonadas, bandas de rango, dispersión, burbujas, velas, OHLC, pie, donut, gauge, radar, embudo,
+mapa de calor, treemap, sankey, mapas coropléticos y de burbujas, y small multiples. Con zoom,
+anotaciones, etiquetas directas, exportación a PNG, SVG y CSV, y un componente para React.
 
 ## Instalación y build
 
 ```bash
 npm install
-npm run build   # dist/lozcharts.js (ESM), dist/lozcharts.umd.js (UMD) y dist/types
-npm test        # pruebas del núcleo (ticks, formatos, curva monótona)
+npm run build   # dist/: lozcharts.js (ESM), lozcharts.umd.js (UMD), react.js, maps/ y types/
+npm test        # pruebas (node:test)
+npm run check   # formato, tipos y pruebas: lo mismo que corre la integración continua
 ```
 
 Abre `demo/index.html` con doble clic para ver la galería (después de `npm run build`).
@@ -37,6 +40,8 @@ const chart = new LozChart(elemento, opciones);
 // al desmontar el componente:
 chart.destroy();
 ```
+
+**En React:** los componentes de `lozcharts/react` (ver [React](#react)).
 
 **3. Con Django + HTMX:** pon las opciones en JSON en el atributo `data-lozchart`
 (o el selector de un `<script type="application/json">`) y re-inicializa en cada swap:
@@ -98,6 +103,11 @@ const chart = new LozChart('#grafico', {
 | LozGauge     | `gauge`       | Un indicador contra su rango y su meta           | `field`; `target`; rango con `yAxis.min` y `yAxis.max`           |
 | LozRadar     | `radar`       | Perfiles en varias dimensiones                   | `xAxis.field` (criterio), `field` por serie                      |
 | LozFunnel    | `funnel`      | Pasos de un proceso y su conversión              | `xAxis.field` (paso), `field` (cantidad)                         |
+| LozHeatmap   | `heatmap`     | Patrones en una rejilla (día × hora)             | `xAxis.field` (columna), `y` (fila), `field` (valor)             |
+| LozTreemap   | `treemap`     | Partes de un todo con muchas categorías          | `xAxis.field` (nombre), `field` (tamaño); `group` opcional       |
+| LozSankey    | `sankey`      | Flujos entre etapas (de dónde a dónde)           | `xAxis.field` (origen), `to` (destino), `field` (cantidad)       |
+| LozMap       | `choropleth`  | Un valor por país, coloreado                     | `xAxis.field` (país), `field`; ver [Mapas](#mapas)               |
+| LozMap       | `mapbubble`   | Cantidades sobre el mapa                         | `xAxis.field`, `field`; `lat` y `lon` opcionales                 |
 | LozMultiples | —             | Cuadrícula de gráficos pequeños                  | `LozChart.multiples(…)`; ver [Small multiples](#small-multiples) |
 
 Los nombres (LozBar, LozLine…) son los de la familia LozCharts en la documentación; en el código
@@ -137,6 +147,125 @@ new LozChart('#precios', {
   series: [{ type: 'candlestick', field: 'cierre', open: 'apertura', high: 'maximo', low: 'minimo', name: 'AURF' }],
 });
 ```
+
+## Mapa de calor, treemap y sankey
+
+```js
+// Mapa de calor: una fila de datos por celda.
+new LozChart('#visitas', {
+  data: visitas, // { hora: '09:00', dia: 'Lunes', visitas: 120 }
+  xAxis: { field: 'hora' },
+  series: [{ type: 'heatmap', field: 'visitas', name: 'Visitas', y: 'dia' }],
+});
+
+// Treemap: el área de cada rectángulo es su valor; `group` los agrupa por color.
+new LozChart('#productos', {
+  data: ventas, // { producto: 'Laptops', categoria: 'Electrónica', ventas: 420000 }
+  xAxis: { field: 'producto' },
+  yAxis: { format: 'currency' },
+  series: [{ type: 'treemap', field: 'ventas', name: 'Ventas', group: 'categoria' }],
+});
+
+// Sankey: una fila por flujo, de `xAxis.field` a `to`.
+new LozChart('#recorrido', {
+  data: flujos, // { origen: 'Búsqueda', destino: 'Producto', sesiones: 4200 }
+  xAxis: { field: 'origen' },
+  series: [{ type: 'sankey', field: 'sesiones', name: 'Sesiones', to: 'destino' }],
+});
+```
+
+- **Mapa de calor:** un solo tono que va de la superficie al color de la serie (mezclado en OKLab,
+  con pasos de claridad parejos); si hay negativos, divergente y simétrico alrededor del cero.
+  Leyenda de color arriba a la derecha. Las flechas recorren la rejilla en dos dimensiones. Si una
+  celda se repite, se dibuja la última y la tabla lo avisa.
+- **Treemap:** algoritmo _squarified_ (rectángulos lo más cuadrados posible, que se comparan
+  mejor). El texto de cada rectángulo elige el color de mayor contraste con su relleno. Con `group`,
+  cada grupo lleva un color de la paleta y su título; más de 8 grupos van en gris.
+- **Sankey:** las columnas salen del camino más largo desde cada origen y los nodos se ordenan
+  para cruzar lo menos posible. Cada flujo lleva el color de su origen. Si los datos tienen un
+  ciclo, el flujo que lo cierra no se dibuja y se avisa en la consola. El tooltip dice qué parte
+  del origen y del destino representa cada flujo.
+
+## Mapas
+
+Los contornos van aparte (pesan unos 110 KB): solo los carga quien hace mapas.
+
+```html
+<script src="lozcharts.umd.js"></script>
+<script src="maps/world.umd.js"></script>
+```
+
+```js
+import { LozChart } from 'lozcharts';
+import 'lozcharts/maps/world'; // registra el mapa del mundo como 'mundo'
+
+new LozChart('#usuarios', {
+  data: [
+    { pais: 'COL', usuarios: 980000 },
+    { pais: 'México', usuarios: 1830000 },
+    { pais: 'Brazil', usuarios: 2650000 },
+  ],
+  xAxis: { field: 'pais' },
+  series: [{ type: 'choropleth', field: 'usuarios', name: 'Usuarios', fit: 'data' }],
+});
+```
+
+- **Cada país se encuentra por** su código ISO de 3 letras, el numérico o su nombre en inglés o en
+  español, sin importar mayúsculas ni acentos. Los que no se encuentran se avisan en la consola.
+- **`fit: 'data'`** encuadra solo los países con datos (una región); por defecto se ve el mundo sin
+  la Antártida.
+- **`projection`:** `'equalEarth'` (por defecto) es de áreas iguales, la honesta para colorear
+  países; `'mercator'` es la de los mapas web, que infla los países del norte.
+- **`mapbubble`** pone un círculo por fila con el área proporcional al valor: en su `lat` y `lon`,
+  o en el centro del país.
+- **Otros mapas:** `LozChart.registerMap('colombia', topojsonOGeojson)` y `map: 'colombia'` en la
+  serie. Sirve cualquier TopoJSON o GeoJSON de polígonos en longitud y latitud.
+- **Origen de los datos:** Natural Earth 1:110m (dominio público), empaquetado por world-atlas
+  (licencia ISC, en `maps/LICENSE`).
+
+## React
+
+```jsx
+import { useMemo, useRef } from 'react';
+import { Chart } from 'lozcharts/react';
+
+function Ventas({ filas }) {
+  const chart = useRef(null);
+  const data = useMemo(() => filas, [filas]);
+  return (
+    <>
+      <Chart
+        ref={chart}
+        title="Ventas"
+        data={data}
+        xAxis={{ field: 'mes', type: 'time' }}
+        series={[{ type: 'bar', field: 'ventas', name: 'Ventas' }]}
+        zoom
+        onZoom={(rango) => console.log(rango)}
+      />
+      <button onClick={() => chart.current?.download('png')}>Descargar</button>
+    </>
+  );
+}
+```
+
+- Las opciones del gráfico van como props, más `className`, `style` e `id` para el contenedor.
+  `Multiples` hace lo mismo con small multiples.
+- Los datos se comparan por referencia: si cambian, el gráfico anima desde lo que se ve (usa
+  `useMemo` para no crear un arreglo nuevo en cada render). Las demás opciones se comparan por
+  contenido: escribirlas en línea no vuelve a dibujar nada si no cambiaron.
+- `onHover`, `onZoom` y demás funciones siempre llaman a su versión más reciente.
+- El `ref` da la instancia de `LozChart` (o `LozMultiples`) con todos sus métodos.
+- Ejemplo completo en `examples/react` (`npm run example:react` y abre
+  `examples/react/index.html`).
+
+## Muchos datos
+
+Líneas, áreas, escalones y rangos dibujan solo lo que se ve y, con más de dos datos por píxel, el
+primero, el mínimo, el máximo y el último de cada columna de píxeles: con 100 000 puntos el trazo
+se ve igual, ningún pico se pierde y el gráfico se crea en unos 40 ms. Con `zoom` se exploran
+series largas sin perder detalle. La tabla para lectores de pantalla muestra las primeras 500
+filas y avisa; `download('csv')` o `toCSV()` dan todos los datos.
 
 ## Small multiples
 
@@ -365,10 +494,12 @@ new LozChart('#grafico', {
 | `setTheme('dark')`                                        | Cambia el tema.                                                                                  |
 | `toggleSeries('Online', visible?)`                        | Oculta o muestra una serie; las demás conservan su color.                                        |
 | `toSVG()`                                                 | SVG completo como texto, con título y leyenda.                                                   |
-| `download('png' \| 'svg', nombre?)`                       | Descarga la imagen (PNG al doble de resolución).                                                 |
+| `toCSV()`                                                 | Los datos como CSV (números sin formato, fechas en ISO), para una hoja de cálculo.               |
+| `download('png' \| 'svg' \| 'csv', nombre?)`              | Descarga la imagen (PNG al doble de resolución) o los datos en CSV.                              |
 | `destroy()`                                               | Quita el gráfico y sus listeners.                                                                |
 | `LozChart.initAll(raíz)`, `destroyAll(raíz)`, `cleanup()` | Montaje automático para HTMX.                                                                    |
 | `LozChart.registerSeries(nombre, impl)`                   | Agrega un tipo de serie.                                                                         |
+| `LozChart.registerMap(nombre, topojsonOGeojson)`          | Agrega un mapa para `choropleth` y `mapbubble`.                                                  |
 
 ## Accesibilidad
 

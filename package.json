@@ -15,14 +15,20 @@
     "./react": {
       "types": "./dist/types/react.d.ts",
       "import": "./dist/react.js"
+    },
+    "./maps/world": {
+      "types": "./dist/types/maps/register-world.d.ts",
+      "import": "./dist/maps/world.js",
+      "require": "./dist/maps/world.umd.js"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "maps/LICENSE"
   ],
   "sideEffects": true,
   "scripts": {
-    "build": "tsc --noEmit && vite build && LC_FORMAT=umd vite build && LC_FORMAT=react vite build && tsc -p tsconfig.types.json",
+    "build": "tsc --noEmit && vite build && LC_FORMAT=umd vite build && LC_FORMAT=react vite build && LC_FORMAT=world vite build && LC_FORMAT=world-umd vite build && tsc -p tsconfig.types.json",
     "test": "esbuild test/*.test.ts --bundle --platform=node --format=esm --outdir=.pruebas --log-level=warning && node --test \".pruebas/*.test.js\"",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",

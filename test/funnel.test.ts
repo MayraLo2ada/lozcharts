@@ -149,7 +149,7 @@ test('draw: barras del color de la serie y textos del tema', () => {
 test('animación: las barras crecen desde el centro', () => {
   const half = VALUES.map((v) => v / 2);
   const ctx = context(VALUES, 390, 240, false, half);
-  const [x, y] = funnel.anchor!(ctx, 0);
+  const [x, y] = funnel.anchor!(ctx, 0)!;
   assert.equal(x, 195 + 390 / 4);
   const L = funnelLayout(390, 240, 4, null);
   assert.equal(y, L.top + (L.rowH - 2) / 2);

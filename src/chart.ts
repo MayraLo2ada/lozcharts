@@ -36,6 +36,7 @@ import { Legend, legendSVG, type LegendItem } from './core/legend';
 import { downloadCSV, downloadImage, slug, toCSV } from './core/export';
 import { destroyDetached, destroyWithin, mount, mountedOn, unmount } from './core/mount';
 import { annotationValues, renderAnnotations } from './core/annotations';
+import { registerMap, type MapSource } from './core/geo';
 import { spreadLabels } from './core/labels';
 import { ZoomGestures } from './zoom';
 import { Scrollbar, SCROLLBAR_HEIGHT } from './scrollbar';
@@ -151,6 +152,14 @@ export class LozChart {
   /** Registra un tipo de serie. Agregar un tipo nuevo no toca el núcleo. */
   static registerSeries(name: string, impl: SeriesImpl): void {
     registry.set(name, impl);
+  }
+
+  /**
+   * Registra un mapa (TopoJSON o GeoJSON) con un nombre, para las series 'choropleth' y
+   * 'mapbubble'. El del mundo se registra solo al cargar 'lozcharts/maps/world' como 'mundo'.
+   */
+  static registerMap(name: string, source: MapSource): void {
+    registerMap(name, source);
   }
 
   /** Tipos de serie registrados. */
@@ -979,9 +988,11 @@ export class LozChart {
     if (L.horizontal) this.gData.setAttribute('transform', SWAP_AXES);
     else this.gData.removeAttribute('transform');
     // Con zoom, el recorte es exacto en el eje X: lo que sale de la ventana no invade los ejes.
+    // Un mapa (sin ejes) también: lo que queda fuera del encuadre no se asoma por los costados.
     const zoomed = this.zoomable && !isFull(this.view);
-    this.clipRect.setAttribute('x', String(zoomed ? 0 : -CLIP_PAD));
-    this.clipRect.setAttribute('width', String(L.indexLen + (zoomed ? 0 : 2 * CLIP_PAD)));
+    const exact = zoomed || this.coords === 'free';
+    this.clipRect.setAttribute('x', String(exact ? 0 : -CLIP_PAD));
+    this.clipRect.setAttribute('width', String(L.indexLen + (exact ? 0 : 2 * CLIP_PAD)));
     this.clipRect.setAttribute('height', String(L.valueLen + 2 * CLIP_PAD));
     this.overlay.setAttribute('width', String(L.plotW));
     this.overlay.setAttribute('height', String(L.plotH));
@@ -1640,6 +1651,15 @@ export class LozChart {
           return;
         }
       }
+      // Un tipo con recorrido propio (en dos dimensiones) decide a dónde lleva cada flecha.
+      const first = this.prepared.series.find((x) => !this.hidden.has(x.key));
+      const own = this.active >= 0 ? first?.impl.step?.(first, this.active, e.key) : undefined;
+      if (own !== undefined && own >= 0 && !this.hiddenIdx.has(own)) {
+        e.preventDefault();
+        this.pointer = { x: -1, y: -1 };
+        this.setActive(own, true);
+        return;
+      }
       const at = stops.indexOf(this.active);
       // Sin dato activo y con zoom, se empieza dentro de la ventana, no en el principio de todo.
       const shown =
@@ -1879,6 +1899,8 @@ export class LozChart {
       x = right ? px + 14 : px - 14 - w;
       if (x < 0 || x + w > L.width) x = right ? px - 14 - w : px + 14;
       y = py < L.top + L.plotH / 2 ? py - h - 10 : py + 10;
+      // Arriba no cabe: debajo del punto, en vez de pegarlo al borde encima del dato que se mira.
+      if (y < 0) y = py + 10;
     } else if (this.nearestMode()) {
       // Junto al punto: su posición en pantalla sale del primer valor visible en ese índice.
       const f = frame.series.find((s) => s.alpha >= 0.5 && isFinite(s.y1[this.active]));

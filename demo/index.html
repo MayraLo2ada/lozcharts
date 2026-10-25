@@ -580,6 +580,47 @@
         </figure>
       </div>
 
+      <header class="section-head">
+        <h2>Rejillas, jerarquías, flujos y mapas</h2>
+        <p>Patrones en el tiempo, partes de un todo con muchas categorías, recorridos y datos por país.</p>
+      </header>
+
+      <div class="grid">
+        <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozHeatmap</span></div>
+          <div id="visitas-hora"></div>
+          <figcaption>
+            Visitas por día y hora: un solo tono, del claro al intenso. Con el teclado, las flechas recorren la rejilla en las dos
+            direcciones.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozTreemap</span></div>
+          <div id="productos"></div>
+          <figcaption>
+            Ventas por producto, agrupadas por categoría: el área es el valor. Sirve cuando hay demasiadas categorías para un pie.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozSankey</span></div>
+          <div id="recorrido"></div>
+          <figcaption>
+            De dónde llegan las visitas, qué página ven primero y cómo terminan. Cada flujo lleva el color de su origen.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozMap</span></div>
+          <div id="paises"></div>
+          <figcaption>
+            Usuarios por país en Latinoamérica (datos de ejemplo). Los países se encuentran por código ISO o por nombre, y la
+            proyección Equal Earth conserva las áreas.
+          </figcaption>
+        </figure>
+      </div>
+
       <section class="usage">
         <h2>Cómo se usa</h2>
         <p>
@@ -606,6 +647,7 @@
     </div>
 
     <script src="../dist/lozcharts.umd.js"></script>
+    <script src="../dist/maps/world.umd.js"></script>
     <script>
       (function () {
         // Generador pseudoaleatorio con semilla: los datos de ejemplo salen iguales cada vez.
@@ -1423,6 +1465,129 @@
             annotations: [{ y: 60, label: 'Meta' }],
             minWidth: 160,
             height: 150,
+          }),
+        );
+
+        // 27. Visitas por día y hora (mapa de calor).
+        (function () {
+          var r = rng(27),
+            filas = [];
+          var dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+          dias.forEach(function (dia, d) {
+            for (var h = 0; h < 24; h++) {
+              var laboral = d < 5 ? 1 : 0.6;
+              var curva = Math.max(0.05, Math.sin(((h - 6) / 18) * Math.PI)) * (h >= 6 ? 1 : 0.3);
+              var almuerzo = h === 13 ? 0.85 : 1;
+              filas.push({
+                hora: String(h).padStart(2, '0') + ':00',
+                dia: dia,
+                visitas: Math.round((900 * curva * laboral * almuerzo + 40) * (0.9 + r() * 0.2)),
+              });
+            }
+          });
+          charts.push(
+            new LozChart('#visitas-hora', {
+              title: 'Visitas por día y hora',
+              subtitle: 'Semana del 19 de octubre de 2026',
+              data: filas,
+              xAxis: { field: 'hora' },
+              series: [{ type: 'heatmap', field: 'visitas', name: 'Visitas', y: 'dia' }],
+              height: 280,
+            }),
+          );
+        })();
+
+        // 28. Ventas por producto (treemap agrupado).
+        charts.push(
+          new LozChart('#productos', {
+            title: 'Ventas por producto',
+            subtitle: 'Octubre 2026, por categoría',
+            data: [
+              ['Laptops', 'Electrónica', 420000],
+              ['Teléfonos', 'Electrónica', 380000],
+              ['Audífonos', 'Electrónica', 96000],
+              ['Tabletas', 'Electrónica', 142000],
+              ['Sofás', 'Hogar', 210000],
+              ['Colchones', 'Hogar', 168000],
+              ['Lámparas', 'Hogar', 54000],
+              ['Cocina', 'Hogar', 88000],
+              ['Zapatillas', 'Moda', 176000],
+              ['Chaquetas', 'Moda', 122000],
+              ['Bolsos', 'Moda', 73000],
+              ['Bicicletas', 'Deportes', 134000],
+              ['Pesas', 'Deportes', 46000],
+              ['Camping', 'Deportes', 61000],
+              ['Novelas', 'Libros', 38000],
+              ['Infantiles', 'Libros', 29000],
+            ].map(function (r) {
+              return { producto: r[0], categoria: r[1], ventas: r[2] };
+            }),
+            xAxis: { field: 'producto' },
+            yAxis: { format: 'currency' },
+            series: [{ type: 'treemap', field: 'ventas', name: 'Ventas', group: 'categoria' }],
+            height: 340,
+          }),
+        );
+
+        // 29. Recorrido de las visitas (sankey).
+        charts.push(
+          new LozChart('#recorrido', {
+            title: 'Recorrido de las visitas',
+            subtitle: 'Sesiones de octubre 2026',
+            data: [
+              ['Búsqueda', 'Inicio', 5200],
+              ['Búsqueda', 'Producto', 7400],
+              ['Redes', 'Inicio', 2600],
+              ['Redes', 'Ofertas', 3100],
+              ['Correo', 'Ofertas', 2200],
+              ['Directo', 'Inicio', 4300],
+              ['Inicio', 'Producto', 6900],
+              ['Inicio', 'Abandono', 5200],
+              ['Ofertas', 'Producto', 3800],
+              ['Ofertas', 'Abandono', 1500],
+              ['Producto', 'Compra', 6100],
+              ['Producto', 'Abandono', 12000],
+            ].map(function (r) {
+              return { origen: r[0], destino: r[1], sesiones: r[2] };
+            }),
+            xAxis: { field: 'origen' },
+            series: [{ type: 'sankey', field: 'sesiones', name: 'Sesiones', to: 'destino' }],
+            height: 340,
+          }),
+        );
+
+        // 30. Usuarios por país (mapa).
+        charts.push(
+          new LozChart('#paises', {
+            title: 'Usuarios activos por país',
+            subtitle: 'Latinoamérica, octubre 2026',
+            data: [
+              ['MEX', 1830],
+              ['BRA', 2650],
+              ['COL', 980],
+              ['ARG', 760],
+              ['CHL', 410],
+              ['PER', 520],
+              ['ECU', 230],
+              ['VEN', 180],
+              ['URY', 95],
+              ['PRY', 80],
+              ['BOL', 110],
+              ['CRI', 70],
+              ['PAN', 65],
+              ['GTM', 120],
+              ['DOM', 140],
+              ['CUB', 40],
+              ['HND', 55],
+              ['SLV', 50],
+              ['NIC', 35],
+            ].map(function (r) {
+              return { pais: r[0], usuarios: r[1] * 1000 };
+            }),
+            xAxis: { field: 'pais' },
+            yAxis: { format: 'compact' },
+            series: [{ type: 'choropleth', field: 'usuarios', name: 'Usuarios', fit: 'data' }],
+            height: 380,
           }),
         );
 

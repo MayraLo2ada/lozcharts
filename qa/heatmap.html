@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · LozHeatmap</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+        background: #fcfcfb;
+        color: #0b0b0b;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #1a1a19;
+          color: #f0efec;
+        }
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(560px, 100%), 1fr));
+        gap: 40px 32px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>LozHeatmap: mapa de calor</h1>
+    <div class="grid">
+      <div id="visitas"></div>
+      <div id="ventas"></div>
+      <div id="anomalia"></div>
+      <div id="limites"></div>
+    </div>
+    <div id="calendario" style="margin-top: 40px"></div>
+
+    <script src="../dist/lozcharts.umd.js"></script>
+    <script>
+      var charts = {};
+      var dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+      // Visitas a una tienda en línea por día y hora: picos al mediodía y en la noche, fines de semana distintos.
+      var visitas = [];
+      dias.forEach(function (dia, d) {
+        for (var h = 0; h < 24; h++) {
+          var finde = d >= 5;
+          var curva =
+            Math.exp(-Math.pow((h - 12.5) / 3, 2)) * (finde ? 0.6 : 1) +
+            Math.exp(-Math.pow((h - 21) / 2.2, 2)) * (finde ? 1.1 : 0.8);
+          var noche = h < 6 ? 0.05 : 0.15;
+          visitas.push({
+            hora: String(h).padStart(2, '0') + ':00',
+            dia: dia,
+            visitas: Math.round(900 * (curva + noche) + 40 * Math.sin(h * d + 1)),
+          });
+        }
+      });
+      charts.visitas = new LozChart('#visitas', {
+        title: 'Visitas por día y hora',
+        subtitle: 'Promedio de las últimas 8 semanas',
+        data: visitas,
+        xAxis: { field: 'hora' },
+        series: [{ type: 'heatmap', field: 'visitas', name: 'Visitas', y: 'dia' }],
+      });
+
+      // Ventas mensuales por región (X de tiempo: el núcleo ordena las fechas).
+      var regiones = ['Norte', 'Centro', 'Sur', 'Costa', 'Montaña'];
+      var ventas = [];
+      regiones.forEach(function (region, r) {
+        for (var m = 0; m < 12; m++) {
+          var estacion = 1 + 0.35 * Math.sin(((m - 3 + r) / 12) * 2 * Math.PI);
+          ventas.push({
+            mes: '2026-' + String(m + 1).padStart(2, '0') + '-01',
+            region: region,
+            ventas: Math.round((48000 + r * 9000) * estacion + 3000 * Math.cos(m * 1.3 + r)),
+          });
+        }
+      });
+      charts.ventas = new LozChart('#ventas', {
+        title: 'Ventas mensuales por región',
+        subtitle: '2026',
+        data: ventas,
+        currency: 'USD',
+        xAxis: { field: 'mes', type: 'time' },
+        series: [{ type: 'heatmap', field: 'ventas', name: 'Ventas', y: 'region', format: 'currency' }],
+      });
+
+      // Divergente: margen de ganancia (%) por producto y mes; hay pérdidas.
+      var productos = ['Café', 'Té', 'Chocolate', 'Galletas', 'Jugos', 'Agua'];
+      var meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'];
+      var margen = [];
+      productos.forEach(function (producto, p) {
+        meses.forEach(function (mes, m) {
+          var base = [12, 6, 9, -3, 2, 15][p];
+          var estacion = [4, 2, 8, 3, -9, -6][p] * Math.cos(((m - 6) / 12) * 2 * Math.PI);
+          margen.push({ mes: mes, producto: producto, margen: Math.round((base + estacion + 3 * Math.sin(m * p)) * 10) / 1000 });
+        });
+      });
+      charts.anomalia = new LozChart('#anomalia', {
+        title: 'Margen por producto y mes',
+        subtitle: 'Negativo es pérdida',
+        data: margen,
+        xAxis: { field: 'mes' },
+        series: [{ type: 'heatmap', field: 'margen', name: 'Margen', y: 'producto', format: 'percent' }],
+      });
+
+      // Casos límite: pocas celdas, una que falta, un hueco (null), un duplicado y nombres largos.
+      charts.limites = new LozChart('#limites', {
+        title: 'Casos límite',
+        subtitle: 'Falta Q2 de la segunda fila, Q3 de la primera es null y Q1 de la tercera está repetido (gana el 75)',
+        height: 260,
+        data: [
+          { trimestre: 'Q1', equipo: 'Atención al cliente y soporte posventa internacional', puntos: 82 },
+          { trimestre: 'Q2', equipo: 'Atención al cliente y soporte posventa internacional', puntos: 91 },
+          { trimestre: 'Q3', equipo: 'Atención al cliente y soporte posventa internacional', puntos: null },
+          { trimestre: 'Q1', equipo: 'Logística <&> "bodega"', puntos: 64 },
+          { trimestre: 'Q3', equipo: 'Logística <&> "bodega"', puntos: 70 },
+          { trimestre: 'Q1', equipo: 'Ventas', puntos: 40 },
+          { trimestre: 'Q1', equipo: 'Ventas', puntos: 75 },
+          { trimestre: 'Q2', equipo: 'Ventas', puntos: 88 },
+          { trimestre: 'Q3', equipo: 'Ventas', puntos: 95 },
+        ],
+        xAxis: { field: 'trimestre' },
+        series: [{ type: 'heatmap', field: 'puntos', name: 'Satisfacción', y: 'equipo', color: 3 }],
+      });
+
+      // Calendario de actividad: 52 semanas × 7 días (muchas celdas chicas, sin valores adentro).
+      var calendario = [];
+      for (var w = 0; w < 52; w++) {
+        dias.forEach(function (dia, d) {
+          var v = Math.max(0, Math.round(6 + 5 * Math.sin(w / 4 + d) + 4 * Math.cos(w * d * 0.7) - (d >= 5 ? 5 : 0)));
+          calendario.push({ semana: 'S' + (w + 1), dia: dia, commits: v });
+        });
+      }
+      charts.calendario = new LozChart('#calendario', {
+        title: 'Actividad semanal de un repositorio',
+        subtitle: 'Commits por día, 52 semanas',
+        height: 240,
+        data: calendario,
+        xAxis: { field: 'semana' },
+        series: [{ type: 'heatmap', field: 'commits', name: 'Commits', y: 'dia', color: 6 }],
+      });
+
+      window.qa = charts;
+    </script>
+  </body>
+</html>

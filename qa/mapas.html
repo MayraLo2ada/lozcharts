@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Mapas</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+        background: #fcfcfb;
+        color: #0b0b0b;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #1a1a19;
+          color: #f0efec;
+        }
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(560px, 100%), 1fr));
+        gap: 40px 32px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Mapas</h1>
+    <div class="grid">
+      <div id="mundo"></div>
+      <div id="latam"></div>
+      <div id="divergente"></div>
+      <div id="burbujas"></div>
+      <div id="mercator"></div>
+      <div id="casos"></div>
+    </div>
+
+    <script src="../dist/lozcharts.umd.js"></script>
+    <script src="../dist/maps/world.umd.js"></script>
+    <script>
+      // Datos de ejemplo: usuarios activos por país (miles), con códigos ISO, nombres en inglés y en español mezclados.
+      var usuarios = [
+        ['USA', 4210],
+        ['MEX', 1830],
+        ['BRA', 2650],
+        ['COL', 980],
+        ['ARG', 760],
+        ['CHL', 410],
+        ['PER', 520],
+        ['ESP', 1120],
+        ['Germany', 890],
+        ['Francia', 640],
+        ['GBR', 720],
+        ['ITA', 450],
+        ['IND', 1540],
+        ['JPN', 610],
+        ['AUS', 330],
+        ['CAN', 560],
+        ['ZAF', 210],
+        ['NGA', 280],
+        ['EGY', 190],
+        ['CHN', 1260],
+        ['IDN', 470],
+        ['Ecuador', 230],
+        ['Venezuela', 180],
+        ['URY', 95],
+        ['PRY', 80],
+        ['BOL', 110],
+        ['CRI', 70],
+        ['PAN', 65],
+        ['GTM', 120],
+        ['DOM', 140],
+        ['CUB', 40],
+        ['HND', 55],
+        ['SLV', 50],
+        ['NIC', 35],
+        ['Côte d’Ivoire', 30],
+      ].map(function (r) {
+        return { pais: r[0], usuarios: r[1] * 1000 };
+      });
+      var charts = {};
+      charts.mundo = new LozChart('#mundo', {
+        title: 'Usuarios activos por país',
+        subtitle: 'Octubre 2026 (datos de ejemplo)',
+        data: usuarios,
+        xAxis: { field: 'pais' },
+        yAxis: { format: 'compact' },
+        series: [{ type: 'choropleth', field: 'usuarios', name: 'Usuarios' }],
+        height: 360,
+      });
+      var latam = usuarios.filter(function (r) {
+        return (
+          [
+            'MEX',
+            'BRA',
+            'COL',
+            'ARG',
+            'CHL',
+            'PER',
+            'Ecuador',
+            'Venezuela',
+            'URY',
+            'PRY',
+            'BOL',
+            'CRI',
+            'PAN',
+            'GTM',
+            'DOM',
+            'CUB',
+            'HND',
+            'SLV',
+            'NIC',
+          ].indexOf(r.pais) >= 0
+        );
+      });
+      charts.latam = new LozChart('#latam', {
+        title: 'Latinoamérica',
+        subtitle: 'fit: "data" encuadra solo los países con datos',
+        data: latam,
+        xAxis: { field: 'pais' },
+        yAxis: { format: 'compact' },
+        series: [{ type: 'choropleth', field: 'usuarios', name: 'Usuarios', fit: 'data', color: 2 }],
+        height: 420,
+      });
+      charts.divergente = new LozChart('#divergente', {
+        title: 'Variación de ventas frente a 2025',
+        subtitle: 'Negativos y positivos: escala divergente',
+        data: [
+          ['USA', 0.08],
+          ['MEX', 0.12],
+          ['BRA', -0.05],
+          ['COL', 0.18],
+          ['ARG', -0.14],
+          ['CHL', 0.03],
+          ['PER', 0.07],
+          ['ESP', -0.02],
+          ['DEU', 0.04],
+          ['FRA', -0.06],
+          ['GBR', 0.01],
+          ['ITA', -0.09],
+          ['CAN', 0.05],
+          ['AUS', 0.11],
+        ].map(function (r) {
+          return { pais: r[0], variacion: r[1] };
+        }),
+        xAxis: { field: 'pais' },
+        yAxis: { format: 'percent' },
+        series: [{ type: 'choropleth', field: 'variacion', name: 'Variación' }],
+        height: 340,
+      });
+      charts.burbujas = new LozChart('#burbujas', {
+        title: 'Tiendas por ciudad',
+        subtitle: 'Mapa de burbujas: el área es proporcional a las ventas',
+        data: [
+          { ciudad: 'Ciudad de México', lat: 19.43, lon: -99.13, ventas: 4200 },
+          { ciudad: 'Bogotá', lat: 4.71, lon: -74.07, ventas: 2600 },
+          { ciudad: 'Lima', lat: -12.05, lon: -77.04, ventas: 1900 },
+          { ciudad: 'Santiago', lat: -33.45, lon: -70.67, ventas: 1500 },
+          { ciudad: 'Buenos Aires', lat: -34.6, lon: -58.38, ventas: 3100 },
+          { ciudad: 'São Paulo', lat: -23.55, lon: -46.63, ventas: 5200 },
+          { ciudad: 'Madrid', lat: 40.42, lon: -3.7, ventas: 2800 },
+          { ciudad: 'Miami', lat: 25.76, lon: -80.19, ventas: 3600 },
+          { ciudad: 'Nueva York', lat: 40.71, lon: -74.0, ventas: 4800 },
+          { ciudad: 'Quito', lat: -0.18, lon: -78.47, ventas: 700 },
+        ],
+        xAxis: { field: 'ciudad' },
+        series: [{ type: 'mapbubble', field: 'ventas', name: 'Ventas', lat: 'lat', lon: 'lon' }],
+        height: 360,
+      });
+      charts.mercator = new LozChart('#mercator', {
+        title: 'Proyección Mercator',
+        subtitle: 'projection: "mercator" (infla los países del norte)',
+        data: usuarios,
+        xAxis: { field: 'pais' },
+        yAxis: { format: 'compact' },
+        series: [{ type: 'choropleth', field: 'usuarios', name: 'Usuarios', projection: 'mercator', color: 3 }],
+        height: 360,
+      });
+      charts.casos = new LozChart('#casos', {
+        title: 'Casos límite',
+        subtitle: 'Un lugar que no existe, uno repetido y uno sin dato',
+        data: [
+          { pais: 'COL', v: 10 },
+          { pais: 'Atlantis', v: 5 },
+          { pais: 'colombia', v: 12 },
+          { pais: 'PER', v: null },
+          { pais: 'BRA', v: 3 },
+        ],
+        xAxis: { field: 'pais' },
+        series: [{ type: 'choropleth', field: 'v', name: 'Valor', fit: 'data' }],
+        height: 300,
+      });
+      window.qa = charts;
+    </script>
+  </body>
+</html>
