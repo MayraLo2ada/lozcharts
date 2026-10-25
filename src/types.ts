@@ -108,8 +108,18 @@ export interface SeriesOptions {
   y?: string;
   /** Treemap: campo que agrupa los rectángulos (cada grupo con su color y su título). */
   group?: string;
-  /** Sankey: campo con el destino de cada flujo; el origen es el campo de la X. */
+  /** Sankey, cuerdas y red: campo con el destino de cada vínculo; el origen es el campo de la X. */
   to?: string;
+  /** Sunburst: campos de la jerarquía, del nivel más alto al más bajo (['region', 'pais', 'ciudad']). */
+  levels?: string[];
+  /** Línea de tiempo: campo con la fecha de fin de cada tramo (el inicio es la X). */
+  end?: string;
+  /** Cascada: campo que marca las filas que son subtotal o total (verdadero: la barra parte de cero). */
+  total?: string;
+  /** Bala: campo con la meta de cada fila. */
+  targetField?: string;
+  /** Bala: límites de los rangos de calidad de fondo (por ejemplo [50, 75, 100]). */
+  ranges?: number[];
   /** Mapas: nombre del mapa registrado (por defecto 'mundo'). */
   map?: string;
   /** Mapas: 'all' (por defecto) encuadra todo el mapa; 'data', solo los lugares con datos (una región). */

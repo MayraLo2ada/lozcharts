@@ -16,6 +16,13 @@ import { heatmap } from './series/heatmap';
 import { treemap } from './series/treemap';
 import { sankey } from './series/sankey';
 import { choropleth, mapbubble } from './series/map';
+import { waterfall } from './series/waterfall';
+import { bullet } from './series/bullet';
+import { sunburst } from './series/sunburst';
+import { chord } from './series/chord';
+import { timeline } from './series/timeline';
+import { wordcloud } from './series/wordcloud';
+import { network } from './series/network';
 
 LozChart.registerSeries('line', line);
 LozChart.registerSeries('bar', bar);
@@ -36,6 +43,13 @@ LozChart.registerSeries('treemap', treemap);
 LozChart.registerSeries('sankey', sankey);
 LozChart.registerSeries('choropleth', choropleth);
 LozChart.registerSeries('mapbubble', mapbubble);
+LozChart.registerSeries('waterfall', waterfall);
+LozChart.registerSeries('bullet', bullet);
+LozChart.registerSeries('sunburst', sunburst);
+LozChart.registerSeries('chord', chord);
+LozChart.registerSeries('timeline', timeline);
+LozChart.registerSeries('wordcloud', wordcloud);
+LozChart.registerSeries('network', network);
 
 LozChart.multiples = (target, options) => new LozMultiples(target, options);
 
