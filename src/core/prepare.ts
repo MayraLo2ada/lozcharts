@@ -147,6 +147,7 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
       axis,
     };
   });
+  for (const s of series) if (s.impl.derive) s.values = s.impl.derive(s);
 
   if (folded.length) {
     const first = folded[0];

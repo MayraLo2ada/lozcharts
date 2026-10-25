@@ -185,6 +185,12 @@ export interface SeriesImpl {
    */
   texts?(options: SeriesOptions, xField: string): Record<string, string | undefined>;
   /**
+   * Valores del eje calculados con la serie completa, en lugar de los leídos: una cascada pone el
+   * acumulado de cada fila. Se llama al preparar, antes de apilar y de calcular el dominio; lo
+   * leído sigue disponible si el tipo lo pide también como columna.
+   */
+  derive?(ps: PreparedSeries): number[];
+  /**
    * En 'free': el dato al que lleva una flecha desde el dato i ('ArrowDown'…), para recorridos en
    * dos dimensiones (en un mapa de calor, ↓ va a la fila siguiente). undefined: el recorrido lineal.
    */

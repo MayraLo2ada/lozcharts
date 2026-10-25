@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Cascada</title>
+    <style>
+      :root {
+        --margen: clamp(16px, 3vw, 96px);
+      }
+      body {
+        margin: 0;
+        padding: 24px var(--margen) 64px;
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+        background: #fcfcfb;
+        color: #0b0b0b;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #1a1a19;
+          color: #f0efec;
+        }
+      }
+      h1 {
+        font-size: clamp(22px, 1.4vw + 10px, 40px);
+        margin: 0 0 4px;
+      }
+      p {
+        margin: 0 0 32px;
+        max-width: 70ch;
+        color: #52514e;
+      }
+      @media (prefers-color-scheme: dark) {
+        p {
+          color: #c3c2b7;
+        }
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(560px, 100%), 1fr));
+        /* Los gráficos chicos llenan los huecos que dejan los anchos: nada de columnas vacías a 2560 px. */
+        grid-auto-flow: row dense;
+        gap: 48px clamp(24px, 2.5vw, 64px);
+      }
+      .wide {
+        grid-column: 1 / -1;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>LozWaterfall</h1>
+    <p>
+      Subidas rellenas del color de la serie, bajadas huecas y totales en gris neutro; la punta redondeada y el signo de la
+      etiqueta dicen hacia dónde se movió el acumulado.
+    </p>
+    <div class="grid">
+      <div id="resultados" class="wide"></div>
+      <div id="caja"></div>
+      <div id="anios"></div>
+      <div id="regiones" class="wide"></div>
+      <div id="horizontal"></div>
+      <div id="negativo"></div>
+      <div id="descuadre"></div>
+      <div id="huecos"></div>
+      <div id="uno"></div>
+      <div id="sin-etiquetas"></div>
+      <div id="muchos" class="wide"></div>
+    </div>
+
+    <script src="../dist/lozcharts.umd.js"></script>
+    <script>
+      var charts = {};
+      var cascada = function (title, subtitle, data, extra, serie) {
+        return Object.assign(
+          {
+            title: title,
+            subtitle: subtitle,
+            data: data,
+            height: 340,
+            xAxis: { field: 'paso' },
+            series: [Object.assign({ type: 'waterfall', field: 'monto', name: 'Monto', total: 'total' }, serie || {})],
+          },
+          extra || {},
+        );
+      };
+      var f = function (paso, monto, total) {
+        return { paso: paso, monto: monto, total: !!total };
+      };
+
+      // Estado de resultados anual: de las ventas a la utilidad neta.
+      charts.resultados = new LozChart(
+        '#resultados',
+        cascada(
+          'De las ventas a la utilidad neta',
+          'Estado de resultados 2026, en pesos mexicanos',
+          [
+            f('Ventas', 48200000),
+            f('Devoluciones', -1350000),
+            f('Costo de ventas', -21400000),
+            f('Utilidad bruta', null, true),
+            f('Sueldos', -9800000),
+            f('Renta y servicios', -3100000),
+            f('Mercadotecnia', -2650000),
+            f('Otros ingresos', 920000),
+            f('Utilidad operativa', null, true),
+            f('Intereses', -740000),
+            f('Impuestos', -3020000),
+            f('Utilidad neta', null, true),
+          ],
+          { height: 420, currency: 'MXN', yAxis: { format: 'currency' } },
+          { name: 'Resultado', format: 'currency' },
+        ),
+      );
+
+      // Flujo de caja: saldo inicial dado como total, el acumulado cruza el cero y vuelve.
+      charts.caja = new LozChart(
+        '#caja',
+        cascada('Caja del trimestre', 'Saldo inicial dado; el acumulado cruza el cero en agosto', [
+          f('Saldo junio', 180000, true),
+          f('Cobros jul', 95000),
+          f('Nómina jul', -210000),
+          f('Proveedores', -160000),
+          f('Cobros ago', 70000),
+          f('Crédito', 250000),
+          f('Nómina ago', -210000),
+          f('Saldo agosto', null, true),
+          f('Cobros sep', 310000),
+          f('Saldo septiembre', null, true),
+        ]),
+      );
+
+      // Dos años lado a lado: cada serie es su propia cascada.
+      charts.anios = new LozChart(
+        '#anios',
+        Object.assign(
+          cascada('Puente de utilidad por año', 'Millones de pesos', [
+            { paso: 'Ventas', a: 42, b: 48 },
+            { paso: 'Costos', a: -19, b: -21.4 },
+            { paso: 'Gastos', a: -14, b: -15.6 },
+            { paso: 'Impuestos', a: -2.7, b: -3 },
+            { paso: 'Utilidad', a: null, b: null, total: true },
+          ]),
+          {
+            series: [
+              { type: 'waterfall', field: 'a', name: '2025', total: 'total' },
+              { type: 'waterfall', field: 'b', name: '2026', total: 'total' },
+            ],
+          },
+        ),
+      );
+
+      // Variación de ventas por región contra el año anterior.
+      charts.regiones = new LozChart(
+        '#regiones',
+        cascada(
+          'Qué movió las ventas',
+          'Ventas 2025 → 2026 por región, en miles de dólares',
+          [
+            f('Ventas 2025', 18400, true),
+            f('Norte', 1240),
+            f('Bajío', 860),
+            f('Occidente', -420),
+            f('Centro', 2310),
+            f('Sureste', -1180),
+            f('Golfo', 340),
+            f('Pacífico', -95),
+            f('Península', 610),
+            f('Exportación', 1920),
+            f('En línea', 3050),
+            f('Mayoreo', -2240),
+            f('Ventas 2026', null, true),
+          ],
+          { height: 380 },
+        ),
+      );
+
+      charts.horizontal = new LozChart(
+        '#horizontal',
+        cascada(
+          'En horizontal',
+          'Las etiquetas siguen derechas',
+          [f('Presupuesto', 1000, true), f('Ahorros', 180), f('Sobrecostos', -340), f('Ampliación', 220), f('Final', null, true)],
+          { orientation: 'horizontal', height: 300 },
+        ),
+      );
+
+      charts.negativo = new LozChart(
+        '#negativo',
+        cascada('Todo negativo', 'Pérdidas que se acumulan bajo el cero', [
+          f('Arranque', -1200),
+          f('Marketing', -800),
+          f('Primer cobro', 300),
+          f('Infraestructura', -650),
+          f('Pérdida', null, true),
+        ]),
+      );
+
+      charts.descuadre = new LozChart(
+        '#descuadre',
+        cascada('Un cierre que no cuadra', 'El total dado manda; el tooltip da la diferencia (ver consola)', [
+          f('Inicio', 500, true),
+          f('Altas', 120),
+          f('Bajas', -80),
+          f('Cierre auditado', 560, true),
+        ]),
+      );
+
+      charts.huecos = new LozChart(
+        '#huecos',
+        cascada('Ceros y huecos', 'Sin dato no se dibuja y corta el conector; un cero no tiene barra', [
+          f('Enero', 400),
+          f('Febrero', 0),
+          f('Marzo', null),
+          f('Abril', -150),
+          f('Mayo', 90),
+          f('Subtotal', null, true),
+          f('Total', null, true),
+        ]),
+      );
+
+      charts.uno = new LozChart('#uno', cascada('Un solo dato', '', [f('<b>Ventas & "más"</b>', 840)], { height: 220 }));
+
+      charts.sinEtiquetas = new LozChart(
+        '#sin-etiquetas',
+        cascada(
+          'Sin etiquetas',
+          'labels: false',
+          [f('Ventas', 500), f('Costos', -220), f('Gastos', -130), f('Utilidad', null, true)],
+          {},
+          { labels: false },
+        ),
+      );
+
+      // Treinta días: las etiquetas exactas no caben, van compactas o se omiten.
+      var dias = [f('Inicio de mes', 52000, true)];
+      for (var d = 1; d <= 30; d++) dias.push(f('Día ' + d, Math.round(Math.sin(d * 1.7) * 9000 + ((d * 37) % 11) * 300 - 1200)));
+      dias.push(f('Cierre de mes', null, true));
+      charts.muchos = new LozChart('#muchos', cascada('Treinta días', 'Variación diaria del inventario, en unidades', dias));
+      window.qa = charts;
+    </script>
+  </body>
+</html>
