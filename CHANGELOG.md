@@ -10,6 +10,9 @@
   de datos (los interiores del sunburst).
 - **Tooltip:** la muestra de color toma el color de cada dato (rama, grupo, carril, nodo de origen
   o celda), no el de la serie. Los tipos de serie lo definen con el gancho `swatch(ctx, i)`.
+- **Para extensiones:** el paquete exporta las piezas del núcleo con las que se dibujan sus tipos:
+  colores (contraste, mezcla en OKLab, rampas), formatos de número y fecha, marcas de eje, `esc`,
+  `attrs`, `textWidth`, `fitText`, `toCSV` y `swatchOf`.
 
 ## 1.0.0 (25 de octubre de 2026)
 
