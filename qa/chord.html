@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Cuerdas</title>
+    <style>
+      :root {
+        --surface: #fcfcfb;
+        --text: #0b0b0b;
+        --muted: #52514e;
+        --line: #e7e6e1;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --surface: #1a1a19;
+          --text: #f0efec;
+          --muted: #c3c2b7;
+          --line: #2f2f2d;
+        }
+      }
+      :root[data-theme='dark'] {
+        --surface: #1a1a19;
+        --text: #f0efec;
+        --muted: #c3c2b7;
+        --line: #2f2f2d;
+      }
+      body {
+        margin: 0;
+        padding: 16px clamp(16px, 2.5vw, 48px) 48px;
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+        background: var(--surface);
+        color: var(--text);
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding-bottom: 16px;
+        margin-bottom: 24px;
+        border-bottom: 1px solid var(--line);
+      }
+      h1 {
+        margin: 0;
+        font-size: 20px;
+      }
+      header p {
+        margin: 2px 0 0;
+        color: var(--muted);
+      }
+      .tema {
+        display: inline-flex;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .tema button {
+        min-height: 32px;
+        padding: 0 12px;
+        border: 0;
+        background: none;
+        color: var(--muted);
+        font: inherit;
+        cursor: pointer;
+      }
+      .tema button[aria-pressed='true'] {
+        background: var(--line);
+        color: var(--text);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(520px, 100%), 1fr));
+        gap: 40px 32px;
+      }
+      .wide {
+        grid-column: 1 / -1;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>LozChord</h1>
+        <p>Cada cinta lleva el color de su origen; el extremo de destino queda separado de su arco.</p>
+      </div>
+      <div class="tema" role="group" aria-label="Tema">
+        <button type="button" data-tema="auto" aria-pressed="true">Auto</button>
+        <button type="button" data-tema="light" aria-pressed="false">Claro</button>
+        <button type="button" data-tema="dark" aria-pressed="false">Oscuro</button>
+      </div>
+    </header>
+    <div class="grid">
+      <div id="migracion" class="wide"></div>
+      <div id="comercio"></div>
+      <div id="marcas"></div>
+      <div id="muchos" class="wide"></div>
+      <div id="uno"></div>
+      <div id="largos"></div>
+      <div id="ceros"></div>
+      <div id="sin-etiquetas"></div>
+    </div>
+
+    <script src="../dist/lozcharts.umd.js"></script>
+    <script>
+      var charts = {};
+      // El círculo es tan ancho como alto: en un teléfono, el alto no pasa del ancho disponible
+      // (más el lugar de las etiquetas), así no quedan franjas vacías arriba y abajo.
+      var ancho = Math.min(window.innerWidth, document.documentElement.clientWidth) - 32;
+      var cuerdas = function (title, subtitle, data, extra) {
+        var o = Object.assign(
+          {
+            title: title,
+            subtitle: subtitle,
+            data: data,
+            height: 420,
+            xAxis: { field: 'origen' },
+            series: [{ type: 'chord', field: 'valor', name: 'Personas', to: 'destino' }],
+          },
+          extra || {},
+        );
+        o.height = Math.min(o.height, ancho + 40);
+        return o;
+      };
+      var f = function (origen, destino, valor) {
+        return { origen: origen, destino: destino, valor: valor };
+      };
+
+      // Migración interna de un año (miles de personas), con ida y vuelta entre casi todas.
+      charts.migracion = new LozChart(
+        '#migracion',
+        cuerdas(
+          'Mudanzas entre regiones, 2025',
+          'Miles de personas que cambiaron de región; cada cinta va del color de donde salieron',
+          [
+            f('Capital', 'Centro', 182),
+            f('Capital', 'Norte', 64),
+            f('Capital', 'Costa', 118),
+            f('Capital', 'Sur', 41),
+            f('Centro', 'Capital', 96),
+            f('Centro', 'Norte', 38),
+            f('Centro', 'Sur', 22),
+            f('Norte', 'Capital', 71),
+            f('Norte', 'Centro', 45),
+            f('Norte', 'Costa', 17),
+            f('Costa', 'Capital', 54),
+            f('Costa', 'Sur', 29),
+            f('Sur', 'Capital', 88),
+            f('Sur', 'Costa', 36),
+            f('Sur', 'Centro', 19),
+            f('Islas', 'Capital', 23),
+            f('Islas', 'Costa', 12),
+          ],
+          { height: 560 },
+        ),
+      );
+
+      // Comercio entre bloques, en millones de dólares.
+      charts.comercio = new LozChart(
+        '#comercio',
+        cuerdas(
+          'Exportaciones entre bloques',
+          'Millones de USD, del exportador al importador',
+          [
+            f('Norteamérica', 'Europa', 640),
+            f('Norteamérica', 'Asia', 520),
+            f('Norteamérica', 'Sudamérica', 210),
+            f('Europa', 'Norteamérica', 590),
+            f('Europa', 'Asia', 410),
+            f('Europa', 'África', 160),
+            f('Asia', 'Norteamérica', 880),
+            f('Asia', 'Europa', 720),
+            f('Asia', 'Oceanía', 190),
+            f('Asia', 'África', 140),
+            f('Sudamérica', 'Asia', 260),
+            f('Sudamérica', 'Europa', 120),
+            f('África', 'Europa', 150),
+            f('África', 'Asia', 110),
+            f('Oceanía', 'Asia', 230),
+          ],
+          {
+            series: [{ type: 'chord', field: 'valor', name: 'Exportaciones', to: 'destino', format: 'currency' }],
+          },
+        ),
+      );
+
+      // Cambio de marca de teléfono: quienes se quedan con la suya son un bucle y no se dibujan (ver consola).
+      charts.marcas = new LozChart(
+        '#marcas',
+        cuerdas(
+          'Cambio de marca de teléfono',
+          'Miles de clientes; quedarse con la misma marca no se dibuja (ver consola)',
+          [
+            f('Marca A', 'Marca A', 900),
+            f('Marca A', 'Marca B', 140),
+            f('Marca A', 'Marca C', 60),
+            f('Marca B', 'Marca A', 210),
+            f('Marca B', 'Marca B', 700),
+            f('Marca B', 'Marca D', 45),
+            f('Marca C', 'Marca A', 80),
+            f('Marca C', 'Marca B', 90),
+            f('Marca D', 'Marca B', 30),
+            f('Marca D', 'Marca C', 25),
+          ],
+          { series: [{ type: 'chord', field: 'valor', name: 'Clientes', to: 'destino' }] },
+        ),
+      );
+
+      // 36 países: los 8 primeros con color, el resto en gris; las etiquetas que chocarían se omiten.
+      var paises = [
+        'Alemania',
+        'Argentina',
+        'Australia',
+        'Brasil',
+        'Canadá',
+        'Chile',
+        'China',
+        'Colombia',
+        'Corea',
+        'Egipto',
+        'España',
+        'Estados Unidos',
+        'Filipinas',
+        'Francia',
+        'India',
+        'Indonesia',
+        'Italia',
+        'Japón',
+        'Kenia',
+        'Marruecos',
+        'México',
+        'Nigeria',
+        'Noruega',
+        'Países Bajos',
+        'Perú',
+        'Polonia',
+        'Portugal',
+        'Reino Unido',
+        'Rusia',
+        'Sudáfrica',
+        'Suecia',
+        'Suiza',
+        'Tailandia',
+        'Turquía',
+        'Uruguay',
+        'Vietnam',
+      ];
+      var estudiantes = [];
+      paises.forEach(function (p, k) {
+        estudiantes.push(f(p, paises[(k * 7 + 3) % 36], 40 + ((k * 53) % 160)));
+        estudiantes.push(f(p, paises[(k * 11 + 5) % 36], 20 + ((k * 29) % 90)));
+      });
+      charts.muchos = new LozChart(
+        '#muchos',
+        cuerdas('Estudiantes de intercambio', '36 países, ocho colores: del noveno en adelante, gris', estudiantes, {
+          height: 640,
+          series: [{ type: 'chord', field: 'valor', name: 'Estudiantes', to: 'destino' }],
+        }),
+      );
+
+      charts.uno = new LozChart(
+        '#uno',
+        cuerdas('Un solo flujo', 'Dos arcos y una cinta', [f('Prueba gratis', 'Suscripción', 840)], {
+          height: 300,
+          series: [{ type: 'chord', field: 'valor', name: 'Usuarios', to: 'destino' }],
+        }),
+      );
+
+      charts.largos = new LozChart(
+        '#largos',
+        cuerdas('Nombres largos', 'Se recortan con "…"; el tooltip los da completos', [
+          f('Campaña de otoño en buscadores y redes sociales', 'Página de aterrizaje del catálogo completo', 900),
+          f('Campaña de otoño en buscadores y redes sociales', 'Formulario de contacto comercial', 300),
+          f('Recomendación de clientes frecuentes', 'Página de aterrizaje del catálogo completo', 500),
+          f('Página de aterrizaje del catálogo completo', 'Solicitud de cotización enviada', 600),
+          f('Formulario de contacto comercial', 'Solicitud de cotización enviada', 300),
+          f('Solicitud de cotización enviada', 'Campaña de otoño en buscadores y redes sociales', 120),
+        ]),
+      );
+
+      charts.ceros = new LozChart(
+        '#ceros',
+        cuerdas('Ceros y huecos', 'Los flujos en cero, negativos, vacíos o sin destino no se dibujan', [
+          f('App', 'Web', 400),
+          f('App', 'Kiosco', 0),
+          f('Web', 'App', 250),
+          f('Web', '', 90),
+          f('Web', 'Kiosco', null),
+          f('Kiosco', 'App', -30),
+          f('Kiosco', 'Web', 60),
+          f('', 'App', 50),
+        ]),
+      );
+
+      charts.sinEtiquetas = new LozChart(
+        '#sin-etiquetas',
+        cuerdas(
+          'Sin etiquetas',
+          'labels: false; los nombres están en el tooltip y la tabla',
+          [f('A', 'B', 30), f('B', 'C', 20), f('C', 'A', 25), f('A', 'C', 10), f('B', 'A', 12), f('C', 'B', 8)],
+          { series: [{ type: 'chord', field: 'valor', name: 'Flujo', to: 'destino', labels: false }] },
+        ),
+      );
+
+      document.querySelectorAll('.tema button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var t = b.getAttribute('data-tema');
+          document.querySelectorAll('.tema button').forEach(function (x) {
+            x.setAttribute('aria-pressed', String(x === b));
+          });
+          if (t === 'auto') document.documentElement.removeAttribute('data-theme');
+          else document.documentElement.setAttribute('data-theme', t);
+          Object.keys(charts).forEach(function (k) {
+            charts[k].setTheme(t);
+          });
+        });
+      });
+      window.qa = charts;
+    </script>
+  </body>
+</html>
