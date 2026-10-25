@@ -351,8 +351,8 @@ test('encabezado, tooltip y teclado, sin esperar al primer dibujo (la tabla se a
   assert.deepEqual(sankey.tooltip!(ps, 0, format), {
     value: '4200',
     details: [
-      ['% de Búsqueda', '76.4 %'],
-      ['% de Producto', '59.2 %'],
+      ['De lo que sale de Búsqueda', '76.4 %'],
+      ['De lo que llega a Producto', '59.2 %'],
     ],
   });
   // El teclado recorre los flujos por columna del origen y altura.
@@ -376,7 +376,7 @@ test('tooltip de flujos que no se dibujan', () => {
   console.warn = (s: string) => warnings.push(s);
   try {
     // Primero el tooltip (como la tabla oculta), después dos cuadros.
-    assert.deepEqual(sankey.tooltip!(ps, 1, format), { value: '2', details: [['No se dibuja', 'cierra un ciclo']] });
+    assert.deepEqual(sankey.tooltip!(ps, 1, format), { value: '2', details: [['No aparece', 'cerraría un ciclo']] });
     const ctx = context(ps, rows);
     sankey.draw(ctx);
     sankey.draw(ctx);

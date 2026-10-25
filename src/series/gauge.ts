@@ -159,7 +159,7 @@ export const gauge: SeriesImpl = {
   includeZero: true,
   layer: 0,
   legendSymbol: 'square',
-  label: 'indicador',
+  label: 'medidor',
   draw(ctx) {
     const { d0, d1 } = ctx.y;
     const th = ctx.theme;
@@ -252,7 +252,7 @@ export const gauge: SeriesImpl = {
       value: format.value(v),
       details: [
         ['Meta', format.value(t)],
-        ['Diferencia', format.difference(v - t)],
+        ['Frente a la meta', format.difference(v - t)],
       ],
     };
   },

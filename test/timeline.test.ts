@@ -494,7 +494,7 @@ test('fin antes del inicio: se invierte, el tooltip lo dice y se avisa una sola 
       value: 'mar – may 2026',
       details: [
         ['Duración', '2 meses'],
-        ['Nota', 'el fin venía antes del inicio'],
+        ['Nota', 'las fechas venían al revés'],
       ],
     });
     const ctx = context(ps);

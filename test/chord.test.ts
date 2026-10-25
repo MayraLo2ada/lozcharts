@@ -451,8 +451,8 @@ test('encabezado, tooltip y teclado, sin esperar al primer dibujo (la tabla se a
   assert.deepEqual(chord.tooltip!(ps, 0, format), {
     value: '120',
     details: [
-      ['% de lo que sale de Norte', '75 %'],
-      ['% de lo que entra a Centro', '44.4 %'],
+      ['De lo que sale de Norte', '75 %'],
+      ['De lo que llega a Centro', '44.4 %'],
     ],
   });
   // El teclado recorre los flujos por arco del origen; ↑/↓ saltan de nodo.
@@ -484,7 +484,10 @@ test('tooltip de flujos que no se dibujan y aviso de bucles', () => {
   const warnings: string[] = [];
   console.warn = (s: string) => warnings.push(s);
   try {
-    assert.deepEqual(chord.tooltip!(ps, 1, format), { value: '2', details: [['No se dibuja', 'va de un nodo a sí mismo']] });
+    assert.deepEqual(chord.tooltip!(ps, 1, format), {
+      value: '2',
+      details: [['No aparece', 'empieza y termina en el mismo lugar']],
+    });
     const ctx = context(ps, rows);
     chord.draw(ctx);
     chord.draw(ctx);

@@ -74,7 +74,10 @@ export function textWidth(text: string, font: string): number {
 export function resolveElement(target: string | HTMLElement): HTMLElement {
   if (typeof target !== 'string') return target;
   const el = document.querySelector<HTMLElement>(target);
-  if (!el) throw new Error(`LozChart: no encontré el elemento "${target}".`);
+  if (!el)
+    throw new Error(
+      `LozCharts: no encontré nada que coincida con "${target}" en la página. Revisa el selector o crea el gráfico cuando el elemento ya exista.`,
+    );
   return el;
 }
 

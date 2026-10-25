@@ -112,7 +112,7 @@ export const ohlc: SeriesImpl = {
   band: true,
   layer: 2,
   legendSymbol: 'line',
-  label: 'barras OHLC',
+  label: 'barras de precios',
   columns: fields,
   valueColumns: ['open', 'high', 'low'],
   dimmable: true,

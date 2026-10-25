@@ -507,8 +507,8 @@ test('tooltip de filas que no se dibujan o que son parte de un nodo', () => {
   ];
   const ps = series(rows);
   ps.values[4] = NaN;
-  assert.deepEqual(sunburst.tooltip!(ps, 1, format), { value: '0', details: [['No se dibuja', 'valor cero o negativo']] });
-  assert.deepEqual(sunburst.tooltip!(ps, 2, format), { value: '5', details: [['No se dibuja', 'sin ruta']] });
+  assert.deepEqual(sunburst.tooltip!(ps, 1, format), { value: '0', details: [['No aparece', 'vale cero o menos']] });
+  assert.deepEqual(sunburst.tooltip!(ps, 2, format), { value: '5', details: [['No aparece', 'le falta la ruta']] });
   assert.equal(sunburst.tooltip!(ps, 4, format), null);
   // Dos filas con la misma ruta: cada una dice su parte del nodo.
   assert.deepEqual(sunburst.tooltip!(ps, 0, format), {

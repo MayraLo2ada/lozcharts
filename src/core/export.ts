@@ -30,11 +30,14 @@ export async function downloadImage(
   canvas.width = Math.round(width * scale);
   canvas.height = Math.round(height * scale);
   const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('LozChart: el navegador no permite canvas.');
+  if (!ctx)
+    throw new Error(
+      'LozCharts: este navegador no deja dibujar en canvas, así que no puedo crear la imagen. Descarga el SVG en su lugar.',
+    );
   ctx.scale(scale, scale);
   ctx.drawImage(img, 0, 0, width, height);
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-  if (!blob) throw new Error('LozChart: no pude generar el PNG.');
+  if (!blob) throw new Error('LozCharts: no pude crear el PNG. Vuelve a intentarlo o descarga el SVG.');
   saveBlob(blob, name + '.png');
 }
 

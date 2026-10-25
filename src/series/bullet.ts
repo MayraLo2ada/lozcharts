@@ -137,13 +137,13 @@ export function rangeIndex(v: number, ranges: readonly number[]): number {
   return k < 0 ? ranges.length : k;
 }
 
-/** "Hasta 50 (1 de 3)", "50 a 75 (2 de 3)" o "Sobre 100 (fuera de los rangos)"; null sin rango. */
+/** "Hasta 50 (1 de 3)", "Entre 50 y 75 (2 de 3)" o "Más de 100 (pasa la última)"; null sin franjas. */
 export function rangeText(v: number, ranges: readonly number[], format: (v: number) => string): string | null {
   const k = rangeIndex(v, ranges);
   if (k < 0) return null;
   const n = ranges.length;
-  if (k === n) return `Sobre ${format(ranges[n - 1])} (fuera de los rangos)`;
-  const span = k === 0 ? `Hasta ${format(ranges[0])}` : `${format(ranges[k - 1])} a ${format(ranges[k])}`;
+  if (k === n) return `Más de ${format(ranges[n - 1])} (pasa la última)`;
+  const span = k === 0 ? `Hasta ${format(ranges[0])}` : `Entre ${format(ranges[k - 1])} y ${format(ranges[k])}`;
   return `${span} (${k + 1} de ${n})`;
 }
 
@@ -408,7 +408,7 @@ export const bullet: SeriesImpl = {
   includeZero: true,
   layer: 0,
   legendSymbol: 'square',
-  label: 'bala',
+  label: 'metas',
   items: ['indicador', 'indicadores'],
   columns: (o) => ({ target: o.targetField }),
   // La meta y los rangos también deben caber en la escala, aunque ningún valor los alcance.
@@ -461,10 +461,10 @@ export const bullet: SeriesImpl = {
       // También como parte de la meta, con signo; con meta cero no hay proporción que dar.
       const sign = d > 0 ? '+' : '−';
       const pct = t !== 0 && d !== 0 ? ` (${sign}${format.percent(Math.abs(d / t))})` : '';
-      details.push(['Diferencia', format.difference(d) + pct]);
+      details.push(['Frente a la meta', format.difference(d) + pct]);
     }
     const range = rangeText(v, cleanRanges(ps.options.ranges), format.value);
-    if (range) details.push(['Rango', range]);
+    if (range) details.push(['Franja', range]);
     const value = isFinite(v) ? format.value(v) : 'Sin dato';
     return details.length ? { value, details } : { value };
   },

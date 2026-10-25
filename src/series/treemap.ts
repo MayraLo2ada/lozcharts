@@ -353,8 +353,8 @@ export const treemap: SeriesImpl = {
   includeZero: true,
   layer: 0,
   legendSymbol: 'square',
-  label: 'treemap',
-  items: ['elemento', 'elementos'],
+  label: 'rectángulos',
+  items: ['parte', 'partes'],
   texts: (o) => ({ group: o.group }),
   navigable: (ps) => readingOrder(ps.values, groupsOf(ps)),
   headline(ps, i, x) {

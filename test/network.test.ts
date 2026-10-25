@@ -323,12 +323,12 @@ test('encabezado y tooltip, sin esperar al primer dibujo', () => {
   });
   const ps = series(TEAM);
   assert.equal(network.headline!(ps, 4, 'Pedro'), 'Pedro');
-  assert.equal(network.headline!(ps, 3, 'Pedro'), 'Pedro — Ana');
+  assert.equal(network.headline!(ps, 3, 'Pedro'), 'Pedro y Ana');
   assert.deepEqual(network.tooltip!(ps, 4, format), {
     value: '12',
     details: [
-      ['Vínculos', '2'],
-      ['Vecinos', 'Sofía (10), Ana (2)'],
+      ['Conexiones', '2'],
+      ['Conectado con', 'Sofía (10), Ana (2)'],
       ['Grupo', 'Datos'],
     ],
   });
@@ -336,8 +336,8 @@ test('encabezado y tooltip, sin esperar al primer dibujo', () => {
   assert.deepEqual(network.tooltip!(ps, 6, format), {
     value: '0',
     details: [
-      ['Vínculos', '0'],
-      ['Vecinos', 'ninguno'],
+      ['Conexiones', '0'],
+      ['Conectado con', 'ningún otro'],
       ['Grupo', 'Ventas'],
     ],
   });
@@ -346,7 +346,7 @@ test('encabezado y tooltip, sin esperar al primer dibujo', () => {
 test('tooltip: más de tres vecinos se resumen', () => {
   const rows: Row[] = ['B', 'C', 'D', 'E', 'F'].map((t, k) => ['A', t, 5 - k, '']);
   const t = network.tooltip!(series(rows), model(rows).nodeRow[0], format)!;
-  assert.deepEqual(t.details?.[1], ['Vecinos principales', 'B (5), C (4), D (3) y 2 más']);
+  assert.deepEqual(t.details?.[1], ['Conectado sobre todo con', 'B (5), C (4), D (3) y 2 más']);
 });
 
 test('muestra del tooltip: el color del grupo del nodo, el mismo del círculo', () => {

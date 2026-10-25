@@ -214,7 +214,11 @@ export class LozChart {
         const options = JSON.parse(json) as LozChartOptions | MultiplesOptions;
         charts.push('facet' in options && options.facet ? LozChart.multiples(el, options) : new LozChart(el, options));
       } catch (err) {
-        console.error('LozChart: no pude leer las opciones de', el, err);
+        console.error(
+          'LozCharts: no pude leer las opciones de data-lozchart; revisa que sean un JSON válido o el selector de un <script>.',
+          el,
+          err,
+        );
       }
     }
     return charts;
@@ -454,7 +458,7 @@ export class LozChart {
     const show = visible ?? set.has(name);
     if (show) set.delete(name);
     else set.add(name);
-    this.liveEl.textContent = `${name}: ${show ? 'visible' : 'oculta'}`;
+    this.liveEl.textContent = `${show ? 'Ahora se ve' : 'Ya no se ve'} ${name}`;
     this.syncLegend();
     this.update(true);
     return this;
@@ -562,7 +566,7 @@ export class LozChart {
   select(index: readonly number[] | null): this {
     this.opts.selection = index && index.length ? [...index] : null;
     this.syncSelection();
-    this.liveEl.textContent = this.selectionText() || 'Sin selección';
+    this.liveEl.textContent = this.selectionText() || 'Ya no hay nada seleccionado';
     this.renderTable();
     this.svgEl.setAttribute('aria-label', this.ariaLabel());
     this.redraw();
@@ -800,8 +804,8 @@ export class LozChart {
     this.liveEl.textContent = !announce
       ? ''
       : range
-        ? `Mostrando de ${this.labelAtFraction(next.start, 'start')} a ${this.labelAtFraction(next.end, 'end')}`
-        : 'Mostrando todos los datos';
+        ? `Ahora ves de ${this.labelAtFraction(next.start, 'start')} a ${this.labelAtFraction(next.end, 'end')}`
+        : 'Ahora ves todos los datos';
     this.opts.onZoom?.(range, this.zoomWindow);
   }
 
@@ -868,10 +872,19 @@ export class LozChart {
   private selectionText(): string {
     const sel = this.selectedIdx;
     if (!sel) return '';
-    const items =
-      this.prepared.series[0]?.impl.items ?? (this.prepared.pointLegend ? ['categoría', 'categorías'] : ['punto', 'puntos']);
+    const items = this.itemWords();
     const n = this.prepared.n;
     return `Selección: ${sel.size} de ${n} ${n === 1 ? items[0] : items[1]}`;
+  }
+
+  /** Cómo se llaman los datos al contarlos: los del tipo, o categorías o puntos según el eje. */
+  private itemWords(): readonly [string, string] {
+    const p = this.prepared;
+    const own = p.series[0]?.impl.items;
+    if (own) return own;
+    return p.pointLegend || (p.coords === 'cartesian' && p.xType === 'category')
+      ? ['categoría', 'categorías']
+      : ['punto', 'puntos'];
   }
 
   private hiddenPointIndices(): Set<number> {
@@ -1644,7 +1657,7 @@ export class LozChart {
       // Índice: el valor del eje y, debajo, el original en sus unidades.
       const v = s.values[i];
       if (!isFinite(v)) return { value: 'Sin dato' };
-      return { value: indexFormatter(this.opts.locale)(v), details: [['Valor', format.value(s.raw[i])]] };
+      return { value: indexFormatter(this.opts.locale)(v), details: [['Valor real', format.value(s.raw[i])]] };
     }
     const custom = s.impl.tooltip?.(s, i, format);
     if (custom) return custom;
@@ -1768,7 +1781,8 @@ export class LozChart {
     for (let i = 0; i < shown; i++) {
       const row = html('tr');
       const hiddenMark =
-        (p.pointLegend && this.hiddenIdx.has(i) ? ' (oculta)' : '') + (this.selectedIdx?.has(i) ? ' (en la selección)' : '');
+        (p.pointLegend && this.hiddenIdx.has(i) ? ' (oculta en el gráfico)' : '') +
+        (this.selectedIdx?.has(i) ? ' (en la selección)' : '');
       const own = p.series[0]?.impl.headline?.(p.series[0], i, xLabel(p, i, false, ctx));
       row.appendChild(html('th', { scope: 'row' }, (own || xLabel(p, i, false, ctx)) + hiddenMark));
       for (const s of p.series) {
@@ -1783,7 +1797,9 @@ export class LozChart {
     const title = this.opts.title ?? 'Datos del gráfico';
     const count = valueFormatter('number', this.numberContext());
     const caption =
-      shown < p.n ? `${title} (primeras ${count(shown)} de ${count(p.n)} filas; los datos completos se descargan en CSV)` : title;
+      shown < p.n
+        ? `${title} (aquí van las primeras ${count(shown)} de ${count(p.n)} filas; descarga el CSV para verlas todas)`
+        : title;
     this.tableEl.replaceChildren(html('caption', {}, caption), thead, body);
   }
 
@@ -1797,14 +1813,16 @@ export class LozChart {
     // Un solo dato (un gauge): se dice el valor, no se invita a recorrer nada.
     if (n === 1) return `${title}${what}. ${this.describe(0)}`;
     const plural = (k: number, [one, many]: readonly [string, string]) => `${k} ${k === 1 ? one : many}`;
-    const items = series[0]?.impl.items ?? (p.pointLegend ? ['categoría', 'categorías'] : ['punto', 'puntos']);
+    const items = this.itemWords();
     // Se cuentan las categorías de los datos, no las porciones: "Otros" reúne varias.
     const real = p.others.length ? n - 1 + p.others.length : n;
     const folded = p.others.length ? ` (${p.others.length} sumadas en Otros)` : '';
     const count =
       p.pointLegend || p.coords === 'free'
         ? plural(real, items) + folded
-        : `${plural(series.length, ['serie', 'series'])} y ${plural(n, items)}`;
+        : series.length === 1
+          ? plural(n, items)
+          : `${plural(series.length, ['serie', 'series'])} y ${plural(n, items)}`;
     // Sin ejes valen las cuatro flechas; con ejes, las del eje del índice.
     const keys =
       p.coords !== 'cartesian'
@@ -1812,9 +1830,30 @@ export class LozChart {
         : this.horizontal
           ? 'las flechas arriba y abajo'
           : 'las flechas izquierda y derecha';
-    const zoom = this.zoomable ? ' Con + y − se acerca o aleja el eje X, y con 0 se vuelve a ver todo.' : '';
+    const zoom = this.zoomable ? ' Con + y − acercas o alejas; con 0 vuelves a verlo todo.' : '';
     const selection = this.selectedIdx ? ` ${this.selectionText()}.` : '';
-    return `${title}${what} con ${count}. Usa ${keys} para recorrer los datos.${zoom}${this.annotationText()}${selection}`;
+    return `${title}${what} con ${count}${this.spanText()}.${this.peakText()} Recorre los datos con ${keys}.${zoom}${this.annotationText()}${selection}`;
+  }
+
+  /** ", de enero a diciembre": de dónde a dónde va el eje X, si es de fechas o de números. */
+  private spanText(): string {
+    const p = this.prepared;
+    if (p.coords !== 'cartesian' || p.xType === 'category' || p.n < 2) return '';
+    const ctx = this.xContext();
+    return `, de ${xLabel(p, 0, false, ctx)} a ${xLabel(p, p.n - 1, false, ctx)}`;
+  }
+
+  /** " El más alto es noviembre, con 1,4 M $.": con una sola serie de valores simples. */
+  private peakText(): string {
+    const p = this.prepared;
+    const s = p.series[0];
+    if (p.coords !== 'cartesian' || p.series.length !== 1 || !s || s.impl.tooltip || p.n < 2) return '';
+    let top = -1;
+    s.values.forEach((v, i) => {
+      if (isFinite(v) && (top < 0 || v > s.values[top])) top = i;
+    });
+    if (top < 0) return '';
+    return ` El más alto es ${xLabel(p, top, false, this.xContext())}, con ${this.valueText(s, top).value}.`;
   }
 
   /** Las anotaciones dichas en palabras: "Referencias: Meta, 120 mil $; Campaña de verano." */
@@ -2261,7 +2300,7 @@ export class LozChart {
 
   private describe(i: number): string {
     const values = this.visibleAt(i).map(({ s, text }) => {
-      const detail = text.details ? ` (${text.details.map(([k, v]) => `${k} ${v}`).join(', ')})` : '';
+      const detail = text.details ? ` (${text.details.map(([k, v]) => `${k}: ${v}`).join('; ')})` : '';
       return `${s.name} ${text.value}${detail}`;
     });
     const selected = this.selectedIdx?.has(i) ? ' (en la selección)' : '';

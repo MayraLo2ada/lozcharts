@@ -45,9 +45,9 @@ export class Scrollbar {
     this.mini = html('div', { class: 'lc-scroll-mini', 'aria-hidden': 'true' });
     this.before = html('div', { class: 'lc-scroll-shade' });
     this.after = html('div', { class: 'lc-scroll-shade' });
-    this.win = this.slider('lc-scroll-win', 'Ventana visible del eje X');
-    this.startGrip = this.slider('lc-scroll-grip', 'Inicio de la ventana');
-    this.endGrip = this.slider('lc-scroll-grip', 'Fin de la ventana');
+    this.win = this.slider('lc-scroll-win', 'Tramo visible');
+    this.startGrip = this.slider('lc-scroll-grip', 'Inicio del tramo visible');
+    this.endGrip = this.slider('lc-scroll-grip', 'Fin del tramo visible');
     this.el.append(this.mini, this.before, this.after, this.win, this.startGrip, this.endGrip);
     this.el.addEventListener('pointerdown', this.onDown);
     this.el.addEventListener('pointermove', this.onMove);

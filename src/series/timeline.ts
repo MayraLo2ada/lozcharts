@@ -783,7 +783,11 @@ function modelOf(ps: PreparedSeries): TimelineModel {
   // Un aviso por conjunto de datos, no uno por cuadro.
   if (m.swapped.length) {
     const list = m.swapped.map((i) => `"${ps.texts.name?.[i] || ps.texts.start?.[i]}"`).join(', ');
-    console.warn(`LozChart: en la línea de tiempo "${ps.name}", ${list} termina antes de empezar; se invirtieron sus fechas.`);
+    const one = m.swapped.length === 1;
+    console.warn(
+      `LozCharts: en la línea de tiempo "${ps.name}", ${list} ${one ? 'termina' : 'terminan'} antes de empezar. ` +
+        `Lo dibujo con las fechas al revés; revisa el inicio y el fin de ${one ? 'esa fila' : 'esas filas'}.`,
+    );
   }
   return m;
 }
@@ -981,7 +985,7 @@ export const timeline: SeriesImpl = {
     } else {
       value = formatRange(sp.start, sp.end, m.precision, locale);
       details.push(['Duración', durationText(sp.start, sp.end, m.precision, locale)]);
-      if (sp.swapped) details.push(['Nota', 'el fin venía antes del inicio']);
+      if (sp.swapped) details.push(['Nota', 'las fechas venían al revés']);
     }
     if (m.grouped) details.push(['Grupo', ps.texts.group?.[i] || NO_GROUP]);
     return details.length ? { value, details } : { value };

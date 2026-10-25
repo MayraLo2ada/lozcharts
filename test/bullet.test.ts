@@ -107,9 +107,9 @@ test('rangos: finitos, ordenados y sin repetir; cada valor en el suyo', () => {
   assert.equal(rangeIndex(-20, r), 0);
   assert.equal(rangeIndex(NaN, r), -1);
   assert.equal(rangeIndex(10, []), -1);
-  assert.equal(rangeText(60, r, String), '50 a 75 (2 de 3)');
+  assert.equal(rangeText(60, r, String), 'Entre 50 y 75 (2 de 3)');
   assert.equal(rangeText(20, r, String), 'Hasta 50 (1 de 3)');
-  assert.equal(rangeText(130, r, String), 'Sobre 100 (fuera de los rangos)');
+  assert.equal(rangeText(130, r, String), 'Más de 100 (pasa la última)');
   assert.equal(rangeText(20, [], String), null);
 });
 
@@ -280,7 +280,7 @@ test('casos límite: sin meta, sin rangos, negativos, NaN y valor sobre el máxi
   // El tooltip lo dice todo aunque no se dibuje.
   assert.deepEqual(bullet.tooltip!(ps, 0, format), { value: '40' });
   assert.deepEqual(bullet.tooltip!(ps, 1, format), { value: 'Sin dato', details: [['Meta', '60']] });
-  assert.deepEqual(bullet.tooltip!(ps, 2, format)!.details![1], ['Diferencia', '−35 (−350 %)']);
+  assert.deepEqual(bullet.tooltip!(ps, 2, format)!.details![1], ['Frente a la meta', '−35 (−350 %)']);
 });
 
 test('dominio: el núcleo hace caber valores, metas y rangos, con el cero', () => {
@@ -344,27 +344,27 @@ test('tooltip: valor, meta, diferencia con signo y %, y el rango', () => {
     value: '82',
     details: [
       ['Meta', '90'],
-      ['Diferencia', '−8 (−8.9 %)'],
-      ['Rango', '75 a 100 (3 de 3)'],
+      ['Frente a la meta', '−8 (−8.9 %)'],
+      ['Franja', 'Entre 75 y 100 (3 de 3)'],
     ],
   });
   assert.deepEqual(bullet.tooltip!(ps, 2, format)!.details, [
     ['Meta', '95'],
-    ['Diferencia', '+9 (+9.5 %)'],
-    ['Rango', 'Sobre 100 (fuera de los rangos)'],
+    ['Frente a la meta', '+9 (+9.5 %)'],
+    ['Franja', 'Más de 100 (pasa la última)'],
   ]);
   // Justo en la meta, o con meta cero: sin porcentaje.
   const even = series([['A', 50, 50]]);
-  assert.deepEqual(bullet.tooltip!(even, 0, format)!.details![1], ['Diferencia', '0']);
+  assert.deepEqual(bullet.tooltip!(even, 0, format)!.details![1], ['Frente a la meta', '0']);
   const zero = series([['A', 5, 0]]);
-  assert.deepEqual(bullet.tooltip!(zero, 0, format)!.details![1], ['Diferencia', '+5']);
+  assert.deepEqual(bullet.tooltip!(zero, 0, format)!.details![1], ['Frente a la meta', '+5']);
 });
 
 test('teclado y accesibilidad: recorre todas las filas y las nombra como indicadores', () => {
   assert.equal(bullet.coords, 'free');
   assert.equal(bullet.navigable, undefined);
   assert.deepEqual(bullet.items, ['indicador', 'indicadores']);
-  assert.equal(bullet.label, 'bala');
+  assert.equal(bullet.label, 'metas');
   assert.deepEqual(bullet.domainValues!({ type: 'bullet', field: 'v', ranges: [75, 50, NaN] }), [50, 75]);
 });
 

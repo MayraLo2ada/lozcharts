@@ -90,7 +90,7 @@ test('gauge: el tooltip trae meta y diferencia con signo', () => {
     value: '72',
     details: [
       ['Meta', '80'],
-      ['Diferencia', '−8'],
+      ['Frente a la meta', '−8'],
     ],
   });
   const plain = { values: [72], options: {} } as unknown as PreparedSeries;

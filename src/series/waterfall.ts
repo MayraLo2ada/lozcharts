@@ -392,8 +392,8 @@ export const waterfall: SeriesImpl = {
     if (off.length) {
       const one = off.length === 1;
       console.warn(
-        `LozChart: en la cascada "${ps.name}", ${one ? 'el total de la fila' : 'los totales de las filas'} ${off.join(', ')} ` +
-          `no ${one ? 'coincide' : 'coinciden'} con la suma de sus variaciones; se usa el valor dado.`,
+        `LozCharts: en la cascada "${ps.name}", ${one ? 'el total de la fila' : 'los totales de las filas'} ${off.join(', ')} ` +
+          `no ${one ? 'cuadra' : 'cuadran'} con la suma de los pasos anteriores. Dibujo ${one ? 'el total' : 'los totales'} que diste; revisa los datos si esperabas que cuadraran.`,
       );
     }
     // Sin etiquetas no hace falta el aire: el eje queda justo.
@@ -493,9 +493,9 @@ export const waterfall: SeriesImpl = {
     const level = ps.values[i];
     if (!isFinite(level)) return { value: 'Sin dato' };
     if (totals[i]) {
-      const details: [string, string][] = [['Tipo', isFinal(deltas, totals, i) ? 'Total' : 'Subtotal']];
+      const details: [string, string][] = [['Paso', isFinal(deltas, totals, i) ? 'Total' : 'Subtotal']];
       const gap = cascade(deltas, totals).gaps[i];
-      if (gap) details.push(['Sin explicar', f.difference(gap)]);
+      if (gap) details.push(['Diferencia sin explicar', f.difference(gap)]);
       return { value: f.value(level), details };
     }
     const kind = kindOf(deltas[i], false);
@@ -503,7 +503,7 @@ export const waterfall: SeriesImpl = {
       value: f.difference(deltas[i]),
       details: [
         ['Acumulado', f.value(level)],
-        ['Tipo', kind === 'up' ? 'Subida' : kind === 'down' ? 'Bajada' : 'Sin cambio'],
+        ['Paso', kind === 'up' ? 'Subida' : kind === 'down' ? 'Bajada' : 'Sin cambio'],
       ],
     };
   },

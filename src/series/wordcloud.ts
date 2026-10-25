@@ -626,8 +626,8 @@ function geometryOf(ctx: DrawContext): { m: CloudModel; g: CloudGeometry } {
     warned.add(m);
     const k = g.omitted.length;
     console.warn(
-      `LozChart: en la nube "${ps.name}" no caben ${k} ${k === 1 ? 'palabra' : 'palabras'} (las de menor peso); ` +
-        'siguen en la tabla de datos.',
+      `LozCharts: en la nube "${ps.name}" no ${k === 1 ? 'cabe 1 palabra, la de menor peso' : `caben ${k} palabras, las de menor peso`}. ` +
+        'Siguen en la tabla de datos; para que entren, agranda el gráfico o acorta la lista.',
     );
   }
   return { m, g };
@@ -691,7 +691,7 @@ export const wordcloud: SeriesImpl = {
   includeZero: true,
   layer: 0,
   legendSymbol: 'square',
-  label: 'nube',
+  label: 'nube de palabras',
   items: ['palabra', 'palabras'],
   dimmable: true,
   texts: (o, x) => ({ word: x, group: o.group }),
@@ -756,17 +756,17 @@ export const wordcloud: SeriesImpl = {
     const v = ps.values[i];
     if (k < 0) {
       if (!normalizeWord(ps.texts.word?.[i] ?? ''))
-        return { value: isFinite(v) ? format.value(v) : 'Sin dato', details: [['No se dibuja', 'sin palabra']] };
+        return { value: isFinite(v) ? format.value(v) : 'Sin dato', details: [['No aparece', 'la fila no tiene palabra']] };
       // Sin dato: el núcleo escribe "Sin dato".
       if (Number.isNaN(v)) return null;
-      return { value: format.value(v), details: [['No se dibuja', 'el peso no es positivo']] };
+      return { value: format.value(v), details: [['No aparece', 'su peso es cero o menos']] };
     }
     const w = m.words[k];
-    if (w.row !== i) return { value: format.value(v), details: [['Se suma en', `${w.text} (${format.value(w.weight)})`]] };
+    if (w.row !== i) return { value: format.value(v), details: [['Se suma a', `${w.text} (${format.value(w.weight)})`]] };
     const details: [string, string][] = [['Del total', format.percent(w.weight / m.total)]];
-    if (w.rows.length > 1) details.push(['Filas sumadas', format.number(w.rows.length)]);
+    if (w.rows.length > 1) details.push(['Junta', `${format.number(w.rows.length)} filas`]);
     if (m.groups.length) details.push(['Grupo', w.group >= 0 ? m.groups[w.group] : 'Sin grupo']);
-    if (omittedOf.get(m)?.has(k)) details.push(['No se dibuja', 'no cabe']);
+    if (omittedOf.get(m)?.has(k)) details.push(['No aparece', 'no cabe en el espacio']);
     return { value: format.value(w.weight), details };
   },
 };

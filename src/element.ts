@@ -51,7 +51,10 @@ export class LozChartElement extends Base {
     try {
       this.options = JSON.parse(value) as Options;
     } catch (err) {
-      console.error('LozChart: el atributo options no es JSON válido.', err);
+      console.error(
+        'LozCharts: el atributo options no es un JSON válido, así que el gráfico sigue con las opciones anteriores.',
+        err,
+      );
     }
   }
 

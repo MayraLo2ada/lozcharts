@@ -10,7 +10,7 @@ if (host) {
   host.registerMap('mundo', world);
   host.registerMap('world', world);
 } else {
-  console.warn('LozChart: carga lozcharts.umd.js antes del mapa del mundo.');
+  console.warn('LozCharts: carga lozcharts.umd.js antes del mapa del mundo; si no, el mapa no queda registrado.');
 }
 
 export default world;

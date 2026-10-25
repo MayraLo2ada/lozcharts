@@ -14,7 +14,11 @@ export interface LegendItem {
 }
 
 export class Legend {
-  readonly el = html('div', { class: 'lc-legend', role: 'group', 'aria-label': 'Series: pulsa para mostrar u ocultar' });
+  readonly el = html('div', {
+    class: 'lc-legend',
+    role: 'group',
+    'aria-label': 'Leyenda: pulsa un nombre para mostrarlo u ocultarlo',
+  });
   private readonly buttons = new Map<string, HTMLButtonElement>();
 
   constructor(private readonly onToggle: (key: string) => void) {}

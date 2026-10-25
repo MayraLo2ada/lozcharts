@@ -67,7 +67,9 @@ export function resolveTheme(mode: 'light' | 'dark', custom?: PaletteOption): Th
   const list = isList(custom) ? custom : mode === 'dark' ? (custom.dark ?? custom.light) : custom.light;
   if (!list.length) return base;
   if (list.length > MAX_COLORS)
-    console.warn(`LozChart: la paleta tiene ${list.length} colores; se usan los primeros ${MAX_COLORS}.`);
+    console.warn(
+      `LozCharts: tu paleta tiene ${list.length} colores y uso solo los primeros ${MAX_COLORS}; con más, cuesta distinguirlos.`,
+    );
   return { ...base, palette: list.slice(0, MAX_COLORS) };
 }
 

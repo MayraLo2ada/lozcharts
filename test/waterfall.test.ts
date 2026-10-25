@@ -414,13 +414,13 @@ test('tooltip: variación con signo, acumulado y tipo; los totales dicen si son 
     value: '−500',
     details: [
       ['Acumulado', '700'],
-      ['Tipo', 'Bajada'],
+      ['Paso', 'Bajada'],
     ],
   });
-  assert.deepEqual(waterfall.tooltip!(ps, 2, format), { value: '700', details: [['Tipo', 'Subtotal']] });
-  assert.deepEqual(waterfall.tooltip!(ps, 6, format), { value: '315', details: [['Tipo', 'Total']] });
+  assert.deepEqual(waterfall.tooltip!(ps, 2, format), { value: '700', details: [['Paso', 'Subtotal']] });
+  assert.deepEqual(waterfall.tooltip!(ps, 6, format), { value: '315', details: [['Paso', 'Total']] });
   const flat = series([['A', 0]]);
-  assert.deepEqual(waterfall.tooltip!(flat, 0, format)?.details?.[1], ['Tipo', 'Sin cambio']);
+  assert.deepEqual(waterfall.tooltip!(flat, 0, format)?.details?.[1], ['Paso', 'Sin cambio']);
   assert.deepEqual(waterfall.tooltip!(series([['A', null]]), 0, format), { value: 'Sin dato' });
 });
 
@@ -436,8 +436,8 @@ test('tooltip: un total que no cuadra da la diferencia sin explicar', () => {
     assert.deepEqual(waterfall.tooltip!(ps, 2, format), {
       value: '130',
       details: [
-        ['Tipo', 'Total'],
-        ['Sin explicar', '+10'],
+        ['Paso', 'Total'],
+        ['Diferencia sin explicar', '+10'],
       ],
     });
   } finally {

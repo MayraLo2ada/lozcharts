@@ -196,7 +196,7 @@ export class LozMultiples implements Mounted {
     this.grid.style.gridTemplateColumns = columns
       ? `repeat(${columns}, minmax(0, 1fr))`
       : `repeat(auto-fill, minmax(min(${minWidth}px, 100%), 1fr))`;
-    this.grid.setAttribute('aria-label', this.opts.title ?? 'Small multiples');
+    this.grid.setAttribute('aria-label', this.opts.title ?? 'Gráficos en cuadrícula');
 
     const specs = this.specs();
     const range = this.sharedRange(specs);
@@ -419,7 +419,7 @@ export class LozMultiples implements Mounted {
     }
     const height = Math.ceil(bottom + pad);
     const markup =
-      `<svg xmlns="http://www.w3.org/2000/svg"${attrs({ width, height, viewBox: `0 0 ${width} ${height}`, 'font-family': family, role: 'img', 'aria-label': this.opts.title ?? 'Small multiples' })}>` +
+      `<svg xmlns="http://www.w3.org/2000/svg"${attrs({ width, height, viewBox: `0 0 ${width} ${height}`, 'font-family': family, role: 'img', 'aria-label': this.opts.title ?? 'Gráficos en cuadrícula' })}>` +
       (this.opts.title ? `<title>${esc(this.opts.title)}</title>` : '') +
       `<rect width="100%" height="100%" fill="${th.surface}"/>` +
       head +

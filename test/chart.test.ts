@@ -485,7 +485,7 @@ test('selection: lo seleccionado se ve normal, el resto atenuado; anunciado y en
   assert.deepEqual(c.selection, [2]);
   const markup = c.toSVG();
   assert.equal(markup.match(/<g opacity="0.25">/g)?.length, 1, 'un grupo atenuado con las demás barras');
-  assert.match(svg(c).getAttribute('aria-label')!, /Selección: 1 de 12 puntos\./);
+  assert.match(svg(c).getAttribute('aria-label')!, /Selección: 1 de 12 categorías\./);
   const rows = root(c)
     .querySelectorAll('th')
     .map((th) => th.textContent);
@@ -500,10 +500,10 @@ test('selection: lo seleccionado se ve normal, el resto atenuado; anunciado y en
   // select() la cambia y lo anuncia; null la quita.
   c.select([0, 1]);
   assert.deepEqual(c.selection, [0, 1]);
-  assert.equal(live.textContent, 'Selección: 2 de 12 puntos');
+  assert.equal(live.textContent, 'Selección: 2 de 12 categorías');
   c.select(null);
   assert.deepEqual(c.selection, []);
-  assert.equal(live.textContent, 'Sin selección');
+  assert.equal(live.textContent, 'Ya no hay nada seleccionado');
   assert.ok(!c.toSVG().includes('opacity="0.25"'));
   // Índices que no existen se ignoran.
   c.setOptions({ selection: [99] }, false);
@@ -526,4 +526,31 @@ test('selection atenúa celdas, porciones, rectángulos y lugares', () => {
   assert.ok(faded(make({ type: 'treemap', field: 'v', group: 'g' })) >= 3, 'treemap');
   assert.equal(faded(make({ type: 'funnel', field: 'v', labels: false })), 1, 'embudo: un trazo atenuado');
   assert.ok(faded(make({ type: 'scatter', field: 'v' })) === 3, 'dispersión');
+});
+
+test('descripción accesible: qué es, cuántos datos, de dónde a dónde y el más alto', () => {
+  const one = new LozChart(host(), {
+    title: 'Ventas por semana',
+    data: [1, 2, 3, 4].map((semana, i) => ({ semana, ventas: [120, 180, 150, 90][i] })),
+    xAxis: { field: 'semana', type: 'linear' },
+    series: [{ type: 'bar', field: 'ventas', name: 'Ventas' }],
+    animate: false,
+  });
+  assert.equal(
+    svg(one).getAttribute('aria-label'),
+    'Ventas por semana. Gráfico de barras con 4 puntos, de 1 a 4. El más alto es 2, con 180. ' +
+      'Recorre los datos con las flechas izquierda y derecha.',
+  );
+  const two = chart();
+  assert.equal(
+    svg(two).getAttribute('aria-label'),
+    'Gráfico de líneas con 2 series y 12 categorías. Recorre los datos con las flechas izquierda y derecha.',
+  );
+  const live = root(two)
+    .querySelectorAll('div')
+    .find((d) => d.getAttribute('aria-live') === 'polite')!;
+  two.toggleSeries('Costos');
+  assert.equal(live.textContent, 'Ya no se ve Costos');
+  two.toggleSeries('Costos');
+  assert.equal(live.textContent, 'Ahora se ve Costos');
 });

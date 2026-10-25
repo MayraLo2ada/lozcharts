@@ -576,7 +576,11 @@ function modelOf(ps: PreparedSeries): ChordModel {
   // Un aviso por conjunto de datos, no uno por cuadro.
   if (m.loops.length) {
     const list = m.loops.map((i) => `"${sources[i]} → ${targets[i]}"`).join(', ');
-    console.warn(`LozChart: las cuerdas "${ps.name}" tienen flujos de un nodo a sí mismo; no se dibuja ${list}.`);
+    const one = m.loops.length === 1;
+    console.warn(
+      `LozCharts: en las cuerdas "${ps.name}", ${one ? '1 fila empieza y termina' : `${m.loops.length} filas empiezan y terminan`} en el mismo lugar y no ${one ? 'se dibuja' : 'se dibujan'}: ${list}. ` +
+        'Cada cuerda necesita un origen y un destino distintos.',
+    );
   }
   return m;
 }
@@ -659,8 +663,8 @@ export const chord: SeriesImpl = {
   coords: 'free',
   layer: 0,
   legendSymbol: 'square',
-  label: 'diagrama de cuerdas',
-  items: ['flujo', 'flujos'],
+  label: 'cuerdas',
+  items: ['conexión', 'conexiones'],
   dimmable: true,
   texts: (o, x) => ({ to: o.to, from: x }),
   draw(ctx) {
@@ -718,12 +722,12 @@ export const chord: SeriesImpl = {
     if (!isFinite(v)) return null;
     const value = format.value(v);
     const m = modelOf(ps);
-    if (m.loops.includes(i)) return { value, details: [['No se dibuja', 'va de un nodo a sí mismo']] };
+    if (m.loops.includes(i)) return { value, details: [['No aparece', 'empieza y termina en el mismo lugar']] };
     const l = m.byRow.get(i);
     if (!l) return { value };
     const details: [string, string][] = [
-      [`% de lo que sale de ${m.names[l.source]}`, format.percent(l.value / m.outflow[l.source])],
-      [`% de lo que entra a ${m.names[l.target]}`, format.percent(l.value / m.inflow[l.target])],
+      [`De lo que sale de ${m.names[l.source]}`, format.percent(l.value / m.outflow[l.source])],
+      [`De lo que llega a ${m.names[l.target]}`, format.percent(l.value / m.inflow[l.target])],
     ];
     return { value, details };
   },

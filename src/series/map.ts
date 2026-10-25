@@ -79,7 +79,9 @@ function setup(ctx: DrawContext, legend: boolean): MapSetup | null {
   if (!all) {
     if (!warned.has(ps)) {
       warned.add(ps);
-      console.warn(`LozChart: no hay un mapa registrado como "${name}". Usa LozChart.registerMap('${name}', …).`);
+      console.warn(
+        `LozCharts: no hay ningún mapa registrado como "${name}". Regístralo con LozChart.registerMap('${name}', …) antes de dibujar.`,
+      );
     }
     return null;
   }
@@ -100,7 +102,8 @@ function setup(ctx: DrawContext, legend: boolean): MapSetup | null {
   if (missing.length && !warned.has(ps)) {
     warned.add(ps);
     console.warn(
-      `LozChart: estos lugares no están en el mapa "${name}": ${missing.slice(0, 8).join(', ')}${missing.length > 8 ? '…' : ''}`,
+      `LozCharts: no encuentro estos lugares en el mapa "${name}": ${missing.slice(0, 8).join(', ')}${missing.length > 8 ? '…' : ''}. ` +
+        'Revisa cómo están escritos.',
     );
   }
   // Se excluye lo que no tiene datos y está en la lista de excluidos (la Antártida).
@@ -265,7 +268,7 @@ function placePaints(ctx: DrawContext, S: MapSetup): Map<number, Paint> {
 
 export const choropleth: SeriesImpl = {
   coords: 'free',
-  label: 'mapa coroplético',
+  label: 'mapa por colores',
   legendSymbol: 'square',
   items: ['lugar', 'lugares'],
   dimmable: true,

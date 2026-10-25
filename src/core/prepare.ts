@@ -68,7 +68,9 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
 
   let defs = input.series.filter((s) => {
     if (registry.has(s.type)) return true;
-    console.warn(`LozChart: el tipo de serie "${s.type}" no está registrado.`);
+    console.warn(
+      `LozCharts: no conozco el tipo "${s.type}" y no dibujo esa serie. Revisa cómo está escrito o regístralo con LozChart.registerSeries('${s.type}', …).`,
+    );
     return false;
   });
 
@@ -76,7 +78,9 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
   const coords = (defs[0] && registry.get(defs[0].type)!.coords) ?? 'cartesian';
   defs = defs.filter((s) => {
     if ((registry.get(s.type)!.coords ?? 'cartesian') === coords) return true;
-    console.warn(`LozChart: "${s.name ?? s.field}" (${s.type}) no se puede mezclar con series de tipo ${defs[0].type}.`);
+    console.warn(
+      `LozCharts: "${s.name ?? s.field}" es de tipo ${s.type} y no se puede mezclar con ${defs[0].type}, así que la dejo fuera. Ponla en otro gráfico.`,
+    );
     return false;
   });
   // Leyenda por categorías (pie): cada categoría con su color. Los tipos libres (pie, gauge,
@@ -84,7 +88,7 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
   const pointLegend = !!defs[0] && registry.get(defs[0].type)!.legendBy === 'points';
   if ((pointLegend || coords === 'free') && defs.length > 1) {
     console.warn(
-      `LozChart: un gráfico de tipo ${defs[0].type} muestra una sola serie; se usa "${defs[0].name ?? defs[0].field}".`,
+      `LozCharts: un gráfico de tipo ${defs[0].type} muestra una sola serie; dibujo "${defs[0].name ?? defs[0].field}" y dejo fuera las demás. Para verlas todas, usa facet.`,
     );
     defs = defs.slice(0, 1);
   }
@@ -115,8 +119,8 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
       defs = defs.slice(0, maxSeries - 1);
     } else {
       console.warn(
-        `LozChart: hay ${defs.length} series y la paleta tiene ${maxSeries} colores. ` +
-          `Se muestran las primeras ${maxSeries}; agrupa el resto o divide el gráfico.`,
+        `LozCharts: hay ${defs.length} series y la paleta tiene ${maxSeries} colores, así que dibujo solo las primeras ${maxSeries}. ` +
+          'Agrupa el resto o divide el gráfico.',
       );
       defs = defs.slice(0, maxSeries);
     }
@@ -126,7 +130,9 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
   const axisOf = (options: SeriesOptions): 'left' | 'right' => {
     if (options.axis !== 'right') return 'left';
     if (input.rightAxis) return 'right';
-    console.warn(`LozChart: "${options.name ?? options.field}" pide el eje derecho, que no aplica en índice ni en horizontal.`);
+    console.warn(
+      `LozCharts: "${options.name ?? options.field}" pide el eje derecho, pero en modo índice o en horizontal no hay; la dibujo en el izquierdo.`,
+    );
     return 'left';
   };
   const series: PreparedSeries[] = defs.map((options, index) => {
@@ -208,7 +214,9 @@ function textColumns(options: SeriesOptions, impl: SeriesImpl, rows: Datum[], xF
 function toIndex(s: PreparedSeries): void {
   const base = s.values.find((v) => isFinite(v) && v !== 0);
   if (base === undefined || base < 0) {
-    console.warn(`LozChart: la serie "${s.name}" no tiene un primer valor positivo; no se puede convertir a índice.`);
+    console.warn(
+      `LozCharts: "${s.name}" no empieza con un valor positivo, así que no puedo pasarla a índice base 100 y queda sin dibujar.`,
+    );
     s.raw = s.values;
     s.values = s.values.map(() => NaN);
     return;

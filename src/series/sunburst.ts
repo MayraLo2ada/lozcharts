@@ -601,8 +601,8 @@ export const sunburst: SeriesImpl = {
   includeZero: true,
   layer: 0,
   legendSymbol: 'square',
-  label: 'sunburst',
-  items: ['elemento', 'elementos'],
+  label: 'anillos por niveles',
+  items: ['parte', 'partes'],
   texts: (o, x) => Object.fromEntries(levelFields(o, x).map((f, k) => [`level${k}`, f])),
   dimmable: true,
   draw(ctx) {
@@ -700,8 +700,8 @@ export const sunburst: SeriesImpl = {
     // Sin dato: el núcleo escribe "Sin dato".
     if (!isFinite(v)) return null;
     if (m.rowNode[i] < 0) {
-      const why = m.rowPath[i]?.length ? 'valor cero o negativo' : 'sin ruta';
-      return { value: format.value(v), details: [['No se dibuja', why]] };
+      const why = m.rowPath[i]?.length ? 'vale cero o menos' : 'le falta la ruta';
+      return { value: format.value(v), details: [['No aparece', why]] };
     }
     // Una fila que es parte de un nodo: su valor propio, o una de varias filas con la misma ruta.
     return { value: format.value(v), details: shares(m, m.rowNode[i], v, format) };

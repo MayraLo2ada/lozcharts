@@ -834,7 +834,7 @@ export const network: SeriesImpl = {
   layer: 0,
   legendSymbol: 'dot',
   label: 'red',
-  items: ['vínculo', 'vínculos'],
+  items: ['conexión', 'conexiones'],
   dimmable: true,
   texts: (o, x) => ({ from: x, to: o.to, group: o.group }),
   draw(ctx) {
@@ -902,7 +902,7 @@ export const network: SeriesImpl = {
     const v = m.rowNode[i];
     if (v >= 0) return m.names[v];
     const to = ps.texts.to?.[i] ?? '';
-    return to ? `${x} — ${to}` : x;
+    return to ? `${x} y ${to}` : x;
   },
   navigable(ps) {
     return nodeStops(modelOf(ps));
@@ -918,24 +918,24 @@ export const network: SeriesImpl = {
     const m = modelOf(ps);
     const v = m.rowNode[i];
     if (v < 0) {
-      if (m.rowLink[i] < 0) return { value: 'No se dibuja' };
+      if (m.rowLink[i] < 0) return { value: 'No aparece en el gráfico' };
       const w = weightOf(ps.values[i]);
       return { value: m.weighted && isFinite(ps.values[i]) ? format.value(w) : format.number(w) };
     }
     const list = m.neighbors[v];
     const value = m.weighted ? format.value(m.degree[v]) : format.number(m.count[v]);
     const details: [string, string][] = [];
-    if (m.weighted) details.push(['Vínculos', format.number(m.count[v])]);
+    if (m.weighted) details.push(['Conexiones', format.number(m.count[v])]);
     if (list.length) {
       const top = list
         .slice(0, TOP_NEIGHBORS)
         .map((nb) => (m.weighted ? `${m.names[nb.node]} (${format.value(nb.weight)})` : m.names[nb.node]));
       const rest = list.length - TOP_NEIGHBORS;
       details.push([
-        TOP_NEIGHBORS < list.length ? 'Vecinos principales' : 'Vecinos',
+        TOP_NEIGHBORS < list.length ? 'Conectado sobre todo con' : 'Conectado con',
         top.join(', ') + (rest > 0 ? ` y ${format.number(rest)} más` : ''),
       ]);
-    } else details.push(['Vecinos', 'ninguno']);
+    } else details.push(['Conectado con', 'ningún otro']);
     if (m.groupOf[v] >= 0) details.push(['Grupo', m.groups[m.groupOf[v]]]);
     return { value, details };
   },

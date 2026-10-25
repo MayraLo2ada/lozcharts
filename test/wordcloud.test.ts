@@ -281,7 +281,7 @@ test('omitidas: un solo aviso en consola por conjunto de datos', () => {
     console.warn = warn;
   }
   assert.equal(messages.length, 1);
-  assert.match(messages[0], /no caben \d+ palabras \(las de menor peso\); siguen en la tabla de datos/);
+  assert.match(messages[0], /no caben \d+ palabras, las de menor peso\. Siguen en la tabla de datos/);
 });
 
 test('palabras largas: se achican para caber y, si ni en el mínimo caben, se recortan', () => {
@@ -454,13 +454,13 @@ test('encabezado, tooltip y teclado, sin esperar al primer dibujo', () => {
     value: '130',
     details: [
       ['Del total', '32.3 %'],
-      ['Filas sumadas', '2'],
+      ['Junta', '2 filas'],
       ['Grupo', 'Servicio'],
     ],
   });
-  assert.deepEqual(wordcloud.tooltip!(ps, 11, format), { value: '10', details: [['Se suma en', 'atención (130)']] });
-  assert.deepEqual(wordcloud.tooltip!(ps, 8, format), { value: '0', details: [['No se dibuja', 'el peso no es positivo']] });
-  assert.deepEqual(wordcloud.tooltip!(ps, 7, format), { value: '50', details: [['No se dibuja', 'sin palabra']] });
+  assert.deepEqual(wordcloud.tooltip!(ps, 11, format), { value: '10', details: [['Se suma a', 'atención (130)']] });
+  assert.deepEqual(wordcloud.tooltip!(ps, 8, format), { value: '0', details: [['No aparece', 'su peso es cero o menos']] });
+  assert.deepEqual(wordcloud.tooltip!(ps, 7, format), { value: '50', details: [['No aparece', 'la fila no tiene palabra']] });
   assert.equal(wordcloud.tooltip!(ps, 10, format), null);
   assert.deepEqual(wordcloud.tooltip!(series(SURVEY), 1, format), { value: '90', details: [['Del total', '22.4 %']] });
   // Teclado: de mayor a menor peso, una parada por palabra.
@@ -478,7 +478,7 @@ test('teclado y tooltip: las omitidas no se recorren y el tooltip lo dice', () =
     assert.ok(stops.length > 0 && stops.length < 300);
     const last = rows.length - 1;
     assert.ok(!stops.includes(last));
-    assert.deepEqual(wordcloud.tooltip!(ps, last, format)?.details?.at(-1), ['No se dibuja', 'no cabe']);
+    assert.deepEqual(wordcloud.tooltip!(ps, last, format)?.details?.at(-1), ['No aparece', 'no cabe en el espacio']);
   } finally {
     console.warn = warn;
   }
