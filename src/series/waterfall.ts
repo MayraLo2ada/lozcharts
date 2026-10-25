@@ -29,7 +29,15 @@
  * Un hueco (NaN) no se dibuja: el acumulado sigue igual y el conector se corta ahí.
  * Toda la geometría (acumulados, tramos, barras, conectores y etiquetas) son funciones puras.
  */
-import type { DrawContext, PreparedSeries, SeriesImpl, TooltipFormat, TooltipValue } from '../core/series';
+import {
+  dimOpacity,
+  paintDimmed,
+  type DrawContext,
+  type PreparedSeries,
+  type SeriesImpl,
+  type TooltipFormat,
+  type TooltipValue,
+} from '../core/series';
 import { attrs, esc } from '../core/dom';
 import { barPath, r2 } from '../core/shapes';
 
@@ -231,19 +239,50 @@ export interface LabelInput {
   horizontal: boolean;
 }
 
-/**
- * Etiquetas de valor. Exactas si todas caben a lo ancho; si no, todas compactas. Las variaciones
- * van todas o ninguna: unas pocas sueltas entre treinta barras parecen elegidas y no lo son. Los
- * totales, en cambio, se ponen uno por uno si caben: son el principio y el final del relato.
- * Cada una va del lado al que se movió el acumulado o, si ahí se sale del área, del otro; si
- * tampoco, se omite. Como no salen de su banda, nunca se enciman.
- */
-export function placeLabels(o: LabelInput): PlacedLabel[] {
+/** Lo que se decide de las etiquetas de una cascada: si van compactas y si van las variaciones. */
+export interface LabelPlan {
+  compact: boolean;
+  steps: boolean;
+}
+
+/** Filas con barra, y si un texto cabe a lo ancho en su lugar. */
+function fitting(o: LabelInput): { drawn: number[]; fits: (t: string) => boolean } {
   const drawn = o.tramos.map((t, i) => (t ? i : -1)).filter((i) => i >= 0);
   const cross = (t: string) => (o.horizontal ? FONT : o.measure(t));
-  const fits = (t: string) => !!t && cross(t) <= o.room;
-  const texts = drawn.every((i) => fits(o.exact[i])) ? o.exact : o.compact;
-  const steps = drawn.every((i) => o.kinds[i] === 'total' || fits(texts[i]));
+  return { drawn, fits: (t) => !!t && cross(t) <= o.room };
+}
+
+/**
+ * Exactas si todas caben a lo ancho; si no, todas compactas (o lo que diga `compact`). Las
+ * variaciones van todas o ninguna: unas pocas sueltas entre treinta barras parecen elegidas y no
+ * lo son.
+ */
+export function labelPlan(o: LabelInput, compact?: boolean): LabelPlan {
+  const { drawn, fits } = fitting(o);
+  const c = compact ?? !drawn.every((i) => fits(o.exact[i]));
+  const texts = c ? o.compact : o.exact;
+  return { compact: c, steps: drawn.every((i) => o.kinds[i] === 'total' || fits(texts[i])) };
+}
+
+/**
+ * Plan común de varias cascadas lado a lado: compactas si alguna lo necesita, y las variaciones
+ * solo si caben en todas. Así nunca queda una serie con etiquetas y su vecina sin ellas.
+ */
+export function jointPlan(inputs: readonly LabelInput[]): LabelPlan {
+  const compact = inputs.some((o) => labelPlan(o).compact);
+  return { compact, steps: inputs.every((o) => labelPlan(o, compact).steps) };
+}
+
+/**
+ * Etiquetas de valor, según el plan (por defecto, el de esta cascada sola). Los totales se ponen
+ * uno por uno si caben: son el principio y el final del relato. Cada una va del lado al que se
+ * movió el acumulado o, si ahí se sale del área, del otro; si tampoco, se omite. Como no salen de
+ * su banda, nunca se enciman.
+ */
+export function placeLabels(o: LabelInput, plan: LabelPlan = labelPlan(o)): PlacedLabel[] {
+  const { drawn, fits } = fitting(o);
+  const texts = plan.compact ? o.compact : o.exact;
+  const steps = plan.steps;
   // Hacia valores mayores: arriba en vertical (px menores), a la derecha en horizontal.
   const s = o.horizontal ? 1 : -1;
   const out: PlacedLabel[] = [];
@@ -310,6 +349,30 @@ function frameModel(ctx: DrawContext) {
   return { ps, deltas, tramos, kinds, width, offset, group };
 }
 
+/**
+ * Lo que necesitan las etiquetas de una cascada en este cuadro. Los textos salen de los datos, no
+ * del cuadro: no cambian mientras las barras se animan. Un total negativo lleva el mismo signo
+ * menos que las variaciones; uno positivo, ninguno.
+ */
+function labelInput(ctx: DrawContext): LabelInput {
+  const { ps, deltas, tramos, kinds, width, offset } = frameModel(ctx);
+  const text = (i: number, fmt: (v: number) => string) =>
+    kinds[i] === 'total' ? (ps.values[i] < 0 ? signed(fmt, ps.values[i]) : fmt(ps.values[i])) : signed(fmt, deltas[i]);
+  const indices = tramos.map((_, i) => i);
+  return {
+    tramos,
+    kinds,
+    exact: indices.map((i) => text(i, ctx.format)),
+    compact: indices.map((i) => text(i, ctx.compact)),
+    center: (i) => ctx.x.at(i) + offset + width / 2,
+    map: (v) => ctx.y.map(v),
+    measure: ctx.measure,
+    room: Math.round(ctx.frame.slots) > 1 ? width + GAP : ctx.x.step - 2 * LABEL_SIDE,
+    length: ctx.height,
+    horizontal: isHorizontal(ctx),
+  };
+}
+
 export const waterfall: SeriesImpl = {
   band: true,
   cluster: true,
@@ -321,6 +384,8 @@ export const waterfall: SeriesImpl = {
   columns: (o) => ({ delta: o.field }),
   valueColumns: ['room'],
   texts: (o) => ({ total: o.total }),
+  derivedName: 'acumulado',
+  dimmable: true,
   derive(ps) {
     const { levels, gaps } = cascade(deltasOf(ps), totalsOf(ps));
     const off = gaps.map((g, i) => (g ? i + 1 : 0)).filter(Boolean);
@@ -345,28 +410,10 @@ export const waterfall: SeriesImpl = {
     return total && !isClustered(ctx) ? ctx.theme.other : null;
   },
   draw(ctx) {
-    const { ps, deltas, tramos, kinds, width, offset, group } = frameModel(ctx);
+    const { ps, tramos, kinds, width, offset, group } = frameModel(ctx);
     const { x, y, theme } = ctx;
-    let up = '';
-    let down = '';
-    let total = '';
-    let caps = '';
     const clustered = isClustered(ctx);
-    tramos.forEach((t, i) => {
-      if (!t) return;
-      const base = y.map(t.from);
-      const end = y.map(t.to);
-      const hollow = hollowAt(kinds[i], end - base, width);
-      const d = barShape(x.at(i) + offset, width, base, end, hollow);
-      if (kinds[i] === 'total') {
-        total += d;
-        // Con varias cascadas, todos los totales son grises: la punta dice de qué serie es cada uno.
-        const dir = Math.sign(end - base);
-        if (clustered && Math.abs(end - base) > 2 * CAP)
-          caps += barPath(x.at(i) + offset, width, end - dir * CAP, end, RADIUS, true);
-      } else if (hollow) down += d;
-      else up += d;
-    });
+    // Los conectores no son datos: siguen enteros aunque haya selección.
     const lines = connectorPath(
       tramos,
       (i) => x.at(i),
@@ -374,34 +421,46 @@ export const waterfall: SeriesImpl = {
       group,
     );
     let out = lines ? `<path${attrs({ d: lines, fill: 'none', stroke: theme.zero, 'stroke-width': 1 })}/>` : '';
-    if (up) out += `<path${attrs({ d: up, fill: ctx.color })}/>`;
-    if (down) out += `<path${attrs({ d: down, fill: theme.surface, stroke: ctx.color, 'stroke-width': STROKE })}/>`;
-    if (total) out += `<path${attrs({ d: total, fill: theme.other })}/>`;
-    if (caps) out += `<path${attrs({ d: caps, fill: ctx.color })}/>`;
-    if (ps.options.labels === false) return out;
-
-    // Los textos salen de los datos, no del cuadro: no cambian mientras las barras se animan.
-    // Un total negativo lleva el mismo signo menos que las variaciones; uno positivo, ninguno.
-    const text = (i: number, fmt: (v: number) => string) =>
-      kinds[i] === 'total' ? (ps.values[i] < 0 ? signed(fmt, ps.values[i]) : fmt(ps.values[i])) : signed(fmt, deltas[i]);
-    const indices = tramos.map((_, i) => i);
-    const horizontal = isHorizontal(ctx);
-    const labels = placeLabels({
-      tramos,
-      kinds,
-      exact: indices.map((i) => text(i, ctx.format)),
-      compact: indices.map((i) => text(i, ctx.compact)),
-      center: (i) => x.at(i) + offset + width / 2,
-      map: (v) => y.map(v),
-      measure: ctx.measure,
-      room: Math.round(ctx.frame.slots) > 1 ? width + GAP : x.step - 2 * LABEL_SIDE,
-      length: ctx.height,
-      horizontal,
+    out += paintDimmed(ctx, (include) => {
+      let up = '';
+      let down = '';
+      let total = '';
+      let caps = '';
+      let bars = '';
+      tramos.forEach((t, i) => {
+        if (!t || !include(i)) return;
+        const base = y.map(t.from);
+        const end = y.map(t.to);
+        const hollow = hollowAt(kinds[i], end - base, width);
+        const d = barShape(x.at(i) + offset, width, base, end, hollow);
+        if (kinds[i] === 'total') {
+          total += d;
+          // Con varias cascadas, todos los totales son grises: la punta dice de qué serie es cada uno.
+          const dir = Math.sign(end - base);
+          if (clustered && Math.abs(end - base) > 2 * CAP)
+            caps += barPath(x.at(i) + offset, width, end - dir * CAP, end, RADIUS, true);
+        } else if (hollow) down += d;
+        else up += d;
+      });
+      if (up) bars += `<path${attrs({ d: up, fill: ctx.color })}/>`;
+      if (down) bars += `<path${attrs({ d: down, fill: theme.surface, stroke: ctx.color, 'stroke-width': STROKE })}/>`;
+      if (total) bars += `<path${attrs({ d: total, fill: theme.other })}/>`;
+      if (caps) bars += `<path${attrs({ d: caps, fill: ctx.color })}/>`;
+      return bars;
     });
-    for (const l of labels) {
+    // En el mini gráfico del zoom las etiquetas no se leerían: solo las barras.
+    if (ps.options.labels === false || ctx.purpose === 'overview') return out;
+
+    // Varias cascadas lado a lado deciden juntas: o todas llevan sus variaciones, o ninguna.
+    const input = labelInput(ctx);
+    const peers = (ctx.siblings?.() ?? []).filter((c) => c.frame.ps.options.labels !== false);
+    const plan = peers.length > 1 ? jointPlan(peers.map((c) => (c === ctx ? input : labelInput(c)))) : labelPlan(input);
+    const horizontal = input.horizontal;
+    for (const l of placeLabels(input, plan)) {
       const at = horizontal ? { x: r2(l.along), y: r2(l.cross), transform: SWAP } : { x: r2(l.cross), y: r2(l.along) };
       out += `<text${attrs({
         ...at,
+        opacity: dimOpacity(ctx, l.i),
         fill: theme.textMuted,
         'font-size': FONT,
         'font-variant-numeric': 'tabular-nums',

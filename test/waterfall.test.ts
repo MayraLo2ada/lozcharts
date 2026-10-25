@@ -9,7 +9,9 @@ import {
   hollowAt,
   isFinal,
   isTotal,
+  jointPlan,
   kindOf,
+  labelPlan,
   placeLabels,
   signed,
   steps,
@@ -468,4 +470,31 @@ test('muestra del tooltip: un total en el gris de su barra; con varias cascadas,
   const base = context(ps);
   const clustered: DrawContext = { ...base, frame: { ...base.frame, slot: 0, slots: 2 } };
   assert.ok(RESULTADOS.every((_, i) => waterfall.swatch!(clustered, i) === null));
+});
+
+test('varias cascadas lado a lado deciden juntas sus etiquetas', () => {
+  const base = (exact: string[]): LabelInput => ({
+    tramos: exact.map((_, i) => ({ from: 0, to: 10 + i })),
+    kinds: exact.map(() => 'up' as const),
+    exact,
+    compact: exact.map((t) => t.slice(0, 2)),
+    center: (i) => i * 40,
+    map: (v) => 300 - v,
+    measure,
+    room: 30,
+    length: 300,
+    horizontal: false,
+  });
+  // A cabe exacta; B solo compacta: las dos van compactas.
+  const a = base(['+12', '+15']);
+  const b = base(['+12000', '+15000']);
+  assert.deepEqual(labelPlan(a), { compact: false, steps: true });
+  assert.deepEqual(labelPlan(b), { compact: true, steps: true });
+  assert.deepEqual(jointPlan([a, b]), { compact: true, steps: true });
+  // Si en una no caben ni compactas, ninguna lleva las variaciones.
+  const c = { ...base(['+123456', '+1']), compact: ['+12345', '+1'] };
+  const plan = jointPlan([a, c]);
+  assert.equal(plan.steps, false);
+  assert.equal(placeLabels(a, plan).length, 0);
+  assert.ok(placeLabels(a).length > 0, 'sola, A sí las llevaría');
 });
