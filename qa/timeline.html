@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Línea de tiempo</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #fcfcfb;
+        --text: #0b0b0b;
+        --muted: #52514e;
+      }
+      :root[data-theme='dark'] {
+        color-scheme: dark;
+        --bg: #1a1a19;
+        --text: #f0efec;
+        --muted: #c3c2b7;
+      }
+      body {
+        margin: 0;
+        padding: 16px clamp(16px, 2.5vw, 48px);
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      header a {
+        color: var(--muted);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(560px, 100%), 1fr));
+        gap: 40px 32px;
+      }
+      .wide {
+        grid-column: 1 / -1;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>LozTimeline</h1>
+      <a id="tema" href="?tema=oscuro">Ver en oscuro</a>
+    </header>
+    <div class="grid">
+      <div id="proyecto" class="wide"></div>
+      <div id="mandatos"></div>
+      <div id="historia"></div>
+      <div id="empaquetado" class="wide"></div>
+      <div id="muchos" class="wide"></div>
+      <div id="horas"></div>
+      <div id="hitos"></div>
+      <div id="limites"></div>
+      <div id="grupos"></div>
+      <div id="sin-etiquetas"></div>
+      <div id="uno"></div>
+    </div>
+
+    <script src="../dist/lozcharts.umd.js"></script>
+    <script>
+      var dark = /tema=oscuro/.test(location.search);
+      if (dark) {
+        document.documentElement.dataset.theme = 'dark';
+        var link = document.getElementById('tema');
+        link.textContent = 'Ver en claro';
+        link.href = '?';
+      }
+      var charts = {};
+      var tl = function (title, subtitle, data, extra, serie) {
+        return Object.assign(
+          {
+            title: title,
+            subtitle: subtitle,
+            data: data,
+            height: 320,
+            theme: dark ? 'dark' : 'light',
+            xAxis: { field: 'inicio', type: 'time' },
+            series: [Object.assign({ type: 'timeline', field: 'nombre', end: 'fin', name: 'Tramos' }, serie || {})],
+          },
+          extra || {},
+        );
+      };
+      var t = function (nombre, inicio, fin, grupo) {
+        return { nombre: nombre, inicio: inicio, fin: fin, grupo: grupo };
+      };
+
+      charts.proyecto = new LozChart(
+        '#proyecto',
+        tl(
+          'Lanzamiento de la app 2026',
+          'Por equipo; los rombos son hitos',
+          [
+            t('Investigación', '2026-01-12', '2026-02-27', 'Producto'),
+            t('Definición del alcance', '2026-02-16', '2026-03-13', 'Producto'),
+            t('Prototipos', '2026-03-02', '2026-04-10', 'Diseño'),
+            t('Sistema visual', '2026-04-06', '2026-05-29', 'Diseño'),
+            t('API de pagos', '2026-03-16', '2026-06-19', 'Ingeniería'),
+            t('App móvil', '2026-04-20', '2026-08-28', 'Ingeniería'),
+            t('Integración con bancos', '2026-06-01', '2026-07-31', 'Ingeniería'),
+            t('Pruebas con usuarios', '2026-07-06', '2026-08-14', 'Producto'),
+            t('Beta cerrada', '2026-08-03', '', 'Producto'),
+            t('Campaña', '2026-08-17', '2026-10-09', 'Marketing'),
+            t('Lanzamiento', '2026-09-15', '', 'Marketing'),
+            t('Soporte', '2026-09-15', '2026-12-18', 'Ingeniería'),
+          ],
+          { height: 340 },
+          { group: 'grupo', name: 'Proyecto' },
+        ),
+      );
+
+      charts.mandatos = new LozChart(
+        '#mandatos',
+        tl(
+          'Secretarías generales',
+          'Mandatos de 1946 a 2026, por año',
+          [
+            t('Lie', '1946', '1952'),
+            t('Hammarskjöld', '1953', '1961'),
+            t('U Thant', '1961', '1971'),
+            t('Waldheim', '1972', '1981'),
+            t('Pérez de Cuéllar', '1982', '1991'),
+            t('Boutros-Ghali', '1992', '1996'),
+            t('Annan', '1997', '2006'),
+            t('Ban', '2007', '2016'),
+            t('Guterres', '2017', '2026'),
+          ],
+          { height: 200 },
+          { name: 'Mandatos' },
+        ),
+      );
+
+      charts.historia = new LozChart(
+        '#historia',
+        tl(
+          'Siglos de imprenta y ciencia',
+          'Rango de siglos: el eje pasa a décadas y siglos',
+          [
+            t('Imprenta de tipos móviles', '1450', '1500', 'Técnica'),
+            t('Revolución científica', '1543', '1687', 'Ciencia'),
+            t('Ilustración', '1685', '1815', 'Ideas'),
+            t('Revolución industrial', '1760', '1840', 'Técnica'),
+            t('Principia', '1687', '', 'Ciencia'),
+            t('El origen de las especies', '1859', '', 'Ciencia'),
+            t('Electricidad doméstica', '1880', '1930', 'Técnica'),
+          ],
+          {},
+          { group: 'grupo', name: 'Épocas' },
+        ),
+      );
+
+      // Sin grupo: el empaquetado decide las filas.
+      var vacaciones = [];
+      var personas = ['Ana', 'Bruno', 'Carla', 'Diego', 'Elena', 'Fabián', 'Gina', 'Héctor', 'Inés', 'Julio', 'Karen', 'Luis'];
+      for (var i = 0; i < personas.length; i++) {
+        var d = 1 + ((i * 37) % 300);
+        var largo = 5 + ((i * 11) % 18);
+        var a = new Date(2026, 0, d);
+        var b = new Date(2026, 0, d + largo);
+        vacaciones.push(t('Vacaciones de ' + personas[i], a, b));
+      }
+      charts.empaquetado = new LozChart(
+        '#empaquetado',
+        tl('Vacaciones del equipo', 'Sin grupos: cada tramo va a la primera fila libre', vacaciones, { height: 220 }),
+      );
+
+      // 160 tramos: muchas filas finas, sin texto sobre texto.
+      var muchos = [];
+      for (var k = 0; k < 160; k++) {
+        var s = new Date(2025, 0, 1 + ((k * 53) % 700));
+        var e = new Date(s.getTime() + (3 + ((k * 7) % 40)) * 864e5);
+        muchos.push(t('Incidente ' + (k + 1), s, e, ['Red', 'Base de datos', 'API', 'Pagos', 'Correo'][k % 5]));
+      }
+      charts.muchos = new LozChart(
+        '#muchos',
+        tl(
+          '160 incidentes en dos años',
+          'Muchos tramos y cinco carriles',
+          muchos,
+          { height: 420 },
+          { group: 'grupo', name: 'Incidentes' },
+        ),
+      );
+
+      charts.horas = new LozChart(
+        '#horas',
+        tl(
+          'Jornada del congreso',
+          'Rango de horas',
+          [
+            t('Acreditación', '2026-11-04T08:00', '2026-11-04T09:30', 'Sala A'),
+            t('Apertura', '2026-11-04T09:30', '2026-11-04T10:15', 'Sala A'),
+            t('Datos accesibles', '2026-11-04T10:30', '2026-11-04T12:00', 'Sala A'),
+            t('Taller de color', '2026-11-04T10:30', '2026-11-04T13:00', 'Sala B'),
+            t('Almuerzo', '2026-11-04T13:00', '2026-11-04T14:30', 'Sala A'),
+            t('Mesa redonda', '2026-11-04T14:30', '2026-11-04T16:00', 'Sala B'),
+            t('Cierre', '2026-11-04T17:00', '', 'Sala A'),
+          ],
+          { height: 240 },
+          { group: 'grupo', name: 'Agenda' },
+        ),
+      );
+
+      charts.hitos = new LozChart(
+        '#hitos',
+        tl(
+          'Solo hitos',
+          'Sin fechas de fin: rombos',
+          [
+            t('Primer commit', '2025-03-04'),
+            t('1.0', '2025-06-20'),
+            t('Mapas', '2025-11-10'),
+            t('Zoom', '2026-02-02'),
+            t('2.0', '2026-06-15'),
+            t('Mismo día', '2026-06-15'),
+          ],
+          { height: 200 },
+        ),
+      );
+
+      charts.limites = new LozChart(
+        '#limites',
+        tl(
+          'Casos límite',
+          'Fin antes del inicio, fin inválido, duración cero, inicio inválido y <b>escape</b>',
+          [
+            t('Al revés (se invierte)', '2026-05-01', '2026-03-01'),
+            t('Fin inválido (hito)', '2026-04-10', 'pronto'),
+            t('Duración cero (hito)', '2026-06-01', '2026-06-01'),
+            t('Sin inicio (no se dibuja)', 'nunca', '2026-07-01'),
+            t('<b>Tramo & "comillas"</b>', '2026-06-10', '2026-08-20'),
+            t('Un día', '2026-08-25', '2026-08-26'),
+          ],
+          { height: 240 },
+        ),
+      );
+
+      var grupos = [];
+      var nombres = ['Norte', 'Sur', 'Este', 'Oeste', 'Centro', 'Islas', 'Costa', 'Sierra', 'Selva', 'Valle'];
+      for (var g = 0; g < nombres.length; g++) {
+        grupos.push(t('Obra ' + nombres[g], new Date(2026, g, 1), new Date(2026, g + 3, 15), nombres[g]));
+      }
+      charts.grupos = new LozChart(
+        '#grupos',
+        tl(
+          'Diez regiones',
+          'Más de 8 grupos: los 7 primeros y "Otros"',
+          grupos,
+          { height: 360 },
+          { group: 'grupo', name: 'Obras' },
+        ),
+      );
+
+      charts['sin-etiquetas'] = new LozChart(
+        '#sin-etiquetas',
+        tl('labels: false', 'Sin nombres: el tooltip y la tabla los tienen', vacaciones, { height: 200 }, { labels: false }),
+      );
+
+      charts.uno = new LozChart('#uno', tl('Un solo tramo', '', [t('Mudanza', '2026-10-01', '2026-10-25')], { height: 140 }));
+      window.qa = charts;
+    </script>
+  </body>
+</html>
