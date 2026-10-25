@@ -10,6 +10,38 @@ export type XAxisType = 'category' | 'time' | 'linear';
 /** Una fila de datos: cualquier objeto plano. */
 export type Datum = Record<string, unknown>;
 
+/** Un valor del eje X: el texto de una categoría, una fecha o un número. */
+export type XValue = string | number | Date;
+
+/**
+ * Línea de referencia o franja. Da `x` o `y`: con un valor es una línea (una meta, un
+ * lanzamiento); con dos, una franja (un trimestre, un rango aceptable).
+ */
+export interface Annotation {
+  /** Sobre el eje X: una categoría, fecha o número, o dos para una franja. */
+  x?: XValue | [XValue, XValue];
+  /** Sobre el eje del valor: un número, o dos para una franja. El eje se amplía para mostrarla. */
+  y?: number | [number, number];
+  /** Texto corto junto a la línea o dentro de la franja. */
+  label?: string;
+  /** Con `y`: en qué eje del valor se mide ('left' por defecto, o 'right' con yAxis2). */
+  axis?: 'left' | 'right';
+}
+
+/** Zoom en el eje X (solo gráficos cartesianos verticales). */
+export interface ZoomOptions {
+  /** Ventana inicial: desde y hasta, en valores de X. Por defecto, todos los datos. */
+  range?: [XValue, XValue];
+  /** Barra con un mini gráfico de todos los datos para mover la ventana. Por defecto true. */
+  scrollbar?: boolean;
+}
+
+/** Etiquetas al final de cada línea o área, en lugar de buscar el color en la leyenda. */
+export interface EndLabelOptions {
+  /** Mostrar también el último valor visible. Por defecto false. */
+  value?: boolean;
+}
+
 export interface XAxisOptions {
   /** Campo de cada fila que da la posición en X. */
   field: string;
@@ -127,6 +159,26 @@ export interface LozChartOptions {
   ariaLabel?: string;
   /** Pinta el fondo con el color de superficie del tema. Por defecto true. */
   background?: boolean;
+  /** Líneas de referencia y franjas (gráficos cartesianos). */
+  annotations?: Annotation[];
+  /**
+   * Nombre al final de cada línea, área o escalón (gráficos verticales). Con varias series se
+   * leen sin ir y volver a la leyenda.
+   */
+  endLabels?: boolean | EndLabelOptions;
+  /**
+   * Series que cuentan la historia: van en su color y encima; las demás quedan en gris como
+   * contexto. Útil para destacar una entre muchas.
+   */
+  emphasis?: string | string[];
+  /**
+   * Zoom en el eje X: arrastrar para acercar, Ctrl + rueda o pellizcar para acercar o alejar,
+   * deslizar con dos dedos (o Shift + rueda) para moverse y doble clic para ver todo. El eje del
+   * valor se ajusta a lo visible. Con el teclado: + y − acercan y alejan, 0 vuelve a todo.
+   */
+  zoom?: boolean | ZoomOptions;
+  /** Se llama al cambiar el zoom con la ventana visible (desde y hasta, en valores de X), o null si se ve todo. */
+  onZoom?: (range: [string | number, string | number] | null) => void;
   /**
    * Se llama cuando el puntero o el teclado activan un dato, con su X (texto de la categoría,
    * o número: fecha en ms o valor), y con null al salir. Junto con highlight() sincroniza gráficos.
@@ -138,7 +190,7 @@ export interface LozChartOptions {
 export type LozChartUpdate = Omit<Partial<LozChartOptions>, 'xAxis'> & { xAxis?: Partial<XAxisOptions> };
 
 /** Small multiples: una cuadrícula de gráficos pequeños con escalas compartidas. */
-export interface MultiplesOptions extends Omit<LozChartOptions, 'onHover' | 'orientation'> {
+export interface MultiplesOptions extends Omit<LozChartOptions, 'onHover' | 'orientation' | 'zoom' | 'onZoom' | 'emphasis'> {
   /**
    * Cómo se reparten los paneles: 'series' (uno por serie) o { field } (uno por cada valor de
    * ese campo; `order` fija el orden de los paneles).
@@ -152,6 +204,11 @@ export interface MultiplesOptions extends Omit<LozChartOptions, 'onHover' | 'ori
   height?: number;
   /** Mismo eje del valor en todos los paneles (para compararlos de verdad). Por defecto true. */
   sharedY?: boolean;
+  /**
+   * Con `facet: 'series'`: cada panel muestra también las demás series en gris, detrás de la
+   * suya, para comparar su forma con el resto sin perder la limpieza de un panel por serie.
+   */
+  context?: boolean;
 }
 
 /** Cambios para setOptions de small multiples. */

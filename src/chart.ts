@@ -11,7 +11,7 @@
  * se refleja sobre su diagonal; la rejilla, los ejes y el tooltip sí conocen la orientación.
  * La lógica de datos vive en core/ y es pura; esta clase maneja estado, DOM y eventos.
  */
-import type { Datum, FormatSpec, LozChartOptions, LozChartUpdate, MultiplesOptions, ThemeName } from './types';
+import type { Datum, FormatSpec, LozChartOptions, LozChartUpdate, MultiplesOptions, ThemeName, XValue } from './types';
 import type { LozMultiples } from './multiples';
 import type {
   DrawContext,
@@ -24,9 +24,10 @@ import type {
 } from './core/series';
 import { injectStyles, LIGHT, MAX_COLORS, resolveTheme, themeVars, type Theme } from './core/theme';
 import { BandScale, ContinuousScale, LinearScale, type XScale } from './core/scales';
+import { clampView, FULL_VIEW, isFull, minSpan, panView, visibleIndices, zoomView, type View } from './core/view';
 import { niceDomain, niceStep, numberTicks } from './core/ticks';
-import { axisFormatter, indexFormatter, valueFormatter, type NumberContext } from './core/format';
-import { prepare, type Prepared } from './core/prepare';
+import { axisFormatter, indexFormatter, parseTime, valueFormatter, type NumberContext } from './core/format';
+import { prepare, toNumber, type Prepared } from './core/prepare';
 import { buildFrame, collapse, interpolate, withExits, type Frame } from './core/frame';
 import { fitText, indexLabels, xLabel, xTicks, type XLabelContext } from './core/axis';
 import { attrs, esc, html, prefersReducedMotion, resolveElement, svg, textWidth } from './core/dom';
@@ -34,6 +35,10 @@ import { polarPoint } from './core/shapes';
 import { Legend, legendSVG, type LegendItem } from './core/legend';
 import { downloadImage, slug } from './core/export';
 import { destroyDetached, destroyWithin, mount, mountedOn, unmount } from './core/mount';
+import { annotationValues, renderAnnotations } from './core/annotations';
+import { spreadLabels } from './core/labels';
+import { ZoomGestures } from './zoom';
+import { Scrollbar, SCROLLBAR_HEIGHT } from './scrollbar';
 
 const registry = new Map<string, SeriesImpl>();
 let uid = 0;
@@ -58,6 +63,18 @@ const MAX_LABEL_SHARE = 0.4;
 /** Reflejo sobre la diagonal: (x, y) → (y, x). Gira el plano lógico para el modo horizontal. */
 const SWAP_AXES = 'matrix(0 1 1 0 0 0)';
 const EXPORT_PAD = 16;
+/** Duración de la animación del eje del valor al cambiar el zoom: corta, para seguir al gesto. */
+const ZOOM_DURATION = 220;
+/** Etiquetas al final de las líneas: espacio entre el área y la marca, largo de la marca y su texto. */
+const END_GAP = 8;
+const END_MARK = 10;
+const END_TEXT = 6;
+/** Las etiquetas al final ocupan como máximo esta fracción del ancho. */
+const MAX_END_SHARE = 0.3;
+/** El área de datos ocupa al menos esta fracción del ancho aunque haya etiquetas al final. */
+const MIN_PLOT_SHARE = 0.5;
+/** Si no cabe este ancho (o la etiqueta completa, si es más corta), las etiquetas al final no se muestran. */
+const MIN_END_WIDTH = 56;
 
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 
@@ -85,6 +102,8 @@ interface Layout {
   rightFormat: (v: number) => string;
   /** Centro, radio y ángulos del radar; los puntos se ubican por cuadro (ver polarPlane). */
   polar?: PolarFrame;
+  /** Etiquetas al final: dónde empiezan (px desde el área) y cuánto miden como máximo; null si no hay. */
+  endLabels: { x: number; width: number } | null;
   font: string;
 }
 
@@ -193,10 +212,20 @@ export class LozChart {
   private readonly hiddenPoints = new Set<string>();
   /** Índices de las categorías ocultas, calculados una vez por actualización (no por cuadro). */
   private hiddenIdx = new Set<number>();
-  /** Layout del último dibujo: depende solo del destino y del ancho, no de cada cuadro. */
-  private layoutCache: { width: number; target: Frame; L: Layout } | null = null;
+  /** Layout del último dibujo: depende del destino, del ancho y del zoom, no de cada cuadro. */
+  private layoutCache: { width: number; target: Frame; view: View; L: Layout } | null = null;
   private prepared!: Prepared;
   private target!: Frame;
+  /** Con zoom: el cuadro de todos los datos (sin ajustar el eje a la ventana), para el mini gráfico. */
+  private fullTarget: Frame | null = null;
+  /** Ventana visible del eje X (ver core/view.ts). */
+  private view: View = FULL_VIEW;
+  /** `zoom.range` aún sin aplicar: al crear el gráfico o al cambiar `zoom` (aunque falten datos). */
+  private rangePending = true;
+  /** Si el zoom estaba disponible en la última actualización (cambia con los datos). */
+  private zoomWas = false;
+  /** Lo último que se dibujó en el mini gráfico, para no rehacerlo en cada cuadro. */
+  private miniKey: { target: Frame; width: number; theme: Theme } | null = null;
   /** Cuadro en pantalla (intermedio si hay animación). */
   private current: Frame | null = null;
   private anim: { from: Frame; to: Frame; start: number } | null = null;
@@ -222,12 +251,20 @@ export class LozChart {
   private readonly gBand: SVGGElement;
   private readonly gSeries: SVGGElement;
   private readonly gHover: SVGGElement;
+  /** Líneas de referencia y sus textos, encima de las series. */
+  private readonly gNotes: SVGGElement;
   private readonly gAxes: SVGGElement;
+  /** Tramo que se marca al arrastrar para hacer zoom, y su texto ("mar – jun"). */
+  private readonly selRect: SVGRectElement;
+  private readonly selLabel: SVGTextElement;
   private readonly overlay: SVGRectElement;
   private readonly clipRect: SVGRectElement;
   private readonly tooltipEl: HTMLDivElement;
   private readonly tableEl: HTMLTableElement;
   private readonly liveEl: HTMLDivElement;
+  private readonly resetBtn: HTMLButtonElement;
+  private readonly scrollbar: Scrollbar;
+  private readonly gestures: ZoomGestures;
   private readonly resizeObserver: ResizeObserver | null;
   private readonly colorScheme: MediaQueryList | null;
 
@@ -250,15 +287,40 @@ export class LozChart {
     this.gPlot = svg('g', { 'aria-hidden': 'true' });
     this.gGrid = svg('g');
     this.gData = svg('g');
-    this.gBand = svg('g');
+    this.gBand = svg('g', { 'clip-path': `url(#${clipId})` });
     this.gSeries = svg('g', { 'clip-path': `url(#${clipId})` });
     this.gHover = svg('g', { 'pointer-events': 'none' });
+    this.gNotes = svg('g', { 'pointer-events': 'none' });
     this.gAxes = svg('g');
+    this.selRect = svg('rect', { y: 0, 'pointer-events': 'none', visibility: 'hidden' });
+    this.selLabel = svg('text', {
+      'font-size': FONT_SIZE,
+      'font-weight': 600,
+      'text-anchor': 'middle',
+      'dominant-baseline': 'hanging',
+      'stroke-width': 3,
+      'paint-order': 'stroke',
+      'pointer-events': 'none',
+      visibility: 'hidden',
+    });
     this.overlay = svg('rect', { fill: 'transparent' });
     this.gData.append(this.gBand, this.gSeries, this.gHover);
-    this.gPlot.append(this.gGrid, this.gData, this.gAxes, this.overlay);
+    this.gPlot.append(this.gGrid, this.gData, this.gNotes, this.gAxes, this.selRect, this.selLabel, this.overlay);
     this.svgEl.append(defs, this.gPlot);
     this.tooltipEl = html('div', { class: 'lc-tooltip', 'aria-hidden': 'true' });
+    this.resetBtn = html('button', { type: 'button', class: 'lc-zoom-reset' }, 'Ver todo');
+    // Al volver a todo el botón se esconde: el foco pasa al gráfico en vez de perderse.
+    this.resetBtn.addEventListener('click', () => {
+      this.svgEl.focus();
+      this.setView(FULL_VIEW, true);
+    });
+    this.scrollbar = new Scrollbar({
+      view: () => this.view,
+      setView: (v, announce) => this.setView(v, announce),
+      minSpan: () => this.minSpan(),
+      unit: () => 1 / Math.max(1, this.prepared.n - (this.prepared.band ? 0 : 1)),
+      label: (f, edge) => this.labelAtFraction(f, edge),
+    });
     this.plotEl.append(this.svgEl, this.tooltipEl);
     this.tableEl = html('table');
     const tableBox = html('div', { class: 'lc-sr-only' });
@@ -267,6 +329,18 @@ export class LozChart {
     this.root.append(this.header, this.plotEl, tableBox, this.liveEl);
     this.element.replaceChildren(this.root);
 
+    this.gestures = new ZoomGestures(this.overlay, {
+      enabled: () => this.zoomable,
+      view: () => this.view,
+      minSpan: () => this.minSpan(),
+      plotBox: () => {
+        const L = this.layout;
+        return { left: this.svgEl.getBoundingClientRect().left + (L?.left ?? 0), width: L?.plotW ?? 0 };
+      },
+      setView: (v) => this.setView(v, false),
+      selection: (from: number | null, to?: number) => this.drawSelection(from, to),
+      clearHover: () => this.clearActive(),
+    });
     this.bindEvents();
 
     this.colorScheme = typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: dark)') : null;
@@ -307,6 +381,10 @@ export class LozChart {
     });
     if (options.series) this.resetVisibility();
     this.applyTheme();
+    if ('zoom' in options) {
+      this.view = FULL_VIEW;
+      this.rangePending = true;
+    }
     this.rebuild(animate);
     return this;
   }
@@ -372,6 +450,31 @@ export class LozChart {
     return this;
   }
 
+  /**
+   * Acerca el eje X a un tramo, en valores de X (categorías, fechas o números). Necesita la
+   * opción `zoom`. Con barras, cada extremo incluye su categoría completa.
+   */
+  zoomTo(from: XValue, to: XValue): this {
+    const a = this.fractionOf(from, 'start');
+    const b = this.fractionOf(to, 'end');
+    if (this.zoomable && a !== null && b !== null) this.setView(clampView(a, b, this.minSpan()), false);
+    return this;
+  }
+
+  /** Vuelve a mostrar todos los datos. */
+  resetZoom(): this {
+    if (!isFull(this.view)) this.setView(FULL_VIEW, false);
+    return this;
+  }
+
+  /** Primer y último dato visibles con zoom (como en onZoom), o null si se ve todo. */
+  get zoomRange(): [string | number, string | number] | null {
+    if (isFull(this.view)) return null;
+    // Una ventana sobre un hueco de los datos no tiene puntos: se informan los vecinos.
+    const r = this.visibleRange() ?? this.visibleRange(true);
+    return r ? [this.xKey(r[0]), this.xKey(r[1])] : null;
+  }
+
   destroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;
@@ -411,20 +514,194 @@ export class LozChart {
   private update(animate: boolean): void {
     if (this.destroyed) return;
     this.hiddenIdx = this.hiddenPointIndices();
-    const ya = this.opts.yAxis;
-    const ya2 = this.opts.yAxis2;
-    this.target = buildFrame(
-      this.prepared,
-      this.hidden,
-      { min: ya?.min, max: ya?.max, zero: ya?.zero, ticks: this.valueTickCount() },
-      { min: ya2?.min, max: ya2?.max },
-      this.hiddenIdx,
-    );
+    this.syncZoom();
+    this.retarget(true);
     this.renderTable();
     this.svgEl.setAttribute('aria-label', this.ariaLabel());
     if (this.active >= this.prepared.n) this.clearActive();
     else if (this.active >= 0) this.fillTooltip(this.active);
     this.transition(animate && this.opts.animate);
+  }
+
+  /**
+   * Cuadro destino con la ventana actual: con zoom, el eje del valor se ajusta a los datos que
+   * se ven. Sin zoom es el cuadro de todos los datos.
+   */
+  private retarget(full: boolean): void {
+    const ya = this.opts.yAxis;
+    const ya2 = this.opts.yAxis2;
+    const notes = this.opts.annotations;
+    const build = (range?: [number, number]) =>
+      buildFrame(
+        this.prepared,
+        this.hidden,
+        {
+          min: ya?.min,
+          max: ya?.max,
+          zero: ya?.zero,
+          ticks: this.valueTickCount(),
+          include: annotationValues(notes, 'left'),
+          range,
+        },
+        { min: ya2?.min, max: ya2?.max, include: annotationValues(notes, 'right') },
+        this.hiddenIdx,
+      );
+    const zoomed = this.zoomable && !isFull(this.view);
+    // El cuadro de todos los datos (para el mini gráfico) cambia con los datos, no con la ventana.
+    if (full || !this.fullTarget) this.fullTarget = this.zoomable ? build() : null;
+    // Para el eje del valor cuentan también los vecinos de la ventana: la línea que sale por el
+    // borde va hacia ellos y no debe salirse por arriba o por abajo.
+    this.target = zoomed ? build(this.visibleRange(true) ?? undefined) : (this.fullTarget ?? build());
+  }
+
+  /**
+   * El zoom depende de los datos (hacen falta 3 o más): si se activó o se apagó, el encabezado
+   * cambia; la ventana se ajusta a la cantidad de datos, y `zoom.range` se aplica en cuanto se pueda.
+   */
+  private syncZoom(): void {
+    const on = this.zoomable;
+    if (on !== this.zoomWas) {
+      this.zoomWas = on;
+      this.renderHeader();
+      this.root.classList.toggle('lc-zoomable', on);
+    }
+    if (!on) {
+      this.view = FULL_VIEW;
+      return;
+    }
+    if (this.rangePending) {
+      this.rangePending = false;
+      this.initialZoom();
+    }
+    this.view = clampView(this.view.start, this.view.end, this.minSpan());
+  }
+
+  // ------------------------------------------------------------ Zoom
+
+  /** El zoom funciona en gráficos cartesianos verticales con al menos 3 datos. */
+  private get zoomable(): boolean {
+    return !!this.opts.zoom && this.coords === 'cartesian' && !this.horizontal && this.prepared.n > 2;
+  }
+
+  private minSpan(): number {
+    return minSpan(this.prepared.n, this.prepared.band);
+  }
+
+  /**
+   * Índices que se ven en la ventana (con barras, toda banda que asoma). No dependen del ancho, así
+   * que se miden en un eje de 1000 px. `neighbors` suma el dato de cada lado fuera de la ventana.
+   */
+  private visibleRange(neighbors = false): [number, number] | null {
+    return visibleIndices(this.indexScale(1000), 1000, neighbors);
+  }
+
+  /** Fracción del eje X donde cae un valor de X; con barras, el borde pedido de su banda. */
+  private fractionOf(x: XValue, edge: 'start' | 'end'): number | null {
+    const p = this.prepared;
+    if (!p.n) return null;
+    if (p.band || p.xType === 'category') {
+      const i = this.indexOfX(x);
+      if (i < 0) return null;
+      if (p.band) return (i + (edge === 'end' ? 1 : 0)) / p.n;
+      return p.n > 1 ? i / (p.n - 1) : 0;
+    }
+    const scale = this.indexScale(1000, FULL_VIEW) as ContinuousScale;
+    const v = p.xType === 'time' ? parseTime(x) : toNumber(x);
+    return isFinite(v) ? Math.max(0, Math.min(1, scale.lin.map(v) / 1000)) : null;
+  }
+
+  /**
+   * Texto de la X en una fracción del eje (para la barra de desplazamiento). En el fin de una
+   * ventana se mira justo antes del borde: con barras, el borde es el comienzo de la banda siguiente.
+   */
+  private labelAtFraction(f: number, edge: 'start' | 'end'): string {
+    const scale = this.indexScale(1000, FULL_VIEW);
+    const px = Math.max(0, Math.min(999.999, f * 1000 + (edge === 'end' ? -1e-6 : 1e-6)));
+    return xLabel(this.prepared, scale.indexAt(px), false, this.xContext());
+  }
+
+  /** La ventana de `zoom.range`, si la hay; si no, se ve todo. */
+  private initialZoom(): void {
+    const z = this.opts.zoom;
+    const range = typeof z === 'object' ? z.range : undefined;
+    if (!range) return;
+    const a = this.fractionOf(range[0], 'start');
+    const b = this.fractionOf(range[1], 'end');
+    if (a !== null && b !== null) this.view = clampView(a, b, this.minSpan());
+  }
+
+  /**
+   * Cambia la ventana: el eje X cambia al instante (sigue al gesto) y el del valor se acomoda a
+   * lo visible con una animación corta.
+   */
+  private setView(v: View, announce: boolean): void {
+    const next = isFull(v) ? FULL_VIEW : v;
+    if (Math.abs(next.start - this.view.start) < 1e-9 && Math.abs(next.end - this.view.end) < 1e-9) return;
+    this.view = next;
+    this.retarget(false);
+    this.transition(this.opts.animate, ZOOM_DURATION);
+    // La barra se actualiza ya (no en el próximo cuadro): sus controles anuncian el valor nuevo.
+    if (this.scrollbar.el.isConnected) this.scrollbar.sync(next);
+    const range = this.zoomRange;
+    // Con el ratón o un gesto no se anuncia cada paso; tampoco queda un aviso viejo que ya no vale.
+    this.liveEl.textContent = !announce
+      ? ''
+      : range
+        ? `Mostrando de ${this.labelAtFraction(next.start, 'start')} a ${this.labelAtFraction(next.end, 'end')}`
+        : 'Mostrando todos los datos';
+    this.opts.onZoom?.(range);
+  }
+
+  /** Acerca o aleja con el teclado alrededor del dato activo (o del centro). */
+  private zoomByKey(factor: number): void {
+    const L = this.layout;
+    const focus = this.active >= 0 && L ? Math.max(0, Math.min(1, L.x.at(this.active) / L.plotW)) : 0.5;
+    this.setView(zoomView(this.view, focus, factor, this.minSpan()), true);
+  }
+
+  /** Si el teclado lleva a un dato fuera de la ventana, la ventana lo sigue. */
+  private followActive(i: number): void {
+    const L = this.layout;
+    if (!L || isFull(this.view)) return;
+    const pos = L.x.at(i);
+    const margin = L.x.kind === 'band' ? L.x.bandwidth / 2 : 0;
+    const span = this.view.end - this.view.start;
+    let shift = 0;
+    if (pos - margin < 0) shift = (pos - margin) / L.plotW;
+    else if (pos + margin > L.plotW) shift = (pos + margin - L.plotW) / L.plotW;
+    if (shift) this.setView(panView(this.view, shift * span), false);
+  }
+
+  /** Muestra (o quita) el tramo que se marca al arrastrar. */
+  private drawSelection(from: number | null, to?: number): void {
+    const L = this.layout;
+    if (from === null || to === undefined || !L) {
+      this.selRect.setAttribute('visibility', 'hidden');
+      this.selLabel.setAttribute('visibility', 'hidden');
+      return;
+    }
+    // Con el color de foco, para no confundirla con una franja de las anotaciones, y con el tramo
+    // en texto: se sabe a dónde se va a acercar antes de soltar.
+    const color = this.theme.palette[0];
+    const x0 = Math.min(from, to);
+    const x1 = Math.max(from, to);
+    attrsOn(this.selRect, {
+      x: x0,
+      width: x1 - x0,
+      height: L.plotH,
+      fill: color,
+      'fill-opacity': 0.1,
+      stroke: color,
+      'stroke-opacity': 0.6,
+      visibility: 'visible',
+    });
+    const a = xLabel(this.prepared, L.x.indexAt(x0), true, this.xContext());
+    const b = xLabel(this.prepared, L.x.indexAt(x1), true, this.xContext());
+    const text = a === b ? a : `${a} – ${b}`;
+    const w = textWidth(text, L.font);
+    const mid = Math.max(w / 2 + 2, Math.min(L.plotW - w / 2 - 2, (x0 + x1) / 2));
+    this.selLabel.textContent = text;
+    attrsOn(this.selLabel, { x: mid.toFixed(1), y: 6, fill: this.theme.text, stroke: this.theme.surface, visibility: 'visible' });
   }
 
   private hiddenPointIndices(): Set<number> {
@@ -457,7 +734,7 @@ export class LozChart {
    * Interpola del cuadro visible al destino. Si llega otra actualización a mitad de camino,
    * se parte de lo que se está mostrando, así nunca hay saltos.
    */
-  private transition(animate: boolean): void {
+  private transition(animate: boolean, duration = DURATION): void {
     cancelAnimationFrame(this.raf);
     if (!animate || !this.width || prefersReducedMotion()) {
       this.anim = null;
@@ -472,7 +749,7 @@ export class LozChart {
     this.anim = { from, to: withExits(from, this.target), start: performance.now() };
     const tick = (now: number) => {
       if (!this.anim || this.destroyed) return;
-      const t = Math.min(1, (now - this.anim.start) / DURATION);
+      const t = Math.min(1, (now - this.anim.start) / duration);
       if (t < 1) {
         this.current = interpolate(this.anim.from, this.anim.to, easeOut(t));
         this.raf = requestAnimationFrame(tick);
@@ -490,9 +767,9 @@ export class LozChart {
   /** El layout se recalcula solo si cambia el destino o el ancho, no en cada cuadro de la animación. */
   private cachedLayout(): Layout | null {
     const c = this.layoutCache;
-    if (c && c.width === this.width && c.target === this.target) return c.L;
+    if (c && c.width === this.width && c.target === this.target && c.view === this.view) return c.L;
     const L = this.computeLayout(this.width);
-    this.layoutCache = L ? { width: this.width, target: this.target, L } : null;
+    this.layoutCache = L ? { width: this.width, target: this.target, view: this.view, L } : null;
     return L;
   }
 
@@ -553,6 +830,16 @@ export class LozChart {
       r ? Math.max(Math.abs(r.d0), Math.abs(r.d1)) : 0,
     );
     if (r) right = Math.ceil(Math.max(0, ...rightTicks.map((v) => measure(rightFormat(v))))) + 14;
+    // Etiquetas al final de las líneas: a la derecha del área (y del eje derecho, si lo hay).
+    let endLabels: Layout['endLabels'] = null;
+    const endWidth = horizontal ? 0 : this.endLabelWidth(measure);
+    // Nunca a costa de los datos: el área conserva al menos la mitad del ancho. Si no queda lugar
+    // ni para un nombre corto, no van (la leyenda sigue diciendo qué es cada línea).
+    const room = Math.min(endWidth, width * MAX_END_SHARE, width - left - right - END_GAP - width * MIN_PLOT_SHARE);
+    if (endWidth > 0 && room >= Math.min(endWidth, MIN_END_WIDTH)) {
+      endLabels = { x: right + END_GAP, width: room };
+      right += END_GAP + room + 2;
+    }
     const plotW = Math.max(10, width - left - right);
     const indexLen = horizontal ? plotH : plotW;
     const valueLen = horizontal ? plotW : plotH;
@@ -574,6 +861,7 @@ export class LozChart {
       rightTicks,
       rightFormat,
       font,
+      endLabels: endLabels && { x: plotW + endLabels.x, width: endLabels.width },
     };
   }
 
@@ -622,23 +910,29 @@ export class LozChart {
       rightFormat: valueFormat,
       font,
       polar,
+      endLabels: null,
     };
   }
 
   /** Escala del índice: banda si hay barras o velas; continua si no (números con extremos "bonitos"). */
-  private indexScale(length: number): XScale {
+  private indexScale(length: number, view: View = this.zoomable ? this.view : FULL_VIEW): XScale {
     const p = this.prepared;
-    if (p.band) return new BandScale(p.n, length);
+    if (p.band) return new BandScale(p.n, length, view);
     if (p.xType === 'category')
       return new ContinuousScale(
         p.xRaw.map((_, i) => i),
         length,
+        undefined,
+        view,
       );
     if (p.xType === 'linear' && p.n) {
-      const [lo, hi] = niceDomain(p.xNum[0], p.xNum[p.n - 1], Math.max(2, Math.floor(length / 80)));
-      return new ContinuousScale(p.xNum, length, [lo, hi]);
+      // Los extremos "bonitos" salen del eje completo: con zoom no cambian al moverse.
+      // Con zoom, el largo de referencia es el del gráfico, no el de la medición (ver visibleRange).
+      const ref = this.zoomable && this.width ? this.width : length;
+      const [lo, hi] = niceDomain(p.xNum[0], p.xNum[p.n - 1], Math.max(2, Math.floor(ref / 80)));
+      return new ContinuousScale(p.xNum, length, [lo, hi], view);
     }
-    return new ContinuousScale(p.xNum, length);
+    return new ContinuousScale(p.xNum, length, undefined, view);
   }
 
   /** Escala del valor (del eje izquierdo o del derecho): en vertical crece hacia arriba; en horizontal, a la derecha. */
@@ -658,7 +952,10 @@ export class LozChart {
     this.gPlot.setAttribute('transform', `translate(${L.left},${L.top})`);
     if (L.horizontal) this.gData.setAttribute('transform', SWAP_AXES);
     else this.gData.removeAttribute('transform');
-    this.clipRect.setAttribute('width', String(L.indexLen + 2 * CLIP_PAD));
+    // Con zoom, el recorte es exacto en el eje X: lo que sale de la ventana no invade los ejes.
+    const zoomed = this.zoomable && !isFull(this.view);
+    this.clipRect.setAttribute('x', String(zoomed ? 0 : -CLIP_PAD));
+    this.clipRect.setAttribute('width', String(L.indexLen + (zoomed ? 0 : 2 * CLIP_PAD)));
     this.clipRect.setAttribute('height', String(L.valueLen + 2 * CLIP_PAD));
     this.overlay.setAttribute('width', String(L.plotW));
     this.overlay.setAttribute('height', String(L.plotH));
@@ -667,18 +964,55 @@ export class LozChart {
     const parts = this.renderParts(frame, L);
     this.gGrid.innerHTML = parts.grid;
     this.gSeries.innerHTML = parts.series;
+    this.gNotes.innerHTML = parts.notes;
     this.gAxes.innerHTML = parts.axes;
     if (this.active >= 0) {
       this.drawHover(frame, L);
       this.positionTooltip();
     }
+    this.drawZoomControls(L, zoomed);
+  }
+
+  /** Botón "Ver todo" y barra de desplazamiento con su mini gráfico. */
+  private drawZoomControls(L: Layout, zoomed: boolean): void {
+    this.resetBtn.classList.toggle('lc-off', !zoomed);
+    this.resetBtn.tabIndex = zoomed ? 0 : -1;
+    const z = this.opts.zoom;
+    const show = this.zoomable && !(typeof z === 'object' && z.scrollbar === false);
+    if (!show) {
+      this.scrollbar.el.remove();
+      this.miniKey = null;
+      return;
+    }
+    if (!this.scrollbar.el.isConnected) this.svgEl.after(this.scrollbar.el);
+    const full = this.fullTarget ?? this.target;
+    const k = this.miniKey;
+    if (!k || k.target !== full || k.width !== this.width || k.theme !== this.theme) {
+      this.miniKey = { target: full, width: this.width, theme: this.theme };
+      this.scrollbar.render(L.left, L.plotW, this.miniChart(full, L));
+    }
+    this.scrollbar.sync(this.view);
+  }
+
+  /** Todos los datos en miniatura, en gris: es para orientarse, no para leer valores. */
+  private miniChart(full: Frame, L: Layout): string {
+    const h = SCROLLBAR_HEIGHT - 8;
+    const mini: Layout = { ...L, x: this.indexScale(L.plotW, FULL_VIEW), valueLen: h, plotH: h, indexLen: L.plotW };
+    const th = { ...this.theme, surface: 'transparent' };
+    let body = '';
+    for (const f of full.series.slice().sort((a, b) => (a.ps.impl.layer ?? 1) - (b.ps.impl.layer ?? 1))) {
+      if (f.alpha <= 0.001) continue;
+      const ctx = { ...this.drawContext(f, mini, full), color: this.theme.context, theme: th };
+      body += f.ps.impl.draw(ctx);
+    }
+    return `<svg${attrs({ width: L.plotW, height: SCROLLBAR_HEIGHT, viewBox: `0 -4 ${L.plotW} ${SCROLLBAR_HEIGHT}` })}>${body}</svg>`;
   }
 
   /** Markup de rejilla, series (plano lógico) y ejes. Sirve para la vista en vivo y para exportar. */
-  private renderParts(frame: Frame, L: Layout): { grid: string; series: string; axes: string } {
+  private renderParts(frame: Frame, L: Layout): { grid: string; series: string; notes: string; axes: string } {
     if (this.coords !== 'cartesian') {
       const guides = L.polar ? this.polarGuides(frame, L) : { grid: '', axes: '' };
-      return { ...guides, series: this.renderSeries(frame, L) };
+      return { ...guides, series: this.renderSeries(frame, L), notes: '' };
     }
     const th = this.theme;
     const vs = this.valueScale(frame, L);
@@ -741,13 +1075,118 @@ export class LozChart {
     if (bottomTitle)
       axes += label(L.plotW / 2, L.plotH + 30, bottomTitle, { 'text-anchor': 'middle', 'dominant-baseline': 'hanging' });
 
-    return { grid, series: this.renderSeries(frame, L), axes };
+    // Anotaciones: las franjas con la rejilla (debajo de las series), las líneas encima.
+    const notes = renderAnnotations(
+      this.opts.annotations,
+      {
+        indexLen: L.indexLen,
+        valueLen: L.valueLen,
+        horizontal: L.horizontal,
+        index: (x, edge) => this.indexPosition(L, x, edge),
+        value: (v, axis) => this.valueScale(frame, L, axis).map(v),
+      },
+      th,
+      measure,
+    );
+    grid += notes.under;
+    axes += this.endLabelMarkup(frame, L);
+    return { grid, series: this.renderSeries(frame, L), notes: notes.over, axes };
+  }
+
+  /** Posición en el eje del índice de un valor de X (para anotaciones); null si no está. */
+  private indexPosition(L: Layout, x: XValue, edge: 'start' | 'center' | 'end'): number | null {
+    const p = this.prepared;
+    if (L.x.kind === 'band' || p.xType === 'category') {
+      const i = this.indexOfX(x);
+      if (i < 0) return null;
+      const half = L.x.bandwidth / 2;
+      return L.x.at(i) + (edge === 'start' ? -half : edge === 'end' ? half : 0);
+    }
+    const v = p.xType === 'time' ? parseTime(x) : toNumber(x);
+    return isFinite(v) ? (L.x as ContinuousScale).lin.map(v) : null;
+  }
+
+  /** Opciones de las etiquetas al final, o null si no van. */
+  private get endLabelOptions(): { value: boolean } | null {
+    const o = this.opts.endLabels;
+    if (!o || this.horizontal || this.coords !== 'cartesian') return null;
+    return { value: typeof o === 'object' && !!o.value };
+  }
+
+  /** Series con etiqueta al final: visibles en el destino y de un tipo que termina en un punto. */
+  private endLabelSeries(frame: Frame): SeriesFrame[] {
+    return frame.series.filter((f) => f.ps.impl.endLabel && f.alpha >= 0.5 && !this.hidden.has(f.ps.key));
+  }
+
+  /** Ancho de la etiqueta más larga (nombre y, si se pide, el valor más largo posible). */
+  private endLabelWidth(measure: (s: string) => number): number {
+    const o = this.endLabelOptions;
+    if (!o) return 0;
+    let widest = 0;
+    for (const f of this.endLabelSeries(this.target)) {
+      let w = measure(f.ps.name);
+      if (o.value) {
+        const fmt = this.valueFormat(f.ps);
+        const finite = f.ps.values.filter((v) => isFinite(v));
+        const longest = Math.max(0, ...finite.map((v) => measure(fmt(v))));
+        w += END_TEXT + longest;
+      }
+      widest = Math.max(widest, w);
+    }
+    return widest ? Math.ceil(END_MARK + END_TEXT + widest) : 0;
+  }
+
+  /**
+   * Nombre al final de cada línea, a la altura de su último dato visible. Las que chocan se
+   * reparten (ver core/labels.ts). El texto va en color de texto; la marca, en el de la serie.
+   */
+  private endLabelMarkup(frame: Frame, L: Layout): string {
+    const o = this.endLabelOptions;
+    if (!o || !L.endLabels) return '';
+    const range = visibleIndices(L.x, L.indexLen);
+    if (!range) return '';
+    const rows: { f: SeriesFrame; y: number; v: number }[] = [];
+    for (const f of this.endLabelSeries(frame)) {
+      let i = range[1];
+      while (i >= range[0] && !isFinite(f.y1[i])) i--;
+      if (i < range[0]) continue;
+      rows.push({ f, y: this.valueScale(frame, L, f.ps.axis).map(f.y1[i]), v: f.ps.values[i] });
+    }
+    const lineHeight = FONT_SIZE + 3;
+    const ys = spreadLabels(
+      rows.map((r) => r.y),
+      lineHeight,
+      FONT_SIZE / 2,
+      L.plotH - FONT_SIZE / 2,
+    );
+    const measure = (t: string) => textWidth(t, L.font);
+    const { x, width } = L.endLabels;
+    let out = '';
+    rows.forEach((r, k) => {
+      const y = ys[k];
+      out += `<line${attrs({ x1: x, y1: y.toFixed(1), x2: x + END_MARK, y2: y.toFixed(1), stroke: this.colorOf(r.f.ps), 'stroke-width': 2, 'stroke-linecap': 'round' })}/>`;
+      const value = o.value && isFinite(r.v) ? this.valueFormat(r.f.ps)(r.v) : '';
+      const room = width - END_MARK - END_TEXT - (value ? measure(value) + END_TEXT : 0);
+      const name = fitText(r.f.ps.name, Math.max(24, room), measure);
+      const a = {
+        x: x + END_MARK + END_TEXT,
+        y: y.toFixed(1),
+        fill: this.theme.text,
+        'font-size': FONT_SIZE,
+        'dominant-baseline': 'central',
+      };
+      const tail = value ? `<tspan${attrs({ fill: this.theme.textMuted, dx: END_TEXT })}>${esc(value)}</tspan>` : '';
+      out += `<text${attrs(a)}>${esc(name)}${tail}</text>`;
+    });
+    return out;
   }
 
   /** Cada serie con su plugin, por capa: barras abajo, líneas y puntos arriba. */
   private renderSeries(frame: Frame, L: Layout): string {
     let series = '';
-    const layered = frame.series.slice().sort((a, b) => (a.ps.impl.layer ?? 1) - (b.ps.impl.layer ?? 1));
+    // Por capa (barras abajo, líneas arriba) y, con `emphasis`, las destacadas encima del contexto.
+    const rank = (f: SeriesFrame) => (f.ps.impl.layer ?? 1) + (this.isContext(f.ps) ? 0 : 0.5);
+    const layered = frame.series.slice().sort((a, b) => rank(a) - rank(b));
     for (const f of layered) {
       if (f.alpha <= 0.001) continue;
       const body = f.ps.impl.draw(this.drawContext(f, L, frame));
@@ -895,7 +1334,15 @@ export class LozChart {
 
   /** El color sale del tema actual y la posición de la serie, nunca de su visibilidad. */
   private colorOf(s: PreparedSeries): string {
+    if (this.isContext(s)) return this.theme.context;
     return s.slot < 0 ? this.theme.other : this.theme.palette[s.slot];
+  }
+
+  /** Con `emphasis`, las series que no se nombran son contexto: van en gris y debajo. */
+  private isContext(s: PreparedSeries): boolean {
+    const e = this.opts.emphasis;
+    if (e === undefined || this.prepared.pointLegend) return false;
+    return Array.isArray(e) ? !e.includes(s.key) : e !== s.key;
   }
 
   private xContext(): XLabelContext {
@@ -993,12 +1440,19 @@ export class LozChart {
 
   // ------------------------------------------------------------ Encabezado, leyenda y tabla
 
+  /**
+   * Título y subtítulo. Con zoom, a la derecha va "Ver todo": su lugar queda reservado aunque
+   * no se vea, así el gráfico no salta al acercar, y nunca tapa datos ni anotaciones.
+   */
   private renderHeader(): void {
     const { title, subtitle } = this.opts;
-    this.header.replaceChildren();
-    if (title) this.header.appendChild(html('div', { class: 'lc-title' }, title));
-    if (subtitle) this.header.appendChild(html('div', { class: 'lc-subtitle' }, subtitle));
-    this.header.hidden = !title && !subtitle;
+    const heading = html('div', { class: 'lc-heading' });
+    if (title) heading.appendChild(html('div', { class: 'lc-title' }, title));
+    if (subtitle) heading.appendChild(html('div', { class: 'lc-subtitle' }, subtitle));
+    this.header.replaceChildren(heading);
+    if (this.zoomable) this.header.appendChild(this.resetBtn);
+    this.header.hidden = !title && !subtitle && !this.zoomable;
+    this.header.classList.toggle('lc-tools', this.zoomable);
   }
 
   private legendItems(): LegendItem[] {
@@ -1096,7 +1550,20 @@ export class LozChart {
         : this.horizontal
           ? 'las flechas arriba y abajo'
           : 'las flechas izquierda y derecha';
-    return `${title}${what} con ${count}. Usa ${keys} para recorrer los datos.`;
+    const zoom = this.zoomable ? ' Con + y − se acerca o aleja el eje X, y con 0 se vuelve a ver todo.' : '';
+    return `${title}${what} con ${count}. Usa ${keys} para recorrer los datos.${zoom}${this.annotationText()}`;
+  }
+
+  /** Las anotaciones dichas en palabras: "Referencias: Meta, 120 mil $; Campaña de verano." */
+  private annotationText(): string {
+    const list = (this.opts.annotations ?? []).filter((a) => a.label);
+    if (!list.length || this.coords !== 'cartesian') return '';
+    const left = valueFormatter(
+      this.opts.yAxis?.format === 'auto' ? 'number' : (this.opts.yAxis?.format ?? 'number'),
+      this.numberContext(),
+    );
+    const items = list.map((a) => (typeof a.y === 'number' ? `${a.label}, ${left(a.y)}` : a.label!));
+    return ` Referencias: ${items.join('; ')}.`;
   }
 
   // ------------------------------------------------------------ Hover, tooltip y teclado
@@ -1110,7 +1577,7 @@ export class LozChart {
   private bindEvents(): void {
     const point = (e: PointerEvent) => {
       const L = this.layout;
-      if (!L || !this.opts.tooltip || !this.prepared.n) return;
+      if (!L || !this.opts.tooltip || !this.prepared.n || this.gestures.busy) return;
       const box = this.svgEl.getBoundingClientRect();
       this.pointer = { x: e.clientX - box.left, y: e.clientY - box.top };
       const i = this.indexAtPointer(L);
@@ -1130,10 +1597,24 @@ export class LozChart {
       const free = this.coords !== 'cartesian';
       const forwardKeys = free ? ['ArrowRight', 'ArrowDown'] : [this.horizontal ? 'ArrowDown' : 'ArrowRight'];
       const backKeys = free ? ['ArrowLeft', 'ArrowUp'] : [this.horizontal ? 'ArrowUp' : 'ArrowLeft'];
+      if (this.zoomable && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const factor = e.key === '+' || e.key === '=' ? 1.5 : e.key === '-' || e.key === '_' ? 1 / 1.5 : 0;
+        if (factor || e.key === '0') {
+          e.preventDefault();
+          if (factor) this.zoomByKey(factor);
+          else this.setView(FULL_VIEW, true);
+          return;
+        }
+      }
       const at = stops.indexOf(this.active);
+      // Sin dato activo y con zoom, se empieza dentro de la ventana, no en el principio de todo.
+      const shown =
+        this.zoomable && !isFull(this.view) && this.layout ? visibleIndices(this.layout.x, this.layout.indexLen) : null;
+      const inView = shown ? stops.filter((i) => i >= shown[0] && i <= shown[1]) : stops;
+      const pool = inView.length ? inView : stops;
       let next: number;
-      if (forwardKeys.includes(e.key)) next = stops[at < 0 ? 0 : Math.min(stops.length - 1, at + 1)];
-      else if (backKeys.includes(e.key)) next = stops[at < 0 ? stops.length - 1 : Math.max(0, at - 1)];
+      if (forwardKeys.includes(e.key)) next = at < 0 ? pool[0] : stops[Math.min(stops.length - 1, at + 1)];
+      else if (backKeys.includes(e.key)) next = at < 0 ? pool[pool.length - 1] : stops[Math.max(0, at - 1)];
       else
         switch (e.key) {
           case 'Home':
@@ -1150,6 +1631,7 @@ export class LozChart {
         }
       e.preventDefault();
       this.pointer = { x: -1, y: -1 };
+      if (this.zoomable) this.followActive(next);
       this.setActive(next, true);
     });
   }
@@ -1182,9 +1664,10 @@ export class LozChart {
     if (!frame || !this.nearestMode()) return L.x.indexAt(li);
     let best = 0;
     let bestDist = Infinity;
+    const [first, last] = visibleIndices(L.x, L.indexLen) ?? [0, frame.n - 1];
     for (const f of frame.series) {
       if (f.alpha < 0.5) continue;
-      for (let i = 0; i < frame.n; i++) {
+      for (let i = first; i <= last; i++) {
         if (!isFinite(f.y1[i])) continue;
         const d = Math.hypot(L.x.at(i) - li, this.valueScale(frame, L, f.ps.axis).map(f.y1[i]) - lv);
         if (d < bestDist) [best, bestDist] = [i, d];
@@ -1228,7 +1711,8 @@ export class LozChart {
 
   private indexOfX(x: unknown): number {
     const p = this.prepared;
-    const key = p.xType === 'category' ? String(x) : x instanceof Date ? x.getTime() : Number(x);
+    // Una fecha llega como texto ('2026-03'), Date o milisegundos: se lee igual que los datos.
+    const key = p.xType === 'category' ? String(x) : p.xType === 'time' ? parseTime(x) : toNumber(x);
     for (let i = 0; i < p.n; i++) if (this.xKey(i) === key) return i;
     return -1;
   }
@@ -1261,6 +1745,12 @@ export class LozChart {
       return;
     }
     const cx = L.x.at(i);
+    // Un dato fuera de la ventana del zoom (marcado desde otro gráfico) no se marca sobre los ejes.
+    if (cx < -1 || cx > L.indexLen + 1) {
+      this.gBand.replaceChildren();
+      this.gHover.replaceChildren();
+      return;
+    }
     const band = L.x.kind === 'band';
     const w = L.x.bandwidth;
     this.gBand.innerHTML = band
@@ -1272,15 +1762,17 @@ export class LozChart {
       marks += `<line${attrs({ x1: px, x2: px, y1: 0, y2: L.valueLen, stroke: th.textMuted, 'stroke-width': 1, 'stroke-opacity': 0.6, 'shape-rendering': 'crispEdges' })}/>`;
     }
     for (const f of frame.series) {
-      if (f.alpha >= 0.5 && f.ps.impl.hover) marks += f.ps.impl.hover(this.drawContext(f, L, frame), i);
+      // Las series de contexto (emphasis) no se marcan: la atención queda en las destacadas.
+      if (f.alpha >= 0.5 && f.ps.impl.hover && !this.isContext(f.ps)) marks += f.ps.impl.hover(this.drawContext(f, L, frame), i);
     }
     this.gHover.innerHTML = marks;
   }
 
+  /** Series visibles en el índice i; con `emphasis`, las destacadas primero. */
   private visibleAt(i: number): Row[] {
-    return this.prepared.series
-      .filter((s) => !this.hidden.has(s.key))
-      .map((s) => ({ s, v: s.values[i], text: this.valueText(s, i) }));
+    const series = this.prepared.series.filter((s) => !this.hidden.has(s.key));
+    const ordered = [...series.filter((s) => !this.isContext(s)), ...series.filter((s) => this.isContext(s))];
+    return ordered.map((s) => ({ s, v: s.values[i], text: this.valueText(s, i) }));
   }
 
   /** Encabezado del tooltip: la X completa; si es un número con título de eje, también el título. */
@@ -1425,13 +1917,18 @@ export class LozChart {
     }
 
     const height = Math.ceil(y + pad);
-    const data = L.horizontal ? `<g transform="${SWAP_AXES}">${parts.series}</g>` : parts.series;
+    // El mismo recorte de la vista en vivo: con zoom, lo que queda fuera de la ventana no se exporta.
+    const zoomed = this.zoomable && !isFull(this.view);
+    const clipId = `lc-export-clip-${++uid}`;
+    const clip = `<clipPath id="${clipId}"><rect${attrs({ x: zoomed ? 0 : -CLIP_PAD, y: -CLIP_PAD, width: L.indexLen + (zoomed ? 0 : 2 * CLIP_PAD), height: L.valueLen + 2 * CLIP_PAD })}/></clipPath>`;
+    const series = `<g clip-path="url(#${clipId})">${parts.series}</g>`;
+    const data = clip + (L.horizontal ? `<g transform="${SWAP_AXES}">${series}</g>` : series);
     const markup =
       `<svg xmlns="http://www.w3.org/2000/svg"${attrs({ width, height, viewBox: `0 0 ${width} ${height}`, 'font-family': family, role: 'img', 'aria-label': this.ariaLabel() })}>` +
       (this.opts.title ? `<title>${esc(this.opts.title)}</title>` : '') +
       `<rect width="100%" height="100%" fill="${th.surface}"/>` +
       head +
-      `<g transform="translate(${pad + L.left},${plotY + L.top})">${parts.grid}${data}${parts.axes}</g>` +
+      `<g transform="translate(${pad + L.left},${plotY + L.top})">${parts.grid}${data}${parts.notes}${parts.axes}</g>` +
       legend +
       `</svg>`;
     return { markup, width, height };
@@ -1447,7 +1944,7 @@ export function valueDomain(options: LozChartOptions, hidden: ReadonlySet<string
   const input = { data, xField: xAxis.field, xType: xAxis.type ?? 'category', series, index: yAxis?.index };
   const p = prepare(input, registry, MAX_COLORS);
   if (p.series.every((s) => hidden.has(s.key))) return null;
-  const f = buildFrame(p, hidden, { zero: yAxis?.zero, ticks });
+  const f = buildFrame(p, hidden, { zero: yAxis?.zero, ticks, include: annotationValues(options.annotations, 'left') });
   return [f.d0, f.d1];
 }
 
@@ -1464,4 +1961,9 @@ export function seriesSymbol(type: string): 'line' | 'square' | 'dot' {
 /** Cuántos ticks caben en un eje vertical del valor de `height` px (el mismo criterio del gráfico). */
 export function tickCountFor(height: number): number {
   return Math.max(2, Math.round((height - AXIS_ALLOWANCE) / TICK_SPACING_V));
+}
+
+/** Pone varios atributos a un elemento ya creado. */
+function attrsOn(node: Element, a: Record<string, string | number>): void {
+  for (const k in a) node.setAttribute(k, String(a[k]));
 }

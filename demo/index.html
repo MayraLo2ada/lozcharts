@@ -532,6 +532,54 @@
         </figure>
       </div>
 
+      <header class="section-head">
+        <h2>Explorar y contar</h2>
+        <p>Zoom con barra de desplazamiento, líneas de referencia, nombres al final de cada línea y una serie destacada.</p>
+      </header>
+
+      <div class="grid">
+        <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozLine</span></div>
+          <div id="visitas-dia"></div>
+          <figcaption>
+            Un año de visitas diarias. Arrastra sobre el gráfico para acercar, usa Ctrl + rueda o pellizca, y mueve la ventana en
+            la barra de abajo. Con el teclado: + y − acercan y alejan, 0 vuelve a todo.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozBar</span></div>
+          <div id="ingresos-meta"></div>
+          <figcaption>
+            Líneas de referencia: una meta en el eje del valor y un evento en el tiempo. El eje se amplía para que la meta siempre
+            se vea.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div class="tipos" aria-label="Tipos de gráfico"><span class="tipo">LozLine</span></div>
+          <div id="usuarios-ciudad"></div>
+          <div class="fig-tools">
+            <button type="button" class="btn" id="usuarios-enfasis" aria-pressed="false">Destacar Bogotá</button>
+          </div>
+          <figcaption>
+            Etiquetas al final: cada línea dice su nombre y su último valor, sin ir y volver a la leyenda. Las que chocan se
+            reparten. Destacar una deja las demás en gris como contexto.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div class="tipos" aria-label="Tipos de gráfico">
+            <span class="tipo">LozMultiples</span><span class="tipo">LozLine</span>
+          </div>
+          <div id="regiones-contexto"></div>
+          <figcaption>
+            Small multiples con contexto: cada región en su color y las demás en gris detrás, para comparar su forma con el resto.
+            La meta común se marca en todos los paneles.
+          </figcaption>
+        </figure>
+      </div>
+
       <section class="usage">
         <h2>Cómo se usa</h2>
         <p>
@@ -1268,6 +1316,113 @@
             yAxis: { format: 'number' },
             series: [{ type: 'funnel', field: 'sesiones', name: 'Sesiones' }],
             height: 300,
+          }),
+        );
+
+        // 23. Visitas diarias de un año: zoom con barra de desplazamiento y una campaña marcada.
+        (function () {
+          var r = rng(23),
+            dias = [];
+          for (var i = 0; i < 365; i++) {
+            var d = new Date(2025, 10, 1 + i);
+            var semana = [0.8, 1, 1.05, 1.06, 1.03, 0.96, 0.77][d.getDay()];
+            var campana = i >= 240 && i < 262 ? 2600 * Math.sin(((i - 240) / 22) * Math.PI) : 0;
+            dias.push({
+              fecha:
+                d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'),
+              web: Math.round((4200 + i * 9) * semana + campana + (r() - 0.5) * 700),
+              app: Math.round((2100 + i * 6) * semana + (r() - 0.5) * 400),
+            });
+          }
+          charts.push(
+            new LozChart('#visitas-dia', {
+              title: 'Visitas diarias',
+              subtitle: 'Noviembre 2025 a octubre 2026',
+              data: dias,
+              xAxis: { field: 'fecha', type: 'time' },
+              series: [
+                { type: 'line', field: 'web', name: 'Web' },
+                { type: 'line', field: 'app', name: 'App' },
+              ],
+              zoom: { range: ['2026-05-15', '2026-08-31'] },
+              endLabels: true,
+              annotations: [
+                { x: ['2026-06-29', '2026-07-21'], label: 'Campaña de verano' },
+                { y: 8000, label: 'Meta diaria' },
+              ],
+            }),
+          );
+        })();
+
+        // 24. Ingresos con meta y un cambio de precio.
+        charts.push(
+          new LozChart('#ingresos-meta', {
+            title: 'Ingresos mensuales',
+            subtitle: 'Noviembre 2025 a octubre 2026',
+            data: [182, 240, 151, 149, 171, 176, 188, 197, 214, 206, 192, 219].map(function (v, i) {
+              var d = new Date(2025, 10 + i, 1);
+              return { mes: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), ingresos: v * 1000 };
+            }),
+            xAxis: { field: 'mes', type: 'time' },
+            yAxis: { format: 'currency' },
+            series: [{ type: 'bar', field: 'ingresos', name: 'Ingresos' }],
+            annotations: [
+              { y: 200000, label: 'Meta mensual' },
+              { x: '2026-03', label: 'Precio nuevo' },
+            ],
+          }),
+        );
+
+        // 25. Usuarios por ciudad: etiquetas al final y énfasis.
+        var ciudadesUsuarios = ['Lima', 'Bogotá', 'Quito', 'Santiago', 'Ciudad de México'];
+        var usuarios = [];
+        for (var u = 0; u < 12; u++) {
+          var fila = { mes: new Date(2025, 10 + u, 1).getFullYear() + '-' + String(((10 + u) % 12) + 1).padStart(2, '0') };
+          ciudadesUsuarios.forEach(function (c, k) {
+            fila[c] = Math.round(([31, 24, 18, 27, 22][k] + u * (0.6 + k * 0.25) + 2 * Math.sin(u + k)) * 10) / 10;
+          });
+          usuarios.push(fila);
+        }
+        var usuariosChart = new LozChart('#usuarios-ciudad', {
+          title: 'Usuarios activos por ciudad',
+          subtitle: 'Miles, noviembre 2025 a octubre 2026',
+          data: usuarios,
+          xAxis: { field: 'mes', type: 'time' },
+          series: ciudadesUsuarios.map(function (c) {
+            return { type: 'line', field: c, name: c };
+          }),
+          endLabels: { value: true },
+        });
+        charts.push(usuariosChart);
+        document.getElementById('usuarios-enfasis').addEventListener('click', function () {
+          var on = this.getAttribute('aria-pressed') !== 'true';
+          this.setAttribute('aria-pressed', String(on));
+          this.textContent = on ? 'Ver todas en color' : 'Destacar Bogotá';
+          usuariosChart.setOptions({ emphasis: on ? 'Bogotá' : undefined });
+        });
+
+        // 26. Regiones con contexto (small multiples).
+        var regionesCtx = ['Norte', 'Sur', 'Este', 'Oeste', 'Centro', 'Costa'];
+        charts.push(
+          LozChart.multiples('#regiones-contexto', {
+            title: 'Ventas por región',
+            subtitle: 'Miles de unidades por mes',
+            facet: 'series',
+            context: true,
+            data: usuarios.map(function (f, i) {
+              var row = { mes: f.mes };
+              regionesCtx.forEach(function (r, k) {
+                row[r] = Math.round(50 + k * 6 + i * (k - 2) * 1.6 + 8 * Math.sin(i * 0.8 + k));
+              });
+              return row;
+            }),
+            xAxis: { field: 'mes', type: 'time' },
+            series: regionesCtx.map(function (r) {
+              return { type: 'line', field: r, name: r };
+            }),
+            annotations: [{ y: 60, label: 'Meta' }],
+            minWidth: 160,
+            height: 150,
           }),
         );
 

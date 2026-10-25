@@ -6,6 +6,7 @@ import { hoverDot, isolatedDots, points, stroke } from './common';
 export const line: SeriesImpl = {
   layer: 2,
   legendSymbol: 'line',
+  endLabel: true,
   label: 'líneas',
   draw(ctx) {
     const d = linePath(points(ctx, ctx.frame.y1), !!ctx.frame.ps.options.smooth);

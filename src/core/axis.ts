@@ -76,7 +76,7 @@ export function xTicks(
     const [t0, t1] = cs.domain;
     if (p.xType === 'time') {
       const fits = Math.max(1, Math.floor(plotW / (measure('30 sept') + LABEL_GAP)));
-      const interval = chooseTimeInterval(t0, t1, fits);
+      const interval = chooseTimeInterval(t0, t1, fits, p.timeUnit ?? undefined);
       const opts = typeof ctx.format === 'object' ? ctx.format : undefined;
       for (const t of timeTicks(t0, t1, interval)) {
         ticks.push({ px: cs.lin.map(t), label: timeTickLabel(t, interval.unit, ctx.locale, opts), anchor: 'middle' });
@@ -91,6 +91,8 @@ export function xTicks(
   const kept: XTick[] = [];
   let lastRight = -Infinity;
   for (const tk of ticks) {
+    // Con zoom, las etiquetas de lo que quedó fuera de la ventana no se muestran.
+    if (tk.px < -0.5 || tk.px > plotW + 0.5) continue;
     const w = measure(tk.label);
     let left = tk.px - w / 2;
     if (left < minX) {

@@ -8,7 +8,10 @@
  *   huecos en el tiempo se ven como huecos. Se usa en X cuando no hay barras.
  *
  * Las dos escalas de X comparten la interfaz XScale: todas las series consultan x.at(i).
+ * Con zoom reciben la ventana visible (ver view.ts): el eje se estira y lo que queda fuera de
+ * la ventana cae en posiciones negativas o mayores que el ancho, donde el recorte lo esconde.
  */
+import { FULL_VIEW, type View } from './view';
 
 export class LinearScale {
   constructor(
@@ -51,21 +54,26 @@ export class BandScale implements XScale {
   readonly kind = 'band' as const;
   readonly step: number;
   readonly bandwidth: number;
+  /** Cuánto se corre el eje estirado hacia la izquierda, en px. */
+  private readonly offset: number;
 
   constructor(
     public n: number,
     public width: number,
+    view: View = FULL_VIEW,
   ) {
-    this.step = width / Math.max(1, n);
+    const full = width / (view.end - view.start);
+    this.step = full / Math.max(1, n);
     this.bandwidth = this.step;
+    this.offset = view.start * full;
   }
 
   at(i: number): number {
-    return this.step * (i + 0.5);
+    return this.step * (i + 0.5) - this.offset;
   }
 
   indexAt(px: number): number {
-    return Math.max(0, Math.min(this.n - 1, Math.floor(px / this.step)));
+    return Math.max(0, Math.min(this.n - 1, Math.floor((px + this.offset) / this.step)));
   }
 }
 
@@ -79,19 +87,24 @@ export class ContinuousScale implements XScale {
   /**
    * @param values valor numérico (timestamp o número) de cada índice, en orden.
    * @param domain extremos del eje; por defecto, el primer y el último valor.
+   * @param view ventana del zoom: `lin` y `domain` quedan con lo visible.
    */
   constructor(
     public values: number[],
     public width: number,
     domain?: [number, number],
+    view: View = FULL_VIEW,
   ) {
     this.n = values.length;
     let [lo, hi] = domain ?? [values[0], values[values.length - 1]];
     if (!isFinite(lo) || !isFinite(hi)) [lo, hi] = [0, 1];
-    this.lin = new LinearScale(lo, hi, 0, width);
-    this.step = this.n > 1 ? width / (this.n - 1) : width;
+    const span = hi - lo;
+    this.lin = new LinearScale(lo + view.start * span, lo + view.end * span, 0, width);
+    const zoom = 1 / (view.end - view.start);
+    this.step = (this.n > 1 ? width / (this.n - 1) : width) * zoom;
   }
 
+  /** Extremos visibles del eje (con zoom, solo la ventana). */
   get domain(): [number, number] {
     return [this.lin.d0, this.lin.d1];
   }

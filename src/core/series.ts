@@ -158,6 +158,11 @@ export interface SeriesImpl {
   /** Orden de dibujo: menor va abajo. Barras 0, áreas 1, líneas 2, puntos 3. */
   layer?: number;
   /** Muestra en leyenda: cuadrado (barras, áreas), trazo (líneas) o punto (dispersión). */
+  /**
+   * Admite etiqueta al final (opción endLabels): series que terminan en un punto a la derecha,
+   * como líneas, áreas y escalones. Se ubica en la punta (y1) del último dato visible.
+   */
+  endLabel?: boolean;
   legendSymbol?: 'line' | 'square' | 'dot';
   /** Nombre para la descripción accesible ("barras", "líneas"…). */
   label?: string;

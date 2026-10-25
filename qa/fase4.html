@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Fase 4</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+        background: #fcfcfb;
+        color: #0b0b0b;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #1a1a19;
+          color: #f0efec;
+        }
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(560px, 100%), 1fr));
+        gap: 40px 32px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Fase 4: zoom, anotaciones y etiquetas directas</h1>
+    <div class="grid">
+      <div id="zoom"></div>
+      <div id="barras"></div>
+      <div id="etiquetas"></div>
+      <div id="enfasis"></div>
+      <div id="horizontal"></div>
+      <div id="doble"></div>
+    </div>
+    <div id="multiples" style="margin-top: 40px"></div>
+
+    <script src="../dist/lozcharts.umd.js"></script>
+    <script>
+      // Visitas diarias de un año, con la semana marcada y una campaña en julio.
+      var dias = [];
+      var inicio = Date.UTC(2025, 10, 1);
+      for (var i = 0; i < 365; i++) {
+        var d = new Date(inicio + i * 864e5);
+        var semana = [0.82, 1, 1.04, 1.06, 1.02, 0.95, 0.78][d.getUTCDay()];
+        var tendencia = 4200 + i * 9;
+        var campana = i >= 240 && i < 262 ? 2600 * Math.sin(((i - 240) / 22) * Math.PI) : 0;
+        var ruido = 380 * Math.sin(i * 1.7) + 220 * Math.cos(i * 0.37);
+        dias.push({
+          fecha: d.toISOString().slice(0, 10),
+          web: Math.round(tendencia * semana + campana + ruido),
+          app: Math.round((2100 + i * 6) * semana + ruido * 0.4),
+        });
+      }
+      var charts = {};
+      charts.zoom = new LozChart('#zoom', {
+        title: 'Visitas diarias',
+        subtitle: 'Noviembre 2025 a octubre 2026. Arrastra sobre el gráfico para acercar.',
+        data: dias,
+        xAxis: { field: 'fecha', type: 'time' },
+        yAxis: { format: 'compact' },
+        series: [
+          { type: 'line', field: 'web', name: 'Web' },
+          { type: 'line', field: 'app', name: 'App' },
+        ],
+        zoom: { range: ['2026-06-01', '2026-08-31'] },
+        endLabels: true,
+        annotations: [
+          { x: ['2026-06-29', '2026-07-21'], label: 'Campaña de verano' },
+          { y: 8000, label: 'Meta diaria' },
+        ],
+      });
+
+      var meses = [
+        '2025-11',
+        '2025-12',
+        '2026-01',
+        '2026-02',
+        '2026-03',
+        '2026-04',
+        '2026-05',
+        '2026-06',
+        '2026-07',
+        '2026-08',
+        '2026-09',
+        '2026-10',
+      ];
+      var ingresos = [182, 240, 151, 149, 171, 176, 188, 197, 214, 206, 192, 219];
+      charts.barras = new LozChart('#barras', {
+        title: 'Ingresos mensuales',
+        subtitle: 'Miles de dólares',
+        data: meses.map(function (m, i) {
+          return { mes: m, ingresos: ingresos[i] * 1000 };
+        }),
+        xAxis: { field: 'mes', type: 'time' },
+        yAxis: { format: 'currency' },
+        series: [{ type: 'bar', field: 'ingresos', name: 'Ingresos' }],
+        annotations: [
+          { y: 200000, label: 'Meta mensual' },
+          { x: '2026-03', label: 'Precio nuevo' },
+        ],
+        zoom: true,
+      });
+
+      var ciudades = ['Lima', 'Bogotá', 'Quito', 'Santiago', 'Ciudad de México'];
+      var base = [31, 24, 18, 27, 22];
+      var usuarios = meses.map(function (m, i) {
+        var row = { mes: m };
+        ciudades.forEach(function (c, k) {
+          row[c] = Math.round((base[k] + i * (0.6 + k * 0.25) + 2 * Math.sin(i + k)) * 10) / 10;
+        });
+        return row;
+      });
+      charts.etiquetas = new LozChart('#etiquetas', {
+        title: 'Usuarios activos por ciudad',
+        subtitle: 'Miles, por mes',
+        data: usuarios,
+        xAxis: { field: 'mes', type: 'time' },
+        series: ciudades.map(function (c) {
+          return { type: 'line', field: c, name: c };
+        }),
+        endLabels: { value: true },
+        legend: false,
+      });
+
+      charts.enfasis = new LozChart('#enfasis', {
+        title: 'Bogotá frente al resto',
+        subtitle: 'emphasis: el resto queda como contexto en gris',
+        data: usuarios,
+        xAxis: { field: 'mes', type: 'time' },
+        series: ciudades.map(function (c) {
+          return { type: 'line', field: c, name: c };
+        }),
+        emphasis: 'Bogotá',
+        endLabels: true,
+      });
+
+      charts.horizontal = new LozChart('#horizontal', {
+        title: 'Tiempo de respuesta por canal',
+        subtitle: 'Horas, mediana de octubre',
+        orientation: 'horizontal',
+        data: [
+          { canal: 'Chat', h: 0.4 },
+          { canal: 'Teléfono', h: 1.1 },
+          { canal: 'Correo', h: 9.5 },
+          { canal: 'Formulario web', h: 14.2 },
+          { canal: 'Redes sociales', h: 5.8 },
+        ],
+        xAxis: { field: 'canal' },
+        series: [{ type: 'bar', field: 'h', name: 'Horas' }],
+        annotations: [
+          { y: 8, label: 'Acuerdo de servicio' },
+          { y: [0, 2], label: 'Excelente' },
+        ],
+      });
+
+      charts.doble = new LozChart('#doble', {
+        title: 'Pedidos y ticket promedio',
+        data: meses.map(function (m, i) {
+          return { mes: m, pedidos: 1200 + i * 60 + (i % 3) * 90, ticket: 38 + Math.sin(i) * 4 };
+        }),
+        xAxis: { field: 'mes', type: 'time' },
+        yAxis: { title: 'Pedidos' },
+        yAxis2: { title: 'Ticket', format: 'currency' },
+        series: [
+          { type: 'bar', field: 'pedidos', name: 'Pedidos' },
+          { type: 'line', field: 'ticket', name: 'Ticket promedio', axis: 'right' },
+        ],
+        annotations: [{ y: 40, axis: 'right', label: 'Ticket objetivo' }],
+        endLabels: true,
+      });
+
+      var regiones = ['Norte', 'Sur', 'Este', 'Oeste', 'Centro', 'Costa'];
+      charts.multiples = LozChart.multiples('#multiples', {
+        title: 'Ventas por región, con el resto como contexto',
+        facet: 'series',
+        context: true,
+        data: meses.map(function (m, i) {
+          var row = { mes: m };
+          regiones.forEach(function (r, k) {
+            row[r] = Math.round(50 + k * 6 + i * (k - 2) * 1.6 + 8 * Math.sin(i * 0.8 + k));
+          });
+          return row;
+        }),
+        xAxis: { field: 'mes', type: 'time' },
+        series: regiones.map(function (r) {
+          return { type: 'line', field: r, name: r };
+        }),
+        annotations: [{ y: 60, label: 'Meta' }],
+        height: 170,
+      });
+      window.qa = charts;
+    </script>
+  </body>
+</html>

@@ -104,6 +104,33 @@ El oscuro tiene sus propios valores; no es una inversión.
 - Leyenda solo con 2 o más series; botones con `aria-pressed`, 32 px de alto mínimo.
 - Animación 600 ms ease-out; nada si `prefers-reduced-motion`.
 
+## Anotaciones, etiquetas al final y énfasis
+
+- Línea de referencia: 1 px discontinua (4 3) en texto secundario, encima de los datos. Su texto,
+  12 px/500 en texto secundario con halo de 3 px del color de la superficie: al final de una línea
+  horizontal (encima, o debajo si no cabe) y arriba a la derecha de una vertical.
+- Franja: el mismo gris del resaltado del hover (5 % del texto), detrás de los datos, con su texto
+  adentro arriba. Los textos que chocarían se corren una línea.
+- Etiquetas al final: nunca a costa de los datos (el área conserva la mitad del ancho; si no caben
+  56 px, no van y queda la leyenda). Marca de 10 × 2 px del color de la serie y el nombre en texto principal
+  (el valor, si se pide, en secundario). Ocupan como máximo el 30 % del ancho; lo que no cabe se
+  recorta con "…". Separación mínima 15 px entre etiquetas.
+- Énfasis: las series de contexto van en gris (`#a9a8a1` claro, `#6b6a65` oscuro: tenue pero legible, unos 2,4:1), debajo de las
+  destacadas y sin punto de hover. La leyenda las muestra en el mismo gris.
+
+## Zoom
+
+- Selección al arrastrar: el primer color de la paleta al 10 % con borde, de alto completo, y el
+  tramo en texto arriba ("mar – jun"): no se confunde con una franja y se sabe a dónde se acerca.
+- La ventana muestra al menos 5 datos; los ticks de fecha nunca bajan de la granularidad de los
+  datos (con datos diarios no aparecen horas).
+- Barra de desplazamiento de 36 px, 10 px bajo las etiquetas X, alineada con el área de datos: mini
+  gráfico en el gris de contexto, lo que está fuera de la ventana velado al 72 % con la superficie,
+  ventana con borde de 1 px en texto secundario (3:1 o más contra la superficie) y bordes de
+  10 × 22 px (área táctil de 26 × 38 px) para estirarla.
+- "Ver todo" va en el encabezado, a la derecha del título; su lugar queda reservado aunque no se vea,
+  así el gráfico no salta al acercar y el botón nunca tapa datos ni anotaciones.
+
 ## Un eje Y, salvo que se pida el segundo con salvaguardas
 
 Por defecto, un solo eje Y. Para dos medidas con distintas unidades, primero: paneles alineados

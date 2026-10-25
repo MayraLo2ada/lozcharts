@@ -146,7 +146,15 @@ export class LozMultiples implements Mounted {
 
   /** Opciones comunes a todos los paneles. */
   private baseOptions(): LozChartOptions {
-    const { facet: _facet, columns: _columns, minWidth: _minWidth, sharedY: _sharedY, subtitle: _subtitle, ...rest } = this.opts;
+    const {
+      facet: _facet,
+      columns: _columns,
+      minWidth: _minWidth,
+      sharedY: _sharedY,
+      subtitle: _subtitle,
+      context: _context,
+      ...rest
+    } = this.opts;
     // Las series ocultas desde la leyenda común llegan ocultas a cada panel.
     const series = rest.series.map((s) => ({ ...s, visible: !this.hidden.has(s.name ?? s.field) }));
     return { ...rest, series, height: this.opts.height ?? PANEL_HEIGHT, legend: false, background: false };

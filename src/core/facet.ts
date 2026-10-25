@@ -21,10 +21,16 @@ export function facetPanels(o: MultiplesOptions, base: LozChartOptions): PanelSp
     return o.series.map((s, i) => {
       const name = s.name ?? s.field;
       // El color sigue a la serie: la de la posición i conserva el color i en su panel.
-      const series: SeriesOptions[] = [{ ...s, color: s.color ?? i + 1, visible: true }];
+      const own: SeriesOptions = { ...s, color: s.color ?? i + 1, visible: true };
+      // Con contexto, las demás series van también, en gris (emphasis) y detrás de la suya; las
+      // ocultas desde afuera siguen ocultas (base.series trae su `visible`).
+      const series: SeriesOptions[] = o.context
+        ? base.series.map((other, k) => (k === i ? own : { ...other, color: other.color ?? k + 1 }))
+        : [own];
+      const emphasis = o.context ? name : undefined;
       // Cada panel muestra su serie en sus unidades: el `format` de la serie manda en su eje.
       const yAxis = { ...base.yAxis, format: s.format ?? base.yAxis?.format };
-      return { name, options: { ...base, title: name, series, yAxis } };
+      return { name, options: { ...base, title: name, series, yAxis, emphasis } };
     });
   }
   const { field, order } = o.facet;

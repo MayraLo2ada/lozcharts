@@ -100,9 +100,17 @@ const INTERVALS: TimeInterval[] = [
 ];
 
 /** El intervalo más fino que no genera más de `maxTicks` ticks en [t0, t1]. */
-export function chooseTimeInterval(t0: number, t1: number, maxTicks: number): TimeInterval {
+/** Duración aproximada de una unidad: el intervalo de los ticks nunca baja de la de los datos. */
+const UNIT_MS: Record<TimeUnit, number> = { minute: MIN, hour: HOUR, day: DAY, week: 7 * DAY, month: 28 * DAY, year: 360 * DAY };
+
+/**
+ * @param minUnit granularidad de los datos: con zoom sobre datos diarios no salen ticks por hora.
+ */
+export function chooseTimeInterval(t0: number, t1: number, maxTicks: number, minUnit?: TimeUnit): TimeInterval {
   const span = Math.max(1, t1 - t0);
+  const floor = minUnit ? UNIT_MS[minUnit] : 0;
   for (const iv of INTERVALS) {
+    if (iv.ms < floor) continue;
     if (span / iv.ms <= Math.max(1, maxTicks)) return iv;
   }
   const years = Math.ceil(span / (365 * DAY) / Math.max(1, maxTicks));
@@ -190,10 +198,12 @@ export function detectTimeUnit(times: number[]): TimeUnit {
     if (d > 0 && d < min) min = d;
   }
   if (!isFinite(min)) return 'day';
+  // El cambio de horario hace días de 23 horas: se tolera esa hora (y un poco más).
+  const dst = 2 * HOUR;
   if (min >= 360 * DAY) return 'year';
-  if (min >= 28 * DAY) return 'month';
-  if (min >= 7 * DAY) return 'week';
-  if (min >= DAY) return 'day';
+  if (min >= 28 * DAY - dst) return 'month';
+  if (min >= 7 * DAY - dst) return 'week';
+  if (min >= DAY - dst) return 'day';
   if (min >= HOUR) return 'hour';
   return 'minute';
 }

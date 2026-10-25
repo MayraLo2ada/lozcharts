@@ -21,6 +21,8 @@ export interface Theme {
   tooltipShadow: string;
   /** Color neutro para el grupo "Otros". */
   other: string;
+  /** Series de contexto (las que no están en `emphasis`): gris que se queda atrás. */
+  context: string;
 }
 
 export const LIGHT: Theme = {
@@ -36,6 +38,7 @@ export const LIGHT: Theme = {
   tooltipBorder: '#dedcd6',
   tooltipShadow: '0 4px 16px rgba(11, 11, 11, 0.10)',
   other: '#8a8984',
+  context: '#a9a8a1',
 };
 
 export const DARK: Theme = {
@@ -51,6 +54,7 @@ export const DARK: Theme = {
   tooltipBorder: '#3b3b38',
   tooltipShadow: '0 4px 16px rgba(0, 0, 0, 0.45)',
   other: '#8e8d86',
+  context: '#6b6a65',
 };
 
 /** Máximo de colores categóricos: más series se agrupan o se dividen, nunca se cicla. */
@@ -78,6 +82,7 @@ export function themeVars(t: Theme): Record<string, string> {
     '--lc-text': t.text,
     '--lc-text-muted': t.textMuted,
     '--lc-grid': t.grid,
+    '--lc-zero': t.zero,
     '--lc-focus': t.palette[0],
     '--lc-tooltip-bg': t.tooltipBg,
     '--lc-tooltip-border': t.tooltipBorder,
@@ -92,11 +97,15 @@ const CSS = `
 .lc-root.lc-bg{background:var(--lc-surface)}
 .lc-root *,.lc-root *::before,.lc-root *::after{box-sizing:border-box}
 .lc-header{margin:0 0 12px}
+.lc-header.lc-tools{display:flex;align-items:flex-start;gap:12px}
+.lc-heading{flex:1;min-width:0}
 .lc-title{font-size:15px;font-weight:600;line-height:1.35;margin:0;color:var(--lc-text)}
 .lc-subtitle{font-size:13px;line-height:1.4;margin:2px 0 0;color:var(--lc-text-muted)}
 .lc-plot{position:relative}
 .lc-svg{display:block;max-width:100%;overflow:visible;border-radius:4px}
 .lc-svg:focus{outline:none}
+.lc-zoomable .lc-svg{user-select:none;-webkit-user-select:none}
+.lc-zoomable .lc-svg rect[fill="transparent"]{cursor:crosshair}
 .lc-svg:focus-visible{outline:2px solid var(--lc-focus);outline-offset:4px}
 .lc-legend{display:flex;flex-wrap:wrap;gap:4px 4px;margin:10px 0 0;padding:0;list-style:none}
 .lc-legend.lc-top{margin:0 0 10px}
@@ -128,6 +137,20 @@ const CSS = `
 .lc-multiples .lc-title{font-size:13px}
 .lc-multiples-root>.lc-legend.lc-top{margin:0 0 14px}
 .lc-sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.lc-zoom-reset{flex:none;min-height:28px;padding:4px 10px;border:1px solid var(--lc-grid);border-radius:6px;background:var(--lc-surface);color:var(--lc-text);font:inherit;font-size:12px;line-height:1.2;cursor:pointer}
+.lc-zoom-reset:hover{background:var(--lc-grid)}
+.lc-zoom-reset:focus-visible{outline:2px solid var(--lc-focus);outline-offset:1px}
+.lc-zoom-reset.lc-off{visibility:hidden}
+.lc-scroll{position:relative;height:36px;margin-top:10px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
+.lc-scroll-mini{position:absolute;inset:0;border-radius:4px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--lc-grid)}
+.lc-scroll-mini svg{display:block}
+.lc-scroll-shade{position:absolute;top:0;bottom:0;background:var(--lc-surface);opacity:.72;pointer-events:none}
+.lc-scroll-win{position:absolute;top:0;bottom:0;min-width:12px;border:1px solid var(--lc-text-muted);border-radius:4px;cursor:grab}
+.lc-dragging .lc-scroll-win{cursor:grabbing}
+.lc-scroll-grip{position:absolute;top:50%;width:10px;height:22px;margin:-11px 0 0 -5px;border:1px solid var(--lc-text-muted);border-radius:3px;background:var(--lc-surface);cursor:ew-resize}
+.lc-scroll-grip::before{content:"";position:absolute;inset:-8px -8px}
+.lc-scroll-grip::after{content:"";position:absolute;left:3px;right:3px;top:6px;bottom:6px;border-left:1px solid var(--lc-text-muted);border-right:1px solid var(--lc-text-muted)}
+.lc-scroll-win:focus-visible,.lc-scroll-grip:focus-visible{outline:2px solid var(--lc-focus);outline-offset:1px}
 @media (prefers-reduced-motion:reduce){.lc-tooltip,.lc-legend-btn{transition:none}}
 `;
 

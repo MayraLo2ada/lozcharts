@@ -30,6 +30,10 @@ export interface DomainOptions {
   zero?: boolean;
   /** Cantidad aproximada de ticks deseados (para redondear el dominio). */
   ticks: number;
+  /** Valores que el eje debe mostrar aunque ningún dato llegue a ellos (una meta). */
+  include?: readonly number[];
+  /** Con zoom: solo cuentan los índices de este rango (inclusive), así el eje se ajusta a lo visible. */
+  range?: readonly [number, number];
 }
 
 /**
@@ -67,7 +71,13 @@ export function buildFrame(
   // Salvaguarda del doble eje: los dos incluyen el cero, a la misma altura.
   const dual = rightFrames.length > 0;
   const left = yDomain(leftFrames, { ...domain, zero: domain.zero || dual });
-  const right = dual ? alignRight(extent(rightFrames, true), left, rightDomain) : null;
+  const right = dual
+    ? alignRight(
+        extent(rightFrames, true, domain.range, rightDomain.include) ?? extent(rightFrames, true, undefined, rightDomain.include),
+        left,
+        rightDomain,
+      )
+    : null;
   settleUnstacked(leftFrames, left);
   if (right) settleUnstacked(rightFrames, right);
   return { ...left, right, n, series: frames };
@@ -135,8 +145,16 @@ function placeInClusters(frames: SeriesFrame[]): void {
   }
 }
 
-/** Mínimo y máximo de las series visibles (con el cero si alguna lo pide); null si no hay datos. */
-function extent(frames: SeriesFrame[], zero: boolean): [number, number] | null {
+/**
+ * Mínimo y máximo de las series visibles (con el cero si alguna lo pide); null si no hay datos.
+ * `range` limita los índices que cuentan; `include` agrega valores fijos.
+ */
+export function extent(
+  frames: SeriesFrame[],
+  zero: boolean,
+  range?: readonly [number, number],
+  include: readonly number[] = [],
+): [number, number] | null {
   let lo = Infinity;
   let hi = -Infinity;
   const extend = (v: number) => {
@@ -148,19 +166,27 @@ function extent(frames: SeriesFrame[], zero: boolean): [number, number] | null {
     if (f.ps.impl.includeZero) zero = true;
     for (const v of f.ps.impl.domainValues?.(f.ps.options) ?? []) if (isFinite(v)) extend(v);
     const extra = (f.ps.impl.valueColumns ?? []).map((name) => f.cols[name]).filter(Boolean);
-    for (let i = 0; i < f.y1.length; i++) {
+    const first = range ? Math.max(0, range[0]) : 0;
+    const last = range ? Math.min(f.y1.length - 1, range[1]) : f.y1.length - 1;
+    for (let i = first; i <= last; i++) {
       if (isFinite(f.y1[i])) extend(f.y1[i]);
       if (f.ps.stackKey && isFinite(f.y0[i])) extend(f.y0[i]);
       for (const col of extra) if (isFinite(col[i])) extend(col[i]);
     }
   }
+  // Con zoom, una ventana sin datos (un hueco) no arma un eje solo con las anotaciones: devuelve
+  // null y el eje queda como sin zoom.
+  if (range && lo > hi) return null;
+  for (const v of include) if (isFinite(v)) extend(v);
   if (lo > hi) return null;
   return zero ? [Math.min(lo, 0), Math.max(hi, 0)] : [lo, hi];
 }
 
 /** Dominio "bonito" del eje izquierdo con las series visibles. */
 function yDomain(frames: SeriesFrame[], opts: DomainOptions): AxisDomain {
-  let [lo, hi] = extent(frames, !!opts.zero) ?? [0, 1];
+  // Si en la ventana del zoom no hay datos (un hueco), el eje queda como sin zoom.
+  let [lo, hi] = extent(frames, !!opts.zero, opts.range, opts.include) ??
+    extent(frames, !!opts.zero, undefined, opts.include) ?? [0, 1];
   if (opts.min !== undefined) lo = opts.min;
   if (opts.max !== undefined) hi = opts.max;
   const [d0, d1, step] = niceDomain(lo, hi, opts.ticks);

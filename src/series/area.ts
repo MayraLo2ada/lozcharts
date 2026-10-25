@@ -9,6 +9,7 @@ export const area: SeriesImpl = {
   stackable: true,
   includeZero: true,
   legendSymbol: 'square',
+  endLabel: true,
   label: 'áreas',
   draw(ctx) {
     const { frame, color } = ctx;
