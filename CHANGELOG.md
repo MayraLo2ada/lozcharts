@@ -8,6 +8,8 @@
 - **Para crear tipos:** `derive` en `SeriesImpl` calcula los valores del eje con la serie completa
   (la cascada lo usa para los acumulados). `onHover` recibe `null` en los nodos que no son filas
   de datos (los interiores del sunburst).
+- **Tooltip:** la muestra de color toma el color de cada dato (rama, grupo, carril, nodo de origen
+  o celda), no el de la serie. Los tipos de serie lo definen con el gancho `swatch(ctx, i)`.
 
 ## 1.0.0 (25 de octubre de 2026)
 
