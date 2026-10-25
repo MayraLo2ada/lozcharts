@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Globo</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+        background: #161615;
+        color: #f0efec;
+      }
+      #globo {
+        max-width: 640px;
+        cursor: grab;
+        touch-action: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="globo"></div>
+    <script src="../dist/lozcharts.umd.js"></script>
+    <script src="../dist/maps/world.umd.js"></script>
+    <script>
+      var datos = [
+        ['MEX', 1830],
+        ['BRA', 2650],
+        ['COL', 980],
+        ['ARG', 760],
+        ['CHL', 410],
+        ['PER', 520],
+        ['ECU', 230],
+        ['USA', 4210],
+        ['CAN', 560],
+        ['ESP', 1120],
+        ['FRA', 640],
+        ['DEU', 890],
+        ['GBR', 720],
+        ['IND', 1540],
+        ['CHN', 1260],
+        ['JPN', 610],
+        ['AUS', 330],
+        ['ZAF', 210],
+        ['NGA', 280],
+      ].map(function (r) {
+        return { pais: r[0], usuarios: r[1] * 1000 };
+      });
+      var rot = [-60, 10];
+      var serie = function () {
+        return [{ type: 'choropleth', field: 'usuarios', name: 'Usuarios', projection: 'orthographic', rotate: rot.slice() }];
+      };
+      var chart = new LozChart('#globo', {
+        theme: 'dark',
+        data: datos,
+        xAxis: { field: 'pais' },
+        yAxis: { format: 'compact' },
+        series: serie(),
+        height: 520,
+        background: false,
+      });
+      var el = document.getElementById('globo');
+      var arrastre = null;
+      el.addEventListener('pointerdown', function (e) {
+        arrastre = { x: e.clientX, y: e.clientY, rot: rot.slice() };
+      });
+      window.addEventListener('pointermove', function (e) {
+        if (!arrastre) return;
+        rot = [
+          arrastre.rot[0] - (e.clientX - arrastre.x) * 0.4,
+          Math.max(-60, Math.min(60, arrastre.rot[1] + (e.clientY - arrastre.y) * 0.4)),
+        ];
+        chart.setOptions({ series: serie() }, false);
+      });
+      window.addEventListener('pointerup', function () {
+        arrastre = null;
+      });
+      window.qa = chart;
+    </script>
+  </body>
+</html>

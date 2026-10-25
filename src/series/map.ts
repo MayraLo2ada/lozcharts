@@ -22,6 +22,9 @@ import {
   featureIndex,
   fitProjection,
   geoPath,
+  globe,
+  graticule,
+  projectOnGlobe,
   getMap,
   projectFeature,
   rawProjection,
@@ -50,6 +53,8 @@ interface MapSetup {
   place: number[];
   project: (lon: number, lat: number) => [number, number];
   plotH: number;
+  /** Con el globo: el disco (mar) y la cuadrícula de meridianos y paralelos visibles. */
+  sphere: { cx: number; cy: number; r: number; graticule: string } | null;
 }
 
 const setups = new WeakMap<PreparedSeries, MapSetup>();
@@ -70,7 +75,8 @@ function setup(ctx: DrawContext, legend: boolean): MapSetup | null {
   const plotH = Math.max(40, ctx.height - (legend ? LEGEND_H : 0));
   const projection = ps.options.projection ?? 'equalEarth';
   const fit = ps.options.fit ?? 'all';
-  const key = `${name}|${ctx.width}|${plotH}|${projection}|${fit}|${ctx.n}`;
+  const rotate = ps.options.rotate;
+  const key = `${name}|${ctx.width}|${plotH}|${projection}|${fit}|${ctx.n}|${rotate ?? ''}`;
   const cached = setups.get(ps);
   if (cached && cached.key === key) return cached;
 
@@ -94,9 +100,25 @@ function setup(ctx: DrawContext, legend: boolean): MapSetup | null {
   // Con fit 'data' se encuadran solo los lugares con datos; los demás se dibujan igual y el
   // recorte del área esconde lo que queda fuera.
   const framed = fit === 'data' ? features.filter((f) => used.has(all.indexOf(f))) : features;
-  const project = fitProjection(rawProjection(projection), framed.length ? framed : features, ctx.width, plotH);
+  let project: (lon: number, lat: number) => [number, number];
+  let toPolys: (f: GeoFeature) => [number, number][][][];
+  let sphere: MapSetup['sphere'] = null;
+  if (projection === 'orthographic') {
+    // El globo mira al centro de los datos (o a donde se pida): lo importante, al frente.
+    const g = globe(ctx.width, plotH, rotate ?? lookAt(framed.length ? framed : features));
+    project = (lo, la) => {
+      const [x, y, visible] = g.point(lo, la);
+      return visible ? [x, y] : [NaN, NaN];
+    };
+    toPolys = (f) => projectOnGlobe(f, g);
+    sphere = { cx: g.cx, cy: g.cy, r: g.r, graticule: graticule(g) };
+  } else {
+    const fitted = fitProjection(rawProjection(projection), framed.length ? framed : features, ctx.width, plotH);
+    project = fitted;
+    toPolys = (f) => projectFeature(f, fitted);
+  }
   const shapes = features.map((f) => {
-    const polys = projectFeature(f, project);
+    const polys = toPolys(f);
     let x0 = Infinity;
     let y0 = Infinity;
     let x1 = -Infinity;
@@ -110,9 +132,38 @@ function setup(ctx: DrawContext, legend: boolean): MapSetup | null {
       }
     return { polys, d: geoPath(polys), center: featureCenter(polys), box: [x0, y0, x1, y1] as [number, number, number, number] };
   });
-  const out: MapSetup = { key, features, shapes, place: place.map((p) => remap.get(p) ?? -1), project, plotH };
+  const out: MapSetup = { key, features, shapes, place: place.map((p) => remap.get(p) ?? -1), project, plotH, sphere };
   setups.set(ps, out);
   return out;
+}
+
+/** [lon, lat] promedio de los contornos: hacia dónde mira el globo si no se dice. */
+function lookAt(list: readonly GeoFeature[]): [number, number] {
+  let x = 0;
+  let y = 0;
+  let z = 0;
+  // Promedio en 3D (sobre la esfera), no en grados: así no falla cerca del meridiano 180.
+  for (const f of list)
+    for (const poly of f.polygons)
+      for (const [lon, lat] of poly[0] ?? []) {
+        const l = (lon * Math.PI) / 180;
+        const p = (lat * Math.PI) / 180;
+        x += Math.cos(p) * Math.cos(l);
+        y += Math.cos(p) * Math.sin(l);
+        z += Math.sin(p);
+      }
+  if (!x && !y && !z) return [0, 0];
+  return [(Math.atan2(y, x) * 180) / Math.PI, (Math.atan2(z, Math.hypot(x, y)) * 180) / Math.PI];
+}
+
+/** El mar y la cuadrícula del globo, debajo de los países. */
+function sphereMarkup(S: MapSetup, ctx: DrawContext): string {
+  const s = S.sphere;
+  if (!s) return '';
+  return (
+    `<circle${attrs({ cx: s.cx.toFixed(1), cy: s.cy.toFixed(1), r: s.r.toFixed(1), fill: ctx.theme.highlight, stroke: ctx.theme.grid, 'stroke-width': 1 })}/>` +
+    `<path${attrs({ d: s.graticule, fill: 'none', stroke: ctx.theme.grid, 'stroke-width': 0.6 })}/>`
+  );
 }
 
 /** Índice de claves de cada mapa (se arma una vez por mapa registrado). */
@@ -199,8 +250,9 @@ export const choropleth: SeriesImpl = {
     S.place.forEach((k, i) => {
       if (k >= 0 && isFinite(ctx.frame.y1[i])) valueOf.set(k, ctx.frame.y1[i]);
     });
-    let s = '';
+    let s = sphereMarkup(S, ctx);
     S.shapes.forEach((sh, k) => {
+      if (!sh.d) return;
       const v = valueOf.get(k);
       if (v === undefined || !domain || !ramp) {
         s += basePath(sh.d, ctx);
@@ -241,7 +293,11 @@ export function bubbleRadius(v: number, max: number, largest: number): number {
 function bubbleCenters(ctx: DrawContext, S: MapSetup): ([number, number] | null)[] {
   const { lat, lon } = ctx.frame.ps.columns;
   return Array.from({ length: ctx.n }, (_, i) => {
-    if (lat && lon && isFinite(lat[i]) && isFinite(lon[i])) return S.project(lon[i], lat[i]);
+    if (lat && lon && isFinite(lat[i]) && isFinite(lon[i])) {
+      // En el globo, lo que queda detrás no se ve.
+      const p = S.project(lon[i], lat[i]);
+      return isFinite(p[0]) ? p : null;
+    }
     const k = S.place[i];
     return k >= 0 ? S.shapes[k].center : null;
   });
@@ -263,7 +319,7 @@ export const mapbubble: SeriesImpl = {
     const S = setup(ctx, false);
     if (!S) return '';
     const { max, largest, centers } = bubbleScale(ctx, S);
-    let s = S.shapes.map((sh) => basePath(sh.d, ctx)).join('');
+    let s = sphereMarkup(S, ctx) + S.shapes.map((sh) => (sh.d ? basePath(sh.d, ctx) : '')).join('');
     // Las grandes primero: las chicas quedan encima y se pueden señalar.
     const order = ranked(ctx.frame.ps);
     for (const i of order) {

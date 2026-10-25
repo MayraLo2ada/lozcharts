@@ -1,4 +1,4 @@
-/* Portada: el gráfico que cambia de forma, las pruebas en vivo y la muestra de la galería. */
+/* Portada: el globo que gira, el taller y las pruebas en vivo. */
 (function () {
   var byId = function (id) {
     return document.getElementById(id);
@@ -7,108 +7,122 @@
   EJEMPLOS.forEach(function (e) {
     ej[e.id] = e;
   });
-  var ventas = ej.ventas.opciones.data;
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // ------------------------------------------------------------ El escenario
+  // ------------------------------------------------------------ El globo
 
-  var total = function (k) {
-    return ventas.reduce(function (s, r) {
-      return s + r[k];
-    }, 0);
+  var USUARIOS = [
+    ['USA', 4210],
+    ['MEX', 1830],
+    ['BRA', 2650],
+    ['COL', 980],
+    ['ARG', 760],
+    ['CHL', 410],
+    ['PER', 520],
+    ['ECU', 230],
+    ['CAN', 560],
+    ['ESP', 1120],
+    ['FRA', 640],
+    ['DEU', 890],
+    ['GBR', 720],
+    ['ITA', 450],
+    ['IND', 1540],
+    ['CHN', 1260],
+    ['JPN', 610],
+    ['AUS', 330],
+    ['ZAF', 210],
+    ['NGA', 280],
+    ['EGY', 190],
+    ['IDN', 470],
+    ['TUR', 260],
+    ['SAU', 150],
+    ['VEN', 180],
+    ['URY', 95],
+    ['BOL', 110],
+    ['CRI', 70],
+    ['GTM', 120],
+    ['DOM', 140],
+    ['KOR', 380],
+    ['PHL', 240],
+  ].map(function (r) {
+    return { pais: r[0], usuarios: r[1] * 1000 };
+  });
+  var rot = [-70, 12];
+  var serie = function () {
+    return [{ type: 'choropleth', field: 'usuarios', name: 'Usuarios', projection: 'orthographic', rotate: rot.slice() }];
   };
-  var tiempo = { field: 'mes', type: 'time' };
-  var FORMAS = {
-    barras: {
-      series: [
-        { type: 'bar', field: 'online', name: 'Online', stack: true },
-        { type: 'bar', field: 'tienda', name: 'Tienda', stack: true },
-        { type: 'line', field: 'meta', name: 'Meta', smooth: true },
-      ],
-    },
-    lineas: {
-      series: [
-        { type: 'line', field: 'online', name: 'Online', smooth: true },
-        { type: 'line', field: 'tienda', name: 'Tienda', smooth: true },
-        { type: 'line', field: 'meta', name: 'Meta', smooth: true },
-      ],
-      endLabels: true,
-    },
-    areas: {
-      series: [
-        { type: 'area', field: 'online', name: 'Online', stack: true, smooth: true },
-        { type: 'area', field: 'tienda', name: 'Tienda', stack: true, smooth: true },
-      ],
-    },
-    proporcion: {
-      data: [
-        { canal: 'Online', ventas: total('online') },
-        { canal: 'Tienda', ventas: total('tienda') },
-      ],
-      // type explícito: setOptions combina el eje con el anterior, que era de tiempo.
-      xAxis: { field: 'canal', type: 'category' },
-      series: [{ type: 'donut', field: 'ventas', name: 'Ventas' }],
-    },
+  var globoEl = byId('globo');
+  var globo = siteChart(
+    new LozChart(globoEl, {
+      theme: 'dark',
+      data: USUARIOS,
+      xAxis: { field: 'pais' },
+      yAxis: { format: 'compact' },
+      series: serie(),
+      height: Math.round(globoEl.clientWidth),
+      background: false,
+      animate: false,
+      legend: false,
+    }),
+    true,
+  );
+  var dibujar = function () {
+    globo.setOptions({ series: serie() }, false);
   };
-  var base = {
-    title: 'Ventas por mes',
-    subtitle: 'Online y tienda física, 2026',
-    data: ventas,
-    xAxis: tiempo,
-    yAxis: { format: 'currency' },
-    height: 320,
-    background: false,
+  // Gira solo, despacio; al arrastrarlo se detiene y retoma unos segundos después.
+  var quieto = 0;
+  var arrastre = null;
+  var ultimo = performance.now();
+  function girar(t) {
+    var dt = Math.min(64, t - ultimo);
+    ultimo = t;
+    if (!arrastre && t > quieto && !document.hidden) {
+      rot[0] += dt * 0.006;
+      dibujar();
+    }
+    requestAnimationFrame(girar);
+  }
+  if (!reduce) requestAnimationFrame(girar);
+  globoEl.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'touch') return;
+    arrastre = { x: e.clientX, y: e.clientY, rot: rot.slice() };
+    globoEl.classList.add('dragging');
+    globoEl.setPointerCapture(e.pointerId);
+  });
+  globoEl.addEventListener('pointermove', function (e) {
+    if (!arrastre) return;
+    rot = [
+      arrastre.rot[0] - (e.clientX - arrastre.x) * 0.35,
+      Math.max(-55, Math.min(55, arrastre.rot[1] + (e.clientY - arrastre.y) * 0.35)),
+    ];
+    dibujar();
+  });
+  var soltar = function () {
+    arrastre = null;
+    quieto = performance.now() + 4000;
+    globoEl.classList.remove('dragging');
   };
-  var opcionesDe = function (forma) {
-    var f = FORMAS[forma];
-    return Object.assign({}, base, { endLabels: false }, f, { xAxis: f.xAxis || tiempo, data: f.data || ventas });
-  };
-  var hero = siteChart(new LozChart('#hero-chart', opcionesDe('barras')));
-  var mostrarCodigo = function (forma) {
-    var series = FORMAS[forma].series
-      .map(function (s) {
-        var extra = (s.stack ? ', stack: true' : '') + (s.smooth ? ', smooth: true' : '');
-        return "    { type: '" + s.type + "', field: '" + s.field + "'" + extra + ' },';
-      })
-      .join('\n');
-    var x = forma === 'proporcion' ? "{ field: 'canal' }" : "{ field: 'mes', type: 'time' }";
-    var src = "new LozChart('#ventas', {\n  data: ventas,\n  xAxis: " + x + ',\n  series: [\n' + series + '\n  ],\n});';
-    byId('hero-code').innerHTML = siteHighlight(src);
-  };
-  mostrarCodigo('barras');
-  document.querySelector('[data-tabs="forma"]').addEventListener('tabchange', function (e) {
-    hero.setOptions(opcionesDe(e.detail));
-    mostrarCodigo(e.detail);
+  globoEl.addEventListener('pointerup', soltar);
+  globoEl.addEventListener('pointercancel', soltar);
+  window.addEventListener('resize', function () {
+    globo.setOptions({ height: Math.round(globoEl.clientWidth) }, false);
+  });
+
+  // ------------------------------------------------------------ Taller
+
+  crearEjemplo(ej.recorrido, byId('lab-sankey'), { title: undefined, subtitle: undefined, height: 560 });
+  crearEjemplo(ej['visitas-hora'], byId('lab-calor'), { title: undefined, height: 230 });
+  crearEjemplo(ej['visitas-dia'], byId('lab-zoom'), {
+    title: undefined,
+    subtitle: undefined,
+    height: 230,
+    endLabels: false,
+    zoom: { range: ['2026-06-01', '2026-08-15'], scrollbar: false },
+    annotations: [{ x: ['2026-06-29', '2026-07-21'], label: 'Campaña' }],
   });
 
   // ------------------------------------------------------------ Cien mil puntos
 
-  var mucho = null;
-  byId('mucho-btn').addEventListener('click', function () {
-    var data = lecturas(100000);
-    if (mucho) mucho.destroy();
-    var inicio = performance.now();
-    mucho = siteChart(
-      new LozChart('#mucho-chart', {
-        title: 'Sensor de temperatura',
-        subtitle: '100 000 lecturas: diez semanas, una por minuto',
-        data: data,
-        xAxis: { field: 't', type: 'time' },
-        yAxis: {
-          format: function (v) {
-            return v + ' °C';
-          },
-        },
-        series: [{ type: 'line', field: 'v', name: 'Temperatura' }],
-        animate: false,
-        zoom: true,
-        height: 300,
-        background: false,
-      }),
-    );
-    var ms = Math.max(1, Math.round(performance.now() - inicio));
-    byId('mucho-res').innerHTML = 'Listo en <strong>' + ms + ' ms</strong>. Arrastra para acercar.';
-  });
-  // Lecturas de un sensor: temperatura diaria con su ciclo de día y noche y algo de ruido.
   function lecturas(n) {
     var seed = 7;
     var rand = function () {
@@ -119,72 +133,105 @@
     var t0 = Date.UTC(2026, 0, 1);
     var deriva = 0;
     for (var i = 0; i < n; i++) {
-      deriva += (rand() - 0.5) * 0.08;
-      deriva *= 0.999;
+      deriva = (deriva + (rand() - 0.5) * 0.08) * 0.999;
       var dia = Math.sin(((i % 1440) / 1440) * 2 * Math.PI - Math.PI / 2) * 4;
       data[i] = { t: t0 + i * 60000, v: Math.round((18 + dia + deriva + (rand() - 0.5) * 0.6) * 10) / 10 };
     }
     return data;
   }
-  // Mientras tanto, un adelanto con una semana de lecturas.
-  mucho = siteChart(
-    new LozChart('#mucho-chart', {
-      title: 'Sensor de temperatura',
-      subtitle: 'Una semana, una lectura por minuto. Pulsa el botón para cargar 100 000.',
+  var grados = function (v) {
+    return v + ' °C';
+  };
+  var mucho = siteChart(
+    new LozChart('#mucho', {
       data: lecturas(10080),
       xAxis: { field: 't', type: 'time' },
-      yAxis: {
-        format: function (v) {
-          return v + ' °C';
-        },
-      },
+      yAxis: { format: grados },
       series: [{ type: 'line', field: 'v', name: 'Temperatura' }],
-      height: 300,
+      height: 260,
       background: false,
     }),
   );
+  byId('mucho-btn').addEventListener('click', function () {
+    var data = lecturas(100000);
+    mucho.destroy();
+    var inicio = performance.now();
+    mucho = siteChart(
+      new LozChart('#mucho', {
+        data: data,
+        xAxis: { field: 't', type: 'time' },
+        yAxis: { format: grados },
+        series: [{ type: 'line', field: 'v', name: 'Temperatura' }],
+        height: 260,
+        background: false,
+        animate: false,
+        zoom: { scrollbar: false },
+      }),
+    );
+    var ms = Math.max(1, Math.round(performance.now() - inicio));
+    byId('mucho-res').innerHTML = '<strong>' + ms + ' ms</strong> en tu equipo. Arrastra para acercar.';
+  });
 
-  // ------------------------------------------------------------ Daltonismo
+  // ------------------------------------------------------------ Daltonismo, voz y forma
 
-  siteChart(new LozChart('#cvd-chart', Object.assign({}, ej.usuarios.opciones, { height: 320, background: false })));
+  crearEjemplo(ej.usuarios, byId('cvd-chart'), {
+    title: undefined,
+    subtitle: undefined,
+    height: 230,
+    legend: false,
+    endLabels: true,
+  });
   byId('cvd').addEventListener('change', function (e) {
-    document.querySelector('.proof').classList.toggle('cvd-on', e.target.checked);
+    document.querySelector('.bento').classList.toggle('cvd-on', e.target.checked);
   });
 
-  // ------------------------------------------------------------ Lector de pantalla
-
-  siteChart(
-    new LozChart('#voz-chart', {
-      title: 'Embudo de compra',
-      data: ej.embudo.opciones.data,
-      xAxis: { field: 'paso' },
-      series: [{ type: 'funnel', field: 'sesiones', name: 'Sesiones' }],
-      height: 300,
-      background: false,
-    }),
-  );
-  var root = byId('voz-chart');
-  var svgEl = root.querySelector('svg.lc-svg');
-  var live = root.querySelector('[aria-live]');
-  byId('voz').textContent = svgEl.getAttribute('aria-label');
+  crearEjemplo(ej.embudo, byId('voz-chart'), { title: undefined, height: 220 });
+  var svgEl = byId('voz-chart').querySelector('svg.lc-svg');
+  var live = byId('voz-chart').querySelector('[aria-live]');
+  byId('voz').textContent = '“' + svgEl.getAttribute('aria-label') + '”';
   new MutationObserver(function () {
-    if (live.textContent) byId('voz').textContent = live.textContent;
+    if (live.textContent) byId('voz').textContent = '“' + live.textContent + '”';
   }).observe(live, { childList: true, characterData: true, subtree: true });
-  svgEl.addEventListener('focus', function () {
-    byId('voz').textContent = svgEl.getAttribute('aria-label');
-  });
 
-  // ------------------------------------------------------------ Muestra de la galería
-
-  ['visitas-hora', 'productos', 'recorrido', 'tiendas-mapa', 'precios', 'modelos'].forEach(function (id) {
-    var a = document.createElement('a');
-    a.href = 'galeria.html#' + id;
-    var box = document.createElement('div');
-    var tipo = document.createElement('span');
-    tipo.className = 'tipo';
-    tipo.textContent = ej[id].tipo;
-    a.append(box, tipo);
-    byId('preview').appendChild(a);
-    crearEjemplo(ej[id], box, { height: 240, tooltip: true, legend: false, subtitle: undefined });
+  var ventas = ej.ventas.opciones.data;
+  var total = function (k) {
+    return ventas.reduce(function (s, r) {
+      return s + r[k];
+    }, 0);
+  };
+  var FORMAS = {
+    barras: {
+      data: ventas,
+      xAxis: { field: 'mes', type: 'time' },
+      series: [
+        { type: 'bar', field: 'online', name: 'Online', stack: true },
+        { type: 'bar', field: 'tienda', name: 'Tienda', stack: true },
+      ],
+    },
+    lineas: {
+      data: ventas,
+      xAxis: { field: 'mes', type: 'time' },
+      series: [
+        { type: 'line', field: 'online', name: 'Online', smooth: true },
+        { type: 'line', field: 'tienda', name: 'Tienda', smooth: true },
+      ],
+    },
+    donut: {
+      data: [
+        { canal: 'Online', ventas: total('online') },
+        { canal: 'Tienda', ventas: total('tienda') },
+      ],
+      xAxis: { field: 'canal', type: 'category' },
+      series: [{ type: 'donut', field: 'ventas', name: 'Ventas' }],
+    },
+  };
+  var forma = siteChart(
+    new LozChart(
+      '#forma',
+      Object.assign({ yAxis: { format: 'compact' }, height: 220, background: false, legend: false }, FORMAS.barras),
+    ),
+  );
+  document.querySelector('[data-tabs="forma"]').addEventListener('tabchange', function (e) {
+    forma.setOptions(FORMAS[e.detail]);
   });
 })();

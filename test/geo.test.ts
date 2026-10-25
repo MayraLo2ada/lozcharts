@@ -8,6 +8,9 @@ import {
   features,
   fitProjection,
   geoPath,
+  globe,
+  graticule,
+  projectOnGlobe,
   normalizeKey,
   rawProjection,
   type Topology,
@@ -308,4 +311,61 @@ test('el centro de un país con un hueco cae en su tierra, no en el hueco', () =
   const c = featureCenter([[outer, hole]])!;
   assert.ok(contains([[outer, hole]], c[0], c[1]), `centro ${c}`);
   assert.equal(featureCenter([]), null);
+});
+
+test('globo: el frente se ve, la espalda no, y lo de atrás abraza el horizonte', () => {
+  const g = globe(200, 200, [0, 0], 0);
+  const [x, y, visible] = g.point(0, 0);
+  assert.ok(visible && near(x, 100) && near(y, 100));
+  assert.equal(g.point(180, 0)[2], false);
+  // Norte arriba: una latitud positiva sube (y menor).
+  assert.ok(g.point(0, 45)[1] < 100);
+  // Un cuadrado que cruza el horizonte (lon 80 a 100): la parte de atrás queda sobre el borde.
+  const sq = features({
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [80, -5],
+              [100, -5],
+              [100, 5],
+              [80, 5],
+              [80, -5],
+            ],
+          ],
+        },
+      },
+    ],
+  });
+  const polys = projectOnGlobe(sq[0], g);
+  for (const [px, py] of polys[0][0]) assert.ok(Math.hypot(px - 100, py - 100) <= 100 + 1e-9);
+  // Uno entero detrás no se dibuja.
+  const back = features({
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [170, -5],
+              [175, -5],
+              [175, 5],
+              [170, 5],
+              [170, -5],
+            ],
+          ],
+        },
+      },
+    ],
+  });
+  assert.deepEqual(projectOnGlobe(back[0], g), []);
+  assert.match(graticule(g), /^M/);
 });

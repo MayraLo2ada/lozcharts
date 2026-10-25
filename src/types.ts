@@ -114,8 +114,13 @@ export interface SeriesOptions {
   map?: string;
   /** Mapas: 'all' (por defecto) encuadra todo el mapa; 'data', solo los lugares con datos (una región). */
   fit?: 'all' | 'data';
-  /** Mapas: 'equalEarth' (por defecto, áreas iguales) o 'mercator'. */
-  projection?: 'equalEarth' | 'mercator';
+  /**
+   * Mapas: 'equalEarth' (por defecto, áreas iguales), 'mercator' o 'orthographic' (el globo
+   * terráqueo, visto desde lejos; se gira con `rotate`).
+   */
+  projection?: 'equalEarth' | 'mercator' | 'orthographic';
+  /** Globo: [longitud, latitud] del punto que mira al frente. Por defecto, el centro de los datos. */
+  rotate?: [number, number];
   /** Mapa de burbujas: campos de latitud y longitud (si faltan, la burbuja va al centro del país). */
   lat?: string;
   lon?: string;

@@ -29,7 +29,8 @@
   "files": [
     "dist",
     "maps/LICENSE",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "llms.txt"
   ],
   "sideEffects": true,
   "scripts": {

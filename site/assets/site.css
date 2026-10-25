@@ -21,9 +21,9 @@
   --code-num: #5e2dad;
   --code-com: #7a7973;
 
-  --display: 'Bricolage Grotesque', 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
-  --font: 'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --display: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 
   --s1: 4px;
   --s2: 8px;
@@ -147,8 +147,23 @@ svg {
   display: inline-flex;
   align-items: baseline;
 }
-.wordmark span {
-  color: var(--coral);
+.wordmark {
+  gap: 10px;
+  align-items: center;
+}
+.mark {
+  flex: none;
+  width: 26px;
+  height: 26px;
+}
+.mark rect {
+  fill: var(--coral);
+}
+.mark rect:nth-child(2) {
+  fill: #009298;
+}
+.mark rect:nth-child(3) {
+  fill: var(--ink);
 }
 .nav {
   display: flex;
@@ -169,24 +184,33 @@ svg {
   color: var(--ink);
   background: var(--sunken);
 }
-.theme {
-  display: inline-flex;
+.theme-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  padding: 2px;
-}
-.theme button {
-  border: 0;
+  border-radius: 999px;
   background: transparent;
-  color: var(--muted);
-  font: 500 13px/1 var(--font);
-  padding: 7px 10px;
-  border-radius: 4px;
+  color: var(--ink);
   cursor: pointer;
 }
-.theme button[aria-pressed='true'] {
+.theme-btn:hover {
+  border-color: var(--line-strong);
   background: var(--sunken);
-  color: var(--ink);
+}
+.theme-btn svg {
+  width: 18px;
+  height: 18px;
+}
+.theme-btn .sun {
+  display: none;
+}
+:root[data-mode='dark'] .theme-btn .sun {
+  display: block;
+}
+:root[data-mode='dark'] .theme-btn .moon {
+  display: none;
 }
 @media (max-width: 720px) {
   .top .wrap {
@@ -197,9 +221,6 @@ svg {
     font-size: 14px;
   }
   .nav .github {
-    display: none;
-  }
-  .theme {
     display: none;
   }
 }
@@ -238,7 +259,7 @@ h1,
 h2,
 h3 {
   font-family: var(--display);
-  letter-spacing: -0.025em;
+  letter-spacing: -0.035em;
   line-height: 1.08;
   margin: 0;
 }

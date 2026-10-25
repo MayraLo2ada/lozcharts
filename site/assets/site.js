@@ -12,22 +12,35 @@
       return 'auto';
     }
   }
+  var media = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
+  /** Modo efectivo: el elegido, o el del sistema si no se eligió. */
+  function effective(t) {
+    return t === 'auto' ? (media && media.matches ? 'dark' : 'light') : t;
+  }
   function applyTheme(t) {
+    var mode = effective(t);
     if (t === 'auto') document.documentElement.removeAttribute('data-theme');
     else document.documentElement.setAttribute('data-theme', t);
-    document.querySelectorAll('[data-theme-btn]').forEach(function (b) {
-      b.setAttribute('aria-pressed', String(b.getAttribute('data-theme-btn') === t));
+    document.documentElement.setAttribute('data-mode', mode);
+    document.querySelectorAll('.theme-btn').forEach(function (b) {
+      b.setAttribute('aria-label', mode === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
     });
     charts.forEach(function (c) {
-      c.setTheme(t);
+      c.setTheme(mode);
     });
   }
-  window.siteTheme = stored;
+  window.siteTheme = function () {
+    return effective(stored());
+  };
   applyTheme(stored());
+  if (media)
+    media.addEventListener('change', function () {
+      if (stored() === 'auto') applyTheme('auto');
+    });
   document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('[data-theme-btn]');
+    var b = e.target.closest && e.target.closest('.theme-btn');
     if (!b) return;
-    var t = b.getAttribute('data-theme-btn');
+    var t = effective(stored()) === 'dark' ? 'light' : 'dark';
     try {
       localStorage.setItem(KEY, t);
     } catch (err) {
@@ -37,9 +50,12 @@
   });
 
   // Los gráficos que crea cada página siguen el tema elegido.
-  window.siteChart = function (chart) {
-    charts.push(chart);
-    if (stored() !== 'auto') chart.setTheme(stored());
+  window.siteChart = function (chart, fixed) {
+    // `fixed`: un gráfico que va siempre en oscuro (la portada) no sigue el tema.
+    if (!fixed) {
+      charts.push(chart);
+      chart.setTheme(effective(stored()));
+    }
     return chart;
   };
 

@@ -6,3 +6,4 @@ dist/
 .pruebas/
 site/lib/
 site/docs.html
+site/llms.txt

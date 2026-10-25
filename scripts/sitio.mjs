@@ -5,6 +5,7 @@ import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 mkdirSync('site/lib/maps', { recursive: true });
 copyFileSync('dist/lozcharts.umd.js', 'site/lib/lozcharts.umd.js');
 copyFileSync('dist/maps/world.umd.js', 'site/lib/maps/world.umd.js');
+copyFileSync('llms.txt', 'site/llms.txt');
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 /** Ancla como la de GitHub: minúsculas, sin signos, espacios a guiones (las letras con acento quedan). */

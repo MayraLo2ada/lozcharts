@@ -309,6 +309,14 @@ export class VentasComponent {
 - `elemento.chart` da la instancia con todos sus métodos. Al quitar el elemento de la página, el
   gráfico se destruye solo: dentro de fragmentos HTMX no hace falta `initAll`.
 
+## LozCharts con IA
+
+Si le pides gráficos a ChatGPT, Claude o Copilot, dile que use LozCharts y pásale el archivo
+[`llms.txt`](llms.txt): en una página, todo lo que existe (tipos, opciones, métodos) y las reglas
+para escribir código correcto. Así no inventa opciones y todo lo demás (zoom, leyenda, modo oscuro,
+accesibilidad) ya viene hecho. Con TypeScript, además, los tipos de `lozcharts` marcan cualquier
+opción que no exista.
+
 ## Muchos datos
 
 Líneas, áreas, escalones y rangos dibujan solo lo que se ve y, con más de dos datos por píxel, el

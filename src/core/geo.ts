@@ -182,7 +182,7 @@ function decodeArcs(t: Topology): [number, number][][] {
 
 // ------------------------------------------------------------ Proyecciones
 
-export type ProjectionName = 'equalEarth' | 'mercator';
+export type ProjectionName = 'equalEarth' | 'mercator' | 'orthographic';
 
 /** Proyección sin escalar: [lon, lat] en grados → [x, y] (y crece hacia abajo, como en SVG). */
 export type RawProjection = (lon: number, lat: number) => [number, number];
@@ -251,6 +251,94 @@ export function fitProjection(
     const [x, y] = raw(lon, lat);
     return [ox + k * x, oy + k * y];
   };
+}
+
+// ------------------------------------------------------------ Globo (ortográfica)
+
+/** El globo: la Tierra vista desde lejos, centrada en `rotate` = [lon, lat]. */
+export interface Globe {
+  cx: number;
+  cy: number;
+  r: number;
+  /** [x, y] en px, y si el punto está en la cara visible. */
+  point(lon: number, lat: number): [number, number, boolean];
+}
+
+/** Globo que llena width × height con `pad` de margen, mirando a [lon, lat]. */
+export function globe(width: number, height: number, rotate: readonly [number, number], pad = 4): Globe {
+  const r = Math.max(10, Math.min(width, height) / 2 - pad);
+  const cx = width / 2;
+  const cy = height / 2;
+  const l0 = rotate[0] * RAD;
+  const p0 = rotate[1] * RAD;
+  const sp0 = Math.sin(p0);
+  const cp0 = Math.cos(p0);
+  return {
+    cx,
+    cy,
+    r,
+    point(lon, lat) {
+      const l = lon * RAD - l0;
+      const p = lat * RAD;
+      const cp = Math.cos(p);
+      const sp = Math.sin(p);
+      const cl = Math.cos(l);
+      const x = r * cp * Math.sin(l);
+      const y = r * (cp0 * sp - sp0 * cp * cl);
+      // Visible si el punto está en la cara que mira al observador (coseno de la distancia ≥ 0).
+      return [cx + x, cy - y, sp0 * sp + cp0 * cp * cl >= 0];
+    },
+  };
+}
+
+/**
+ * Anillos de un lugar sobre el globo. Lo que queda en la cara oculta se lleva al borde del
+ * disco, en su misma dirección: el contorno abraza el horizonte en vez de cruzar por delante.
+ * Un anillo que está entero detrás no se dibuja.
+ */
+export function projectOnGlobe(f: GeoFeature, g: Globe): [number, number][][][] {
+  const out: [number, number][][][] = [];
+  for (const poly of f.polygons) {
+    const rings: [number, number][][] = [];
+    for (const ring of poly) {
+      let seen = false;
+      const pts = ring.map(([lon, lat]) => {
+        const [x, y, visible] = g.point(lon, lat);
+        if (visible) {
+          seen = true;
+          return [x, y] as [number, number];
+        }
+        const dx = x - g.cx;
+        const dy = y - g.cy;
+        const d = Math.hypot(dx, dy) || 1;
+        return [g.cx + (dx / d) * g.r, g.cy + (dy / d) * g.r] as [number, number];
+      });
+      if (seen) rings.push(pts);
+    }
+    if (rings.length) out.push(rings);
+  }
+  return out;
+}
+
+/** Meridianos y paralelos cada `step` grados, solo en la cara visible, como un camino SVG. */
+export function graticule(g: Globe, step = 30): string {
+  let d = '';
+  const line = (pts: [number, number][]) => {
+    let open = false;
+    for (const [lon, lat] of pts) {
+      const [x, y, visible] = g.point(lon, lat);
+      if (!visible) {
+        open = false;
+        continue;
+      }
+      d += `${open ? 'L' : 'M'}${Math.round(x * 10) / 10},${Math.round(y * 10) / 10}`;
+      open = true;
+    }
+  };
+  for (let lon = -180; lon < 180; lon += step) line(Array.from({ length: 61 }, (_, k) => [lon, -90 + k * 3] as [number, number]));
+  for (let lat = -60; lat <= 60; lat += step)
+    line(Array.from({ length: 121 }, (_, k) => [-180 + k * 3, lat] as [number, number]));
+  return d;
 }
 
 // ------------------------------------------------------------ Dibujo y puntero
