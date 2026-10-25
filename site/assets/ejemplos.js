@@ -101,12 +101,12 @@
       familia: 'Comparar',
       opciones: {
         title: 'Ventas por mes',
-        subtitle: 'Tienda física y canal online frente a la meta',
+        subtitle: 'Tienda física y en línea, frente a la meta',
         data: ventas,
         xAxis: { field: 'mes', type: 'time' },
         yAxis: { format: 'currency' },
         series: [
-          { type: 'bar', field: 'online', name: 'Online', stack: true },
+          { type: 'bar', field: 'online', name: 'En línea', stack: true },
           { type: 'bar', field: 'tienda', name: 'Tienda', stack: true },
           { type: 'line', field: 'meta', name: 'Meta', smooth: true },
         ],
@@ -163,7 +163,7 @@
       familia: 'Comparar',
       opciones: {
         title: 'Ventas del trimestre contra la meta',
-        subtitle: 'Miles de dólares; detrás, hasta 300 bajo, hasta 450 aceptable y hasta 600 bueno',
+        subtitle: 'En miles de dólares. Al fondo: hasta 300 es bajo, hasta 450 aceptable y hasta 600 bueno',
         data: filas(
           [
             ['Norte', 512, 480],
@@ -230,7 +230,7 @@
       familia: 'En el tiempo',
       opciones: {
         title: 'Usuarios activos por ciudad',
-        subtitle: 'Miles, con nombre al final de cada línea',
+        subtitle: 'En miles, con el nombre de cada ciudad al final de su línea',
         data: usuarios,
         xAxis: { field: 'mes', type: 'time' },
         series: ciudades.map(function (c) {
@@ -267,7 +267,7 @@
       familia: 'En el tiempo',
       opciones: {
         title: 'Visitas por dispositivo',
-        subtitle: 'Áreas apiladas',
+        subtitle: 'El móvil crece mes a mes y el escritorio baja de a poco',
         data: MESES.map(function (mes, i) {
           return { mes: mes, movil: 5200 + i * 310, escritorio: 4100 - i * 60, tableta: 900 + i * 20 };
         }),
@@ -286,7 +286,7 @@
       familia: 'En el tiempo',
       opciones: {
         title: 'Tasa de interés de referencia',
-        subtitle: 'Cambia de golpe: línea escalonada',
+        subtitle: 'Se queda fija y cambia de golpe con cada decisión',
         data: filas(
           [
             ['2025-01', 0.1125],
@@ -593,7 +593,7 @@
       familia: 'Flujos y mapas',
       opciones: {
         title: 'Mudanzas entre regiones',
-        subtitle: 'Miles de personas; cada cinta va del color de donde salieron',
+        subtitle: 'En miles de personas; cada cinta lleva el color de la región de donde salieron',
         data: filas(
           [
             ['Capital', 'Centro', 182],
@@ -658,7 +658,7 @@
       anchoGrande: true,
       opciones: {
         title: 'Ventas por ciudad',
-        subtitle: 'Burbujas sobre el mapa',
+        subtitle: 'Cuanto más grande la burbuja, más ventas',
         data: [
           { ciudad: 'Ciudad de México', lat: 19.43, lon: -99.13, ventas: 4200 },
           { ciudad: 'Bogotá', lat: 4.71, lon: -74.07, ventas: 2600 },
@@ -680,7 +680,7 @@
       multiples: true,
       opciones: {
         title: 'Ventas por región',
-        subtitle: 'Cada región en su color y las demás como contexto',
+        subtitle: 'Cada región en su color, con las demás en gris detrás',
         facet: 'series',
         context: true,
         data: porRegion,
