@@ -7,13 +7,16 @@
  */
 import type { PreparedSeries, SeriesFrame } from './series';
 import type { Prepared } from './prepare';
-import { niceDomain, niceStep } from './ticks';
+import { logDomain, logTicks, niceDomain, niceStep } from './ticks';
 
 /** Extremos de un eje del valor y el paso entre sus ticks. */
 export interface AxisDomain {
   d0: number;
   d1: number;
+  /** En un eje logarítmico, la menor de sus marcas (decide los decimales de los números). */
   step: number;
+  /** Eje logarítmico (yAxis.type: 'log'). */
+  log?: boolean;
 }
 
 export interface Frame extends AxisDomain {
@@ -34,6 +37,8 @@ export interface DomainOptions {
   include?: readonly number[];
   /** Con zoom: solo cuentan los índices de este rango (inclusive), así el eje se ajusta a lo visible. */
   range?: readonly [number, number];
+  /** Escala logarítmica: solo cuentan los valores positivos y el cero no se incluye. */
+  log?: boolean;
 }
 
 /**
@@ -70,14 +75,8 @@ export function buildFrame(
   const rightFrames = frames.filter((f) => f.ps.axis === 'right');
   // Salvaguarda del doble eje: los dos incluyen el cero, a la misma altura.
   const dual = rightFrames.length > 0;
-  const left = yDomain(leftFrames, { ...domain, zero: domain.zero || dual });
-  const right = dual
-    ? alignRight(
-        extent(rightFrames, true, domain.range, rightDomain.include) ?? extent(rightFrames, true, undefined, rightDomain.include),
-        left,
-        rightDomain,
-      )
-    : null;
+  const left = domain.log ? logAxis(leftFrames, domain) : yDomain(leftFrames, { ...domain, zero: domain.zero || dual });
+  const right = dual ? rightAxis(rightFrames, left, domain, rightDomain) : null;
   settleUnstacked(leftFrames, left);
   if (right) settleUnstacked(rightFrames, right);
   return { ...left, right, n, series: frames };
@@ -147,17 +146,20 @@ function placeInClusters(frames: SeriesFrame[]): void {
 
 /**
  * Mínimo y máximo de las series visibles (con el cero si alguna lo pide); null si no hay datos.
- * `range` limita los índices que cuentan; `include` agrega valores fijos.
+ * `range` limita los índices que cuentan; `include` agrega valores fijos. Con `positive` (escala
+ * logarítmica) solo cuentan los valores mayores que cero, y el cero no se agrega.
  */
 export function extent(
   frames: SeriesFrame[],
   zero: boolean,
   range?: readonly [number, number],
   include: readonly number[] = [],
+  positive = false,
 ): [number, number] | null {
   let lo = Infinity;
   let hi = -Infinity;
   const extend = (v: number) => {
+    if (positive && !(v > 0)) return;
     if (v < lo) lo = v;
     if (v > hi) hi = v;
   };
@@ -179,7 +181,7 @@ export function extent(
   if (range && lo > hi) return null;
   for (const v of include) if (isFinite(v)) extend(v);
   if (lo > hi) return null;
-  return zero ? [Math.min(lo, 0), Math.max(hi, 0)] : [lo, hi];
+  return zero && !positive ? [Math.min(lo, 0), Math.max(hi, 0)] : [lo, hi];
 }
 
 /** Dominio "bonito" del eje izquierdo con las series visibles. */
@@ -193,6 +195,47 @@ function yDomain(frames: SeriesFrame[], opts: DomainOptions): AxisDomain {
   const fixed = opts.min !== undefined || opts.max !== undefined;
   const out = { d0: opts.min ?? d0, d1: opts.max ?? d1, step };
   return fixed ? { ...out, step: niceStep(out.d1 - out.d0, opts.ticks) } : out;
+}
+
+/**
+ * Dominio de un eje logarítmico: los valores positivos de las series visibles (con zoom, los de
+ * la ventana), extendidos a valores redondos. Un mínimo o un máximo que no son positivos se ignoran.
+ */
+function logAxis(frames: SeriesFrame[], opts: DomainOptions): AxisDomain {
+  const positive = (r?: readonly [number, number]) => extent(frames, false, r, opts.include, true);
+  let [lo, hi] = positive(opts.range) ?? positive() ?? [1, 10];
+  const min = opts.min !== undefined && opts.min > 0 ? opts.min : undefined;
+  const max = opts.max !== undefined && opts.max > 0 ? opts.max : undefined;
+  if (min !== undefined) lo = min;
+  if (max !== undefined) hi = Math.max(max, lo);
+  const [n0, n1] = logDomain(lo, hi, opts.ticks);
+  const d0 = min ?? n0;
+  const d1 = max !== undefined ? Math.max(max, d0) : n1;
+  const ticks = logTicks(d0, d1, opts.ticks);
+  return { d0, d1, step: ticks[0] ?? d0, log: true };
+}
+
+/**
+ * Eje derecho: alineado con el izquierdo (ver alignRight). Frente a uno logarítmico no hay cero que
+ * compartir, así que queda con su propio dominio lineal.
+ */
+function rightAxis(
+  frames: SeriesFrame[],
+  left: AxisDomain,
+  domain: DomainOptions,
+  opts: Omit<DomainOptions, 'ticks'>,
+): AxisDomain {
+  const data = extent(frames, true, domain.range, opts.include) ?? extent(frames, true, undefined, opts.include);
+  return left.log ? linearFrom(data, opts, domain.ticks) : alignRight(data, left, opts);
+}
+
+/** Dominio lineal "bonito" (con el cero) para unos datos, respetando mínimo y máximo fijos. */
+function linearFrom(data: [number, number] | null, opts: Omit<DomainOptions, 'ticks'>, ticks: number): AxisDomain {
+  let [lo, hi] = data ?? [0, 1];
+  if (opts.min !== undefined) lo = opts.min;
+  if (opts.max !== undefined) hi = opts.max;
+  const [d0, d1, step] = niceDomain(Math.min(lo, 0), Math.max(hi, 0), ticks);
+  return { d0: opts.min ?? d0, d1: opts.max ?? d1, step };
 }
 
 /**
@@ -282,10 +325,15 @@ export function withExits(from: Frame, to: Frame): Frame {
  */
 export function interpolate(a: Frame, b: Frame, t: number): Frame {
   const prev = new Map(a.series.map((s) => [s.ps.key, s]));
+  // En un eje logarítmico el dominio se interpola en su escala (geométrica): cada década avanza
+  // al mismo ritmo. Desde un eje lineal, que puede incluir el cero, se salta al destino.
+  const domain = (from: number, to: number) =>
+    !b.log ? lerp(from, to, t) : a.log && from > 0 && to > 0 ? from * Math.pow(to / from, t) : to;
   return {
-    d0: lerp(a.d0, b.d0, t),
-    d1: lerp(a.d1, b.d1, t),
+    d0: domain(a.d0, b.d0),
+    d1: domain(a.d1, b.d1),
     step: b.step,
+    log: b.log,
     right: b.right && {
       d0: lerp(a.right?.d0 ?? b.right.d0, b.right.d0, t),
       d1: lerp(a.right?.d1 ?? b.right.d1, b.right.d1, t),

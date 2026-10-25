@@ -34,6 +34,27 @@ export class LinearScale {
   }
 }
 
+/**
+ * Escala logarítmica del valor (yAxis.type: 'log'): la misma interfaz que LinearScale, con la
+ * regla de tres sobre el logaritmo. Un valor que no es positivo no tiene lugar en el eje: va al
+ * borde del mínimo, así una barra o un área que parten del cero arrancan del borde inferior.
+ */
+export class LogScale extends LinearScale {
+  map(v: number): number {
+    const a = Math.log(this.d0);
+    const span = Math.log(this.d1) - a;
+    if (!(span > 0) || !isFinite(span)) return (this.r0 + this.r1) / 2;
+    if (!(v > 0)) return this.r0;
+    return this.r0 + ((Math.log(v) - a) / span) * (this.r1 - this.r0);
+  }
+
+  invert(px: number): number {
+    const span = this.r1 - this.r0;
+    if (span === 0 || !(this.d0 > 0) || !(this.d1 > 0)) return this.d0;
+    return this.d0 * Math.pow(this.d1 / this.d0, (px - this.r0) / span);
+  }
+}
+
 export interface XScale {
   kind: 'band' | 'continuous';
   /** Cantidad de puntos (índices). */

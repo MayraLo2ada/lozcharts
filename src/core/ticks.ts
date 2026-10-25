@@ -62,6 +62,81 @@ export function stepDecimals(step: number): number {
   return Math.min(10, Math.ceil(-Math.log10(step) - 1e-9));
 }
 
+// ---------------------------------------------------------------- Escala logarítmica
+
+/**
+ * Valores redondos de un eje logarítmico: 1, 2 y 5 × 10ⁿ. Si no caben, solo las potencias de 10
+ * (y, en rangos de muchas décadas, una de cada k). Los demás múltiplos (3, 4, 6…) no se usan: en
+ * una escala logarítmica quedan apretados contra el siguiente y no ayudan a leer.
+ */
+const LOG_STEPS = [1, 2, 5];
+
+/** Valores m × 10ⁿ de `mantissas` dentro de [d0, d1]. */
+function logCandidates(d0: number, d1: number, mantissas: readonly number[]): number[] {
+  const out: number[] = [];
+  const last = Math.ceil(Math.log10(d1) + 1e-9);
+  for (let e = Math.floor(Math.log10(d0) - 1e-9); e <= last && out.length < 1000; e++) {
+    for (const m of mantissas) {
+      const v = cleanFloat(m * Math.pow(10, e));
+      if (v >= d0 * (1 - 1e-9) && v <= d1 * (1 + 1e-9)) out.push(v);
+    }
+  }
+  return out;
+}
+
+/** Potencias de 10 en [d0, d1], una de cada k para que no pasen de `count + 1`. */
+function powerTicks(d0: number, d1: number, count: number): number[] {
+  const powers = logCandidates(d0, d1, [1]);
+  const every = Math.max(1, Math.ceil(powers.length / (count + 1)));
+  return powers.filter((_, k) => k % every === 0);
+}
+
+/**
+ * Marcas de un eje logarítmico en [d0, d1]: 1, 2 y 5 × 10ⁿ si caben unas `count` (una más se
+ * tolera, como en los ejes lineales); si no, potencias de 10. Vacío si el dominio no es positivo.
+ */
+export function logTicks(d0: number, d1: number, count: number): number[] {
+  if (!(d0 > 0) || !(d1 >= d0)) return [];
+  const dense = logCandidates(d0, d1, LOG_STEPS);
+  return dense.length <= count + 1 ? dense : powerTicks(d0, d1, count);
+}
+
+/** El mayor valor de la forma m × 10ⁿ (m en `mantissas`) que no pasa de v. */
+function logFloor(v: number, mantissas: readonly number[]): number {
+  const power = Math.pow(10, Math.floor(Math.log10(v) + 1e-9));
+  let best = power;
+  for (const m of mantissas) if (m * power <= v * (1 + 1e-9)) best = m * power;
+  return cleanFloat(best);
+}
+
+/** El menor valor de la forma m × 10ⁿ (m en `mantissas`, o 10) que no es menor que v. */
+function logCeil(v: number, mantissas: readonly number[]): number {
+  const power = Math.pow(10, Math.floor(Math.log10(v) + 1e-9));
+  for (const m of [...mantissas, 10]) if (m * power >= v * (1 - 1e-9)) return cleanFloat(m * power);
+  return cleanFloat(10 * power);
+}
+
+/**
+ * Dominio de un eje logarítmico que contiene [lo, hi] (positivos), con extremos redondos: en 1, 2
+ * o 5 × 10ⁿ si con esa densidad caben las marcas; si no, en potencias de 10. Así los dos extremos
+ * son siempre marcas del eje. Un solo valor queda entre el redondo anterior y el siguiente.
+ */
+export function logDomain(lo: number, hi: number, count: number): [number, number] {
+  if (!(hi > 0)) return [1, 10];
+  if (!(lo > 0)) lo = hi;
+  for (const mantissas of [LOG_STEPS, [1]]) {
+    let d0 = logFloor(lo, mantissas);
+    let d1 = logCeil(hi, mantissas);
+    if (d1 <= d0) {
+      // Un solo valor redondo: un paso de cada lado.
+      d0 = logFloor(d0 * (1 - 1e-6), mantissas);
+      d1 = logCeil(d1 * (1 + 1e-6), mantissas);
+    }
+    if (mantissas.length === 1 || logCandidates(d0, d1, mantissas).length <= count + 1) return [d0, d1];
+  }
+  return [1, 10];
+}
+
 // ---------------------------------------------------------------- Fechas
 
 export type TimeUnit = 'minute' | 'hour' | 'day' | 'week' | 'month' | 'year';
