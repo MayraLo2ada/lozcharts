@@ -541,6 +541,8 @@ test('descripción accesible: qué es, cuántos datos, de dónde a dónde y el m
     'Ventas por semana. Gráfico de barras con 4 puntos, de 1 a 4. El más alto es 2, con 180. ' +
       'Recorre los datos con las flechas izquierda y derecha.',
   );
+  const asked = chart({ title: '¿Qué vendimos?' });
+  assert.match(svg(asked).getAttribute('aria-label')!, /^¿Qué vendimos\? Gráfico de líneas/);
   const two = chart();
   assert.equal(
     svg(two).getAttribute('aria-label'),

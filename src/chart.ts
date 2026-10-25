@@ -774,7 +774,7 @@ export class LozChart {
   private labelAtFraction(f: number, edge: 'start' | 'end'): string {
     const scale = this.indexScale(1000, FULL_VIEW);
     const px = Math.max(0, Math.min(999.999, f * 1000 + (edge === 'end' ? -1e-6 : 1e-6)));
-    return xLabel(this.prepared, scale.indexAt(px), false, this.xContext());
+    return this.inlineX(scale.indexAt(px));
   }
 
   /** La ventana de `zoom.range`, si la hay; si no, se ve todo. */
@@ -1809,7 +1809,9 @@ export class LozChart {
     const { series, n } = p;
     const kinds = [...new Set(series.map((s) => s.impl.label ?? s.options.type))];
     const what = kinds.length ? 'Gráfico de ' + kinds.join(' y ') : 'Gráfico';
-    const title = this.opts.title ? `${this.opts.title}. ` : '';
+    // Un título que ya cierra con su signo ("¿Qué destacan los clientes?") no lleva otro punto.
+    const own = this.opts.title?.trim();
+    const title = own ? (/[.?!…:]$/.test(own) ? `${own} ` : `${own}. `) : '';
     // Un solo dato (un gauge): se dice el valor, no se invita a recorrer nada.
     if (n === 1) return `${title}${what}. ${this.describe(0)}`;
     const plural = (k: number, [one, many]: readonly [string, string]) => `${k} ${k === 1 ? one : many}`;
@@ -1839,8 +1841,13 @@ export class LozChart {
   private spanText(): string {
     const p = this.prepared;
     if (p.coords !== 'cartesian' || p.xType === 'category' || p.n < 2) return '';
-    const ctx = this.xContext();
-    return `, de ${xLabel(p, 0, false, ctx)} a ${xLabel(p, p.n - 1, false, ctx)}`;
+    return `, de ${this.inlineX(0)} a ${this.inlineX(p.n - 1)}`;
+  }
+
+  /** La etiqueta de X a mitad de frase: una fecha va en minúscula ("de enero de 2026"). */
+  private inlineX(i: number): string {
+    const label = xLabel(this.prepared, i, false, this.xContext());
+    return this.prepared.xType === 'time' ? label.charAt(0).toLocaleLowerCase(this.opts.locale) + label.slice(1) : label;
   }
 
   /** " El más alto es noviembre, con 1,4 M $.": con una sola serie de valores simples. */
@@ -1853,7 +1860,7 @@ export class LozChart {
       if (isFinite(v) && (top < 0 || v > s.values[top])) top = i;
     });
     if (top < 0) return '';
-    return ` El más alto es ${xLabel(p, top, false, this.xContext())}, con ${this.valueText(s, top).value}.`;
+    return ` El más alto es ${this.inlineX(top)}, con ${this.valueText(s, top).value}.`;
   }
 
   /** Las anotaciones dichas en palabras: "Referencias: Meta, 120 mil $; Campaña de verano." */
