@@ -189,7 +189,7 @@
       data: ventas,
       xAxis: { field: 'mes', type: 'time' },
       series: [
-        { type: 'bar', field: 'online', name: 'Online', stack: true },
+        { type: 'bar', field: 'online', name: 'En línea', stack: true },
         { type: 'bar', field: 'tienda', name: 'Tienda', stack: true },
       ],
     },
@@ -197,13 +197,13 @@
       data: ventas,
       xAxis: { field: 'mes', type: 'time' },
       series: [
-        { type: 'line', field: 'online', name: 'Online', smooth: true },
+        { type: 'line', field: 'online', name: 'En línea', smooth: true },
         { type: 'line', field: 'tienda', name: 'Tienda', smooth: true },
       ],
     },
     donut: {
       data: [
-        { canal: 'Online', ventas: total('online') },
+        { canal: 'En línea', ventas: total('online') },
         { canal: 'Tienda', ventas: total('tienda') },
       ],
       xAxis: { field: 'canal', type: 'category' },
