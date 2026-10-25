@@ -1,0 +1,23 @@
+# Cambios
+
+## 1.0.0 (25 de octubre de 2026)
+
+Primera versión completa.
+
+- **Tipos:** líneas, barras (verticales, horizontales, agrupadas y apiladas), áreas, escalones,
+  bandas de rango, dispersión, burbujas, velas, OHLC, pie, donut, gauge, radar, embudo, mapa de
+  calor, treemap, sankey, mapas coropléticos y de burbujas, y small multiples.
+- **Explorar:** zoom en el eje X con barra de desplazamiento y mini gráfico, anotaciones (líneas
+  de referencia y franjas), etiquetas al final de cada línea, énfasis de series, doble eje con
+  salvaguardas e índice base 100.
+- **Muchos datos:** las líneas dibujan solo lo visible y, con más de dos datos por píxel, los
+  extremos de cada columna; 100 000 puntos en unos 40 ms.
+- **Accesibilidad:** descripción para lectores de pantalla, tabla de datos, recorrido con teclado
+  (también en dos dimensiones en el mapa de calor), avisos en vivo, foco visible, paleta validada
+  para daltonismo y respeto por `prefers-reduced-motion`.
+- **Exportar:** PNG, SVG y CSV.
+- **Integraciones:** `<script>`, módulos ES, componente de React (`lozcharts/react`), elemento
+  `<loz-chart>` para Angular, Vue o Svelte (`lozcharts/element`) y Django + HTMX (`initAll`).
+- **Mapas:** mapa del mundo aparte (`lozcharts/maps/world`), con proyecciones Equal Earth y
+  Mercator; cualquier TopoJSON o GeoJSON con `registerMap`.
+- **Paleta Coral** por defecto, con tonos propios para el modo oscuro.

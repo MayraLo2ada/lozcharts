@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Ejemplo con HTMX</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 24px 16px 48px;
+        font:
+          15px/1.5 system-ui,
+          sans-serif;
+        background: #fcfcfb;
+        color: #0b0b0b;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #1a1a19;
+          color: #f0efec;
+        }
+      }
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        display: grid;
+        gap: 24px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 24px;
+      }
+      .filtros {
+        display: flex;
+        gap: 8px;
+      }
+      .filtros button {
+        min-height: 36px;
+        padding: 6px 14px;
+        border: 1px solid #dedcd6;
+        border-radius: 6px;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+      }
+      .filtros button[aria-pressed='true'] {
+        background: currentColor;
+      }
+      .filtros button[aria-pressed='true'] span {
+        color: #fcfcfb;
+      }
+      .tablero {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+        gap: 32px;
+      }
+      @media (max-width: 760px) {
+        .tablero {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .htmx-request .tablero {
+        opacity: 0.5;
+        transition: opacity 0.2s;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Tablero de ventas</h1>
+      <!-- Cada botón pide el fragmento de su región y lo cambia por el actual (como una vista de Django). -->
+      <div class="filtros" role="group" aria-label="Región" hx-target="#contenido" hx-swap="innerHTML">
+        <button type="button" aria-pressed="true" hx-get="fragmentos/norte.html"><span>Norte</span></button>
+        <button type="button" aria-pressed="false" hx-get="fragmentos/centro.html"><span>Centro</span></button>
+        <button type="button" aria-pressed="false" hx-get="fragmentos/sur.html"><span>Sur</span></button>
+      </div>
+      <div id="contenido" hx-get="fragmentos/norte.html" hx-trigger="load"></div>
+    </main>
+
+    <script src="../../dist/lozcharts.umd.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"></script>
+    <script>
+      // Lo único que hace falta con HTMX: crear los gráficos de cada fragmento nuevo y
+      // destruir los del que se va. <loz-chart> se crea y se destruye solo.
+      htmx.onLoad(function (el) {
+        LozChart.initAll(el);
+      });
+      document.body.addEventListener('htmx:beforeSwap', function (e) {
+        LozChart.destroyAll(e.detail.target);
+      });
+      document.querySelectorAll('.filtros button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          document.querySelectorAll('.filtros button').forEach(function (o) {
+            o.setAttribute('aria-pressed', String(o === b));
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -1,7 +1,7 @@
 {
   "name": "lozcharts",
-  "version": "0.1.0",
-  "description": "LozCharts: gráficos SVG interactivos, accesibles y sin dependencias.",
+  "version": "1.0.0",
+  "description": "LozCharts: gráficos SVG interactivos, accesibles y sin dependencias, con zoom, mapas y componentes para React y web.",
   "type": "module",
   "main": "./dist/lozcharts.umd.js",
   "module": "./dist/lozcharts.js",
@@ -20,15 +20,20 @@
       "types": "./dist/types/maps/register-world.d.ts",
       "import": "./dist/maps/world.js",
       "require": "./dist/maps/world.umd.js"
+    },
+    "./element": {
+      "types": "./dist/types/element.d.ts",
+      "import": "./dist/element.js"
     }
   },
   "files": [
     "dist",
-    "maps/LICENSE"
+    "maps/LICENSE",
+    "CHANGELOG.md"
   ],
   "sideEffects": true,
   "scripts": {
-    "build": "tsc --noEmit && vite build && LC_FORMAT=umd vite build && LC_FORMAT=react vite build && LC_FORMAT=world vite build && LC_FORMAT=world-umd vite build && tsc -p tsconfig.types.json",
+    "build": "tsc --noEmit && vite build && LC_FORMAT=umd vite build && LC_FORMAT=react vite build && LC_FORMAT=element vite build && LC_FORMAT=world vite build && LC_FORMAT=world-umd vite build && tsc -p tsconfig.types.json",
     "test": "esbuild test/*.test.ts --bundle --platform=node --format=esm --outdir=.pruebas --log-level=warning && node --test \".pruebas/*.test.js\"",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
@@ -37,9 +42,15 @@
   },
   "keywords": [
     "charts",
-    "svg",
     "graficos",
-    "dataviz"
+    "svg",
+    "dataviz",
+    "visualizacion",
+    "accesible",
+    "react",
+    "web-components",
+    "htmx",
+    "maps"
   ],
   "author": "Mayra Lozada",
   "license": "MIT",

@@ -1,0 +1,32 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tablero de ventas</title>
+  </head>
+  <body>
+    <h1>Tablero de ventas</h1>
+    <div role="group" aria-label="Región" hx-target="#contenido" hx-swap="innerHTML">
+      {% for r in regiones %}
+      <button
+        type="button"
+        hx-get="{% url 'tablero' %}?region={{ r|urlencode }}"
+        aria-pressed="{% if r == region %}true{% else %}false{% endif %}"
+      >
+        {{ r }}
+      </button>
+      {% endfor %}
+    </div>
+    <div id="contenido">{% include "ventas/_tablero.html" %}</div>
+
+    <!-- dist/lozcharts.umd.js copiado a static/ (o desde un CDN cuando esté publicado en npm). -->
+    <script src="{% static 'lozcharts.umd.js' %}"></script>
+    <script src="{% static 'htmx.min.js' %}"></script>
+    <script>
+      htmx.onLoad((el) => LozChart.initAll(el));
+      document.body.addEventListener('htmx:beforeSwap', (e) => LozChart.destroyAll(e.detail.target));
+    </script>
+  </body>
+</html>

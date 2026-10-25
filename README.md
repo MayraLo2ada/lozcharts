@@ -41,7 +41,8 @@ const chart = new LozChart(elemento, opciones);
 chart.destroy();
 ```
 
-**En React:** los componentes de `lozcharts/react` (ver [React](#react)).
+**En React:** los componentes de `lozcharts/react` (ver [React](#react)). **En Angular, Vue o
+Svelte:** el elemento `<loz-chart>` (ver [`<loz-chart>`](#loz-chart-angular-vue-svelte-o-html-puro)).
 
 **3. Con Django + HTMX:** pon las opciones en JSON en el atributo `data-lozchart`
 (o el selector de un `<script type="application/json">`) y re-inicializa en cada swap:
@@ -56,6 +57,8 @@ chart.destroy();
 ```
 
 `initAll` reemplaza el gráfico si el elemento ya tenía uno y limpia los que quedaron fuera de la página.
+Ejemplo completo en `examples/django` (vista, URL y plantillas) y, para verlo sin Django,
+`examples/htmx/index.html`.
 
 ## Ejemplo completo
 
@@ -258,6 +261,42 @@ function Ventas({ filas }) {
 - El `ref` da la instancia de `LozChart` (o `LozMultiples`) con todos sus métodos.
 - Ejemplo completo en `examples/react` (`npm run example:react` y abre
   `examples/react/index.html`).
+
+## `<loz-chart>`: Angular, Vue, Svelte o HTML puro
+
+Un elemento HTML estándar (Custom Element) que sirve en cualquier framework sin adaptador. Con
+`<script src="lozcharts.umd.js">` ya queda registrado; con módulos, `import 'lozcharts/element'`.
+
+```html
+<loz-chart
+  options='{"data": [{"mes": "2026-01", "ventas": 42000}], "xAxis": {"field": "mes", "type": "time"},
+  "series": [{"type": "bar", "field": "ventas", "name": "Ventas"}]}'
+></loz-chart>
+```
+
+```ts
+// Angular (standalone): agrega CUSTOM_ELEMENTS_SCHEMA al componente.
+import 'lozcharts/element';
+@Component({
+  selector: 'app-ventas',
+  standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  template: `<loz-chart [options]="opciones" (lozzoom)="alHacerZoom($event)"></loz-chart>`,
+})
+export class VentasComponent {
+  opciones = { data: [], xAxis: { field: 'mes', type: 'time' }, series: [{ type: 'line', field: 'ventas' }], zoom: true };
+  alHacerZoom(e: CustomEvent) {
+    console.log(e.detail); // [desde, hasta] o null
+  }
+}
+```
+
+- Las opciones van en el atributo `options` (JSON) o en la propiedad `options` (un objeto). Si
+  solo cambian los datos, el gráfico anima con `setData`; si cambia otra cosa, con `setOptions`.
+  Con `facet` crea small multiples.
+- Emite `lozhover` y `lozzoom` (en `event.detail`, la X activa o el tramo visible).
+- `elemento.chart` da la instancia con todos sus métodos. Al quitar el elemento de la página, el
+  gráfico se destruye solo: dentro de fragmentos HTMX no hace falta `initAll`.
 
 ## Muchos datos
 

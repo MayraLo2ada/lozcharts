@@ -1,0 +1,34 @@
+<!-- Fragmento que devolvería la vista de Django para la región norte (ver examples/django). -->
+<div class="tablero">
+  <div data-lozchart="#opciones-ventas"></div>
+  <script id="opciones-ventas" type="application/json">
+    {
+      "title": "Ventas mensuales · Norte",
+      "subtitle": "2026",
+      "data": [
+        { "mes": "2026-01", "online": 52000, "tienda": 39400 },
+        { "mes": "2026-02", "online": 57166, "tienda": 38921 },
+        { "mes": "2026-03", "online": 59237, "tienda": 36952 },
+        { "mes": "2026-04", "online": 57964, "tienda": 36130 },
+        { "mes": "2026-05", "online": 56173, "tienda": 38039 },
+        { "mes": "2026-06", "online": 57164, "tienda": 41751 },
+        { "mes": "2026-07", "online": 61682, "tienda": 44681 },
+        { "mes": "2026-08", "online": 67228, "tienda": 44962 },
+        { "mes": "2026-09", "online": 70357, "tienda": 43163 },
+        { "mes": "2026-10", "online": 69848, "tienda": 41767 },
+        { "mes": "2026-11", "online": 67824, "tienda": 42883 },
+        { "mes": "2026-12", "online": 67800, "tienda": 46313 }
+      ],
+      "xAxis": { "field": "mes", "type": "time" },
+      "yAxis": { "format": "currency" },
+      "series": [
+        { "type": "bar", "field": "online", "name": "Online", "stack": true },
+        { "type": "bar", "field": "tienda", "name": "Tienda", "stack": true }
+      ],
+      "annotations": [{ "y": 80000, "label": "Meta" }]
+    }
+  </script>
+  <loz-chart
+    options='{"title": "Ventas por canal", "data": [{"canal": "Web", "v": 41.0}, {"canal": "Tienda", "v": 33.0}, {"canal": "App", "v": 18.0}, {"canal": "Teléfono", "v": 8.0}], "xAxis": {"field": "canal"}, "series": [{"type": "donut", "field": "v", "name": "Ventas"}], "height": 260}'
+  ></loz-chart>
+</div>

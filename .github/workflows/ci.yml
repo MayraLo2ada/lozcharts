@@ -1,4 +1,4 @@
-# Cada push y cada pull request: formato, tipos, pruebas y build.
+# Cada push y cada pull request: formato, tipos, pruebas, build, el ejemplo de React y el paquete.
 name: Verificación
 
 on:
@@ -21,3 +21,7 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run build
+      # El ejemplo de React compila contra el código actual (si se rompe la API, falla aquí).
+      - run: npm run example:react
+      # El paquete se puede armar: lo que se publicaría en npm.
+      - run: npm pack --dry-run
