@@ -20,6 +20,16 @@ npm run check   # formato, tipos y pruebas: lo mismo que corre la integración c
 
 Abre `demo/index.html` con doble clic para ver la galería (después de `npm run build`).
 
+## Usarla en otro proyecto (antes de publicarla en npm)
+
+```bash
+npm install ../lozcharts                          # desde la carpeta, en la misma máquina
+npm install github:MayraLo2ada/lozcharts          # desde GitHub (con acceso al repositorio)
+```
+
+Al instalarla así se compila sola (`prepare`; si npm pide aprobar scripts de instalación, `npm approve-scripts lozcharts`). Después se usa igual que desde npm:
+`import { Chart } from 'lozcharts/react'`.
+
 ## Tres formas de usarla
 
 **1. Con `<script>` (sin servidor):**
