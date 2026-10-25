@@ -67,10 +67,18 @@ export function xTicks(
   if (x.kind === 'band' || p.xType === 'category') {
     // Categorías larguísimas se recortan con "…" (el tooltip y la tabla las dan completas).
     const maxLabel = Math.max(MIN_LABEL, plotW * MAX_LABEL_SHARE);
-    const labels = p.xRaw.map((_, i) => fitText(xLabel(p, i, true, ctx), maxLabel, measure));
-    const widest = Math.max(...labels.map(measure));
+    // Con miles de categorías no se miden todas: una muestra pareja da el ancho típico.
+    const label = (i: number) => fitText(xLabel(p, i, true, ctx), maxLabel, measure);
+    const sample = p.n > 400 ? Array.from({ length: 200 }, (_, k) => Math.floor((k * p.n) / 200)) : p.xRaw.map((_, i) => i);
+    const widest = Math.max(...sample.map((i) => measure(label(i))));
     const every = Math.max(1, Math.ceil((widest + LABEL_GAP) / Math.max(1, x.step)));
-    for (let i = 0; i < p.n; i += every) ticks.push({ px: x.at(i), label: labels[i], anchor: 'middle' });
+    // Solo las que caen en el área (con zoom, el resto queda fuera).
+    const start = Math.max(0, Math.floor(x.indexAt(0) / every) * every);
+    for (let i = start; i < p.n; i += every) {
+      const px = x.at(i);
+      if (px > plotW + 0.5) break;
+      ticks.push({ px, label: label(i), anchor: 'middle' });
+    }
   } else {
     const cs = x as ContinuousScale;
     const [t0, t1] = cs.domain;

@@ -1,16 +1,27 @@
 import { defineConfig } from 'vite';
 
-// Dos pasadas: ESM (dist/lozcharts.js) y UMD (dist/lozcharts.umd.js, global window.LozChart).
-const umd = process.env.LC_FORMAT === 'umd';
+// Tres pasadas:
+// - ESM (dist/lozcharts.js), para import.
+// - UMD (dist/lozcharts.umd.js, global window.LozChart), para <script>.
+// - React (dist/react.js), que importa 'lozcharts' y 'react' sin copiarlos.
+const format = process.env.LC_FORMAT;
+
+const lib =
+  format === 'umd'
+    ? { entry: 'src/umd.ts', name: 'LozChart', formats: ['umd' as const], fileName: () => 'lozcharts.umd.js' }
+    : format === 'react'
+      ? { entry: 'src/react.ts', formats: ['es' as const], fileName: () => 'react.js' }
+      : { entry: 'src/index.ts', formats: ['es' as const], fileName: () => 'lozcharts.js' };
 
 export default defineConfig({
   build: {
-    emptyOutDir: !umd,
+    emptyOutDir: !format,
     sourcemap: true,
-    minify: umd ? 'esbuild' : false,
-    lib: umd
-      ? { entry: 'src/umd.ts', name: 'LozChart', formats: ['umd'], fileName: () => 'lozcharts.umd.js' }
-      : { entry: 'src/index.ts', formats: ['es'], fileName: () => 'lozcharts.js' },
-    rollupOptions: { output: umd ? { exports: 'default' } : {} },
+    minify: format === 'umd' ? 'esbuild' : false,
+    lib,
+    rollupOptions: {
+      external: format === 'react' ? ['react', 'lozcharts'] : [],
+      output: format === 'umd' ? { exports: 'default' } : {},
+    },
   },
 });

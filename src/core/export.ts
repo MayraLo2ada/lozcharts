@@ -38,6 +38,23 @@ export async function downloadImage(
   saveBlob(blob, name + '.png');
 }
 
+/**
+ * Tabla a CSV (RFC 4180): los campos con coma, comillas o salto de línea van entre comillas, y
+ * las comillas se duplican. Empieza con BOM para que Excel lea bien los acentos.
+ */
+export function toCSV(rows: readonly (readonly (string | number)[])[]): string {
+  const cell = (v: string | number) => {
+    const s = typeof v === 'number' ? (isFinite(v) ? String(v) : '') : v;
+    return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  return '\ufeff' + rows.map((r) => r.map(cell).join(',')).join('\r\n') + '\r\n';
+}
+
+/** Descarga un texto CSV. */
+export function downloadCSV(csv: string, name: string): void {
+  saveBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), name + '.csv');
+}
+
 function saveBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

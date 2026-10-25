@@ -10,7 +10,8 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "isolatedModules": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "paths": { "lozcharts": ["./src/index.ts"] }
   },
   "include": ["src", "test"]
 }

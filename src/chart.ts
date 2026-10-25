@@ -33,7 +33,7 @@ import { fitText, indexLabels, xLabel, xTicks, type XLabelContext } from './core
 import { attrs, esc, html, prefersReducedMotion, resolveElement, svg, textWidth } from './core/dom';
 import { polarPoint } from './core/shapes';
 import { Legend, legendSVG, type LegendItem } from './core/legend';
-import { downloadImage, slug } from './core/export';
+import { downloadCSV, downloadImage, slug, toCSV } from './core/export';
 import { destroyDetached, destroyWithin, mount, mountedOn, unmount } from './core/mount';
 import { annotationValues, renderAnnotations } from './core/annotations';
 import { spreadLabels } from './core/labels';
@@ -63,6 +63,8 @@ const MAX_LABEL_SHARE = 0.4;
 /** Reflejo sobre la diagonal: (x, y) → (y, x). Gira el plano lógico para el modo horizontal. */
 const SWAP_AXES = 'matrix(0 1 1 0 0 0)';
 const EXPORT_PAD = 16;
+/** Filas de la tabla oculta para lectores de pantalla; el resto, en el CSV. */
+const MAX_TABLE_ROWS = 500;
 /** Duración de la animación del eje del valor al cambiar el zoom: corta, para seguir al gesto. */
 const ZOOM_DURATION = 220;
 /** Etiquetas al final de las líneas: espacio entre el área y la marca, largo de la marca y su texto. */
@@ -381,7 +383,9 @@ export class LozChart {
     });
     if (options.series) this.resetVisibility();
     this.applyTheme();
-    if ('zoom' in options) {
+    // El zoom vuelve a su ventana inicial solo si la opción cambió de verdad: React y otros
+    // frameworks mandan todas las opciones en cada cambio, y eso no debe perder la ventana actual.
+    if ('zoom' in options && JSON.stringify(options.zoom) !== JSON.stringify(prev.zoom)) {
       this.view = FULL_VIEW;
       this.rangePending = true;
     }
@@ -428,10 +432,30 @@ export class LozChart {
     return this.exportSVG(padding).markup;
   }
 
-  /** Descarga el gráfico como PNG (al doble de resolución) o SVG. */
-  download(type: 'png' | 'svg' = 'png', filename?: string): Promise<void> {
+  /** Descarga el gráfico como PNG (al doble de resolución) o SVG, o sus datos como CSV. */
+  download(type: 'png' | 'svg' | 'csv' = 'png', filename?: string): Promise<void> {
+    const name = filename || slug(this.opts.title ?? '') || 'lozchart';
+    if (type === 'csv') {
+      downloadCSV(this.toCSV(), name);
+      return Promise.resolve();
+    }
     const { markup, width, height } = this.exportSVG();
-    return downloadImage(markup, width, height, type, filename || slug(this.opts.title ?? '') || 'lozchart');
+    return downloadImage(markup, width, height, type, name);
+  }
+
+  /**
+   * Los datos del gráfico como CSV: la X y el valor de cada serie, sin formato (números con punto
+   * decimal, fechas en ISO), listos para una hoja de cálculo. Incluye todas las filas.
+   */
+  toCSV(): string {
+    const p = this.prepared;
+    const head = [this.opts.xAxis.title ?? this.opts.xAxis.field, ...p.series.map((s) => s.name)];
+    const rows: (string | number)[][] = [head];
+    for (let i = 0; i < p.n; i++) {
+      const x = p.xType === 'time' && isFinite(p.xNum[i]) ? new Date(p.xNum[i]).toISOString() : String(p.xRaw[i] ?? '');
+      rows.push([x, ...p.series.map((s) => (s.raw ?? s.values)[i])]);
+    }
+    return toCSV(rows);
   }
 
   /**
@@ -569,11 +593,13 @@ export class LozChart {
       this.view = FULL_VIEW;
       return;
     }
+    this.view = clampView(this.view.start, this.view.end, this.minSpan());
     if (this.rangePending) {
       this.rangePending = false;
       this.initialZoom();
+      // La ventana inicial también se avisa: quien escucha onZoom muestra el tramo desde el principio.
+      if (!isFull(this.view)) this.opts.onZoom?.(this.zoomRange);
     }
-    this.view = clampView(this.view.start, this.view.end, this.minSpan());
   }
 
   // ------------------------------------------------------------ Zoom
@@ -1509,7 +1535,10 @@ export class LozChart {
     head.appendChild(html('th', { scope: 'col' }, this.opts.xAxis.title ?? this.opts.xAxis.field));
     for (const s of p.series) head.appendChild(html('th', { scope: 'col' }, s.name));
     const body = html('tbody');
-    for (let i = 0; i < p.n; i++) {
+    // Miles de filas no se leen con un lector de pantalla y frenan la página: se muestran las
+    // primeras y el título avisa cuántas hay y cómo tenerlas todas (download('csv')).
+    const shown = Math.min(p.n, MAX_TABLE_ROWS);
+    for (let i = 0; i < shown; i++) {
       const row = html('tr');
       const hiddenMark = p.pointLegend && this.hiddenIdx.has(i) ? ' (oculta)' : '';
       const own = p.series[0]?.impl.headline?.(p.series[0], i, xLabel(p, i, false, ctx));
@@ -1523,7 +1552,11 @@ export class LozChart {
     }
     const thead = html('thead');
     thead.appendChild(head);
-    this.tableEl.replaceChildren(html('caption', {}, this.opts.title ?? 'Datos del gráfico'), thead, body);
+    const title = this.opts.title ?? 'Datos del gráfico';
+    const count = valueFormatter('number', this.numberContext());
+    const caption =
+      shown < p.n ? `${title} (primeras ${count(shown)} de ${count(p.n)} filas; los datos completos se descargan en CSV)` : title;
+    this.tableEl.replaceChildren(html('caption', {}, caption), thead, body);
   }
 
   private ariaLabel(): string {

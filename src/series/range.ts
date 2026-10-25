@@ -6,7 +6,7 @@
 import type { SeriesImpl } from '../core/series';
 import { areaPath } from '../core/shapes';
 import { attrs } from '../core/dom';
-import { points } from './common';
+import { points, visible } from './common';
 
 /** Más tenue que un área: la banda es contexto, no protagonista. */
 const FILL_OPACITY = 0.16;
@@ -18,7 +18,8 @@ export const range: SeriesImpl = {
   columns: (o) => ({ low: o.low }),
   valueColumns: ['low'],
   draw(ctx) {
-    const d = areaPath(points(ctx, ctx.frame.y1), points(ctx, ctx.frame.cols.low), !!ctx.frame.ps.options.smooth);
+    const idx = visible(ctx, ctx.frame.y1);
+    const d = areaPath(points(ctx, ctx.frame.y1, idx), points(ctx, ctx.frame.cols.low, idx), !!ctx.frame.ps.options.smooth);
     return d ? `<path${attrs({ d, fill: ctx.color, 'fill-opacity': FILL_OPACITY })}/>` : '';
   },
   tooltip(ps, i, format) {

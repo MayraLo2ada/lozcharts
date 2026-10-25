@@ -11,6 +11,10 @@
       "types": "./dist/types/index.d.ts",
       "import": "./dist/lozcharts.js",
       "require": "./dist/lozcharts.umd.js"
+    },
+    "./react": {
+      "types": "./dist/types/react.d.ts",
+      "import": "./dist/react.js"
     }
   },
   "files": [
@@ -18,11 +22,12 @@
   ],
   "sideEffects": true,
   "scripts": {
-    "build": "tsc --noEmit && vite build && LC_FORMAT=umd vite build && tsc -p tsconfig.types.json",
+    "build": "tsc --noEmit && vite build && LC_FORMAT=umd vite build && LC_FORMAT=react vite build && tsc -p tsconfig.types.json",
     "test": "esbuild test/*.test.ts --bundle --platform=node --format=esm --outdir=.pruebas --log-level=warning && node --test \".pruebas/*.test.js\"",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
-    "check": "prettier --check . && tsc --noEmit && npm test"
+    "check": "prettier --check . && tsc --noEmit && npm test",
+    "example:react": "esbuild examples/react/App.tsx --bundle --jsx=automatic --alias:lozcharts/react=./src/react.ts --alias:lozcharts=./src/index.ts --define:process.env.NODE_ENV=\\\"production\\\" --minify --outfile=examples/react/dist/app.js"
   },
   "keywords": [
     "charts",
@@ -32,10 +37,22 @@
   ],
   "author": "Mayra Lozada",
   "license": "MIT",
+  "peerDependencies": {
+    "react": ">=17"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@types/node": "^22.20.5",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
     "esbuild": "^0.21.5",
     "prettier": "^3.9.10",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "typescript": "^5.9.3",
     "vite": "^5.4.21"
   },
