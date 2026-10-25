@@ -9,7 +9,15 @@
  *
  * Toda la geometría (ángulos, hit-test, reparto de etiquetas) son funciones puras exportadas.
  */
-import type { DrawContext, PreparedSeries, SeriesImpl, TooltipFormat, TooltipValue } from '../core/series';
+import {
+  dimmed,
+  dimOpacity,
+  type DrawContext,
+  type PreparedSeries,
+  type SeriesImpl,
+  type TooltipFormat,
+  type TooltipValue,
+} from '../core/series';
 import { attrs, esc } from '../core/dom';
 import { r2, polarPoint } from '../core/shapes';
 import { fitText } from '../core/axis';
@@ -286,6 +294,7 @@ function labels(ctx: DrawContext, g: Geometry): string {
     texts += `<text${attrs({
       x: r2(endX + dir * TEXT_PAD),
       y: r2(p.ly),
+      opacity: dimOpacity(ctx, p.index),
       fill: th.textMuted,
       'font-size': FONT,
       'text-anchor': dir > 0 ? 'start' : 'end',
@@ -343,11 +352,12 @@ function radial(defaultHole: number, label: string): SeriesImpl {
     items: ['categoría', 'categorías'],
     legendSymbol: 'square',
     label,
+    dimmable: true,
     draw(ctx) {
       const g = geometry(ctx, defaultHole);
       if (!(g.outer > 0)) return '';
       let s = '';
-      for (let i = 0; i < g.slices.length; i++) s += sliceMarkup(ctx, g, i, g.outer);
+      for (let i = 0; i < g.slices.length; i++) s += dimmed(ctx, i, sliceMarkup(ctx, g, i, g.outer));
       if (!s) {
         // Todo en cero (inicio de la animación o todo oculto): anillo vacío del color de la rejilla.
         const d = g.inner > 0 ? slicePath(g.cx, g.cy, g.inner, g.outer, 0, TAU) : '';

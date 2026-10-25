@@ -42,7 +42,14 @@
  *
  * Toda la geometría (jerarquía, ángulos, hit-test, etiquetas, colores) son funciones puras.
  */
-import type { DrawContext, PreparedSeries, SeriesImpl, TooltipFormat, TooltipValue } from '../core/series';
+import {
+  DIM_OPACITY,
+  type DrawContext,
+  type PreparedSeries,
+  type SeriesImpl,
+  type TooltipFormat,
+  type TooltipValue,
+} from '../core/series';
 import type { SeriesOptions } from '../types';
 import type { Theme } from '../core/theme';
 import { MAX_COLORS } from '../core/theme';
@@ -51,7 +58,7 @@ import { mixOklab, parseColor, toHex } from '../core/color';
 import { polarPoint, r2 } from '../core/shapes';
 import { fitText } from '../core/axis';
 import { slicePath } from './pie';
-import { inkFor } from './treemap';
+import { inkFor } from '../core/color';
 
 /** Arranque arriba; en SVG la Y crece hacia abajo, así que sumar ángulo es ir en sentido horario. */
 const START = -Math.PI / 2;
@@ -516,13 +523,14 @@ function labelMarkup(d: Drawn, theme: Theme, id: number): string {
  * Segmentos de un grupo de hermanos, y lo que cuelga de cada uno: los diminutos seguidos van
  * juntos en una sola banda sin aire (los hermanos comparten color).
  */
-function siblingsMarkup(d: Drawn, theme: Theme, ids: readonly number[]): string {
+function siblingsMarkup(d: Drawn, theme: Theme, ids: readonly number[], lit?: readonly boolean[]): string {
   let s = '';
   let run: number[] = [];
+  const fade = (id: number, markup: string) => (lit && !lit[id] && markup ? `<g opacity="${DIM_OPACITY}">${markup}</g>` : markup);
   const flush = () => {
     if (!run.length) return;
     const arc = { ...d.g.arcs[run[0]], a1: d.g.arcs[run[run.length - 1]].a1 };
-    s += segment(d, theme, arc, d.colors[run[0]], 0);
+    s += fade(run[0], segment(d, theme, arc, d.colors[run[0]], 0));
     run = [];
   };
   for (const id of ids) {
@@ -531,11 +539,29 @@ function siblingsMarkup(d: Drawn, theme: Theme, ids: readonly number[]): string 
       continue;
     }
     flush();
-    s += segment(d, theme, d.g.arcs[id], d.colors[id]);
-    s += siblingsMarkup(d, theme, d.m.nodes[id].children);
+    s += fade(id, segment(d, theme, d.g.arcs[id], d.colors[id]));
+    s += siblingsMarkup(d, theme, d.m.nodes[id].children, lit);
   }
   flush();
   return s;
+}
+
+/**
+ * Nodos que se ven enteros con una selección: los que tienen alguna fila seleccionada en su rama
+ * (así la ruta hasta la raíz de lo seleccionado queda a la vista). null sin selección.
+ */
+function litNodes(ctx: DrawContext, m: SunModel): boolean[] | null {
+  const dim = ctx.isDimmed;
+  if (!dim || !m.nodes.some((n) => n.rows.some((r) => dim(r)))) return null;
+  const lit: boolean[] = new Array(m.nodes.length).fill(false);
+  const visit = (id: number): boolean => {
+    const node = m.nodes[id];
+    let on = node.rows.some((r) => !dim(r));
+    for (const c of node.children) on = visit(c) || on;
+    return (lit[id] = on);
+  };
+  m.roots.forEach(visit);
+  return lit;
 }
 
 /** Número del centro con su texto debajo: el total, o el nodo enfocado. */
@@ -578,19 +604,24 @@ export const sunburst: SeriesImpl = {
   label: 'sunburst',
   items: ['elemento', 'elementos'],
   texts: (o, x) => Object.fromEntries(levelFields(o, x).map((f, k) => [`level${k}`, f])),
+  dimmable: true,
   draw(ctx) {
     const d = drawnOf(ctx);
     const { g, m } = d;
     const th = ctx.theme;
     if (!(g.outer > 0)) return '';
-    let s = siblingsMarkup(d, th, m.roots);
+    const lit = litNodes(ctx, m) ?? undefined;
+    let s = siblingsMarkup(d, th, m.roots, lit);
     if (!s) {
       // Todo en cero (inicio de la animación, o nada que dibujar): el primer anillo vacío, del
       // color de la rejilla, y el total en cero: se ve que no hay datos, no un gráfico roto.
       const ring = slicePath(g.cx, g.cy, g.hole, m.depth ? g.hole + g.ring : g.outer, 0, TAU);
       s = ring ? `<path${attrs({ d: ring, fill: th.grid, 'fill-rule': 'evenodd' })}/>` : '';
     }
-    for (let id = 0; id < m.nodes.length; id++) s += labelMarkup(d, th, id);
+    for (let id = 0; id < m.nodes.length; id++) {
+      const label = labelMarkup(d, th, id);
+      s += lit && !lit[id] && label ? `<g opacity="${DIM_OPACITY}">${label}</g>` : label;
+    }
     return s + centerMarkup(ctx, g, g.total, CAPTION);
   },
   hit(ctx, px, py) {

@@ -24,7 +24,14 @@
  *
  * Toda la geometría (grafo, emparejamiento, layout, radios, etiquetas, hit-test) son funciones puras.
  */
-import type { DrawContext, PreparedSeries, SeriesImpl, TooltipFormat, TooltipValue } from '../core/series';
+import {
+  DIM_OPACITY,
+  type DrawContext,
+  type PreparedSeries,
+  type SeriesImpl,
+  type TooltipFormat,
+  type TooltipValue,
+} from '../core/series';
 import { attrs, esc } from '../core/dom';
 import { r2 } from '../core/shapes';
 import { fitText } from '../core/axis';
@@ -828,6 +835,7 @@ export const network: SeriesImpl = {
   legendSymbol: 'dot',
   label: 'red',
   items: ['vínculo', 'vínculos'],
+  dimmable: true,
   texts: (o, x) => ({ from: x, to: o.to, group: o.group }),
   draw(ctx) {
     if (!(ctx.width > 0 && ctx.height > 0)) return '';
@@ -837,11 +845,23 @@ export const network: SeriesImpl = {
     const topLink = Math.max(0, ...m.links.map((l) => l.weight));
     const alpha = LINK_ALPHA[ctx.theme.name];
     let s = legendMarkup(ctx, g.legend);
-    m.links.forEach((l, j) => (s += lineMarkup(g, l, linkWidth(cur.link[j], topLink, m.weighted), ctx.theme.textMuted, alpha)));
+    // Con una selección: un vínculo se ve si alguna de sus filas está en ella, y un nodo si su fila
+    // lo está o lo toca un vínculo que se ve.
+    const dim = ctx.isDimmed;
+    const linkLit = m.links.map((l) => !dim || l.rows.some((row) => !dim(row)));
+    const nodeLit = m.names.map((_, v) => !dim || (m.nodeRow[v] >= 0 && !dim(m.nodeRow[v])));
+    m.links.forEach((l, j) => {
+      if (linkLit[j]) nodeLit[l.source] = nodeLit[l.target] = true;
+    });
+    const fade = (on: boolean, markup: string) => (on || !markup ? markup : `<g opacity="${DIM_OPACITY}">${markup}</g>`);
+    m.links.forEach(
+      (l, j) =>
+        (s += fade(linkLit[j], lineMarkup(g, l, linkWidth(cur.link[j], topLink, m.weighted), ctx.theme.textMuted, alpha))),
+    );
     const r = radii(m, g, cur.degree);
     // Los grandes primero: los chicos quedan encima y se pueden apuntar.
     const byArea = m.names.map((_, v) => v).sort((a, b) => g.r[b] - g.r[a] || a - b);
-    for (const v of byArea) s += nodeMarkup(ctx, m, g, v, r[v]);
+    for (const v of byArea) s += fade(nodeLit[v], nodeMarkup(ctx, m, g, v, r[v]));
     return s + labelsMarkup(ctx, labelsOf(ctx, m, g));
   },
   hit(ctx, px, py) {

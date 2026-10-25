@@ -34,7 +34,14 @@
  *
  * Toda la geometría (modelo, cuerpos, espiral, colocación, colores, hit-test) son funciones puras.
  */
-import type { DrawContext, PreparedSeries, SeriesImpl, TooltipFormat, TooltipValue } from '../core/series';
+import {
+  dimmed,
+  type DrawContext,
+  type PreparedSeries,
+  type SeriesImpl,
+  type TooltipFormat,
+  type TooltipValue,
+} from '../core/series';
 import type { Theme } from '../core/theme';
 import { MAX_COLORS } from '../core/theme';
 import { attrs, esc } from '../core/dom';
@@ -686,6 +693,7 @@ export const wordcloud: SeriesImpl = {
   legendSymbol: 'square',
   label: 'nube',
   items: ['palabra', 'palabras'],
+  dimmable: true,
   texts: (o, x) => ({ word: x, group: o.group }),
   draw(ctx) {
     if (!(ctx.width > 0 && ctx.height > 0)) return '';
@@ -695,7 +703,11 @@ export const wordcloud: SeriesImpl = {
     const n = m.words.length;
     let s = legendMarkup(ctx, g.legend);
     for (const p of g.placed) {
-      if (p) s += wordMarkup(p, inks[p.word], appearance(progress(ctx, m.words[p.word]), p.word, n));
+      if (!p) continue;
+      const word = wordMarkup(p, inks[p.word], appearance(progress(ctx, m.words[p.word]), p.word, n));
+      // Una palabra que suma varias filas se atenúa solo si ninguna está en la selección.
+      const rows = m.words[p.word].rows;
+      s += rows.every((r) => ctx.isDimmed?.(r)) ? dimmed(ctx, rows[0], word) : word;
     }
     return s;
   },

@@ -6,7 +6,14 @@
  * que baja es rellena, siempre del color de su serie. En OHLC, las marcas a la izquierda
  * (apertura) y a la derecha (cierre) cuentan lo mismo.
  */
-import type { DrawContext, PreparedSeries, SeriesImpl, TooltipFormat, TooltipValue } from '../core/series';
+import {
+  paintDimmed,
+  type DrawContext,
+  type PreparedSeries,
+  type SeriesImpl,
+  type TooltipFormat,
+  type TooltipValue,
+} from '../core/series';
 import { attrs } from '../core/dom';
 import { r2 } from '../core/shapes';
 
@@ -27,10 +34,11 @@ interface Candle {
 }
 
 /** Posiciones en px de cada vela; se saltan las que tienen algún dato vacío. */
-function candles(ctx: DrawContext): Candle[] {
+function candles(ctx: DrawContext, include: (i: number) => boolean = () => true): Candle[] {
   const { cols, y1 } = ctx.frame;
   const out: Candle[] = [];
   for (let i = 0; i < ctx.n; i++) {
+    if (!include(i)) continue;
     const v = [cols.open[i], cols.high[i], cols.low[i], y1[i]];
     if (!v.every(isFinite)) continue;
     const [open, high, low, close] = v.map((d) => ctx.y.map(d));
@@ -70,29 +78,35 @@ export const candlestick: SeriesImpl = {
   label: 'velas',
   columns: fields,
   valueColumns: ['open', 'high', 'low'],
+  dimmable: true,
   draw(ctx) {
-    const w = width(ctx);
-    let wicks = '';
-    let filled = '';
-    let hollow = '';
-    for (const k of candles(ctx)) {
-      const top = Math.min(k.open, k.close);
-      const bottom = Math.max(k.open, k.close);
-      const x = r2(k.c);
-      // Mecha en dos tramos, sin cruzar el cuerpo (que puede ser hueco).
-      wicks += `M${x},${r2(Math.min(k.high, k.low))}V${r2(top)}M${x},${r2(bottom)}V${r2(Math.max(k.high, k.low))}`;
-      const body = `M${r2(k.c - w / 2)},${r2(top)}h${r2(w)}v${r2(Math.max(1, bottom - top))}h${r2(-w)}Z`;
-      if (k.up) hollow += body;
-      else filled += body;
-    }
-    return (
-      `<path${attrs({ d: wicks, stroke: ctx.color, 'stroke-width': 1, fill: 'none' })}/>` +
-      `<path${attrs({ d: filled, fill: ctx.color })}/>` +
-      `<path${attrs({ d: hollow, fill: ctx.theme.surface, stroke: ctx.color, 'stroke-width': STROKE })}/>`
-    );
+    return paintDimmed(ctx, (include) => candleMarkup(ctx, include));
   },
   tooltip: ohlcTooltip,
 };
+
+/** Velas de los índices incluidos: mechas, cuerpos rellenos (bajan) y huecos (suben). */
+function candleMarkup(ctx: DrawContext, include: (i: number) => boolean): string {
+  const w = width(ctx);
+  let wicks = '';
+  let filled = '';
+  let hollow = '';
+  for (const k of candles(ctx, include)) {
+    const top = Math.min(k.open, k.close);
+    const bottom = Math.max(k.open, k.close);
+    const x = r2(k.c);
+    // Mecha en dos tramos, sin cruzar el cuerpo (que puede ser hueco).
+    wicks += `M${x},${r2(Math.min(k.high, k.low))}V${r2(top)}M${x},${r2(bottom)}V${r2(Math.max(k.high, k.low))}`;
+    const body = `M${r2(k.c - w / 2)},${r2(top)}h${r2(w)}v${r2(Math.max(1, bottom - top))}h${r2(-w)}Z`;
+    if (k.up) hollow += body;
+    else filled += body;
+  }
+  return (
+    `<path${attrs({ d: wicks, stroke: ctx.color, 'stroke-width': 1, fill: 'none' })}/>` +
+    `<path${attrs({ d: filled, fill: ctx.color })}/>` +
+    `<path${attrs({ d: hollow, fill: ctx.theme.surface, stroke: ctx.color, 'stroke-width': STROKE })}/>`
+  );
+}
 
 export const ohlc: SeriesImpl = {
   band: true,
@@ -101,14 +115,17 @@ export const ohlc: SeriesImpl = {
   label: 'barras OHLC',
   columns: fields,
   valueColumns: ['open', 'high', 'low'],
+  dimmable: true,
   draw(ctx) {
     const tick = width(ctx) / 2;
-    let d = '';
-    for (const k of candles(ctx)) {
-      const x = r2(k.c);
-      d += `M${x},${r2(k.high)}V${r2(k.low)}M${r2(k.c - tick)},${r2(k.open)}H${x}M${x},${r2(k.close)}H${r2(k.c + tick)}`;
-    }
-    return `<path${attrs({ d, stroke: ctx.color, 'stroke-width': STROKE, fill: 'none', 'stroke-linecap': 'butt' })}/>`;
+    return paintDimmed(ctx, (include) => {
+      let d = '';
+      for (const k of candles(ctx, include)) {
+        const x = r2(k.c);
+        d += `M${x},${r2(k.high)}V${r2(k.low)}M${r2(k.c - tick)},${r2(k.open)}H${x}M${x},${r2(k.close)}H${r2(k.c + tick)}`;
+      }
+      return `<path${attrs({ d, stroke: ctx.color, 'stroke-width': STROKE, fill: 'none', 'stroke-linecap': 'butt' })}/>`;
+    });
   },
   tooltip: ohlcTooltip,
 };

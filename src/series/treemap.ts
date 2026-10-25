@@ -12,11 +12,17 @@
  *
  * Toda la geometría (squarify, bloques, contraste, ajuste de etiquetas) son funciones puras.
  */
-import type { DrawContext, PreparedSeries, SeriesImpl, TooltipFormat, TooltipValue } from '../core/series';
-import type { Theme } from '../core/theme';
+import {
+  dimOpacity,
+  type DrawContext,
+  type PreparedSeries,
+  type SeriesImpl,
+  type TooltipFormat,
+  type TooltipValue,
+} from '../core/series';
 import { MAX_COLORS } from '../core/theme';
 import { attrs, esc } from '../core/dom';
-import { parseColor, textOn } from '../core/color';
+import { inkFor } from '../core/color';
 import { r2 } from '../core/shapes';
 import { fitText } from '../core/axis';
 
@@ -265,14 +271,8 @@ export function hitCell(cells: readonly (Rect | null)[], px: number, py: number)
 
 // ------------------------------------------------------------ Contraste
 
-/**
- * Tinta para escribir sobre un relleno: el texto o la superficie del tema (siempre uno oscuro y
- * otro claro), la de mayor contraste. Con un color que no se puede leer, el texto del tema.
- */
-export function inkFor(fill: string, theme: Pick<Theme, 'text' | 'surface'>): string {
-  // Si ni el texto ni la superficie del tema llegan a 4,5:1, negro o blanco puros.
-  return textOn(parseColor(fill), [theme.text, theme.surface, '#000000', '#ffffff']);
-}
+/** La tinta sobre un relleno vive en core/color.ts; se reexporta para los tipos que la tomaban de aquí. */
+export { inkFor };
 
 // ------------------------------------------------------------ Etiquetas
 
@@ -336,11 +336,11 @@ function fillOf(ctx: DrawContext, groups: string[] | null, slots: Map<string, nu
   return groupColor(slots.get(groups[i] ?? '') ?? -1, ctx.theme.palette, ctx.theme.other);
 }
 
-function text(x: number, y: number, s: string, fill: string, extra: Record<string, string | number> = {}): string {
+function text(x: number, y: number, s: string, fill: string, extra: Record<string, string | number | undefined> = {}): string {
   return `<text${attrs({ x: r2(x), y: r2(y), fill, 'font-size': FONT, 'dominant-baseline': 'central', ...extra })}>${esc(s)}</text>`;
 }
 
-function rect(r: Rect, extra: Record<string, string | number>): string {
+function rect(r: Rect, extra: Record<string, string | number | undefined>): string {
   return `<rect${attrs({ x: r2(r.x), y: r2(r.y), width: r2(r.w), height: r2(r.h), rx: Math.min(RADIUS, r.w / 2, r.h / 2), ...extra })}/>`;
 }
 
@@ -361,6 +361,7 @@ export const treemap: SeriesImpl = {
     const groups = groupsOf(ps);
     return groups ? `${groupName(groups[i] ?? '')} › ${x}` : x;
   },
+  dimmable: true,
   draw(ctx) {
     const L = layoutOf(ctx);
     const ps = ctx.frame.ps;
@@ -374,7 +375,8 @@ export const treemap: SeriesImpl = {
       const t = L.tiles[i];
       if (!t || t.w < 0.5 || t.h < 0.5) continue;
       const fill = fillOf(ctx, groups, slots, i);
-      shapes += rect(t, { fill });
+      const opacity = dimOpacity(ctx, i);
+      shapes += rect(t, { fill, opacity });
       if (!showLabels) continue;
       // Textos con el valor final, no el animado: no tiemblan mientras el rectángulo cambia.
       const v = ps.values[i];
@@ -382,8 +384,9 @@ export const treemap: SeriesImpl = {
       if (!fit) continue;
       const ink = inkFor(fill, th);
       const top = t.y + PAD + LINE / 2;
-      labels += text(t.x + PAD, top, fit.name, ink, { 'font-weight': 500 });
-      if (fit.value) labels += text(t.x + PAD, top + LINE + LINE_GAP, fit.value, ink, { 'font-variant-numeric': 'tabular-nums' });
+      labels += text(t.x + PAD, top, fit.name, ink, { 'font-weight': 500, opacity });
+      if (fit.value)
+        labels += text(t.x + PAD, top + LINE + LINE_GAP, fit.value, ink, { 'font-variant-numeric': 'tabular-nums', opacity });
     }
     // Franjas de grupo sobre la superficie: texto principal y total en secundario, como un título.
     if (showLabels && groups) {

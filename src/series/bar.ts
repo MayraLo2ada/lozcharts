@@ -3,7 +3,7 @@
  * Máximo 24 px de grosor, punta de datos redondeada 4 px, base recta y 2 px de
  * separación (espacio, no borde) entre barras vecinas y entre segmentos apilados.
  */
-import type { DrawContext, SeriesImpl } from '../core/series';
+import { paintDimmed, type DrawContext, type SeriesImpl } from '../core/series';
 import { barPath } from '../core/shapes';
 import { attrs } from '../core/dom';
 
@@ -30,21 +30,25 @@ export const bar: SeriesImpl = {
   layer: 0,
   legendSymbol: 'square',
   label: 'barras',
+  dimmable: true,
   draw(ctx) {
     const { frame, x, y } = ctx;
     const { width, offset } = geometry(ctx);
-    let d = '';
-    for (let i = 0; i < ctx.n; i++) {
-      const v0 = frame.y0[i];
-      const v1 = frame.y1[i];
-      if (!isFinite(v0) || !isFinite(v1) || v0 === v1) continue;
-      const end = y.map(v1);
-      const dir = Math.sign(end - y.map(v0));
-      // Un segmento apilado sobre otro deja 2 px de aire en su base.
-      const base = y.map(v0) + (v0 !== 0 ? dir * GAP : 0);
-      if ((end - base) * dir <= 0) continue;
-      d += barPath(x.at(i) + offset, width, base, end, RADIUS, frame.outer[i]);
-    }
-    return d ? `<path${attrs({ d, fill: ctx.color })}/>` : '';
+    return paintDimmed(ctx, (include) => {
+      let d = '';
+      for (let i = 0; i < ctx.n; i++) {
+        if (!include(i)) continue;
+        const v0 = frame.y0[i];
+        const v1 = frame.y1[i];
+        if (!isFinite(v0) || !isFinite(v1) || v0 === v1) continue;
+        const end = y.map(v1);
+        const dir = Math.sign(end - y.map(v0));
+        // Un segmento apilado sobre otro deja 2 px de aire en su base.
+        const base = y.map(v0) + (v0 !== 0 ? dir * GAP : 0);
+        if ((end - base) * dir <= 0) continue;
+        d += barPath(x.at(i) + offset, width, base, end, RADIUS, frame.outer[i]);
+      }
+      return d ? `<path${attrs({ d, fill: ctx.color })}/>` : '';
+    });
   },
 };

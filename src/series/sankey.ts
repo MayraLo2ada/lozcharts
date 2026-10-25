@@ -17,7 +17,14 @@
  *
  * Toda la geometría (grafo, columnas, orden, layout, cintas, hit-test) son funciones puras.
  */
-import type { DrawContext, PreparedSeries, SeriesImpl, TooltipFormat, TooltipValue } from '../core/series';
+import {
+  dimmed,
+  type DrawContext,
+  type PreparedSeries,
+  type SeriesImpl,
+  type TooltipFormat,
+  type TooltipValue,
+} from '../core/series';
 import { attrs, esc } from '../core/dom';
 import { r2 } from '../core/shapes';
 import { fitText } from '../core/axis';
@@ -719,13 +726,15 @@ export const sankey: SeriesImpl = {
   legendSymbol: 'square',
   label: 'diagrama de flujo',
   items: ['flujo', 'flujos'],
+  dimmable: true,
   texts: (o, x) => ({ to: o.to, from: x }),
   draw(ctx) {
     const { m, g } = geometryOf(ctx);
     if (!m.links.length) return '';
     const alpha = LINK_ALPHA[ctx.theme.name];
     let s = '';
-    for (const r of g.ribbons) s += ribbonMarkup(ctx, m, r, alpha);
+    // Con una selección se atenúan los flujos de fuera; los nodos siguen dando la estructura.
+    for (const r of g.ribbons) s += dimmed(ctx, r.index, ribbonMarkup(ctx, m, r, alpha));
     for (let v = 0; v < m.names.length; v++) s += nodeMarkup(ctx, m, g, v);
     return s + labelsMarkup(ctx, labelsOf(ctx, m));
   },

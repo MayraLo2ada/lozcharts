@@ -13,7 +13,7 @@
  * - 'mapbubble': el mapa en gris y un círculo por fila, en su latitud y longitud (o en el centro
  *   del país si no las trae), con el área proporcional al valor.
  */
-import type { DrawContext, PreparedSeries, SeriesImpl, TooltipFormat } from '../core/series';
+import { dimOpacity, type DrawContext, type PreparedSeries, type SeriesImpl, type TooltipFormat } from '../core/series';
 import { attrs, esc } from '../core/dom';
 import {
   contains,
@@ -268,11 +268,15 @@ export const choropleth: SeriesImpl = {
   label: 'mapa coroplético',
   legendSymbol: 'square',
   items: ['lugar', 'lugares'],
+  dimmable: true,
   draw(ctx) {
     const S = setup(ctx, true);
     if (!S) return '';
     const domain = colorDomain(ctx.frame.ps.values);
     const paints = placePaints(ctx, S);
+    // La fila de cada forma, para atenuar los lugares fuera de la selección.
+    const rowOf = new Map<number, number>();
+    S.place.forEach((k, i) => k >= 0 && rowOf.set(k, i));
     let s = sphereMarkup(S, ctx);
     S.shapes.forEach((sh, k) => {
       if (!sh.d) return;
@@ -281,7 +285,9 @@ export const choropleth: SeriesImpl = {
         s += basePath(sh.d, ctx);
         return;
       }
-      s += `<path${attrs({ d: sh.d, fill: c.fill, 'fill-opacity': c.opacity, stroke: ctx.theme.surface, 'stroke-width': 0.5, 'stroke-linejoin': 'round' })}/>`;
+      const i = rowOf.get(k);
+      const opacity = i === undefined ? undefined : dimOpacity(ctx, i);
+      s += `<path${attrs({ d: sh.d, fill: c.fill, 'fill-opacity': c.opacity, opacity, stroke: ctx.theme.surface, 'stroke-width': 0.5, 'stroke-linejoin': 'round' })}/>`;
     });
     return s + (domain && showScale(ctx) ? legendMarkup(ctx, domain, S.plotH) : '');
   },
@@ -344,6 +350,7 @@ export const mapbubble: SeriesImpl = {
   legendSymbol: 'dot',
   items: ['lugar', 'lugares'],
   columns: (o) => ({ lat: o.lat, lon: o.lon }),
+  dimmable: true,
   draw(ctx) {
     const S = setup(ctx, false);
     if (!S) return '';
@@ -355,7 +362,7 @@ export const mapbubble: SeriesImpl = {
       const c = centers[i];
       const r = bubbleRadius(ctx.frame.y1[i], max, largest);
       if (!c || !r) continue;
-      s += `<circle${attrs({ cx: c[0].toFixed(1), cy: c[1].toFixed(1), r: r.toFixed(2), fill: ctx.color, 'fill-opacity': 0.7, stroke: ctx.theme.surface, 'stroke-width': 1 })}/>`;
+      s += `<circle${attrs({ cx: c[0].toFixed(1), cy: c[1].toFixed(1), r: r.toFixed(2), fill: ctx.color, 'fill-opacity': 0.7, opacity: dimOpacity(ctx, i), stroke: ctx.theme.surface, 'stroke-width': 1 })}/>`;
     }
     return s;
   },

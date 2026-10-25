@@ -14,7 +14,14 @@
  *
  * Toda la geometría (rejilla, colores, contraste, hit-test, etiquetas) son funciones puras.
  */
-import type { DrawContext, PreparedSeries, SeriesImpl, TooltipFormat, TooltipValue } from '../core/series';
+import {
+  dimOpacity,
+  type DrawContext,
+  type PreparedSeries,
+  type SeriesImpl,
+  type TooltipFormat,
+  type TooltipValue,
+} from '../core/series';
 import { attrs, esc } from '../core/dom';
 import { r2 } from '../core/shapes';
 import { fitText } from '../core/axis';
@@ -351,7 +358,7 @@ function setup(ctx: DrawContext): Setup {
   };
 }
 
-function text(x: number, y: number, s: string, fill: string, extra: Record<string, string | number> = {}): string {
+function text(x: number, y: number, s: string, fill: string, extra: Record<string, string | number | undefined> = {}): string {
   return `<text${attrs({ x: r2(x), y: r2(y), fill, 'font-size': FONT, 'dominant-baseline': 'central', ...extra })}>${esc(s)}</text>`;
 }
 
@@ -389,6 +396,7 @@ export const heatmap: SeriesImpl = {
   label: 'mapa de calor',
   items: ['celda', 'celdas'],
   texts: (o, x) => ({ y: o.y, x }),
+  dimmable: true,
   draw(ctx) {
     const S = setup(ctx);
     const { grid, L } = S;
@@ -405,11 +413,12 @@ export const heatmap: SeriesImpl = {
         const p = i < 0 ? null : cellPaint(S, y1, i);
         if (!p) continue;
         const b = cellRect(L, c, r);
-        cells += rect(b.x, b.y, b.w, b.h, { rx: r2(radius), fill: p.fill, 'fill-opacity': p.opacity });
+        const opacity = dimOpacity(ctx, i);
+        cells += rect(b.x, b.y, b.w, b.h, { rx: r2(radius), fill: p.fill, 'fill-opacity': p.opacity, opacity });
         const v = S.values?.[i];
         if (v) {
           const fill = textOn(p.rgb, [th.text, th.surface, '#000000', '#ffffff']);
-          labels += text(b.x + b.w / 2, b.y + b.h / 2, v, fill, { 'text-anchor': 'middle' });
+          labels += text(b.x + b.w / 2, b.y + b.h / 2, v, fill, { 'text-anchor': 'middle', opacity });
         }
       }
     }

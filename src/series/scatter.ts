@@ -3,7 +3,7 @@
  * plano (no hay crosshair). Los puntos llevan un anillo de 2 px del color de la superficie
  * para separarse cuando se tocan.
  */
-import type { DrawContext, SeriesImpl } from '../core/series';
+import { dimOpacity, type DrawContext, type SeriesImpl } from '../core/series';
 import { attrs } from '../core/dom';
 
 const DOT_RADIUS = 4;
@@ -14,10 +14,11 @@ const BUBBLE_MAX = 32;
 const BUBBLE_MIN = 2;
 
 /** Círculo con anillo exterior: el trazo se pinta debajo del relleno (paint-order). */
-function dot(ctx: DrawContext, i: number, r: number, opacity?: number): string {
+function dot(ctx: DrawContext, i: number, r: number, opacity?: number, dim?: number): string {
   const v = ctx.frame.y1[i];
   if (!isFinite(v) || !(r > 0)) return '';
   return `<circle${attrs({
+    opacity: dim,
     cx: ctx.x.at(i).toFixed(2),
     cy: ctx.y.map(v).toFixed(2),
     r: r.toFixed(2),
@@ -34,9 +35,10 @@ export const scatter: SeriesImpl = {
   legendSymbol: 'dot',
   label: 'dispersión',
   pointer: 'nearest',
+  dimmable: true,
   draw(ctx) {
     let s = '';
-    for (let i = 0; i < ctx.n; i++) s += dot(ctx, i, DOT_RADIUS);
+    for (let i = 0; i < ctx.n; i++) s += dot(ctx, i, DOT_RADIUS, undefined, dimOpacity(ctx, i));
     return s;
   },
   hover: (ctx, i) => dot(ctx, i, DOT_RADIUS + 2),
@@ -56,11 +58,12 @@ export const bubble: SeriesImpl = {
   label: 'burbujas',
   pointer: 'nearest',
   columns: (o) => ({ size: o.size }),
+  dimmable: true,
   draw(ctx) {
     const radius = bubbleRadius(ctx);
     // Las grandes primero, para que las chicas queden encima y se puedan señalar.
     const order = [...Array(ctx.n).keys()].sort((a, b) => radius(b) - radius(a));
-    return order.map((i) => dot(ctx, i, radius(i), 0.75)).join('');
+    return order.map((i) => dot(ctx, i, radius(i), 0.75, dimOpacity(ctx, i))).join('');
   },
   hover: (ctx, i) => dot(ctx, i, bubbleRadius(ctx)(i) + 2),
   tooltip(ps, i, format) {

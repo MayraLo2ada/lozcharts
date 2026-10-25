@@ -23,7 +23,14 @@
  *
  * Toda la geometría (rangos, tonos, filas, escala, etiquetas y hit-test) son funciones puras.
  */
-import type { DrawContext, PreparedSeries, SeriesImpl, TooltipFormat, TooltipValue } from '../core/series';
+import {
+  dimmed,
+  type DrawContext,
+  type PreparedSeries,
+  type SeriesImpl,
+  type TooltipFormat,
+  type TooltipValue,
+} from '../core/series';
 import type { Theme } from '../core/theme';
 import { attrs, esc } from '../core/dom';
 import { r2 } from '../core/shapes';
@@ -407,12 +414,13 @@ export const bullet: SeriesImpl = {
   // La meta y los rangos también deben caber en la escala, aunque ningún valor los alcance.
   valueColumns: ['target'],
   domainValues: (o) => cleanRanges(o.ranges),
+  dimmable: true,
   draw(ctx) {
     if (!ctx.n) return '';
     const L = layoutOf(ctx);
     const { ranges, shades } = rangesOf(ctx);
     let s = axisMarkup(ctx, L);
-    for (let i = 0; i < ctx.n; i++) s += rowMarkup(ctx, L, i, ranges, shades);
+    for (let i = 0; i < ctx.n; i++) s += dimmed(ctx, i, rowMarkup(ctx, L, i, ranges, shades));
     return s;
   },
   hit(ctx, _px, py) {

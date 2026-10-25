@@ -10,7 +10,16 @@
  * una columna propia, a la altura del borde entre dos filas, la conversión de un paso al
  * siguiente ("↓ 44 %"): así no se confunde con el porcentaje de la fila de arriba.
  */
-import type { DrawContext, PreparedSeries, SeriesImpl, TooltipFormat, TooltipValue } from '../core/series';
+import {
+  dimmed,
+  dimOpacity,
+  DIM_OPACITY,
+  type DrawContext,
+  type PreparedSeries,
+  type SeriesImpl,
+  type TooltipFormat,
+  type TooltipValue,
+} from '../core/series';
 import { attrs, esc } from '../core/dom';
 import { r2 } from '../core/shapes';
 import { fitText } from '../core/axis';
@@ -211,35 +220,44 @@ export const funnel: SeriesImpl = {
   legendSymbol: 'square',
   label: 'embudo',
   items: ['etapa', 'etapas'],
+  dimmable: true,
   draw(ctx) {
     const { L, texts } = layoutOf(ctx);
     const th = ctx.theme;
     const max = stageMax(ctx.frame.ps.values);
     let d = '';
+    let faded = '';
     let labels = '';
     for (let i = 0; i < ctx.n; i++) {
       const y = L.top + i * L.rowH;
+      const dim = dimOpacity(ctx, i);
+      const row = labels.length;
       const mid = y + (L.rowH - GAP) / 2;
       const w = widthAt(ctx, L, i, max);
-      d += roundedBar(L.center - w / 2, y, w, L.rowH - GAP, RADIUS);
+      if (dim) faded += roundedBar(L.center - w / 2, y, w, L.rowH - GAP, RADIUS);
+      else d += roundedBar(L.center - w / 2, y, w, L.rowH - GAP, RADIUS);
       if (!texts || !L.showLabels) continue;
       // Si ni una letra cabe, mejor sin nombre que un "…" suelto.
       const fitted = fitText(texts.names[i], L.nameW, ctx.measure);
       const name = fitted === '…' ? '' : fitted;
       if (name) labels += text(0, mid, name, th.textMuted);
       const value = texts.values[i];
-      if (!value) continue;
-      labels += text(L.valueEnd, mid, value, th.text, { 'text-anchor': 'end' });
-      if (L.showPercent && texts.shares[i]) {
-        labels += text(L.valueEnd + INNER, mid, texts.shares[i], th.textMuted);
+      if (value) {
+        labels += text(L.valueEnd, mid, value, th.text, { 'text-anchor': 'end' });
+        if (L.showPercent && texts.shares[i]) {
+          labels += text(L.valueEnd + INNER, mid, texts.shares[i], th.textMuted);
+        }
+        // La conversión, en su columna, a la altura del borde entre esta fila y la anterior.
+        if (L.showConversion && texts.steps[i]) {
+          labels += text(L.conversionX, y - GAP / 2, texts.steps[i], th.textMuted, { 'font-size': SMALL_FONT });
+        }
       }
-      // La conversión, en su columna, a la altura del borde entre esta fila y la anterior.
-      if (L.showConversion && texts.steps[i]) {
-        labels += text(L.conversionX, y - GAP / 2, texts.steps[i], th.textMuted, { 'font-size': SMALL_FONT });
-      }
+      // Los textos de una etapa atenuada se atenúan con ella.
+      if (dim) labels = labels.slice(0, row) + dimmed(ctx, i, labels.slice(row));
     }
     const bars = d ? `<path${attrs({ d, fill: ctx.color })}/>` : '';
-    return bars + labels;
+    const dims = faded ? `<path${attrs({ d: faded, fill: ctx.color, opacity: DIM_OPACITY })}/>` : '';
+    return dims + bars + labels;
   },
   hit(ctx, _px, py) {
     const { L } = layoutOf(ctx);

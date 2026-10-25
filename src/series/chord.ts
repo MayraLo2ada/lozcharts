@@ -28,7 +28,14 @@
  *
  * Toda la geometría (grafo, arcos, extremos, cintas, etiquetas, hit-test) son funciones puras.
  */
-import type { DrawContext, PreparedSeries, SeriesImpl, TooltipFormat, TooltipValue } from '../core/series';
+import {
+  dimmed,
+  type DrawContext,
+  type PreparedSeries,
+  type SeriesImpl,
+  type TooltipFormat,
+  type TooltipValue,
+} from '../core/series';
 import { attrs, esc } from '../core/dom';
 import { r2, polarPoint } from '../core/shapes';
 import { fitText } from '../core/axis';
@@ -654,6 +661,7 @@ export const chord: SeriesImpl = {
   legendSymbol: 'square',
   label: 'diagrama de cuerdas',
   items: ['flujo', 'flujos'],
+  dimmable: true,
   texts: (o, x) => ({ to: o.to, from: x }),
   draw(ctx) {
     if (!(ctx.width > 0 && ctx.height > 0)) return '';
@@ -661,7 +669,8 @@ export const chord: SeriesImpl = {
     if (!m.links.length) return '';
     const alpha = LINK_ALPHA[ctx.theme.name];
     let s = '';
-    for (const r of g.ribbons) s += ribbonMarkup(ctx, m, g, r, alpha);
+    // Con una selección se atenúan los flujos de fuera; los arcos siguen dando la estructura.
+    for (const r of g.ribbons) s += dimmed(ctx, r.index, ribbonMarkup(ctx, m, g, r, alpha));
     for (let v = 0; v < m.names.length; v++) s += arcMarkup(ctx, m, g, v);
     return s + labelsMarkup(ctx, labels);
   },
