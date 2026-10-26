@@ -35,6 +35,7 @@ import {
 import { attrs, esc } from '../core/dom';
 import { r2 } from '../core/shapes';
 import { fitText } from '../core/axis';
+import { maxOf } from './common';
 
 /** Iteraciones del layout: tope fijo; con miles de nodos se reducen para acotar el costo. */
 const MAX_ITERATIONS = 300;
@@ -462,7 +463,7 @@ export function separate(
   passes = 4,
 ): void {
   const n = x.length;
-  const big = Math.max(0, ...r);
+  const big = maxOf(r, 0);
   const cell = Math.max(1, 2 * big + gap);
   for (let p = 0; p < passes; p++) {
     const grid = new Map<number, number[]>();
@@ -559,7 +560,7 @@ export function legendLayout(
     items.push({ slot: e.slot, name, x, y: row * LEGEND_ROW + LEGEND_ROW / 2 });
     x += w + LEGEND_GAP;
   }
-  const rows = items.length ? Math.max(...items.map((i) => i.y)) / LEGEND_ROW + 0.5 : 0;
+  const rows = items.length ? maxOf(items.map((i) => i.y)) / LEGEND_ROW + 0.5 : 0;
   return { items, height: rows * LEGEND_ROW + (items.length ? 8 : 0) };
 }
 
@@ -588,7 +589,7 @@ export function layoutNetwork(
   const top = legend.height;
   const h = Math.max(0, height - top);
   const rMax = maxRadius(n, width, h);
-  const most = Math.max(0, ...m.degree);
+  const most = maxOf(m.degree, 0);
   const r = m.degree.map((d) => radiusOf(d, most, rMax));
   const { x, y } = forceLayout(n, m.links, width, h);
   fitPositions(x, y, width, h, rMax + NODE_GAP);
@@ -825,7 +826,7 @@ function legendMarkup(ctx: DrawContext, items: readonly LegendItem[]): string {
 
 /** Radios de este cuadro, sobre la escala final (el mayor posible no cambia al animar). */
 function radii(m: NetworkModel, g: NetworkGeometry, degree: readonly number[]): number[] {
-  const top = Math.max(0, ...m.degree);
+  const top = maxOf(m.degree, 0);
   return degree.map((d, v) => (m.degree[v] > 0 ? (d > 0 ? radiusOf(d, top, g.rMax) : 0) : R_MIN));
 }
 
@@ -842,7 +843,10 @@ export const network: SeriesImpl = {
     const { m, g } = geometryOf(ctx);
     if (!m.names.length) return '';
     const cur = currentWeights(ctx, m);
-    const topLink = Math.max(0, ...m.links.map((l) => l.weight));
+    const topLink = maxOf(
+      m.links.map((l) => l.weight),
+      0,
+    );
     const alpha = LINK_ALPHA[ctx.theme.name];
     let s = legendMarkup(ctx, g.legend);
     // Con una selección: un vínculo se ve si alguna de sus filas está en ella, y un nodo si su fila
@@ -879,7 +883,10 @@ export const network: SeriesImpl = {
     const v = m.rowNode[i];
     if (v < 0) return '';
     const th = ctx.theme;
-    const topLink = Math.max(0, ...m.links.map((l) => l.weight));
+    const topLink = maxOf(
+      m.links.map((l) => l.weight),
+      0,
+    );
     const color = colorOf(ctx, m, v);
     // Velo sobre el resto; encima, los vínculos del nodo en su color, sus vecinos y él mismo.
     let s = `<rect${attrs({ x: -2, y: -2, width: r2(ctx.width + 4), height: r2(ctx.height + 4), fill: th.surface, 'fill-opacity': VEIL_ALPHA })}/>`;

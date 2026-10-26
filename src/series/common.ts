@@ -58,3 +58,15 @@ export function isolatedDots(ctx: DrawContext, values: number[], idx?: readonly 
   }
   return s;
 }
+
+/**
+ * El mayor de una lista, empezando por `start`: como Math.max(start, ...lista), pero con un bucle.
+ * Esparcir una lista larga en los argumentos de una función revienta la pila de llamadas (un
+ * RangeError desde unas 65 000 filas en algunos navegadores); este recorrido no tiene tope.
+ * Lo que no es un número finito (un hueco) no cuenta.
+ */
+export function maxOf(values: Iterable<number>, start = -Infinity): number {
+  let m = start;
+  for (const v of values) if (isFinite(v) && v > m) m = v;
+  return m;
+}

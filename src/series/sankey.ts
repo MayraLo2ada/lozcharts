@@ -28,6 +28,7 @@ import {
 import { attrs, esc } from '../core/dom';
 import { r2 } from '../core/shapes';
 import { fitText } from '../core/axis';
+import { maxOf } from './common';
 
 /** Ancho de los nodos y su radio. */
 export const NODE_WIDTH = 12;
@@ -162,7 +163,7 @@ export function nodeColumns(nodeCount: number, links: readonly Link[]): number[]
       if (--indeg[w] === 0) queue.push(w);
     }
   }
-  const last = Math.max(0, ...depth);
+  const last = maxOf(depth, 0);
   return depth.map((d, v) => (outs[v].length === 0 && nodeCount > 1 ? last : d));
 }
 
@@ -226,7 +227,7 @@ export function orderNodes(
   columns: readonly number[],
   value: readonly number[],
 ): { order: number[][]; center: number[] } {
-  const count = nodeCount ? Math.max(...columns) + 1 : 0;
+  const count = nodeCount ? maxOf(columns) + 1 : 0;
   const order: number[][] = Array.from({ length: count }, () => []);
   for (let v = 0; v < nodeCount; v++) order[columns[v]].push(v);
   const ins: Link[][] = Array.from({ length: nodeCount }, () => []);
@@ -404,7 +405,10 @@ export function layoutSankey(
     return isFinite(v) && v > 0 ? v : 0;
   };
   const current = nodeValues(n, m.links, size).value;
-  const most = Math.max(0, ...m.order.map((c) => c.length));
+  const most = maxOf(
+    m.order.map((c) => c.length),
+    0,
+  );
   const gap = most > 1 ? Math.min(NODE_GAP, (height * GAP_SHARE) / (most - 1)) : 0;
   const scaleOf = (value: readonly number[]) => {
     let k = Infinity;

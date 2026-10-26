@@ -39,6 +39,7 @@ import {
   position,
   textOn,
 } from '../core/color';
+import { maxOf } from './common';
 
 /** Separación entre celdas vecinas (regla de 2 px entre rellenos). */
 const GAP = 2;
@@ -322,14 +323,17 @@ function setup(ctx: DrawContext): Setup {
   const legend = domain ? legendSpec(domain, ctx.format) : null;
   const colTexts = grid.first.map((i) => ctx.label(i));
   const colWidths = colTexts.map((t) => ctx.measure(t));
-  const rowLabel = Math.max(0, ...grid.rows.map((t) => ctx.measure(t)));
+  const rowLabel = maxOf(
+    grid.rows.map((t) => ctx.measure(t)),
+    0,
+  );
   const L = heatLayout({
     width: ctx.width,
     height: ctx.height,
     cols: grid.cols.length,
     rows: grid.rows.length,
     rowLabel,
-    colLabel: Math.max(0, ...colWidths),
+    colLabel: maxOf(colWidths, 0),
     legend: legend ? legendWidth(legend, ctx.measure) : 0,
   });
   // Si ni una letra cabe, mejor sin nombre que un "…" suelto.
@@ -340,7 +344,11 @@ function setup(ctx: DrawContext): Setup {
   let values: string[] | null = null;
   if (ps.options.labels !== false) {
     const exact = ps.values.map((v) => (isFinite(v) ? ctx.format(v) : ''));
-    const widest = (list: string[]) => Math.max(0, ...list.map((s) => (s ? ctx.measure(s) : 0)));
+    const widest = (list: string[]) =>
+      maxOf(
+        list.map((s) => (s ? ctx.measure(s) : 0)),
+        0,
+      );
     const compact = exact.map((s, i) => (s ? ctx.compact(ps.values[i]) : ''));
     const mode = valueMode(L, widest(exact), widest(compact), grid.rows.length * grid.cols.length);
     if (mode === 'exact') values = exact;

@@ -21,6 +21,7 @@ import {
 import { attrs, esc } from '../core/dom';
 import { r2, polarPoint } from '../core/shapes';
 import { fitText } from '../core/axis';
+import { maxOf } from './common';
 
 /** Arranque arriba; en SVG la Y crece hacia abajo, así que sumar ángulo es ir en sentido horario. */
 const START = -Math.PI / 2;
@@ -234,7 +235,7 @@ function geometry(ctx: DrawContext, defaultHole: number): Geometry {
   }
   if (!names.length) return done(plain, null);
   const sampleW = ctx.measure(' ' + PERCENT_SAMPLE);
-  const longestName = Math.max(...names.map((s) => ctx.measure(s)));
+  const longestName = maxOf(names.map((s) => ctx.measure(s)));
   const longest = longestName + sampleW;
   // Lo que ocupa la guía más el texto a cada lado del pie.
   const reach = HOVER_OFFSET + ELBOW + RUN + TEXT_PAD;

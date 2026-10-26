@@ -49,6 +49,7 @@ import { fitText } from '../core/axis';
 import { parseTime, timeTickLabel } from '../core/format';
 import { chooseTimeInterval, timeTicks, type TimeUnit } from '../core/ticks';
 import { inkFor } from '../core/color';
+import { maxOf } from './common';
 
 /** Barras de hasta 24 px de alto (como todas las barras), en filas de hasta 34 px. */
 const BAR_MAX = 24;
@@ -560,7 +561,7 @@ export function layoutTimeline(
   locale = LOCALE,
 ): Geometry {
   const laneNames = m.grouped ? m.lanes.map((l) => l.name) : [];
-  const widest = Math.max(0, ...laneNames.map(measure));
+  const widest = maxOf(laneNames.map(measure), 0);
   const gutter = laneNames.length ? Math.ceil(Math.min(width * GUTTER_SHARE, 2 * PAD + SWATCH + SPACE + widest)) : 0;
   const left = gutter + INSET;
   const right = Math.max(left + 10, width - INSET);
@@ -595,7 +596,10 @@ export function layoutTimeline(
   const rowsOf = perLane.map((marks) => {
     const rows = packRows(marks);
     marks.forEach((mk, k) => (mk.row = rows[k]));
-    return Math.max(1, ...rows.map((r) => r + 1));
+    return maxOf(
+      rows.map((r) => r + 1),
+      1,
+    );
   });
   const totalRows = rowsOf.reduce((s, r) => s + r, 0);
   const baseline = Math.max(10, height - AXIS_H);

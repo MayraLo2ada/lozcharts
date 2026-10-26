@@ -41,6 +41,7 @@ import {
   type Domain,
   type Paint,
 } from '../core/color';
+import { maxOf } from './common';
 
 const FONT = 11;
 const LEGEND_BAR_H = 8;
@@ -342,7 +343,10 @@ function bubbleCenters(ctx: DrawContext, S: MapSetup): ([number, number] | null)
 }
 
 function bubbleScale(ctx: DrawContext, S: MapSetup) {
-  const max = Math.max(0, ...ctx.frame.ps.values.filter((v) => isFinite(v)));
+  const max = maxOf(
+    ctx.frame.ps.values.filter((v) => isFinite(v)),
+    0,
+  );
   const largest = Math.min(MAX_BUBBLE, Math.min(ctx.width, S.plotH) * BUBBLE_SHARE);
   return { max, largest, centers: bubbleCenters(ctx, S) };
 }

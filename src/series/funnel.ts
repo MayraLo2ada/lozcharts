@@ -23,6 +23,7 @@ import {
 import { attrs, esc } from '../core/dom';
 import { r2 } from '../core/shapes';
 import { fitText } from '../core/axis';
+import { maxOf } from './common';
 
 /** Separación entre barras vecinas (espacio, no borde). */
 const GAP = 2;
@@ -194,7 +195,11 @@ function stageTexts(ctx: DrawContext): StageTexts {
 function layoutOf(ctx: DrawContext): { L: FunnelLayout; texts: StageTexts | null } {
   if (ctx.frame.ps.options.labels === false) return { L: funnelLayout(ctx.width, ctx.height, ctx.n, null), texts: null };
   const texts = stageTexts(ctx);
-  const widest = (list: string[]) => Math.max(0, ...list.map((s) => (s ? ctx.measure(s) : 0)));
+  const widest = (list: string[]) =>
+    maxOf(
+      list.map((s) => (s ? ctx.measure(s) : 0)),
+      0,
+    );
   const widths: LabelWidths = {
     name: widest(texts.names),
     value: widest(texts.values),

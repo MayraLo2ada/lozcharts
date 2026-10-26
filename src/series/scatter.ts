@@ -5,6 +5,7 @@
  */
 import { dimOpacity, type DrawContext, type SeriesImpl } from '../core/series';
 import { attrs } from '../core/dom';
+import { maxOf } from './common';
 
 const DOT_RADIUS = 4;
 const RING = 2;
@@ -47,7 +48,7 @@ export const scatter: SeriesImpl = {
 /** El área del círculo, no su radio, es proporcional al valor: r = √(v / máx) · rMáx. */
 function bubbleRadius(ctx: DrawContext): (i: number) => number {
   const sizes = ctx.frame.cols.size;
-  const max = Math.max(0, ...ctx.frame.ps.columns.size.filter(isFinite));
+  const max = maxOf(ctx.frame.ps.columns.size, 0);
   const rMax = Math.min(BUBBLE_MAX, Math.min(ctx.width, ctx.height) * BUBBLE_SHARE);
   return (i) => (max > 0 && sizes[i] > 0 ? Math.max(BUBBLE_MIN, Math.sqrt(sizes[i] / max) * rMax) : 0);
 }

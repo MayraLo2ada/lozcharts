@@ -39,6 +39,7 @@ import {
 import { attrs, esc } from '../core/dom';
 import { r2, polarPoint } from '../core/shapes';
 import { fitText } from '../core/axis';
+import { maxOf } from './common';
 
 const TAU = 2 * Math.PI;
 /** Arranque arriba; en SVG la Y crece hacia abajo, así que sumar ángulo es ir en sentido horario. */
@@ -275,7 +276,7 @@ export function chordRadius(
 ): { outer: number; labels: boolean } {
   const base = Math.max(0, Math.min(width, height) / 2 - EDGE);
   if (!labels || !names.length) return { outer: base, labels: false };
-  const wanted = Math.min(MAX_LABEL, Math.max(0, ...names.map(measure)));
+  const wanted = Math.min(MAX_LABEL, maxOf(names.map(measure), 0));
   const vertical = height / 2 - PAD - LINE;
   const horizontal = width / 2 - PAD - wanted;
   const outer = Math.min(base, vertical, Math.max(horizontal, base * MIN_LABELED_SHARE));
