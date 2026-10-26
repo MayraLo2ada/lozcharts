@@ -38,7 +38,6 @@ export const bar: SeriesImpl = {
   includeZero: true,
   layer: 0,
   legendSymbol: 'square',
-  label: 'barras',
   dimmable: true,
   draw(ctx) {
     const { frame, x, y } = ctx;

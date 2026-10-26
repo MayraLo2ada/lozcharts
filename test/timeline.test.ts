@@ -4,7 +4,6 @@ import {
   AXIS_H,
   MARK_GAP,
   MILESTONE_R,
-  OTHERS,
   axisTicks,
   buildModel,
   diamondPath,
@@ -52,7 +51,7 @@ const cols = (rows: Row[]) => ({
 
 function model(rows: Row[], grouped = false) {
   const c = cols(rows);
-  return buildModel(c.start, c.end, grouped ? c.group : null);
+  return buildModel(c.start, c.end, grouped ? c.group : null, 8, 'es');
 }
 
 function series(rows: Row[], extra: Partial<PreparedSeries['options']> = {}): PreparedSeries {
@@ -68,6 +67,7 @@ function series(rows: Row[], extra: Partial<PreparedSeries['options']> = {}): Pr
     texts: c,
     stackKey: null,
     axis: 'left',
+    locale: 'es',
   };
 }
 
@@ -84,6 +84,7 @@ function context(ps: PreparedSeries, width = 800, height = 320, theme: Theme = L
     height,
     n,
     isHidden: () => false,
+    locale: 'es',
     label: (i) => ps.texts.start[i],
     measure,
     format: String,
@@ -92,7 +93,14 @@ function context(ps: PreparedSeries, width = 800, height = 320, theme: Theme = L
   };
 }
 
-const format: TooltipFormat = { value: String, number: String, percent: String, isHidden: () => false, difference: String };
+const format: TooltipFormat = {
+  value: String,
+  number: String,
+  percent: String,
+  isHidden: () => false,
+  difference: String,
+  locale: 'es',
+};
 
 const local = (y: number, m = 1, d = 1, h = 0, min = 0) => new Date(y, m - 1, d, h, min).getTime();
 
@@ -124,29 +132,29 @@ test('precisión: la unidad más fina que de verdad usan las fechas', () => {
 
 test('duración de calendario y en palabras', () => {
   assert.deepEqual(durationParts(local(2026, 3, 3), local(2026, 6, 15)), [0, 3, 12, 0, 0]);
-  assert.equal(durationText(local(2026, 3, 3), local(2026, 6, 15), 'day'), '3 meses y 12 días');
+  assert.equal(durationText(local(2026, 3, 3), local(2026, 6, 15), 'day', 'es'), '3 meses y 12 días');
   // Un mes de calendario, aunque febrero sea corto o cruce un cambio de horario.
-  assert.equal(durationText(local(2026, 1, 31), local(2026, 2, 28), 'day'), '1 mes');
-  assert.equal(durationText(local(2026, 3, 1), local(2026, 4, 1), 'day'), '1 mes');
-  assert.equal(durationText(local(1946), local(1952), 'year'), '6 años');
+  assert.equal(durationText(local(2026, 1, 31), local(2026, 2, 28), 'day', 'es'), '1 mes');
+  assert.equal(durationText(local(2026, 3, 1), local(2026, 4, 1), 'day', 'es'), '1 mes');
+  assert.equal(durationText(local(1946), local(1952), 'year', 'es'), '6 años');
   // Sin bajar de la precisión: con años no aparecen días sueltos.
-  assert.equal(durationText(local(1543), local(1687, 3, 5), 'year'), '144 años');
-  assert.equal(durationText(local(2026, 1, 1), local(2027, 3, 1), 'month'), '1 año y 2 meses');
-  assert.equal(durationText(local(2026, 11, 4, 9, 30), local(2026, 11, 4, 12), 'minute'), '2 horas y 30 minutos');
-  assert.equal(durationText(local(2026, 1, 1), local(2026, 1, 2), 'day'), '1 día');
+  assert.equal(durationText(local(1543), local(1687, 3, 5), 'year', 'es'), '144 años');
+  assert.equal(durationText(local(2026, 1, 1), local(2027, 3, 1), 'month', 'es'), '1 año y 2 meses');
+  assert.equal(durationText(local(2026, 11, 4, 9, 30), local(2026, 11, 4, 12), 'minute', 'es'), '2 horas y 30 minutos');
+  assert.equal(durationText(local(2026, 1, 1), local(2026, 1, 2), 'day', 'es'), '1 día');
   // Más corto que la precisión: se dice igual cuánto duró.
-  assert.equal(durationText(local(2026, 1, 1), local(2026, 1, 1, 3), 'day'), '3 horas');
+  assert.equal(durationText(local(2026, 1, 1), local(2026, 1, 1, 3), 'day', 'es'), '3 horas');
   assert.equal(durationText(local(2026, 1, 1), local(2026, 1, 1)), '');
   assert.equal(durationText(local(2026, 1, 2), local(2026, 1, 1)), '');
 });
 
 test('fechas escritas con la precisión de los datos, sin repetir el año', () => {
-  assert.equal(formatTime(local(1914), 'year'), '1914');
-  assert.equal(formatTime(local(2026, 3, 3), 'day'), '3 mar 2026');
-  assert.equal(formatRange(local(2026, 3, 3), local(2026, 6, 15), 'day'), '3 mar – 15 jun 2026');
-  assert.equal(formatRange(local(2025, 12, 1), local(2026, 2, 1), 'month'), 'dic 2025 – feb 2026');
-  assert.equal(formatRange(local(1946), local(1952), 'year'), '1946 – 1952');
-  assert.equal(formatRange(local(2026, 11, 4, 9), local(2026, 11, 4, 11, 30), 'minute'), '4 nov 2026, 09:00 – 11:30');
+  assert.equal(formatTime(local(1914), 'year', 'es'), '1914');
+  assert.equal(formatTime(local(2026, 3, 3), 'day', 'es'), '3 mar 2026');
+  assert.equal(formatRange(local(2026, 3, 3), local(2026, 6, 15), 'day', 'es'), '3 mar – 15 jun 2026');
+  assert.equal(formatRange(local(2025, 12, 1), local(2026, 2, 1), 'month', 'es'), 'dic 2025 – feb 2026');
+  assert.equal(formatRange(local(1946), local(1952), 'year', 'es'), '1946 – 1952');
+  assert.equal(formatRange(local(2026, 11, 4, 9), local(2026, 11, 4, 11, 30), 'minute', 'es'), '4 nov 2026, 09:00 – 11:30');
 });
 
 test('modelo: orden temporal, hitos, fin al revés, fin e inicio inválidos', () => {
@@ -188,9 +196,9 @@ test('carriles: en orden de aparición en el tiempo, sin ciclar; más de 8 van a
     ],
   );
   assert.equal(m.byRow.get(3)!.lane, 2);
-  const { lanes, laneOf } = laneSlots(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']);
+  const { lanes, laneOf } = laneSlots(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'], 8, 'es');
   assert.equal(lanes.length, 8);
-  assert.deepEqual(lanes[7], { name: OTHERS, slot: -1 });
+  assert.deepEqual(lanes[7], { name: 'Otros', slot: -1 });
   assert.deepEqual([laneOf.get('g'), laneOf.get('h'), laneOf.get('j')], [6, 7, 7]);
   // Con 8 justos, todos con color.
   assert.ok(laneSlots(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']).lanes.every((l, k) => l.slot === k));
@@ -291,7 +299,7 @@ test('layout: 150 tramos caben en el alto, aunque las barras se afinen', () => {
 
 test('eje: marcas de calendario según el rango, nunca más finas que los datos', () => {
   const ticks = (t0: number, t1: number, unit: Parameters<typeof axisTicks>[6], w = 800) =>
-    axisTicks(t0, t1, 0, w, 0, w, unit, measure).map((t) => t.label);
+    axisTicks(t0, t1, 0, w, 0, w, unit, measure, 'es').map((t) => t.label);
   // Siglos: cada 50 años.
   assert.deepEqual(ticks(local(1450), local(1930), 'year'), [
     '1450',
@@ -315,7 +323,7 @@ test('eje: marcas de calendario según el rango, nunca más finas que los datos'
   // Datos por año en un rango de tres años: sin meses.
   assert.deepEqual(ticks(local(2024), local(2027), 'year'), ['2024', '2025', '2026', '2027']);
   // Ninguna etiqueta se sale ni choca con la vecina.
-  const t = axisTicks(local(2026), local(2026, 12, 31), 0, 300, 0, 300, 'day', measure);
+  const t = axisTicks(local(2026), local(2026, 12, 31), 0, 300, 0, 300, 'day', measure, 'es');
   for (let k = 1; k < t.length; k++) {
     const right = (x: (typeof t)[0]) =>
       x.anchor === 'start' ? x.x + measure(x.label) : x.anchor === 'end' ? x.x : x.x + measure(x.label) / 2;
@@ -540,14 +548,17 @@ test('label: el nombre del tramo sale de otro campo y `field` queda libre', () =
 test('idioma: fechas, duración y eje en el locale del gráfico', () => {
   assert.equal(formatTime(local(2026, 3, 3), 'day', 'en'), 'Mar 3, 2026');
   assert.equal(durationText(local(2026, 3, 3), local(2026, 6, 15), 'day', 'en'), '3 months and 12 days');
-  assert.equal(durationText(local(2026, 3, 3), local(2026, 6, 15), 'day'), '3 meses y 12 días', 'español por defecto');
+  assert.equal(durationText(local(2026, 3, 3), local(2026, 6, 15), 'day', 'es'), '3 meses y 12 días');
+  assert.equal(durationText(local(2026, 3, 3), local(2026, 6, 15), 'day', 'pt-BR'), '3 meses e 12 dias');
+  // Sin locale ni idioma de página: inglés.
+  assert.equal(durationText(local(2026, 3, 3), local(2026, 6, 15), 'day'), '3 months and 12 days');
   const ticks = axisTicks(local(2026, 1, 1), local(2026, 12, 31), 0, 800, 0, 800, 'day', measure, 'en');
   assert.ok(ticks.some((t) => /^Jun/.test(t.label)));
   // El tooltip toma el idioma del formato que le pasa el núcleo.
   const ps = series(PROJECT);
   const tip = timeline.tooltip!(ps, 0, { ...format, locale: 'en' })!;
   assert.match(tip.value, /Jan 12/);
-  assert.deepEqual(tip.details![0], ['Duración', '1 month and 15 days']);
+  assert.deepEqual(tip.details![0], ['Duration', '1 month and 15 days']);
 });
 
 test('hoy: línea en el día de hoy o en una fecha dada, con su texto', () => {
@@ -555,12 +566,12 @@ test('hoy: línea en el día de hoy o en una fecha dada, con su texto', () => {
   assert.deepEqual(todayMark(true, 'day', 'es', now), { time: local(2026, 5, 20), text: 'Hoy' });
   assert.deepEqual(todayMark(true, 'day', 'en', now), { time: local(2026, 5, 20), text: 'Today' });
   assert.equal(todayMark(true, 'minute', 'es', now)!.time, local(2026, 5, 20, 15, 42), 'con horas, el minuto actual');
-  assert.deepEqual(todayMark('2026-06-15', 'month'), { time: local(2026, 6, 15), text: '15 jun 2026' });
+  assert.deepEqual(todayMark('2026-06-15', 'month', 'es'), { time: local(2026, 6, 15), text: '15 jun 2026' });
   assert.equal(todayMark('2026-12-01', 'day', 'en')!.text, 'Dec 1, 2026', 'con día, aunque sea el 1');
-  assert.equal(todayMark('2026-12', 'day')!.text, 'dic 2026');
-  assert.equal(todayMark(false, 'day'), null);
-  assert.equal(todayMark(undefined, 'day'), null);
-  assert.equal(todayMark('no es fecha', 'day'), null);
+  assert.equal(todayMark('2026-12', 'day', 'es')!.text, 'dic 2026');
+  assert.equal(todayMark(false, 'day', 'es'), null);
+  assert.equal(todayMark(undefined, 'day', 'es'), null);
+  assert.equal(todayMark('no es fecha', 'day', 'es'), null);
 });
 
 test('hoy: dentro del eje reserva su franja arriba; fuera, no cambia nada', () => {

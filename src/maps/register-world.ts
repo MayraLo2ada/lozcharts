@@ -5,7 +5,10 @@
  */
 import { LozChart } from 'lozcharts';
 import { world } from './world';
+import { withPortuguese } from './nomes';
 
+// Cada país trae su nombre en inglés (name) y en español (nombre); aquí recibe el portugués (nome).
+withPortuguese(world);
 LozChart.registerMap('mundo', world);
 LozChart.registerMap('world', world);
 

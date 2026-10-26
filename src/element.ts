@@ -13,7 +13,7 @@
  * en `detail`); en small multiples
  * (`facet`) no hay eventos: el puntero ya se sincroniza entre los paneles.
  */
-import { LozChart, type LozMultiples } from 'lozcharts';
+import { LozChart, messages, type LozMultiples } from 'lozcharts';
 import type { LozChartOptions, MultiplesOptions } from 'lozcharts';
 import { optionsKey, optionsPatch } from './core/sync';
 
@@ -52,10 +52,7 @@ export class LozChartElement extends Base {
     try {
       this.options = JSON.parse(value) as Options;
     } catch (err) {
-      console.error(
-        'LozCharts: el atributo options no es un JSON válido, así que el gráfico sigue con las opciones anteriores.',
-        err,
-      );
+      console.error(messages(this._options?.locale).warnings.badAttribute, err);
     }
   }
 

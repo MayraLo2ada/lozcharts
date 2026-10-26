@@ -62,6 +62,7 @@ function series(rows: Row[], extra: Partial<PreparedSeries['options']> = {}): Pr
     texts: { from: c.from, to: c.to, group: c.group },
     stackKey: null,
     axis: 'left',
+    locale: 'es',
   };
 }
 
@@ -78,6 +79,7 @@ function context(ps: PreparedSeries, rows: Row[], width = 640, height = 360, y1 
     height,
     n,
     isHidden: () => false,
+    locale: 'es',
     label: (i) => rows[i][0],
     measure,
     format: (v) => String(v),
@@ -91,6 +93,7 @@ const format: TooltipFormat = {
   number: String,
   percent: (p) => `${Math.round(p * 1000) / 10} %`,
   isHidden: () => false,
+  locale: 'es',
   difference: String,
 };
 
@@ -220,7 +223,7 @@ test('radios: el área según el grado, con un mínimo y un tope por el espacio'
 test('leyenda: solo con dos o más grupos; "Sin grupo" al final y hasta tres filas', () => {
   assert.deepEqual(legendLayout(buildNetwork(['A'], ['B'], [1], ['X']), 640, measure), { items: [], height: 0 });
   const m = model(TEAM);
-  const wide = legendLayout(m, 640, measure);
+  const wide = legendLayout(m, 640, measure, 8, 'es');
   assert.deepEqual(
     wide.items.map((i) => i.name),
     ['Diseño', 'Datos', 'Ventas', 'Sin grupo'],

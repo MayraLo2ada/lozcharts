@@ -7,6 +7,7 @@
  * El rango es el dominio del núcleo (ctx.y.d0 a ctx.y.d1; se fija con yAxis.min y yAxis.max).
  * Si el valor se sale, el arco se recorta al extremo pero el número muestra el valor real.
  */
+import { messages } from '../core/i18n';
 import type { DrawContext, SeriesImpl } from '../core/series';
 import { attrs, esc } from '../core/dom';
 import { polarPoint } from '../core/shapes';
@@ -161,7 +162,6 @@ export const gauge: SeriesImpl = {
   includeZero: true,
   layer: 0,
   legendSymbol: 'square',
-  label: 'medidor',
   draw(ctx) {
     const { d0, d1 } = ctx.y;
     const th = ctx.theme;
@@ -250,14 +250,15 @@ export const gauge: SeriesImpl = {
   },
   tooltip(ps, i, format) {
     const v = ps.values[i];
-    if (!isFinite(v)) return { value: 'Sin dato' };
+    const words = messages(format.locale).data;
+    if (!isFinite(v)) return { value: words.noData };
     const t = ps.options.target;
     if (t === undefined || !isFinite(t)) return { value: format.value(v) };
     return {
       value: format.value(v),
       details: [
-        ['Meta', format.value(t)],
-        ['Frente a la meta', format.difference(v - t)],
+        [words.target, format.value(t)],
+        [words.vsTarget, format.difference(v - t)],
       ],
     };
   },

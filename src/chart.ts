@@ -42,6 +42,15 @@ import { registerMap, type MapSource } from './core/geo';
 import { spreadLabels } from './core/labels';
 import { ZoomGestures } from './zoom';
 import { Scrollbar, SCROLLBAR_HEIGHT } from './scrollbar';
+import {
+  defaultLocale,
+  messages,
+  registerLocale,
+  type Messages,
+  type PartialMessages,
+  type TypeTexts,
+  type Words,
+} from './core/i18n';
 
 const registry = new Map<string, SeriesImpl>();
 let uid = 0;
@@ -143,12 +152,10 @@ type Normalized = LozChartOptions &
 function normalize(o: LozChartOptions): Normalized {
   // Sin opciones o sin el campo de la X no hay nada que dibujar: mejor un error que lo diga que
   // un "Cannot read properties of undefined" desde adentro.
-  if (!o || typeof o !== 'object')
-    throw new Error("LozCharts: faltan las opciones. Pasa un objeto como { data, xAxis: { field: 'mes' }, series: [...] }.");
-  if (!o.xAxis || typeof o.xAxis.field !== 'string')
-    throw new Error(
-      "LozCharts: falta xAxis.field, el campo de cada fila que va en el eje X (por ejemplo xAxis: { field: 'mes' }).",
-    );
+  if (!o || typeof o !== 'object') throw new Error(messages().warnings.noOptions);
+  // Sin `locale`, el idioma de la página (si hay catálogo para él) o inglés.
+  const locale = (typeof o.locale === 'string' && o.locale.trim()) || defaultLocale();
+  if (!o.xAxis || typeof o.xAxis.field !== 'string') throw new Error(messages(locale).warnings.noXField);
   return {
     ...o,
     data: Array.isArray(o.data) ? o.data : [],
@@ -157,7 +164,7 @@ function normalize(o: LozChartOptions): Normalized {
     height: o.height ?? DEFAULT_HEIGHT,
     tooltip: o.tooltip ?? true,
     animate: o.animate ?? true,
-    locale: o.locale ?? 'es',
+    locale,
     currency: o.currency ?? 'USD',
     background: o.background ?? true,
   };
@@ -165,6 +172,15 @@ function normalize(o: LozChartOptions): Normalized {
 
 export class LozChart {
   // ------------------------------------------------------------ API estática
+
+  /**
+   * Agrega un idioma o cambia textos de uno que ya existe: `registerLocale('fr', { chart: {
+   * showAll: 'Tout voir' } })`. Un idioma nuevo toma del inglés lo que no se dé. Los gráficos que
+   * ya existen toman los textos nuevos al volver a dibujarse (setOptions).
+   */
+  static registerLocale(code: string, messages: PartialMessages): void {
+    registerLocale(code, messages);
+  }
 
   /** Registra un tipo de serie. Agregar un tipo nuevo no toca el núcleo. */
   static registerSeries(name: string, impl: SeriesImpl): void {
@@ -215,11 +231,7 @@ export class LozChart {
         const options = JSON.parse(json) as LozChartOptions | MultiplesOptions;
         charts.push('facet' in options && options.facet ? LozChart.multiples(el, options) : new LozChart(el, options));
       } catch (err) {
-        console.error(
-          'LozCharts: no pude leer las opciones de data-lozchart; revisa que sean un JSON válido o el selector de un <script>.',
-          el,
-          err,
-        );
+        console.error(messages().warnings.badInit, el, err);
       }
     }
     return charts;
@@ -317,8 +329,8 @@ export class LozChart {
   private readonly colorScheme: MediaQueryList | null;
 
   constructor(target: string | HTMLElement, options: LozChartOptions) {
-    this.element = resolveElement(target);
     this.opts = normalize(options);
+    this.element = resolveElement(target, this.opts.locale);
     mount(this);
     injectStyles(document);
     this.explicitHeight = options.height;
@@ -357,7 +369,7 @@ export class LozChart {
     this.gPlot.append(this.gGrid, this.gData, this.gNotes, this.gAxes, this.selRect, this.selLabel, this.overlay);
     this.svgEl.append(defs, this.gPlot);
     this.tooltipEl = html('div', { class: 'lc-tooltip', 'aria-hidden': 'true' });
-    this.resetBtn = html('button', { type: 'button', class: 'lc-zoom-reset' }, 'Ver todo');
+    this.resetBtn = html('button', { type: 'button', class: 'lc-zoom-reset' });
     // Al volver a todo el botón se esconde: el foco pasa al gráfico en vez de perderse.
     this.resetBtn.addEventListener('click', () => {
       this.svgEl.focus();
@@ -369,6 +381,7 @@ export class LozChart {
       minSpan: () => this.minSpan(),
       unit: () => 1 / Math.max(1, this.prepared.n - (this.prepared.band ? 0 : 1)),
       label: (f, edge) => this.labelAtFraction(f, edge),
+      messages: () => this.t,
     });
     this.plotEl.append(this.svgEl, this.tooltipEl);
     this.tableEl = html('table');
@@ -461,7 +474,7 @@ export class LozChart {
     const show = visible ?? set.has(name);
     if (show) set.delete(name);
     else set.add(name);
-    this.liveEl.textContent = `${show ? 'Ahora se ve' : 'Ya no se ve'} ${name}`;
+    this.liveEl.textContent = show ? this.t.chart.shown(name) : this.t.chart.hidden(name);
     this.syncLegend();
     this.update(true);
     return this;
@@ -493,7 +506,7 @@ export class LozChart {
       return Promise.resolve();
     }
     const { markup, width, height } = this.exportSVG();
-    return downloadImage(markup, width, height, type, name);
+    return downloadImage(markup, width, height, type, name, this.opts.locale);
   }
 
   /**
@@ -517,7 +530,8 @@ export class LozChart {
       // Una serie sin nombre propio se llama como su campo: si ese campo también va como columna
       // (la variación de una cascada, junto al acumulado), el valor dice qué es.
       const clash = extra.some((c) => c.name === s.name);
-      cols.push({ name: clash ? `${s.name} (${s.impl.derivedName ?? 'valor'})` : s.name, at: (i) => values[i] });
+      const derived = this.typeTexts(s)?.derived ?? s.impl.derivedName ?? this.t.chart.value;
+      cols.push({ name: clash ? `${s.name} (${derived})` : s.name, at: (i) => values[i] });
       cols.push(...extra);
     }
     const rows: (string | number)[][] = [[this.opts.xAxis.title ?? xField, ...cols.map((c) => c.name)]];
@@ -580,7 +594,7 @@ export class LozChart {
   select(index: readonly number[] | null): this {
     this.opts.selection = index && index.length ? [...index] : null;
     this.syncSelection();
-    this.liveEl.textContent = this.selectionText() || 'Ya no hay nada seleccionado';
+    this.liveEl.textContent = this.selectionText() || this.t.chart.selectionCleared;
     this.renderTable();
     this.svgEl.setAttribute('aria-label', this.ariaLabel());
     this.redraw();
@@ -674,7 +688,7 @@ export class LozChart {
     const xType = xAxis.type ?? 'category';
     const index = this.opts.yAxis?.index;
     const rightAxis = !index && !this.horizontal;
-    const input = { data, xField: xAxis.field, xType, series, index, band: xAxis.band, rightAxis };
+    const input = { data, xField: xAxis.field, xType, series, index, band: xAxis.band, rightAxis, locale: this.opts.locale };
     return prepare(input, registry, this.theme.palette.length);
   }
 
@@ -822,8 +836,8 @@ export class LozChart {
     this.liveEl.textContent = !announce
       ? ''
       : range
-        ? `Ahora ves de ${this.labelAtFraction(next.start, 'start')} a ${this.labelAtFraction(next.end, 'end')}`
-        : 'Ahora ves todos los datos';
+        ? this.t.chart.zoomedTo(this.labelAtFraction(next.start, 'start'), this.labelAtFraction(next.end, 'end'))
+        : this.t.chart.zoomedAll;
     this.opts.onZoom?.(range, this.zoomWindow);
   }
 
@@ -890,19 +904,26 @@ export class LozChart {
   private selectionText(): string {
     const sel = this.selectedIdx;
     if (!sel) return '';
-    const items = this.itemWords();
-    const n = this.prepared.n;
-    return `Selección: ${sel.size} de ${n} ${n === 1 ? items[0] : items[1]}`;
+    return this.t.chart.selection(sel.size, this.prepared.n, this.itemWords());
+  }
+
+  /** Los textos del idioma del gráfico (ver core/i18n.ts). */
+  private get t(): Messages {
+    return messages(this.opts.locale);
+  }
+
+  /** Nombre y palabras de un tipo de serie en el catálogo del idioma, si los tiene. */
+  private typeTexts(s: PreparedSeries): TypeTexts | undefined {
+    return this.t.types[s.options.type];
   }
 
   /** Cómo se llaman los datos al contarlos: los del tipo, o categorías o puntos según el eje. */
-  private itemWords(): readonly [string, string] {
+  private itemWords(): Words {
     const p = this.prepared;
-    const own = p.series[0]?.impl.items;
+    const s = p.series[0];
+    const own = s && (this.typeTexts(s)?.items ?? s.impl.items);
     if (own) return own;
-    return p.pointLegend || (p.coords === 'cartesian' && p.xType === 'category')
-      ? ['categoría', 'categorías']
-      : ['punto', 'puntos'];
+    return p.pointLegend || (p.coords === 'cartesian' && p.xType === 'category') ? this.t.chart.categories : this.t.chart.points;
   }
 
   private hiddenPointIndices(): Set<number> {
@@ -1675,7 +1696,7 @@ export class LozChart {
       percent: valueFormatter('percent', this.numberContext()),
       isHidden: (i) => hidden.has(i),
       difference: (d) =>
-        spec === 'percent' ? `${sign(d)}${number(Math.abs(d) * 100)} p. p.` : `${sign(d)}${value(Math.abs(d))}`,
+        spec === 'percent' ? this.t.chart.percentPoints(sign(d) + number(Math.abs(d) * 100)) : `${sign(d)}${value(Math.abs(d))}`,
       locale: this.opts.locale,
       currency: this.opts.currency,
     };
@@ -1687,7 +1708,7 @@ export class LozChart {
         ...text,
         details: [
           ...(text.details ?? []),
-          ...p.others.map((o): [string, string] => [o.label, isFinite(o.value) ? value(o.value) : 'Sin dato']),
+          ...p.others.map((o): [string, string] => [o.label, isFinite(o.value) ? value(o.value) : this.t.data.noData]),
         ],
       };
     }
@@ -1698,12 +1719,12 @@ export class LozChart {
     if (s.raw) {
       // Índice: el valor del eje y, debajo, el original en sus unidades.
       const v = s.values[i];
-      if (!isFinite(v)) return { value: 'Sin dato' };
-      return { value: indexFormatter(this.opts.locale)(v), details: [['Valor real', format.value(s.raw[i])]] };
+      if (!isFinite(v)) return { value: this.t.data.noData };
+      return { value: indexFormatter(this.opts.locale)(v), details: [[this.t.chart.realValue, format.value(s.raw[i])]] };
     }
     const custom = s.impl.tooltip?.(s, i, format);
     if (custom) return custom;
-    return { value: isFinite(s.values[i]) ? format.value(s.values[i]) : 'Sin dato' };
+    return { value: isFinite(s.values[i]) ? format.value(s.values[i]) : this.t.data.noData };
   }
 
   // ------------------------------------------------------------ Tema
@@ -1733,7 +1754,7 @@ export class LozChart {
 
   private applyTheme(): void {
     const mode = this.opts.theme === 'auto' ? (this.colorScheme?.matches ? 'dark' : 'light') : this.opts.theme;
-    this.theme = resolveTheme(mode, this.opts.palette);
+    this.theme = resolveTheme(mode, this.opts.palette, this.opts.locale);
     const vars = themeVars(this.theme);
     for (const k in vars) this.root.style.setProperty(k, vars[k]);
     this.root.dataset.theme = mode;
@@ -1765,6 +1786,7 @@ export class LozChart {
     if (title) heading.appendChild(html('div', { class: 'lc-title' }, title));
     if (subtitle) heading.appendChild(html('div', { class: 'lc-subtitle' }, subtitle));
     this.header.replaceChildren(heading);
+    this.resetBtn.textContent = this.t.chart.showAll;
     const reset = this.resetOn;
     if (reset) this.header.appendChild(this.resetBtn);
     this.header.hidden = !title && !subtitle && !reset;
@@ -1792,7 +1814,7 @@ export class LozChart {
     return this.prepared.series.map((s) => ({
       key: s.key,
       // Salvaguarda del doble eje: la leyenda dice qué serie se lee en el eje derecho.
-      name: s.axis === 'right' ? `${s.name} (eje derecho)` : s.name,
+      name: s.axis === 'right' ? this.t.chart.rightAxis(s.name) : s.name,
       color: this.colorOf(s),
       symbol: s.impl.legendSymbol ?? 'square',
       visible: !this.hidden.has(s.key),
@@ -1810,7 +1832,7 @@ export class LozChart {
     const top = typeof lg === 'object' && lg.position === 'top';
     if (top) this.plotEl.before(this.legend.el);
     else this.plotEl.after(this.legend.el);
-    this.legend.render(this.legendItems(), top);
+    this.legend.render(this.legendItems(), top, this.t.chart.legend);
   }
 
   private syncLegend(): void {
@@ -1831,9 +1853,9 @@ export class LozChart {
     for (let i = 0; i < shown; i++) {
       const row = html('tr');
       const hiddenMark =
-        (p.pointLegend && this.hiddenIdx.has(i) ? ' (oculta en el gráfico)' : '') +
-        (this.selectedIdx?.has(i) ? ' (en la selección)' : '');
-      const own = p.series[0]?.impl.headline?.(p.series[0], i, xLabel(p, i, false, ctx));
+        (p.pointLegend && this.hiddenIdx.has(i) ? ` (${this.t.chart.hiddenInChart})` : '') +
+        (this.selectedIdx?.has(i) ? ` (${this.t.chart.inSelection})` : '');
+      const own = p.series[0]?.impl.headline?.(p.series[0], i, xLabel(p, i, false, ctx), this.opts.locale);
       row.appendChild(html('th', { scope: 'row' }, (own || xLabel(p, i, false, ctx)) + hiddenMark));
       for (const s of p.series) {
         const t = this.valueText(s, i);
@@ -1844,12 +1866,9 @@ export class LozChart {
     }
     const thead = html('thead');
     thead.appendChild(head);
-    const title = this.opts.title ?? 'Datos del gráfico';
+    const title = this.opts.title ?? this.t.chart.tableTitle;
     const count = valueFormatter('number', this.numberContext());
-    const caption =
-      shown < p.n
-        ? `${title} (aquí van las primeras ${count(shown)} de ${count(p.n)} filas; descarga el CSV para verlas todas)`
-        : title;
+    const caption = shown < p.n ? this.t.chart.tableTruncated(title, count(shown), count(p.n)) : title;
     this.tableEl.replaceChildren(html('caption', {}, caption), thead, body);
   }
 
@@ -1857,48 +1876,46 @@ export class LozChart {
     if (this.opts.ariaLabel) return this.opts.ariaLabel;
     const p = this.prepared;
     const { series, n } = p;
-    const kinds = [...new Set(series.map((s) => s.impl.label ?? s.options.type))];
-    const what = kinds.length ? 'Gráfico de ' + kinds.join(' y ') : 'Gráfico';
+    const t = this.t.chart;
+    const kinds = [...new Set(series.map((s) => this.typeTexts(s)?.label ?? s.impl.label ?? s.options.type))];
+    const what = kinds.length ? t.chartOf(kinds) : t.chart;
     // Un título que ya cierra con su signo ("¿Qué destacan los clientes?") no lleva otro punto.
     const own = this.opts.title?.trim();
     const title = own ? (/[.?!…:]$/.test(own) ? `${own} ` : `${own}. `) : '';
     // Un solo dato (un gauge): se dice el valor, no se invita a recorrer nada.
     if (n === 1) return `${title}${what}. ${this.describe(0)}`;
-    if (n === 0) return `${title}${what}, todavía sin datos.`;
-    const plural = (k: number, [one, many]: readonly [string, string]) => `${k} ${k === 1 ? one : many}`;
+    if (n === 0) return t.noDataYet(title + what);
     const items = this.itemWords();
     // Se cuentan las categorías de los datos, no las porciones: "Otros" reúne varias.
     const real = p.others.length ? n - 1 + p.others.length : n;
-    const folded = p.others.length ? ` (${p.others.length} sumadas en Otros)` : '';
+    const folded = p.others.length ? t.folded(p.others.length) : '';
     const count =
       p.pointLegend || p.coords === 'free'
-        ? plural(real, items) + folded
+        ? t.count(real, items) + folded
         : series.length === 1
-          ? plural(n, items)
-          : `${plural(series.length, ['serie', 'series'])} y ${plural(n, items)}`;
+          ? t.count(n, items)
+          : t.seriesAndItems(t.count(series.length, t.series), t.count(n, items));
     // Sin ejes valen las cuatro flechas; con ejes, las del eje del índice.
-    const keys =
-      p.coords !== 'cartesian'
-        ? 'las flechas'
-        : this.horizontal
-          ? 'las flechas arriba y abajo'
-          : 'las flechas izquierda y derecha';
-    const zoom = this.zoomable ? ' Con + y − acercas o alejas; con 0 vuelves a verlo todo.' : '';
+    const keys = p.coords !== 'cartesian' ? t.arrows : this.horizontal ? t.arrowsUpDown : t.arrowsLeftRight;
+    const zoom = this.zoomable ? t.zoomKeys : '';
     const selection = this.selectedIdx ? ` ${this.selectionText()}.` : '';
-    return `${title}${what} con ${count}${this.spanText()}.${this.peakText()} Recorre los datos con ${keys}.${zoom}${this.annotationText()}${selection}`;
+    return (
+      t.withCount(title + what, count) +
+      `${this.spanText()}.${this.peakText()}${t.explore(keys)}${zoom}${this.annotationText()}${selection}`
+    );
   }
 
   /** ", de enero a diciembre": de dónde a dónde va el eje X, si es de fechas o de números. */
   private spanText(): string {
     const p = this.prepared;
     if (p.coords !== 'cartesian' || p.xType === 'category' || p.n < 2) return '';
-    return `, de ${this.inlineX(0)} a ${this.inlineX(p.n - 1)}`;
+    return this.t.chart.span(this.inlineX(0), this.inlineX(p.n - 1));
   }
 
-  /** La etiqueta de X a mitad de frase: una fecha va en minúscula ("de enero de 2026"). */
+  /** La etiqueta de X a mitad de frase: en español una fecha va en minúscula ("de enero de 2026"). */
   private inlineX(i: number): string {
     const label = xLabel(this.prepared, i, false, this.xContext());
-    return this.prepared.xType === 'time' ? label.charAt(0).toLocaleLowerCase(this.opts.locale) + label.slice(1) : label;
+    return this.prepared.xType === 'time' ? this.t.chart.midSentence(label) : label;
   }
 
   /**
@@ -1920,8 +1937,8 @@ export class LozChart {
     });
     if (top < 0) return '';
     const value = this.valueText(s, top).value;
-    if (count > 1 && s.values[top] === s.values[low]) return ` Todos valen ${value}.`;
-    return ` El más alto es ${this.inlineX(top)}, con ${value}.`;
+    if (count > 1 && s.values[top] === s.values[low]) return this.t.chart.allEqual(value);
+    return this.t.chart.highest(this.inlineX(top), value);
   }
 
   /** Las anotaciones dichas en palabras: "Referencias: Meta, 120 mil $; Campaña de verano." */
@@ -1933,7 +1950,7 @@ export class LozChart {
       this.numberContext(),
     );
     const items = list.map((a) => (typeof a.y === 'number' ? `${a.label}, ${left(a.y)}` : a.label!));
-    return ` Referencias: ${items.join('; ')}.`;
+    return this.t.chart.notes(items);
   }
 
   // ------------------------------------------------------------ Hover, tooltip y teclado
@@ -2249,7 +2266,7 @@ export class LozChart {
     const label = xLabel(this.prepared, i, false, this.xContext());
     // Un tipo puede nombrar su dato de otra forma ("Lima → Bogotá" en un sankey).
     const s = this.prepared.series[0];
-    const own = s?.impl.headline?.(s, i, label);
+    const own = s?.impl.headline?.(s, i, label, this.opts.locale);
     if (own) return own;
     const title = this.opts.xAxis.title;
     return this.prepared.xType === 'linear' && title ? `${title}: ${label}` : label;
@@ -2296,7 +2313,7 @@ export class LozChart {
         const totalRow = html('div', { class: 'lc-tt-row lc-tt-total' + middle });
         totalRow.append(
           html('span', { class: 'lc-tt-val' }, this.valueFormat(r.s)(total)),
-          html('span', { class: 'lc-tt-name' }, 'Total'),
+          html('span', { class: 'lc-tt-name' }, this.t.chart.total),
         );
         nodes.push(totalRow);
       }
@@ -2371,7 +2388,7 @@ export class LozChart {
       const detail = text.details ? ` (${text.details.map(([k, v]) => `${k}: ${v}`).join('; ')})` : '';
       return `${s.name} ${text.value}${detail}`;
     });
-    const selected = this.selectedIdx?.has(i) ? ' (en la selección)' : '';
+    const selected = this.selectedIdx?.has(i) ? ` (${this.t.chart.inSelection})` : '';
     return `${this.headline(i)}${selected}: ${values.join(', ')}`;
   }
 

@@ -14,11 +14,7 @@ export interface LegendItem {
 }
 
 export class Legend {
-  readonly el = html('div', {
-    class: 'lc-legend',
-    role: 'group',
-    'aria-label': 'Leyenda: pulsa un nombre para mostrarlo u ocultarlo',
-  });
+  readonly el = html('div', { class: 'lc-legend', role: 'group' });
   private readonly buttons = new Map<string, HTMLButtonElement>();
 
   constructor(private readonly onToggle: (key: string) => void) {}
@@ -27,9 +23,13 @@ export class Legend {
     return this.buttons.size;
   }
 
-  /** Crea los botones. Solo cuando cambian las series: recrearlos haría perder el foco del teclado. */
-  render(items: LegendItem[], top: boolean): void {
+  /**
+   * Crea los botones. Solo cuando cambian las series: recrearlos haría perder el foco del teclado.
+   * `label` es el nombre del grupo para lectores de pantalla, en el idioma del gráfico.
+   */
+  render(items: LegendItem[], top: boolean, label: string): void {
     this.buttons.clear();
+    this.el.setAttribute('aria-label', label);
     this.el.classList.toggle('lc-top', top);
     this.el.replaceChildren(
       ...items.map((item) => {

@@ -83,6 +83,7 @@ test('gauge: el tooltip trae meta y diferencia con signo', () => {
     number: fmt,
     percent: fmt,
     isHidden: () => false,
+    locale: 'es',
     difference: (d) => sign(d) + Math.abs(d),
   };
   const ps = { values: [40, 72], options: { target: 80 } } as unknown as PreparedSeries;

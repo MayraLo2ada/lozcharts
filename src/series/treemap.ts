@@ -12,6 +12,7 @@
  *
  * Toda la geometría (squarify, bloques, contraste, ajuste de etiquetas) son funciones puras.
  */
+import { messages } from '../core/i18n';
 import {
   dimOpacity,
   type DrawContext,
@@ -346,7 +347,7 @@ function rect(r: Rect, extra: Record<string, string | number | undefined>): stri
 }
 
 /** Nombre del grupo para mostrar: un grupo vacío en los datos no queda sin nombre. */
-const groupName = (g: string) => g || 'Sin grupo';
+const groupName = (g: string, locale?: string) => g || messages(locale).data.noGroup;
 
 export const treemap: SeriesImpl = {
   coords: 'free',
@@ -354,13 +355,11 @@ export const treemap: SeriesImpl = {
   includeZero: true,
   layer: 0,
   legendSymbol: 'square',
-  label: 'rectángulos',
-  items: ['parte', 'partes'],
   texts: (o) => ({ group: o.group }),
   navigable: (ps) => readingOrder(ps.values, groupsOf(ps)),
-  headline(ps, i, x) {
+  headline(ps, i, x, locale) {
     const groups = groupsOf(ps);
-    return groups ? `${groupName(groups[i] ?? '')} › ${x}` : x;
+    return groups ? `${groupName(groups[i] ?? '', locale)} › ${x}` : x;
   },
   dimmable: true,
   draw(ctx) {
@@ -395,7 +394,7 @@ export const treemap: SeriesImpl = {
       for (const g of L.groups) {
         if (!g.header) continue;
         const sum = totals.get(g.name) ?? 0;
-        const fit = fitHeader(g.box.w, groupName(g.name), [ctx.format(sum), ctx.compact(sum)], ctx.measure);
+        const fit = fitHeader(g.box.w, groupName(g.name, ctx.locale), [ctx.format(sum), ctx.compact(sum)], ctx.measure);
         if (!fit) continue;
         const y = g.box.y + HEADER / 2 - 1;
         labels += text(g.box.x, y, fit.name, th.text, { 'font-weight': 600 });
@@ -436,16 +435,17 @@ export const treemap: SeriesImpl = {
     const v = ps.values[i];
     // Sin dato: el núcleo escribe "Sin dato".
     if (!isFinite(v)) return null;
+    const t = messages(format.locale).data;
     // Cero o negativo: el valor real (está en los datos), sin partes: no ocupa área.
-    if (v <= 0) return { value: format.value(v), details: [['No aparece', 'vale cero o menos']] };
+    if (v <= 0) return { value: format.value(v), details: [[t.notShown, t.zeroOrLess]] };
     let total = 0;
     for (const x of ps.values) if (positive(x)) total += x;
-    const details: [string, string][] = [['Del total', share(v / total, format.percent)]];
+    const details: [string, string][] = [[t.ofTotal, share(v / total, format.percent)]];
     const groups = groupsOf(ps);
     if (groups) {
       const g = groups[i] ?? '';
       const sum = groupTotals(ps.values, groups).get(g) ?? 0;
-      details.push([`De ${groupName(g)}`, share(v / sum, format.percent)]);
+      details.push([t.of(groupName(g, format.locale)), share(v / sum, format.percent)]);
     }
     return { value: format.value(v), details };
   },

@@ -6,6 +6,7 @@
  * que baja es rellena, siempre del color de su serie. En OHLC, las marcas a la izquierda
  * (apertura) y a la derecha (cierre) cuentan lo mismo.
  */
+import { messages } from '../core/i18n';
 import {
   paintDimmed,
   type DrawContext,
@@ -53,22 +54,24 @@ function width(ctx: DrawContext): number {
 
 const fields = (o: { open?: string; high?: string; low?: string }) => ({ open: o.open, high: o.high, low: o.low });
 
-function ohlcTooltip(ps: PreparedSeries, i: number, { value: format, number }: TooltipFormat): TooltipValue {
+function ohlcTooltip(ps: PreparedSeries, i: number, { value: format, percent, locale }: TooltipFormat): TooltipValue {
   const { open, high, low } = ps.columns;
   const close = ps.values[i];
-  if (![open[i], high[i], low[i], close].every(isFinite)) return { value: 'Sin dato' };
-  // Variación de la sesión en %, con un decimal y el separador del idioma del gráfico. Sobre el
-  // valor absoluto de la apertura: con precios negativos (un futuro de petróleo), subir de −80 a
-  // −74 es +7 %, no −7 %.
+  const t = messages(locale);
+  if (![open[i], high[i], low[i], close].every(isFinite)) return { value: t.data.noData };
+  // Variación de la sesión en %, con un decimal y el formato del idioma del gráfico ("+7,2 %",
+  // "+7.2%"). Sobre el valor absoluto de la apertura: con precios negativos (un futuro de
+  // petróleo), subir de −80 a −74 es +7 %, no −7 %.
   const change = open[i] ? Math.round(((close - open[i]) / Math.abs(open[i])) * 1000) / 10 : 0;
   const sign = change > 0 ? '+' : change < 0 ? '−' : '';
+  const c = t.candlestick;
   return {
-    value: `${format(close)} (${sign}${number(Math.abs(change))} %)`,
+    value: `${format(close)} (${sign}${percent(Math.abs(change) / 100)})`,
     details: [
-      ['Apertura', format(open[i])],
-      ['Máximo', format(high[i])],
-      ['Mínimo', format(low[i])],
-      ['Cierre', format(close)],
+      [c.open, format(open[i])],
+      [c.high, format(high[i])],
+      [c.low, format(low[i])],
+      [c.close, format(close)],
     ],
   };
 }
@@ -77,7 +80,6 @@ export const candlestick: SeriesImpl = {
   band: true,
   layer: 2,
   legendSymbol: 'square',
-  label: 'velas',
   columns: fields,
   valueColumns: ['open', 'high', 'low'],
   dimmable: true,
@@ -114,7 +116,6 @@ export const ohlc: SeriesImpl = {
   band: true,
   layer: 2,
   legendSymbol: 'line',
-  label: 'barras de precios',
   columns: fields,
   valueColumns: ['open', 'high', 'low'],
   dimmable: true,

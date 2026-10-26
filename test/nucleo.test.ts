@@ -15,6 +15,7 @@ function chart(options: Partial<LozChartOptions>): LozChart {
     xAxis: { field: 'x' },
     series: [{ type: 'line', field: 'y' }],
     animate: false,
+    locale: 'es',
     ...options,
   } as LozChartOptions);
 }
@@ -135,6 +136,7 @@ test('avisa de un campo que no existe, de X inválidas y de nombres de serie rep
         data: [{ x: '2026-01-01', a: 1 }, { x: 'mañana', a: 2 }, { x: null, a: 3 }, null as never, 5 as never],
         xField: 'x',
         xType: 'time',
+        locale: 'es',
         series: [
           { type: 'line', field: 'a', name: 'Ventas' },
           { type: 'line', field: 'ventas', name: 'Ventas' },
@@ -174,8 +176,16 @@ test('avisa si ninguna fila tiene el campo de la X; con datos bien escritos, nin
 test('sin opciones o sin xAxis.field: un error que dice qué falta, y el elemento queda como estaba', () => {
   const el = host();
   const before = chart({ data: [{ x: 'a', y: 1 }] });
-  assert.throws(() => new LozChart(el, undefined as never), /faltan las opciones/);
+  // Sin opciones no hay locale: el error sale en el idioma de la página, o en inglés.
+  assert.throws(() => new LozChart(el, undefined as never), /the options are missing/);
+  document.documentElement.lang = 'es';
+  try {
+    assert.throws(() => new LozChart(el, undefined as never), /faltan las opciones/);
+  } finally {
+    document.documentElement.lang = '';
+  }
   assert.throws(() => new LozChart(el, { data: [], series: [] } as never), /xAxis\.field/);
+  assert.throws(() => new LozChart(el, { data: [], series: [], locale: 'pt-BR' } as never), /falta xAxis\.field/);
   assert.equal(LozChart.getChart(el), undefined);
   assert.ok(LozChart.getChart(before.element));
 });

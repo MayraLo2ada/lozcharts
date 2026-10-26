@@ -7,7 +7,6 @@ export const line: SeriesImpl = {
   layer: 2,
   legendSymbol: 'line',
   endLabel: true,
-  label: 'líneas',
   draw(ctx) {
     const idx = visible(ctx, ctx.frame.y1);
     const d = linePath(points(ctx, ctx.frame.y1, idx), !!ctx.frame.ps.options.smooth);

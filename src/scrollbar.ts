@@ -12,6 +12,7 @@
  */
 import { clampView, panView, type View } from './core/view';
 import { html } from './core/dom';
+import type { Messages } from './core/i18n';
 
 export interface ScrollbarHost {
   view(): View;
@@ -21,6 +22,8 @@ export interface ScrollbarHost {
   unit(): number;
   /** Texto de la X en una fracción del eje ("mar 2026"): el primer dato desde ahí, o el último hasta ahí. */
   label(fraction: number, edge: 'start' | 'end'): string;
+  /** Los textos del idioma del gráfico: los nombres de los controles y lo que anuncian. */
+  messages(): Messages;
 }
 
 /** Alto del mini gráfico (el CSS de .lc-scroll usa el mismo valor). */
@@ -45,9 +48,9 @@ export class Scrollbar {
     this.mini = html('div', { class: 'lc-scroll-mini', 'aria-hidden': 'true' });
     this.before = html('div', { class: 'lc-scroll-shade' });
     this.after = html('div', { class: 'lc-scroll-shade' });
-    this.win = this.slider('lc-scroll-win', 'Tramo visible');
-    this.startGrip = this.slider('lc-scroll-grip', 'Inicio del tramo visible');
-    this.endGrip = this.slider('lc-scroll-grip', 'Fin del tramo visible');
+    this.win = this.slider('lc-scroll-win');
+    this.startGrip = this.slider('lc-scroll-grip');
+    this.endGrip = this.slider('lc-scroll-grip');
     this.el.append(this.mini, this.before, this.after, this.win, this.startGrip, this.endGrip);
     this.el.addEventListener('pointerdown', this.onDown);
     this.el.addEventListener('pointermove', this.onMove);
@@ -62,12 +65,11 @@ export class Scrollbar {
     }
   }
 
-  private slider(cls: string, label: string): HTMLDivElement {
+  private slider(cls: string): HTMLDivElement {
     return html('div', {
       class: cls,
       role: 'slider',
       tabindex: '0',
-      'aria-label': label,
       'aria-valuemin': '0',
       'aria-valuemax': '100',
     });
@@ -97,10 +99,15 @@ export class Scrollbar {
     this.endGrip.style.left = `calc(${pct(view.end)} + ${apart.toFixed(1)}px)`;
     const from = this.host.label(view.start, 'start');
     const to = this.host.label(view.end, 'end');
+    // Los nombres van aquí y no al crearlos: el idioma del gráfico puede cambiar con setOptions.
+    const t = this.host.messages().scrollbar;
+    this.win.setAttribute('aria-label', t.window);
+    this.startGrip.setAttribute('aria-label', t.start);
+    this.endGrip.setAttribute('aria-label', t.end);
     // La ventana se mueve por su inicio, que llega como mucho a 100 menos su tramo.
     this.win.setAttribute('aria-valuemax', String(Math.round((1 - (view.end - view.start)) * 100)));
     this.win.setAttribute('aria-valuenow', String(Math.round(view.start * 100)));
-    this.win.setAttribute('aria-valuetext', `De ${from} a ${to}`);
+    this.win.setAttribute('aria-valuetext', t.range(from, to));
     this.startGrip.setAttribute('aria-valuenow', String(Math.round(view.start * 100)));
     this.startGrip.setAttribute('aria-valuetext', from);
     this.endGrip.setAttribute('aria-valuenow', String(Math.round(view.end * 100)));

@@ -16,7 +16,7 @@ export function prep(
   series: SeriesOptions[],
   xType: 'category' | 'time' | 'linear' = 'category',
 ) {
-  return prepare({ data, xField: 'x', xType, series }, registry, 8);
+  return prepare({ data, xField: 'x', xType, series, locale: 'es' }, registry, 8);
 }
 
 /** Compara números ignorando el ruido de coma flotante. */

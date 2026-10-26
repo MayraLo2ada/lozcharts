@@ -24,6 +24,7 @@
  *
  * Toda la geometría (grafo, emparejamiento, layout, radios, etiquetas, hit-test) son funciones puras.
  */
+import { messages } from '../core/i18n';
 import {
   DIM_OPACITY,
   type DrawContext,
@@ -541,10 +542,12 @@ export function legendLayout(
   width: number,
   measure: (s: string) => number,
   maxColors = 8,
+  locale?: string,
 ): { items: LegendItem[]; height: number } {
   if (m.groups.length < 2) return { items: [], height: 0 };
   const entries = m.groups.slice(0, maxColors).map((name, g) => ({ slot: g, name }));
-  if (m.slots.some((s) => s < 0)) entries.push({ slot: -1, name: m.groups.length > maxColors ? 'Otros' : 'Sin grupo' });
+  const t = messages(locale).data;
+  if (m.slots.some((s) => s < 0)) entries.push({ slot: -1, name: m.groups.length > maxColors ? t.others : t.noGroup });
   const items: LegendItem[] = [];
   let x = 0;
   let row = 0;
@@ -583,9 +586,10 @@ export function layoutNetwork(
   height: number,
   measure: (s: string) => number,
   maxColors = 8,
+  locale?: string,
 ): NetworkGeometry {
   const n = m.names.length;
-  const legend = legendLayout(m, width, measure, maxColors);
+  const legend = legendLayout(m, width, measure, maxColors, locale);
   const top = legend.height;
   const h = Math.max(0, height - top);
   const rMax = maxRadius(n, width, h);
@@ -708,7 +712,7 @@ function geometryOf(ctx: DrawContext): { m: NetworkModel; g: NetworkGeometry } {
   const m = modelOf(ctx.frame.ps);
   const c = geoCache.get(m);
   if (c && c.w === ctx.width && c.h === ctx.height) return { m, g: c.g };
-  const g = layoutNetwork(m, ctx.width, ctx.height, ctx.measure, ctx.theme.palette.length || 8);
+  const g = layoutNetwork(m, ctx.width, ctx.height, ctx.measure, ctx.theme.palette.length || 8, ctx.locale);
   geoCache.set(m, { w: ctx.width, h: ctx.height, g });
   return { m, g };
 }
@@ -834,8 +838,6 @@ export const network: SeriesImpl = {
   coords: 'free',
   layer: 0,
   legendSymbol: 'dot',
-  label: 'red',
-  items: ['conexión', 'conexiones'],
   dimmable: true,
   texts: (o, x) => ({ from: x, to: o.to, group: o.group }),
   draw(ctx) {
@@ -924,12 +926,13 @@ export const network: SeriesImpl = {
   tooltip(ps: PreparedSeries, i: number, format: TooltipFormat): TooltipValue | null {
     const m = modelOf(ps);
     const v = m.rowNode[i];
+    const t = messages(format.locale);
     if (v < 0) {
       if (m.rowLink[i] < 0) {
         // Como en los demás tipos: el valor de la fila y por qué no se dibuja.
         const raw = ps.values[i];
-        const why = Number.isNaN(weightOf(raw)) ? 'su peso es cero o menos' : 'le falta el origen';
-        return { value: Number.isNaN(raw) ? 'Sin dato' : format.value(raw), details: [['No aparece', why]] };
+        const why = Number.isNaN(weightOf(raw)) ? t.network.noWeight : t.network.noSource;
+        return { value: Number.isNaN(raw) ? t.data.noData : format.value(raw), details: [[t.data.notShown, why]] };
       }
       const w = weightOf(ps.values[i]);
       return { value: m.weighted && isFinite(ps.values[i]) ? format.value(w) : format.number(w) };
@@ -937,18 +940,18 @@ export const network: SeriesImpl = {
     const list = m.neighbors[v];
     const value = m.weighted ? format.value(m.degree[v]) : format.number(m.count[v]);
     const details: [string, string][] = [];
-    if (m.weighted) details.push(['Conexiones', format.number(m.count[v])]);
+    if (m.weighted) details.push([t.network.connections, format.number(m.count[v])]);
     if (list.length) {
       const top = list
         .slice(0, TOP_NEIGHBORS)
         .map((nb) => (m.weighted ? `${m.names[nb.node]} (${format.value(nb.weight)})` : m.names[nb.node]));
       const rest = list.length - TOP_NEIGHBORS;
       details.push([
-        TOP_NEIGHBORS < list.length ? 'Conectado sobre todo con' : 'Conectado con',
-        top.join(', ') + (rest > 0 ? ` y ${format.number(rest)} más` : ''),
+        TOP_NEIGHBORS < list.length ? t.network.connectedMostly : t.network.connected,
+        top.join(', ') + (rest > 0 ? t.network.andMore(format.number(rest)) : ''),
       ]);
-    } else details.push(['Conectado con', 'ningún otro']);
-    if (m.groupOf[v] >= 0) details.push(['Grupo', m.groups[m.groupOf[v]]]);
+    } else details.push([t.network.connected, t.network.none]);
+    if (m.groupOf[v] >= 0) details.push([t.data.group, m.groups[m.groupOf[v]]]);
     return { value, details };
   },
 };

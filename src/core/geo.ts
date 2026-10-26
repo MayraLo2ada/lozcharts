@@ -440,7 +440,7 @@ export function normalizeKey(s: unknown): string {
 
 /**
  * Índice para encontrar un lugar por cualquiera de sus claves: el id y las propiedades de texto
- * (en el mapa del mundo: código numérico, ISO alfa-3, nombre en inglés y en español).
+ * (en el mapa del mundo: código numérico, ISO alfa-3 y nombre en inglés, español y portugués).
  */
 export function featureIndex(list: readonly GeoFeature[]): Map<string, number> {
   const index = new Map<string, number>();

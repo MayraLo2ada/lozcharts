@@ -24,6 +24,7 @@ import { DARK, LIGHT, type Theme } from '../src/core/theme';
 import { contrast, parseColor } from '../src/core/color';
 import { prepare } from '../src/core/prepare';
 import { buildFrame } from '../src/core/frame';
+import { messages } from '../src/core/i18n';
 
 /** Medida simple y determinista: 7 px por carácter. */
 const measure = (s: string) => s.length * 7;
@@ -50,6 +51,7 @@ function series(rows: Row[], extra: Partial<PreparedSeries['options']> = {}): Pr
     texts: {},
     stackKey: null,
     axis: 'left',
+    locale: 'es',
   };
 }
 
@@ -77,6 +79,7 @@ function context(
     height,
     n,
     isHidden: () => false,
+    locale: 'es',
     label: (i) => rows[i][0],
     measure,
     format: (v) => String(v),
@@ -91,6 +94,7 @@ const format: TooltipFormat = {
   number: String,
   percent: (p) => `${Math.round(p * 1000) / 10} %`,
   isHidden: () => false,
+  locale: 'es',
   difference: (d) => `${sign(d)}${Math.abs(d)}`,
 };
 
@@ -107,9 +111,13 @@ test('rangos: finitos, ordenados y sin repetir; cada valor en el suyo', () => {
   assert.equal(rangeIndex(-20, r), 0);
   assert.equal(rangeIndex(NaN, r), -1);
   assert.equal(rangeIndex(10, []), -1);
-  assert.equal(rangeText(60, r, String), 'Entre 50 y 75 (2 de 3)');
-  assert.equal(rangeText(20, r, String), 'Hasta 50 (1 de 3)');
-  assert.equal(rangeText(130, r, String), 'Más de 100 (pasa la última)');
+  assert.equal(rangeText(60, r, String, 'es'), 'Entre 50 y 75 (2 de 3)');
+  assert.equal(rangeText(20, r, String, 'es'), 'Hasta 50 (1 de 3)');
+  assert.equal(rangeText(130, r, String, 'es'), 'Más de 100 (pasa la última)');
+  assert.equal(rangeText(60, r, String, 'en'), 'Between 50 and 75 (2 of 3)');
+  assert.equal(rangeText(130, r, String, 'en'), 'Over 100 (past the last band)');
+  assert.equal(rangeText(60, r, String, 'pt-BR'), 'Entre 50 e 75 (2 de 3)');
+  assert.equal(rangeText(20, r, String, 'pt-BR'), 'Até 50 (1 de 3)');
   assert.equal(rangeText(20, [], String), null);
 });
 
@@ -363,8 +371,8 @@ test('tooltip: valor, meta, diferencia con signo y %, y el rango', () => {
 test('teclado y accesibilidad: recorre todas las filas y las nombra como indicadores', () => {
   assert.equal(bullet.coords, 'free');
   assert.equal(bullet.navigable, undefined);
-  assert.deepEqual(bullet.items, ['indicador', 'indicadores']);
-  assert.equal(bullet.label, 'metas');
+  assert.deepEqual(messages('es').types.bullet.items, ['indicador', 'indicadores']);
+  assert.equal(messages('es').types.bullet.label, 'metas');
   assert.deepEqual(bullet.domainValues!({ type: 'bullet', field: 'v', ranges: [75, 50, NaN] }), [50, 75]);
 });
 

@@ -17,6 +17,7 @@
  *
  * Toda la geometría (grafo, columnas, orden, layout, cintas, hit-test) son funciones puras.
  */
+import { messages } from '../core/i18n';
 import {
   dimmed,
   type DrawContext,
@@ -635,11 +636,7 @@ function modelOf(ps: PreparedSeries): SankeyModel {
   // Un aviso por conjunto de datos, no uno por cuadro.
   if (m.dropped.length) {
     const list = m.dropped.map((i) => `"${sources[i]} → ${targets[i]}"`).join(', ');
-    const one = m.dropped.length === 1;
-    console.warn(
-      `LozCharts: en el sankey "${ps.name}", ${one ? '1 fila cierra' : `${m.dropped.length} filas cierran`} un ciclo y no ${one ? 'se dibuja' : 'se dibujan'}: ${list}. ` +
-        `Un sankey va siempre hacia adelante; revisa el sentido de ${one ? 'ese flujo' : 'esos flujos'}.`,
-    );
+    console.warn(messages(ps.locale).warnings.sankeyCycles(ps.name, list, m.dropped.length));
   }
   return m;
 }
@@ -732,8 +729,6 @@ export const sankey: SeriesImpl = {
   coords: 'free',
   layer: 0,
   legendSymbol: 'square',
-  label: 'flujos',
-  items: ['conexión', 'conexiones'],
   dimmable: true,
   texts: (o, x) => ({ to: o.to, from: x }),
   draw(ctx) {
@@ -785,15 +780,16 @@ export const sankey: SeriesImpl = {
     if (!isFinite(v)) return null;
     const value = format.value(v);
     const m = modelOf(ps);
-    if (m.dropped.includes(i)) return { value, details: [['No aparece', 'cerraría un ciclo']] };
+    const { data, flows } = messages(format.locale);
+    if (m.dropped.includes(i)) return { value, details: [[data.notShown, flows.cycle]] };
     const l = m.byRow.get(i);
     // Como en los demás tipos: lo que no se dibuja dice por qué.
-    if (!l) return { value, details: [['No aparece', v <= 0 ? 'vale cero o menos' : 'le falta el origen o el destino']] };
+    if (!l) return { value, details: [[data.notShown, v <= 0 ? data.zeroOrLess : data.missingEnds]] };
     const details: [string, string][] = [];
     if (m.outflow[l.source] > 0)
-      details.push([`De lo que sale de ${m.names[l.source]}`, share(l.value / m.outflow[l.source], format.percent)]);
+      details.push([flows.outOf(m.names[l.source]), share(l.value / m.outflow[l.source], format.percent)]);
     if (m.inflow[l.target] > 0)
-      details.push([`De lo que llega a ${m.names[l.target]}`, share(l.value / m.inflow[l.target], format.percent)]);
+      details.push([flows.into(m.names[l.target]), share(l.value / m.inflow[l.target], format.percent)]);
     return { value, details };
   },
 };

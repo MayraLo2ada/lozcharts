@@ -4,6 +4,7 @@
  */
 
 import type { PaletteOption } from '../types';
+import { messages } from './i18n';
 
 export interface Theme {
   name: 'light' | 'dark';
@@ -61,15 +62,12 @@ export const DARK: Theme = {
 export const MAX_COLORS = 8;
 
 /** Tema del modo dado, con la paleta propia si la hay. */
-export function resolveTheme(mode: 'light' | 'dark', custom?: PaletteOption): Theme {
+export function resolveTheme(mode: 'light' | 'dark', custom?: PaletteOption, locale?: string): Theme {
   const base = mode === 'dark' ? DARK : LIGHT;
   if (!custom) return base;
   const list = isList(custom) ? custom : mode === 'dark' ? (custom.dark ?? custom.light) : custom.light;
   if (!list.length) return base;
-  if (list.length > MAX_COLORS)
-    console.warn(
-      `LozCharts: tu paleta tiene ${list.length} colores y uso solo los primeros ${MAX_COLORS}; con más, cuesta distinguirlos.`,
-    );
+  if (list.length > MAX_COLORS) console.warn(messages(locale).warnings.palette(list.length, MAX_COLORS));
   return { ...base, palette: list.slice(0, MAX_COLORS) };
 }
 

@@ -9,6 +9,7 @@
  *
  * Toda la geometría (ángulos, hit-test, reparto de etiquetas) son funciones puras exportadas.
  */
+import { messages } from '../core/i18n';
 import {
   dimmed,
   dimOpacity,
@@ -49,12 +50,11 @@ const TEXT_PAD = 4;
 /** Radio mínimo aceptable con etiquetas; por debajo se recortan y, si no basta, se quitan. */
 const MIN_RADIUS = 48;
 /** Muestra de porcentaje para reservar ancho estable mientras se anima (cifras tabulares). */
-const PERCENT_SAMPLE = '88,8 %';
+const PERCENT_SAMPLE = 0.888;
 
 // Centro del donut.
 const TOTAL_MAX = 28;
 const TOTAL_MIN = 14;
-const CAPTION = 'Total';
 /** El total solo cabe si el agujero tiene al menos este radio. */
 const HOLE_MIN_FOR_TOTAL = 28;
 
@@ -234,7 +234,7 @@ function geometry(ctx: DrawContext, defaultHole: number): Geometry {
     if (!ctx.isHidden(i) && isFinite(v) && v > 0) names.push(ctx.label(i));
   }
   if (!names.length) return done(plain, null);
-  const sampleW = ctx.measure(' ' + PERCENT_SAMPLE);
+  const sampleW = ctx.measure(' ' + ctx.percent(PERCENT_SAMPLE));
   const longestName = maxOf(names.map((s) => ctx.measure(s)));
   const longest = longestName + sampleW;
   // Lo que ocupa la guía más el texto a cada lado del pie.
@@ -332,7 +332,7 @@ function centerTotal(ctx: DrawContext, g: Geometry): string {
   const common = { x: r2(g.cx), 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-variant-numeric': 'tabular-nums' };
   return (
     `<text${attrs({ ...common, y: r2(g.cy - FONT / 2), fill: th.text, 'font-size': r2(size), 'font-weight': 600 })}>${esc(text)}</text>` +
-    `<text${attrs({ ...common, y: r2(g.cy + size / 2 + 4), fill: th.textMuted, 'font-size': FONT })}>${CAPTION}</text>`
+    `<text${attrs({ ...common, y: r2(g.cy + size / 2 + 4), fill: th.textMuted, 'font-size': FONT })}>${esc(messages(ctx.locale).data.total)}</text>`
   );
 }
 
@@ -354,31 +354,25 @@ function sliceMarkup(ctx: DrawContext, g: Geometry, i: number, outer: number, dx
 const warned = new WeakSet<readonly number[]>();
 
 /** Un aviso por conjunto de datos si hay valores negativos: cuentan como cero y no se dibujan. */
-function warnNegatives(ps: PreparedSeries): void {
+function warnNegatives(ps: PreparedSeries, locale?: string): void {
   if (warned.has(ps.values)) return;
   warned.add(ps.values);
   const rows = ps.values.map((v, i) => (v < 0 ? i + 1 : 0)).filter(Boolean);
   if (!rows.length) return;
-  const one = rows.length === 1;
-  console.warn(
-    `LozCharts: en "${ps.name}", ${one ? 'la fila' : 'las filas'} ${rows.slice(0, 8).join(', ')}${rows.length > 8 ? '…' : ''} ` +
-      `${one ? 'tiene un valor negativo' : 'tienen valores negativos'}: un pie no puede mostrar partes negativas y ${one ? 'cuenta' : 'cuentan'} como cero. ` +
-      'Para comparar subidas y bajadas, usa barras o una cascada.',
-  );
+  const list = rows.slice(0, 8).join(', ') + (rows.length > 8 ? '…' : '');
+  console.warn(messages(locale).warnings.pieNegative(ps.name, list, rows.length));
 }
 
-function radial(defaultHole: number, label: string): SeriesImpl {
+function radial(defaultHole: number): SeriesImpl {
   return {
     coords: 'free',
     legendBy: 'points',
     // Las porciones nacen en cero: el dominio debe incluirlo para que la animación parta de ahí.
     includeZero: true,
-    items: ['categoría', 'categorías'],
     legendSymbol: 'square',
-    label,
     dimmable: true,
     draw(ctx) {
-      warnNegatives(ctx.frame.ps);
+      warnNegatives(ctx.frame.ps, ctx.locale);
       const g = geometry(ctx, defaultHole);
       if (!(g.outer > 0)) return '';
       let s = '';
@@ -424,12 +418,13 @@ function radial(defaultHole: number, label: string): SeriesImpl {
 /** Valor exacto y su parte del total visible: "48.210 (31,2 %)". */
 export function sliceTooltip(ps: PreparedSeries, i: number, format: TooltipFormat): TooltipValue {
   const v = ps.values[i];
-  if (!isFinite(v)) return { value: 'Sin dato' };
+  const t = messages(format.locale).data;
+  if (!isFinite(v)) return { value: t.noData };
   // Sin porcentaje: un "0 %" junto a un valor negativo parecería un cálculo.
-  if (v < 0) return { value: format.value(v), details: [['No aparece', 'vale menos de cero']] };
+  if (v < 0) return { value: format.value(v), details: [[t.notShown, t.belowZero]] };
   if (format.isHidden(i)) return { value: format.value(v) };
   return { value: `${format.value(v)} (${share(visibleShare(ps.values, i, format.isHidden), format.percent)})` };
 }
 
-export const pie: SeriesImpl = radial(0, 'sectores');
-export const donut: SeriesImpl = radial(DONUT_HOLE, 'anillo');
+export const pie: SeriesImpl = radial(0);
+export const donut: SeriesImpl = radial(DONUT_HOLE);

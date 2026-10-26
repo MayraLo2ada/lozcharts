@@ -78,8 +78,6 @@ export const radar: SeriesImpl = {
   layer: 1,
   includeZero: true,
   legendSymbol: 'square',
-  label: 'radar',
-  items: ['criterio', 'criterios'],
   draw(ctx) {
     if (!ctx.polar) return '';
     const { fill, edge } = radarPaths(vertices(ctx));

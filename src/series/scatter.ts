@@ -3,6 +3,7 @@
  * plano (no hay crosshair). Los puntos llevan un anillo de 2 px del color de la superficie
  * para separarse cuando se tocan.
  */
+import { messages } from '../core/i18n';
 import { dimOpacity, type DrawContext, type SeriesImpl } from '../core/series';
 import { attrs } from '../core/dom';
 import { maxOf } from './common';
@@ -34,7 +35,6 @@ function dot(ctx: DrawContext, i: number, r: number, opacity?: number, dim?: num
 export const scatter: SeriesImpl = {
   layer: 3,
   legendSymbol: 'dot',
-  label: 'dispersión',
   pointer: 'nearest',
   dimmable: true,
   draw(ctx) {
@@ -67,7 +67,6 @@ function bubbleRadius(ctx: DrawContext): (i: number) => number {
 export const bubble: SeriesImpl = {
   layer: 3,
   legendSymbol: 'dot',
-  label: 'burbujas',
   pointer: 'nearest',
   columns: (o) => ({ size: o.size }),
   dimmable: true,
@@ -80,9 +79,10 @@ export const bubble: SeriesImpl = {
   hover: (ctx, i) => dot(ctx, i, bubbleRadius(ctx)(i) + 2),
   tooltip(ps, i, format) {
     const v = ps.values[i];
-    if (!isFinite(v)) return { value: 'Sin dato' };
+    const t = messages(format.locale);
+    if (!isFinite(v)) return { value: t.data.noData };
     const size = ps.columns.size[i];
-    const label = ps.options.sizeName ?? 'Tamaño';
+    const label = ps.options.sizeName ?? t.scatter.size;
     return { value: format.value(v), details: isFinite(size) ? [[label, format.number(size)]] : undefined };
   },
 };

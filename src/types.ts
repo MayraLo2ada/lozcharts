@@ -272,7 +272,12 @@ export interface LozChartOptions {
    */
   tooltip?: boolean | TooltipOptions;
   animate?: boolean;
-  /** Locale para números y fechas. Por defecto 'es'. */
+  /**
+   * Idioma de los textos (tooltip, leyenda, botones, descripción accesible, avisos) y formato de
+   * números y fechas: 'es', 'en', 'pt-BR' o cualquier variante ('es-MX' usa los textos en español
+   * y los números de México). Por defecto, el de la página (`<html lang>`) si es español, inglés o
+   * portugués (o uno registrado con LozChart.registerLocale); si no, inglés.
+   */
   locale?: string;
   /** Moneda ISO para el formato 'currency'. Por defecto 'USD'. */
   currency?: string;

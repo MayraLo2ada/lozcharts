@@ -28,6 +28,7 @@
  *
  * Toda la geometría (grafo, arcos, extremos, cintas, etiquetas, hit-test) son funciones puras.
  */
+import { messages } from '../core/i18n';
 import {
   dimmed,
   type DrawContext,
@@ -577,11 +578,7 @@ function modelOf(ps: PreparedSeries): ChordModel {
   // Un aviso por conjunto de datos, no uno por cuadro.
   if (m.loops.length) {
     const list = m.loops.map((i) => `"${sources[i]} → ${targets[i]}"`).join(', ');
-    const one = m.loops.length === 1;
-    console.warn(
-      `LozCharts: en las cuerdas "${ps.name}", ${one ? '1 fila empieza y termina' : `${m.loops.length} filas empiezan y terminan`} en el mismo lugar y no ${one ? 'se dibuja' : 'se dibujan'}: ${list}. ` +
-        'Cada cuerda necesita un origen y un destino distintos.',
-    );
+    console.warn(messages(ps.locale).warnings.chordLoops(ps.name, list, m.loops.length));
   }
   return m;
 }
@@ -664,8 +661,6 @@ export const chord: SeriesImpl = {
   coords: 'free',
   layer: 0,
   legendSymbol: 'square',
-  label: 'cuerdas',
-  items: ['conexión', 'conexiones'],
   dimmable: true,
   texts: (o, x) => ({ to: o.to, from: x }),
   draw(ctx) {
@@ -723,13 +718,14 @@ export const chord: SeriesImpl = {
     if (!isFinite(v)) return null;
     const value = format.value(v);
     const m = modelOf(ps);
-    if (m.loops.includes(i)) return { value, details: [['No aparece', 'empieza y termina en el mismo lugar']] };
+    const { data, flows } = messages(format.locale);
+    if (m.loops.includes(i)) return { value, details: [[data.notShown, flows.sameNode]] };
     const l = m.byRow.get(i);
     // Como en los demás tipos: lo que no se dibuja dice por qué.
-    if (!l) return { value, details: [['No aparece', v <= 0 ? 'vale cero o menos' : 'le falta el origen o el destino']] };
+    if (!l) return { value, details: [[data.notShown, v <= 0 ? data.zeroOrLess : data.missingEnds]] };
     const details: [string, string][] = [
-      [`De lo que sale de ${m.names[l.source]}`, share(l.value / m.outflow[l.source], format.percent)],
-      [`De lo que llega a ${m.names[l.target]}`, share(l.value / m.inflow[l.target], format.percent)],
+      [flows.outOf(m.names[l.source]), share(l.value / m.outflow[l.source], format.percent)],
+      [flows.into(m.names[l.target]), share(l.value / m.inflow[l.target], format.percent)],
     ];
     return { value, details };
   },

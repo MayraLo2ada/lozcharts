@@ -7,6 +7,7 @@ import type { Datum, SeriesOptions, XAxisType } from '../types';
 import type { PreparedSeries, SeriesImpl } from './series';
 import { parseTime } from './format';
 import { detectTimeUnit, type TimeUnit } from './ticks';
+import { messages } from './i18n';
 
 export interface Prepared {
   n: number;
@@ -41,9 +42,9 @@ export interface PrepareInput {
   band?: boolean;
   /** Se permite el eje derecho (no en índice ni en horizontal, donde no tiene sentido). */
   rightAxis?: boolean;
+  /** Idioma del gráfico: de los avisos y del nombre del grupo "Otros". Por defecto, el de la página. */
+  locale?: string;
 }
-
-export const OTHERS = 'Otros';
 
 /** Convierte un valor de celda en número; vacío o ausente es NaN (un hueco). */
 export function toNumber(v: unknown): number {
@@ -55,18 +56,17 @@ export function toNumber(v: unknown): number {
  *   grupo, las sobrantes se suman en "Otros"; si no, se muestran solo las primeras.
  */
 export function prepare(input: PrepareInput, registry: ReadonlyMap<string, SeriesImpl>, maxSeries: number): Prepared {
-  const { xField, xType } = input;
+  const { xField, xType, locale } = input;
+  const m = messages(locale);
+  const warn = m.warnings;
+  const OTHERS = m.data.others;
   // Una fila que no es un objeto (null, un número) no tiene campos que leer.
   let rows = (input.data as Datum[]).filter((row) => row !== null && typeof row === 'object');
   if (rows.length < input.data.length) {
-    console.warn(
-      `LozCharts: ${input.data.length - rows.length} de las filas de data no son objetos y las dejo fuera. Cada fila debe ser como { mes: 'ene', ventas: 120 }.`,
-    );
+    console.warn(warn.notObjects(input.data.length - rows.length));
   }
   if (rows.length && !rows.some((row) => xField in row)) {
-    console.warn(
-      `LozCharts: ninguna fila tiene el campo "${xField}" que pide xAxis.field. Revisa cómo está escrito (las mayúsculas cuentan).`,
-    );
+    console.warn(warn.noXFieldRows(xField));
   }
   let xNum: number[] = [];
   if (xType !== 'category') {
@@ -75,10 +75,7 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
     const lost = rows.length - keyed.length;
     // Una fila sin X no tiene dónde ir; se avisa, porque un formato de fecha que no se entiende
     // dejaría el gráfico vacío sin explicación.
-    if (lost) {
-      const what = xType === 'time' ? 'una fecha válida (Date, milisegundos o texto como 2026-03-15)' : 'un número';
-      console.warn(`LozCharts: ${lost} de ${rows.length} filas no tienen ${what} en "${xField}" y quedan fuera del gráfico.`);
-    }
+    if (lost) console.warn(warn.lostRows(lost, rows.length, xType === 'time', xField));
     keyed.sort((a, b) => a.x - b.x);
     rows = keyed.map((r) => r.row);
     xNum = keyed.map((r) => r.x);
@@ -86,9 +83,7 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
 
   let defs = input.series.filter((s) => {
     if (registry.has(s.type)) return true;
-    console.warn(
-      `LozCharts: no conozco el tipo "${s.type}" y no dibujo esa serie. Revisa cómo está escrito o regístralo con LozChart.registerSeries('${s.type}', …).`,
-    );
+    console.warn(warn.unknownType(s.type));
     return false;
   });
 
@@ -96,9 +91,7 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
   if (rows.length) {
     for (const s of defs) {
       if (s.field && !rows.some((row) => s.field in row)) {
-        console.warn(
-          `LozCharts: ninguna fila tiene el campo "${s.field}" de la serie "${s.name ?? s.field}", así que queda vacía. Revisa cómo está escrito (las mayúsculas cuentan).`,
-        );
+        console.warn(warn.emptySeries(s.field, s.name ?? s.field));
       }
     }
   }
@@ -106,27 +99,21 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
   const names = defs.map((s) => s.name ?? s.field);
   const repeated = [...new Set(names.filter((name, i) => names.indexOf(name) !== i))];
   if (repeated.length) {
-    console.warn(
-      `LozCharts: hay varias series que se llaman ${repeated.map((n) => `"${n}"`).join(', ')}; la leyenda y el tooltip no las distinguen y ocultar una oculta todas. Dale a cada una su propio name.`,
-    );
+    console.warn(warn.duplicateNames(repeated.map((n) => `"${n}"`).join(', ')));
   }
 
   // Todas las series comparten el sistema de coordenadas de la primera.
   const coords = (defs[0] && registry.get(defs[0].type)!.coords) ?? 'cartesian';
   defs = defs.filter((s) => {
     if ((registry.get(s.type)!.coords ?? 'cartesian') === coords) return true;
-    console.warn(
-      `LozCharts: "${s.name ?? s.field}" es de tipo ${s.type} y no se puede mezclar con ${defs[0].type}, así que la dejo fuera. Ponla en otro gráfico.`,
-    );
+    console.warn(warn.cannotMix(s.name ?? s.field, s.type, defs[0].type));
     return false;
   });
   // Leyenda por categorías (pie): cada categoría con su color. Los tipos libres (pie, gauge,
   // embudo) usan toda el área: una sola serie por gráfico (para varios, small multiples).
   const pointLegend = !!defs[0] && registry.get(defs[0].type)!.legendBy === 'points';
   if ((pointLegend || coords === 'free') && defs.length > 1) {
-    console.warn(
-      `LozCharts: un gráfico de tipo ${defs[0].type} muestra una sola serie; dibujo "${defs[0].name ?? defs[0].field}" y dejo fuera las demás. Para verlas todas, usa facet.`,
-    );
+    console.warn(warn.singleSeries(defs[0].type, defs[0].name ?? defs[0].field));
     defs = defs.slice(0, 1);
   }
   let pointSlots: number[] = [];
@@ -155,10 +142,7 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
       folded = tail;
       defs = defs.slice(0, maxSeries - 1);
     } else {
-      console.warn(
-        `LozCharts: hay ${defs.length} series y la paleta tiene ${maxSeries} colores, así que dibujo solo las primeras ${maxSeries}. ` +
-          'Agrupa el resto o divide el gráfico.',
-      );
+      console.warn(warn.tooManySeries(defs.length, maxSeries));
       defs = defs.slice(0, maxSeries);
     }
   }
@@ -167,9 +151,7 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
   const axisOf = (options: SeriesOptions): 'left' | 'right' => {
     if (options.axis !== 'right') return 'left';
     if (input.rightAxis) return 'right';
-    console.warn(
-      `LozCharts: "${options.name ?? options.field}" pide el eje derecho, pero en modo índice o en horizontal no hay; la dibujo en el izquierdo.`,
-    );
+    console.warn(warn.noRightAxis(options.name ?? options.field));
     return 'left';
   };
   const series: PreparedSeries[] = defs.map((options, index) => {
@@ -188,6 +170,7 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
       texts: textColumns(options, impl, rows, xField),
       stackKey: stackKeyOf(options, impl, axis),
       axis,
+      locale,
     };
   });
   for (const s of series) if (s.impl.derive) s.values = s.impl.derive(s);
@@ -206,10 +189,11 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
       texts: {},
       stackKey: stackKeyOf(first, registry.get(first.type)!, axisOf(first)),
       axis: axisOf(first),
+      locale,
     });
   }
 
-  if (input.index) for (const s of series) toIndex(s);
+  if (input.index) for (const s of series) toIndex(s, warn.indexNeedsPositive);
 
   return {
     n: rows.length,
@@ -248,12 +232,10 @@ function textColumns(options: SeriesOptions, impl: SeriesImpl, rows: Datum[], xF
  * Índice base 100: divide por el primer valor y multiplica por 100 (también las columnas en
  * unidades del eje, como el máximo y el mínimo de una vela). Guarda los originales en `raw`.
  */
-function toIndex(s: PreparedSeries): void {
+function toIndex(s: PreparedSeries, warning: (name: string) => string): void {
   const base = s.values.find((v) => isFinite(v) && v !== 0);
   if (base === undefined || base < 0) {
-    console.warn(
-      `LozCharts: "${s.name}" no empieza con un valor positivo, así que no puedo pasarla a índice base 100 y queda sin dibujar.`,
-    );
+    console.warn(warning(s.name));
     s.raw = s.values;
     s.values = s.values.map(() => NaN);
     return;

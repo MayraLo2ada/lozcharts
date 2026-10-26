@@ -1,4 +1,5 @@
 /** Descargar un SVG como archivo .svg o .png. */
+import { messages } from './i18n';
 
 /** "Ventas por mes" → "ventas-por-mes". */
 export function slug(s: string): string {
@@ -26,6 +27,7 @@ export async function downloadImage(
   height: number,
   type: 'png' | 'svg',
   name: string,
+  locale?: string,
 ): Promise<void> {
   if (type === 'svg') {
     saveBlob(new Blob([markup], { type: 'image/svg+xml;charset=utf-8' }), name + '.svg');
@@ -39,14 +41,11 @@ export async function downloadImage(
   canvas.width = Math.round(width * scale);
   canvas.height = Math.round(height * scale);
   const ctx = canvas.getContext('2d');
-  if (!ctx)
-    throw new Error(
-      'LozCharts: este navegador no deja dibujar en canvas, así que no puedo crear la imagen. Descarga el SVG en su lugar.',
-    );
+  if (!ctx) throw new Error(messages(locale).warnings.noCanvas);
   ctx.scale(scale, scale);
   ctx.drawImage(img, 0, 0, width, height);
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-  if (!blob) throw new Error('LozCharts: no pude crear el PNG. Vuelve a intentarlo o descarga el SVG.');
+  if (!blob) throw new Error(messages(locale).warnings.pngFailed);
   saveBlob(blob, name + '.png');
 }
 

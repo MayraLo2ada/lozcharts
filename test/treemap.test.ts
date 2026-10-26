@@ -41,6 +41,7 @@ function series(values: number[], groups?: string[], labels?: boolean): Prepared
     texts: groups ? { group: groups } : { group: values.map(() => '') },
     stackKey: null,
     axis: 'left',
+    locale: 'es',
   };
 }
 
@@ -66,6 +67,7 @@ function context(values: number[], groups?: string[], width = 600, height = 360,
     height,
     n,
     isHidden: () => false,
+    locale: 'es',
     label: (i) => names[i] ?? '',
     measure,
     format: (v) => String(v),
@@ -289,6 +291,7 @@ test('tooltip y encabezado: parte del total y del grupo', () => {
     number: String,
     percent: (p) => (p * 100).toFixed(1) + ' %',
     isHidden: () => false,
+    locale: 'es',
   };
   const ps = series(VALUES, GROUPS);
   assert.deepEqual(treemap.tooltip!(ps, 0, format), {
@@ -304,7 +307,8 @@ test('tooltip y encabezado: parte del total y del grupo', () => {
   assert.deepEqual(treemap.tooltip!(series([-4, 1]), 0, format), { value: '-4', details: [['No aparece', 'vale cero o menos']] });
   assert.equal(treemap.headline!(ps, 4, 'Mesas'), 'Hogar › Mesas');
   assert.equal(treemap.headline!(series(VALUES), 4, 'Mesas'), 'Mesas');
-  assert.equal(treemap.headline!(series([1], ['']), 0, 'X'), 'Sin grupo › X');
+  assert.equal(treemap.headline!(series([1], ['']), 0, 'X', 'es'), 'Sin grupo › X');
+  assert.equal(treemap.headline!(series([1], ['']), 0, 'X', 'pt-BR'), 'Sem grupo › X');
 });
 
 test('muchos datos y pantalla angosta: sin errores ni rectángulos fuera del área', () => {

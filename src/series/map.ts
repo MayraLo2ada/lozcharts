@@ -13,6 +13,7 @@
  * - 'mapbubble': el mapa en gris y un círculo por fila, en su latitud y longitud (o en el centro
  *   del país si no las trae), con el área proporcional al valor.
  */
+import { language, messages } from '../core/i18n';
 import {
   dimOpacity,
   type DrawContext,
@@ -87,9 +88,7 @@ function setup(ctx: DrawContext, legend: boolean): MapSetup | null {
   if (!all) {
     if (!warned.has(ps)) {
       warned.add(ps);
-      console.warn(
-        `LozCharts: no hay ningún mapa registrado como "${name}". Regístralo con LozChart.registerMap('${name}', …) antes de dibujar.`,
-      );
+      console.warn(messages(ctx.locale).warnings.noMap(name));
     }
     return null;
   }
@@ -109,10 +108,8 @@ function setup(ctx: DrawContext, legend: boolean): MapSetup | null {
   const missing = place.map((p, i) => (p < 0 && !located(i) ? ctx.label(i) : '')).filter(Boolean);
   if (missing.length && !warned.has(ps)) {
     warned.add(ps);
-    console.warn(
-      `LozCharts: no encuentro estos lugares en el mapa "${name}": ${missing.slice(0, 8).join(', ')}${missing.length > 8 ? '…' : ''}. ` +
-        'Revisa cómo están escritos.',
-    );
+    const list = missing.slice(0, 8).join(', ') + (missing.length > 8 ? '…' : '');
+    console.warn(messages(ctx.locale).warnings.missingPlaces(name, list));
   }
   // Se excluye lo que no tiene datos y está en la lista de excluidos (la Antártida).
   const used = new Set(place);
@@ -208,18 +205,24 @@ function sphereMarkup(S: MapSetup, ctx: DrawContext): string {
 /** Índice de claves de cada mapa (se arma una vez por mapa registrado). */
 const indexes = new WeakMap<GeoFeature[], Map<string, number>>();
 
+/** Propiedad con el nombre de cada lugar en un idioma, además de `name_<idioma>` (la de Natural Earth). */
+const LOCAL_NAME: Record<string, string> = { es: 'nombre', pt: 'nome' };
+
 /**
- * Nombre del lugar para el tooltip y la tabla: en español si el mapa lo trae. No depende del
- * dibujo: la tabla se arma antes del primer cuadro.
+ * Nombre del lugar para el tooltip y la tabla, en el idioma del gráfico si el mapa lo trae
+ * (`name_pt`, `nome`, `nombre`); si no, su `name`. No depende del dibujo: la tabla se arma antes
+ * del primer cuadro.
  */
-function placeName(ps: PreparedSeries, _i: number, x: string): string {
+function placeName(ps: PreparedSeries, _i: number, x: string, locale?: string): string {
   const all = getMap(ps.options.map ?? 'mundo');
   if (!all) return x;
   if (!indexes.has(all)) indexes.set(all, featureIndex(all));
   const k = indexes.get(all)!.get(normalize(x));
-  const f = k === undefined ? null : all[k];
-  const nombre = f?.properties.nombre ?? f?.properties.name;
-  return typeof nombre === 'string' && nombre ? nombre : x;
+  const p = k === undefined ? null : all[k].properties;
+  if (!p) return x;
+  const lang = language(locale);
+  const name = [p[`name_${lang}`], p[LOCAL_NAME[lang]], p.name].find((v) => typeof v === 'string' && v);
+  return (name as string | undefined) ?? x;
 }
 
 /** La escala de color se muestra salvo `labels: false` (un mapa decorativo, o con su propia leyenda afuera). */
@@ -275,13 +278,14 @@ function ranked(ps: PreparedSeries, place?: readonly number[]): number[] {
 }
 
 const tooltip = (ps: PreparedSeries, i: number, format: TooltipFormat) => ({
-  value: isFinite(ps.values[i]) ? format.value(ps.values[i]) : 'Sin dato',
+  value: isFinite(ps.values[i]) ? format.value(ps.values[i]) : messages(format.locale).data.noData,
 });
 
 /** En el mapa de burbujas, un valor de cero o menos no tiene burbuja: el tooltip lo dice. */
 const bubbleTooltip = (ps: PreparedSeries, i: number, format: TooltipFormat): TooltipValue => {
   const v = ps.values[i];
-  if (isFinite(v) && v <= 0) return { value: format.value(v), details: [['No aparece', 'vale cero o menos']] };
+  const t = messages(format.locale).data;
+  if (isFinite(v) && v <= 0) return { value: format.value(v), details: [[t.notShown, t.zeroOrLess]] };
   return tooltip(ps, i, format);
 };
 
@@ -300,9 +304,7 @@ function placePaints(ctx: DrawContext, S: MapSetup): Map<number, Paint> {
 
 export const choropleth: SeriesImpl = {
   coords: 'free',
-  label: 'mapa por colores',
   legendSymbol: 'square',
-  items: ['lugar', 'lugares'],
   dimmable: true,
   draw(ctx) {
     const S = setup(ctx, true);
@@ -349,7 +351,7 @@ export const choropleth: SeriesImpl = {
     return c ? paintColor(c) : null;
   },
   navigable: (ps) => ranked(ps, setups.get(ps)?.place),
-  headline: (ps, i, x) => placeName(ps, i, x),
+  headline: (ps, i, x, locale) => placeName(ps, i, x, locale),
   tooltip,
 };
 
@@ -389,9 +391,7 @@ function bubbleScale(ctx: DrawContext, S: MapSetup) {
 
 export const mapbubble: SeriesImpl = {
   coords: 'free',
-  label: 'mapa de burbujas',
   legendSymbol: 'dot',
-  items: ['lugar', 'lugares'],
   columns: (o) => ({ lat: o.lat, lon: o.lon }),
   dimmable: true,
   draw(ctx) {
@@ -435,6 +435,6 @@ export const mapbubble: SeriesImpl = {
     return `<circle${attrs({ cx: c[0].toFixed(1), cy: c[1].toFixed(1), r: (r + 1).toFixed(2), fill: 'none', stroke: ctx.theme.text, 'stroke-width': 2 })}/>`;
   },
   navigable: (ps) => ranked(ps),
-  headline: (ps, i, x) => placeName(ps, i, x),
+  headline: (ps, i, x, locale) => placeName(ps, i, x, locale),
   tooltip: bubbleTooltip,
 };

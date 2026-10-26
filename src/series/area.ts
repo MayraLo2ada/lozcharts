@@ -10,7 +10,6 @@ export const area: SeriesImpl = {
   includeZero: true,
   legendSymbol: 'square',
   endLabel: true,
-  label: 'áreas',
   draw(ctx) {
     const { frame, color } = ctx;
     const smooth = !!frame.ps.options.smooth;

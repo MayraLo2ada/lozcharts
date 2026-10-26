@@ -1,9 +1,10 @@
 /**
- * Formatos de números y fechas con Intl (locale 'es' por defecto).
+ * Formatos de números y fechas con Intl, en el idioma del gráfico (ver i18n.ts).
  * Los objetos Intl son caros de crear, así que se guardan en caché.
  */
 import type { FormatSpec } from '../types';
 import { MAX_DECIMALS, stepDecimals, type TimeUnit } from './ticks';
+import { intlFallback, messages } from './i18n';
 
 const numCache = new Map<string, Intl.NumberFormat>();
 const dateCache = new Map<string, Intl.DateTimeFormat>();
@@ -17,12 +18,14 @@ function nf(locale: string, options: Intl.NumberFormatOptions): Intl.NumberForma
   const key = locale + JSON.stringify(opts);
   let f = numCache.get(key);
   if (!f) {
+    const near = intlFallback(locale);
     f = safely(
+      locale,
       () => new Intl.NumberFormat(locale, opts),
-      () => new Intl.NumberFormat('es', opts),
+      () => new Intl.NumberFormat(near, opts),
       // Una moneda que no existe ('EURO', 'S/'): el número sin símbolo, antes que no dibujar nada.
-      () => new Intl.NumberFormat('es', { ...opts, style: 'decimal', currency: undefined, currencyDisplay: undefined }),
-      () => new Intl.NumberFormat('es'),
+      () => new Intl.NumberFormat(near, { ...opts, style: 'decimal', currency: undefined, currencyDisplay: undefined }),
+      () => new Intl.NumberFormat('en'),
     );
     numCache.set(key, f);
   }
@@ -33,24 +36,30 @@ function df(locale: string, opts: Intl.DateTimeFormatOptions): Intl.DateTimeForm
   const key = locale + JSON.stringify(opts);
   let f = dateCache.get(key);
   if (!f) {
-    // Un locale mal escrito ('es_ES') cae en español; unas opciones que Intl no acepta, en la fecha corta.
+    // Un locale mal escrito ('es_ES') cae en su idioma ('es'); unas opciones que Intl no acepta, en la fecha corta.
+    const near = intlFallback(locale);
     f = safely(
+      locale,
       () => new Intl.DateTimeFormat(locale, opts),
-      () => new Intl.DateTimeFormat('es', opts),
-      () => new Intl.DateTimeFormat('es'),
+      () => new Intl.DateTimeFormat(near, opts),
+      () => new Intl.DateTimeFormat(near),
+      () => new Intl.DateTimeFormat('en'),
     );
     dateCache.set(key, f);
   }
   return f;
 }
 
-/** El primer formateador que se deja crear. Avisa una vez por cada caso que no se pudo usar tal cual. */
-function safely<T>(...tries: (() => T)[]): T {
+/**
+ * El primer formateador que se deja crear. Avisa una vez (en el idioma del gráfico) por cada caso
+ * que no se pudo usar tal cual.
+ */
+function safely<T>(locale: string, ...tries: (() => T)[]): T {
   let first: unknown;
   for (const make of tries) {
     try {
       const f = make();
-      if (first !== undefined) warnFormat(first);
+      if (first !== undefined) warnFormat(first, locale);
       return f;
     } catch (err) {
       first ??= err;
@@ -61,13 +70,11 @@ function safely<T>(...tries: (() => T)[]): T {
 
 const warned = new Set<string>();
 
-function warnFormat(err: unknown): void {
+function warnFormat(err: unknown, locale: string): void {
   const message = err instanceof Error ? err.message : String(err);
   if (warned.has(message)) return;
   warned.add(message);
-  console.warn(
-    `LozCharts: Intl no acepta el locale, la moneda o el formato que diste (${message}); uso uno parecido. Revisa locale ('es', 'en', 'pt-BR'), currency (código ISO como 'USD') y xAxis.format.`,
-  );
+  console.warn(messages(locale).warnings.intl(message));
 }
 
 export interface NumberContext {
@@ -200,8 +207,7 @@ export function timeFullLabel(t: number, unit: TimeUnit, locale: string): string
       s = df(locale, { month: 'long', year: 'numeric' }).format(d);
       break;
     case 'week':
-      s =
-        (locale.startsWith('es') ? 'Semana del ' : '') + df(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+      s = messages(locale).chart.weekOf(df(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(d));
       break;
     case 'day':
       s = df(locale, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }).format(d);

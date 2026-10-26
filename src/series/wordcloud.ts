@@ -34,6 +34,7 @@
  *
  * Toda la geometría (modelo, cuerpos, espiral, colocación, colores, hit-test) son funciones puras.
  */
+import { messages } from '../core/i18n';
 import {
   dimmed,
   type DrawContext,
@@ -420,10 +421,12 @@ export function legendLayout(
   width: number,
   measure: (s: string) => number,
   maxColors = MAX_COLORS,
+  locale?: string,
 ): { items: LegendItem[]; height: number } {
   if (m.groups.length < 2) return { items: [], height: 0 };
   const entries = m.groups.slice(0, maxColors).map((name, g) => ({ slot: g, name }));
-  if (m.slots.some((s) => s < 0)) entries.push({ slot: -1, name: m.groups.length > maxColors ? 'Otros' : 'Sin grupo' });
+  const t = messages(locale).data;
+  if (m.slots.some((s) => s < 0)) entries.push({ slot: -1, name: m.groups.length > maxColors ? t.others : t.noGroup });
   const items: LegendItem[] = [];
   let x = 0;
   let row = 0;
@@ -490,8 +493,9 @@ export function layoutCloud(
   height: number,
   measure: (s: string) => number,
   maxColors = MAX_COLORS,
+  locale?: string,
 ): CloudGeometry {
-  const legend = legendLayout(m, width, measure, maxColors);
+  const legend = legendLayout(m, width, measure, maxColors, locale);
   const top = legend.height;
   const h = Math.max(0, height - top);
   const n = m.words.length;
@@ -619,17 +623,13 @@ function geometryOf(ctx: DrawContext): { m: CloudModel; g: CloudGeometry } {
   const m = modelOf(ps);
   const c = geoCache.get(m);
   if (c && c.w === ctx.width && c.h === ctx.height) return { m, g: c.g };
-  const g = layoutCloud(m, ctx.width, ctx.height, ctx.measure, ctx.theme.palette.length || MAX_COLORS);
+  const g = layoutCloud(m, ctx.width, ctx.height, ctx.measure, ctx.theme.palette.length || MAX_COLORS, ctx.locale);
   geoCache.set(m, { w: ctx.width, h: ctx.height, g });
   omittedOf.set(m, new Set(g.omitted));
   // Un aviso por conjunto de datos, no uno por cuadro ni por cada cambio de tamaño.
   if (g.omitted.length && !warned.has(m)) {
     warned.add(m);
-    const k = g.omitted.length;
-    console.warn(
-      `LozCharts: en la nube "${ps.name}" no ${k === 1 ? 'cabe 1 palabra, la de menor peso' : `caben ${k} palabras, las de menor peso`}. ` +
-        'Siguen en la tabla de datos; para que entren, agranda el gráfico o acorta la lista.',
-    );
+    console.warn(messages(ctx.locale).warnings.wordcloudOmitted(ps.name, g.omitted.length));
   }
   return { m, g };
 }
@@ -692,8 +692,6 @@ export const wordcloud: SeriesImpl = {
   includeZero: true,
   layer: 0,
   legendSymbol: 'square',
-  label: 'nube de palabras',
-  items: ['palabra', 'palabras'],
   dimmable: true,
   texts: (o, x) => ({ word: x, group: o.group }),
   draw(ctx) {
@@ -755,19 +753,20 @@ export const wordcloud: SeriesImpl = {
     const m = modelOf(ps);
     const k = m.rowWord[i];
     const v = ps.values[i];
+    const { data, wordcloud: t } = messages(format.locale);
     if (k < 0) {
       if (!normalizeWord(ps.texts.word?.[i] ?? ''))
-        return { value: isFinite(v) ? format.value(v) : 'Sin dato', details: [['No aparece', 'la fila no tiene palabra']] };
+        return { value: isFinite(v) ? format.value(v) : data.noData, details: [[data.notShown, t.noWord]] };
       // Sin dato: el núcleo escribe "Sin dato".
       if (Number.isNaN(v)) return null;
-      return { value: format.value(v), details: [['No aparece', 'su peso es cero o menos']] };
+      return { value: format.value(v), details: [[data.notShown, t.noWeight]] };
     }
     const w = m.words[k];
-    if (w.row !== i) return { value: format.value(v), details: [['Se suma a', `${w.text} (${format.value(w.weight)})`]] };
-    const details: [string, string][] = [['Del total', share(w.weight / m.total, format.percent)]];
-    if (w.rows.length > 1) details.push(['Junta', `${format.number(w.rows.length)} filas`]);
-    if (m.groups.length) details.push(['Grupo', w.group >= 0 ? m.groups[w.group] : 'Sin grupo']);
-    if (omittedOf.get(m)?.has(k)) details.push(['No aparece', 'no cabe en el espacio']);
+    if (w.row !== i) return { value: format.value(v), details: [[t.addsTo, `${w.text} (${format.value(w.weight)})`]] };
+    const details: [string, string][] = [[data.ofTotal, share(w.weight / m.total, format.percent)]];
+    if (w.rows.length > 1) details.push([t.joins, t.rows(format.number(w.rows.length))]);
+    if (m.groups.length) details.push([data.group, w.group >= 0 ? m.groups[w.group] : data.noGroup]);
+    if (omittedOf.get(m)?.has(k)) details.push([data.notShown, t.noRoom]);
     return { value: format.value(w.weight), details };
   },
 };

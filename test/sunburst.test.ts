@@ -2,7 +2,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   TINY,
-  UNNAMED,
   buildHierarchy,
   cleanPath,
   fitArcLabel,
@@ -62,6 +61,7 @@ function series(rows: Row[], extra: Partial<PreparedSeries['options']> = {}): Pr
     texts: { level0: rows.map((r) => r[0]), level1: rows.map((r) => r[1]), level2: rows.map((r) => r[2]) },
     stackKey: null,
     axis: 'left',
+    locale: 'es',
   };
 }
 
@@ -78,6 +78,7 @@ function context(ps: PreparedSeries, width = 480, height = 480, y1 = ps.values, 
     height,
     n,
     isHidden: () => false,
+    locale: 'es',
     label: (i) => ps.texts.level0[i] ?? '',
     measure,
     format: (v) => String(v),
@@ -91,6 +92,7 @@ const format: TooltipFormat = {
   number: String,
   percent: (p) => `${Math.round(p * 1000) / 10} %`,
   isHidden: () => false,
+  locale: 'es',
   difference: String,
 };
 
@@ -137,7 +139,9 @@ test('jerarquía: los interiores suman a sus hijos y los hermanos van de mayor a
 });
 
 test('rutas: huecos al medio son "Sin nombre", al final acortan; mismo nombre en otra rama es otro nodo', () => {
-  assert.deepEqual(cleanPath(['América', '', 'Monterrey']), ['América', UNNAMED, 'Monterrey']);
+  assert.deepEqual(cleanPath(['América', '', 'Monterrey'], 'es'), ['América', 'Sin nombre', 'Monterrey']);
+  assert.deepEqual(cleanPath(['América', '', 'Monterrey'], 'en'), ['América', 'Unnamed', 'Monterrey']);
+  assert.deepEqual(cleanPath(['América', '', 'Monterrey'], 'pt-BR'), ['América', 'Sem nome', 'Monterrey']);
   assert.deepEqual(cleanPath(['América', 'México', '', '']), ['América', 'México']);
   assert.deepEqual(cleanPath(['', '', '']), []);
   const m = buildHierarchy(

@@ -23,6 +23,7 @@
  *
  * Toda la geometría (rangos, tonos, filas, escala, etiquetas y hit-test) son funciones puras.
  */
+import { messages } from '../core/i18n';
 import {
   dimmed,
   type DrawContext,
@@ -137,14 +138,18 @@ export function rangeIndex(v: number, ranges: readonly number[]): number {
   return k < 0 ? ranges.length : k;
 }
 
-/** "Hasta 50 (1 de 3)", "Entre 50 y 75 (2 de 3)" o "Más de 100 (pasa la última)"; null sin franjas. */
-export function rangeText(v: number, ranges: readonly number[], format: (v: number) => string): string | null {
+/**
+ * "Hasta 50 (1 de 3)", "Entre 50 y 75 (2 de 3)" o "Más de 100 (pasa la última)", en el idioma
+ * dado; null sin franjas.
+ */
+export function rangeText(v: number, ranges: readonly number[], format: (v: number) => string, locale?: string): string | null {
   const k = rangeIndex(v, ranges);
   if (k < 0) return null;
+  const t = messages(locale).bullet;
   const n = ranges.length;
-  if (k === n) return `Más de ${format(ranges[n - 1])} (pasa la última)`;
-  const span = k === 0 ? `Hasta ${format(ranges[0])}` : `Entre ${format(ranges[k - 1])} y ${format(ranges[k])}`;
-  return `${span} (${k + 1} de ${n})`;
+  if (k === n) return t.above(format(ranges[n - 1]));
+  const span = k === 0 ? t.upTo(format(ranges[0])) : t.between(format(ranges[k - 1]), format(ranges[k]));
+  return `${span} ${t.position(k + 1, n)}`;
 }
 
 export interface BulletLayout {
@@ -415,8 +420,6 @@ export const bullet: SeriesImpl = {
   includeZero: true,
   layer: 0,
   legendSymbol: 'square',
-  label: 'metas',
-  items: ['indicador', 'indicadores'],
   columns: (o) => ({ target: o.targetField }),
   // La meta y los rangos también deben caber en la escala, aunque ningún valor los alcance.
   valueColumns: ['target'],
@@ -462,17 +465,18 @@ export const bullet: SeriesImpl = {
     const v = ps.values[i];
     const t = targetOf(ps, i);
     const details: [string, string][] = [];
-    if (isFinite(t)) details.push(['Meta', format.value(t)]);
+    const m = messages(format.locale);
+    if (isFinite(t)) details.push([m.data.target, format.value(t)]);
     if (isFinite(v) && isFinite(t)) {
       const d = v - t;
       // También como parte de la meta, con signo; con meta cero no hay proporción que dar.
       const sign = d > 0 ? '+' : '−';
       const pct = t !== 0 && d !== 0 ? ` (${sign}${format.percent(Math.abs(d / t))})` : '';
-      details.push(['Frente a la meta', format.difference(d) + pct]);
+      details.push([m.data.vsTarget, format.difference(d) + pct]);
     }
-    const range = rangeText(v, cleanRanges(ps.options.ranges), format.value);
-    if (range) details.push(['Franja', range]);
-    const value = isFinite(v) ? format.value(v) : 'Sin dato';
+    const range = rangeText(v, cleanRanges(ps.options.ranges), format.value, format.locale);
+    if (range) details.push([m.bullet.band, range]);
+    const value = isFinite(v) ? format.value(v) : m.data.noData;
     return details.length ? { value, details } : { value };
   },
 };

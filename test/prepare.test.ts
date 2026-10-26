@@ -176,9 +176,11 @@ test('pie con más de 8 categorías: 7 con color y "Otros" suma el resto, sin ne
   const reg = new Map(registry);
   reg.set('pie', { coords: 'free', legendBy: 'points', includeZero: true, draw: () => '' });
   const data = 'abcdefghi'.split('').map((x, i) => ({ x, v: i === 8 ? -3 : 10 }));
-  const p = prepare({ data, xField: 'x', xType: 'category', series: [{ type: 'pie', field: 'v' }] }, reg, 8);
+  const p = prepare({ data, xField: 'x', xType: 'category', series: [{ type: 'pie', field: 'v' }], locale: 'es' }, reg, 8);
   assert.equal(p.n, 8);
   assert.equal(p.xRaw[7], 'Otros');
+  const en = prepare({ data, xField: 'x', xType: 'category', series: [{ type: 'pie', field: 'v' }], locale: 'en-US' }, reg, 8);
+  assert.equal(en.xRaw[7], 'Other');
   assert.deepEqual(p.pointSlots, [0, 1, 2, 3, 4, 5, 6, -1]);
   assert.deepEqual(p.series[0].values[7], 10);
   assert.deepEqual(

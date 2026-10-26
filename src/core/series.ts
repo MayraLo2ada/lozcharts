@@ -35,6 +35,11 @@ export interface PreparedSeries {
   stackKey: string | null;
   /** Eje del valor: el izquierdo, o el derecho (yAxis2). */
   axis: 'left' | 'right';
+  /**
+   * Idioma del gráfico, para los textos que un tipo arma al leer los datos, antes de dibujar (los
+   * avisos de consola, el nombre de un grupo vacío). Ausente equivale al de la página.
+   */
+  locale?: string;
 }
 
 /** Estado de una serie en un cuadro de animación (en unidades de datos). */
@@ -117,7 +122,10 @@ export interface DrawContext {
   percent(v: number): string;
   /** Formatear un valor en forma compacta ("506 mil M"), para cuando el exacto no cabe. */
   compact(v: number): string;
-  /** Idioma del gráfico (la opción locale), para fechas y textos con Intl. Ausente equivale a 'es'. */
+  /**
+   * Idioma del gráfico (la opción locale), para fechas y números con Intl y para los textos, con
+   * messages(locale) de core/i18n. Ausente equivale al de la página (o inglés).
+   */
   locale?: string;
   /** Moneda ISO del gráfico (la opción currency). */
   currency?: string;
@@ -148,7 +156,10 @@ export interface TooltipFormat {
    * puntos porcentuales ("−7 p. p."), que no se confunde con una variación relativa.
    */
   difference: (d: number) => string;
-  /** Idioma del gráfico (la opción locale), para fechas y textos con Intl. Ausente equivale a 'es'. */
+  /**
+   * Idioma del gráfico (la opción locale), para fechas y números con Intl y para los textos, con
+   * messages(locale) de core/i18n. Ausente equivale al de la página (o inglés).
+   */
   locale?: string;
   /** Moneda ISO del gráfico (la opción currency). */
   currency?: string;
@@ -176,7 +187,10 @@ export interface SeriesImpl {
   legendBy?: 'series' | 'points';
   /** Índices que recorre el teclado (por defecto, todos). Un gauge solo tiene el que dibuja. */
   navigable?(ps: PreparedSeries): number[];
-  /** Cómo se llaman sus datos en la descripción accesible: ['etapa', 'etapas']. Por defecto, puntos. */
+  /**
+   * Cómo se llaman sus datos en la descripción accesible: ['etapa', 'etapas']. Por defecto, puntos.
+   * Los del catálogo de idiomas (`types.<nombre>.items`, ver LozChart.registerLocale) mandan sobre este.
+   */
   items?: readonly [singular: string, plural: string];
   /**
    * Índice del dato bajo el punto (px, py), o -1. En 'free', px del área; en 'cartesian', del plano
@@ -200,7 +214,8 @@ export interface SeriesImpl {
   /**
    * Con `derive`: cómo se llama el valor calculado ('acumulado'). Si el nombre de la serie coincide
    * con el de un campo que también se exporta, toCSV titula así la columna del valor: "monto
-   * (acumulado)" junto a "monto". Por defecto 'valor'.
+   * (acumulado)" junto a "monto". Por defecto 'valor' en el idioma del gráfico. El del catálogo
+   * (`types.<nombre>.derived`) manda sobre este.
    */
   derivedName?: string;
   /** En 'free': dónde apoyar el tooltip del dato i (px del área). */
@@ -222,7 +237,11 @@ export interface SeriesImpl {
   endLabel?: boolean;
   /** Muestra en leyenda: cuadrado (barras, áreas), trazo (líneas) o punto (dispersión). */
   legendSymbol?: 'line' | 'square' | 'dot';
-  /** Nombre para la descripción accesible ("barras", "líneas"…). */
+  /**
+   * Nombre para la descripción accesible ("barras", "líneas"…), en un solo idioma. Para varios, se
+   * registra en el catálogo con LozChart.registerLocale(code, { types: { <nombre>: { label } } }),
+   * que manda sobre este.
+   */
   label?: string;
   /**
    * Cómo encuentra el puntero el dato: 'index' (crosshair sobre el índice más cercano en X)
@@ -253,9 +272,9 @@ export interface SeriesImpl {
   step?(ps: PreparedSeries, i: number, key: string): number | undefined;
   /**
    * Encabezado del tooltip y de la descripción del dato i, en lugar del texto de la X
-   * ("Lima → Bogotá"). `x` es ese texto, por si se quiere usar.
+   * ("Lima → Bogotá"). `x` es ese texto, por si se quiere usar; `locale`, el idioma del gráfico.
    */
-  headline?(ps: PreparedSeries, i: number, x: string): string;
+  headline?(ps: PreparedSeries, i: number, x: string, locale?: string): string;
   /** Valores fijos que también deben caber en el eje (por ejemplo, la meta de un gauge). */
   domainValues?(options: SeriesOptions): number[];
   /** Columnas que están en unidades del eje Y: cuentan para el dominio y se encogen al ocultarse. */

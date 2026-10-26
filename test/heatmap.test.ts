@@ -57,6 +57,7 @@ function series(cells: Cell[], labels?: boolean): PreparedSeries {
     texts: { y: cells.map((c) => c.y), x: cells.map((c) => c.x) },
     stackKey: null,
     axis: 'left',
+    locale: 'es',
   };
 }
 
@@ -79,6 +80,7 @@ function context(
     height,
     n,
     isHidden: () => false,
+    locale: 'es',
     label: (i) => cells[i].x,
     measure,
     format: (v) => String(v),
@@ -109,7 +111,8 @@ test('duplicados: gana el último y el anterior no se recorre', () => {
   ]);
   assert.equal(cellRects(heatmap.draw(ctx)).length, 2);
   // La tabla oculta nombra la fila que perdió su celda.
-  assert.equal(heatmap.headline!(ctx.frame.ps, 0, 'a'), 'a · F (repetida; se muestra la última)');
+  assert.equal(heatmap.headline!(ctx.frame.ps, 0, 'a', 'es'), 'a · F (repetida; se muestra la última)');
+  assert.equal(heatmap.headline!(ctx.frame.ps, 0, 'a', 'en'), 'a · F (repeated; showing the last one)');
   assert.equal(heatmap.headline!(ctx.frame.ps, 1, 'a'), 'a · F');
 });
 
@@ -373,6 +376,7 @@ test('tooltip y encabezado: la celda completa y "Sin dato" en los huecos', () =>
     number: String,
     percent: String,
     isHidden: () => false,
+    locale: 'es',
     difference: String,
   };
   const ps = series([...CELLS, { x: 'mar', y: 'Sur', v: NaN }]);

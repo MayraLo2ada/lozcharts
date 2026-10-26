@@ -10,6 +10,7 @@
  * una columna propia, a la altura del borde entre dos filas, la conversión de un paso al
  * siguiente ("↓ 44 %"): así no se confunde con el porcentaje de la fila de arriba.
  */
+import { messages } from '../core/i18n';
 import {
   dimmed,
   dimOpacity,
@@ -232,8 +233,6 @@ export const funnel: SeriesImpl = {
   includeZero: true,
   layer: 0,
   legendSymbol: 'square',
-  label: 'embudo',
-  items: ['etapa', 'etapas'],
   dimmable: true,
   draw(ctx) {
     const { L, texts } = layoutOf(ctx);
@@ -297,12 +296,13 @@ export const funnel: SeriesImpl = {
   tooltip(ps: PreparedSeries, i: number, format: TooltipFormat): TooltipValue | null {
     const v = ps.values[i];
     if (!isFinite(v)) return null;
+    const t = messages(format.locale);
     // Una etapa negativa no tiene barra: el valor y por qué, como en los demás tipos.
-    if (v < 0) return { value: format.value(v), details: [['No aparece', 'vale menos de cero']] };
+    if (v < 0) return { value: format.value(v), details: [[t.data.notShown, t.data.belowZero]] };
     const { fromStart, fromPrev } = conversions(ps.values);
     const details: [string, string][] = [];
-    if (isFinite(fromStart[i])) details.push(['Del inicio', share(fromStart[i], format.percent)]);
-    if (i > 0 && isFinite(fromPrev[i])) details.push(['Del paso anterior', share(fromPrev[i], format.percent)]);
+    if (isFinite(fromStart[i])) details.push([t.funnel.fromStart, share(fromStart[i], format.percent)]);
+    if (i > 0 && isFinite(fromPrev[i])) details.push([t.funnel.fromPrevious, share(fromPrev[i], format.percent)]);
     return { value: format.value(v), details: details.length ? details : undefined };
   },
 };

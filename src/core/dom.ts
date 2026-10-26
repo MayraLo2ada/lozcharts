@@ -1,4 +1,5 @@
 /** Utilidades de SVG/HTML y medición de texto. */
+import { messages } from './i18n';
 
 export const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -71,13 +72,11 @@ export function textWidth(text: string, font: string): number {
   return w;
 }
 
-export function resolveElement(target: string | HTMLElement): HTMLElement {
+/** El elemento del gráfico, o un error claro (en el idioma del gráfico) si el selector no encuentra nada. */
+export function resolveElement(target: string | HTMLElement, locale?: string): HTMLElement {
   if (typeof target !== 'string') return target;
   const el = document.querySelector<HTMLElement>(target);
-  if (!el)
-    throw new Error(
-      `LozCharts: no encontré nada que coincida con "${target}" en la página. Revisa el selector o crea el gráfico cuando el elemento ya exista.`,
-    );
+  if (!el) throw new Error(messages(locale).warnings.noElement(target));
   return el;
 }
 

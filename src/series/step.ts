@@ -7,7 +7,6 @@ export const step: SeriesImpl = {
   layer: 2,
   legendSymbol: 'line',
   endLabel: true,
-  label: 'líneas escalonadas',
   draw(ctx) {
     const idx = visible(ctx, ctx.frame.y1);
     const d = stepPath(points(ctx, ctx.frame.y1, idx), ctx.frame.ps.options.step ?? 'after');

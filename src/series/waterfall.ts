@@ -29,6 +29,7 @@
  * Un hueco (NaN) no se dibuja: el acumulado sigue igual y el conector se corta ahí.
  * Toda la geometría (acumulados, tramos, barras, conectores y etiquetas) son funciones puras.
  */
+import { messages } from '../core/i18n';
 import {
   dimOpacity,
   paintDimmed,
@@ -372,23 +373,14 @@ export const waterfall: SeriesImpl = {
   includeZero: true,
   layer: 0,
   legendSymbol: 'square',
-  label: 'cascada',
-  items: ['paso', 'pasos'],
   columns: (o) => ({ delta: o.field }),
   valueColumns: ['room'],
   texts: (o) => ({ total: o.total }),
-  derivedName: 'acumulado',
   dimmable: true,
   derive(ps) {
     const { levels, gaps } = cascade(deltasOf(ps), totalsOf(ps));
     const off = gaps.map((g, i) => (g ? i + 1 : 0)).filter(Boolean);
-    if (off.length) {
-      const one = off.length === 1;
-      console.warn(
-        `LozCharts: en la cascada "${ps.name}", ${one ? 'el total de la fila' : 'los totales de las filas'} ${off.join(', ')} ` +
-          `no ${one ? 'cuadra' : 'cuadran'} con la suma de los pasos anteriores. Dibujo ${one ? 'el total' : 'los totales'} que diste; revisa los datos si esperabas que cuadraran.`,
-      );
-    }
+    if (off.length) console.warn(messages(ps.locale).warnings.waterfallTotals(ps.name, off.join(', '), off.length));
     // Sin etiquetas no hace falta el aire: el eje queda justo.
     ps.columns.room = ps.options.labels === false ? levels.slice() : headroom(levels);
     return levels;
@@ -484,19 +476,21 @@ export const waterfall: SeriesImpl = {
     const totals = totalsOf(ps);
     const deltas = deltasOf(ps);
     const level = ps.values[i];
-    if (!isFinite(level)) return { value: 'Sin dato' };
+    const m = messages(f.locale);
+    const t = m.waterfall;
+    if (!isFinite(level)) return { value: m.data.noData };
     if (totals[i]) {
-      const details: [string, string][] = [['Paso', isFinal(deltas, totals, i) ? 'Total' : 'Subtotal']];
+      const details: [string, string][] = [[t.step, isFinal(deltas, totals, i) ? t.total : t.subtotal]];
       const gap = cascade(deltas, totals).gaps[i];
-      if (gap) details.push(['Diferencia sin explicar', f.difference(gap)]);
+      if (gap) details.push([t.unexplained, f.difference(gap)]);
       return { value: f.value(level), details };
     }
     const kind = kindOf(deltas[i], false);
     return {
       value: f.difference(deltas[i]),
       details: [
-        ['Acumulado', f.value(level)],
-        ['Paso', kind === 'up' ? 'Subida' : kind === 'down' ? 'Bajada' : 'Sin cambio'],
+        [t.cumulative, f.value(level)],
+        [t.step, kind === 'up' ? t.up : kind === 'down' ? t.down : t.flat],
       ],
     };
   },

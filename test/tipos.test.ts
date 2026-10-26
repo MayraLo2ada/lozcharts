@@ -20,7 +20,7 @@ import { world } from '../src/maps/world';
 import type { DrawContext, PreparedSeries, TooltipFormat } from '../src/core/series';
 
 const svgOf = (o: Partial<LozChartOptions> & Pick<LozChartOptions, 'data' | 'xAxis' | 'series'>) =>
-  new LozChart(host(), { animate: false, ...o }).toSVG();
+  new LozChart(host(), { animate: false, locale: 'es', ...o }).toSVG();
 
 /** Radio mayor de los círculos de cada color de relleno. */
 function radiiByFill(markup: string): Map<string, number> {
@@ -147,6 +147,7 @@ test('pie: un valor negativo no se dibuja, el tooltip lo dice y la consola avisa
     value: (v: number) => String(v),
     percent: (v: number) => `${Math.round(v * 1000) / 10} %`,
     isHidden: () => false,
+    locale: 'es',
   } as unknown as TooltipFormat;
   const ps = { values: [30, -10, 70] } as unknown as PreparedSeries;
   assert.deepEqual(sliceTooltip(ps, 1, format), { value: '-10', details: [['No aparece', 'vale menos de cero']] });
@@ -157,6 +158,7 @@ test('pie: un valor negativo no se dibuja, el tooltip lo dice y la consola avisa
   console.warn = (m: string) => seen.push(m);
   try {
     const c = new LozChart(host(), {
+      locale: 'es',
       data: [
         { x: 'A', v: 30 },
         { x: 'B', v: -10 },
@@ -183,7 +185,11 @@ test('countUp: el número que se anima lleva los decimales del valor final', () 
 });
 
 test('embudo y mapa de burbujas: un valor negativo dice que no aparece', () => {
-  const format = { value: (v: number) => String(v), percent: (v: number) => `${v * 100} %` } as unknown as TooltipFormat;
+  const format = {
+    value: (v: number) => String(v),
+    percent: (v: number) => `${v * 100} %`,
+    locale: 'es',
+  } as unknown as TooltipFormat;
   const ps = { values: [120, -80, 45] } as unknown as PreparedSeries;
   assert.deepEqual(funnel.tooltip!(ps, 1, format), { value: '-80', details: [['No aparece', 'vale menos de cero']] });
   // La etapa que sigue a una negativa no tiene conversión desde ella.
@@ -205,7 +211,11 @@ test('share: una parte que existe no se lee 0 %, ni una que no es todo, 100 %', 
 });
 
 test('velas: la variación con apertura negativa tiene el signo de lo que pasó', () => {
-  const format = { value: (v: number) => String(v), number: (v: number) => String(v) } as unknown as TooltipFormat;
+  const format = {
+    value: (v: number) => String(v),
+    percent: (v: number) => `${Math.round(v * 1000) / 10} %`,
+    locale: 'es',
+  } as unknown as TooltipFormat;
   const ps = { values: [-74], columns: { open: [-80], high: [-70], low: [-85] } } as unknown as PreparedSeries;
   assert.equal(candlestick.tooltip!(ps, 0, format)!.value, '-74 (+7.5 %)');
   const down = { values: [90], columns: { open: [100], high: [101], low: [89] } } as unknown as PreparedSeries;

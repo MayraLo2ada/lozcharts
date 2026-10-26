@@ -33,6 +33,7 @@ function series(values: number[], options: Partial<SeriesOptions> = {}, impl: Se
     texts: {},
     stackKey: null,
     axis: 'left',
+    locale: 'es',
   };
 }
 
@@ -65,6 +66,7 @@ function context(
     height,
     n: values.length,
     isHidden: (i) => hidden.has(i),
+    locale: 'es',
     label: (i) => `Categoría ${i + 1}`,
     measure: (s) => s.length * 12 * 0.58,
     format: (v) => v.toLocaleString('es-ES', { maximumFractionDigits: 2 }),
@@ -138,6 +140,7 @@ test('tooltip: valor exacto y su parte del total visible', () => {
     number: String,
     percent: (v) => `${(Math.round(v * 1000) / 10).toString().replace('.', ',')} %`,
     isHidden: (i) => i === 2,
+    locale: 'es',
   };
   const ps = series([48210, 106300, 1000]);
   assert.equal(sliceTooltip(ps, 0, format).value, '48.210 (31,2 %)');

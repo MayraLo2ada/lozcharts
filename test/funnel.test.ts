@@ -32,6 +32,7 @@ function series(values: number[], labels?: boolean): PreparedSeries {
     texts: {},
     stackKey: null,
     axis: 'left',
+    locale: 'es',
   };
 }
 
@@ -48,6 +49,7 @@ function context(values: number[], width = 390, height = 240, labels?: boolean, 
     height,
     n,
     isHidden: () => false,
+    locale: 'es',
     label: (i) => STAGES[i] ?? '',
     measure,
     format: (v) => String(v),
@@ -169,6 +171,7 @@ test('tooltip: del inicio y del paso anterior', () => {
     number: String,
     percent: (p) => (p * 100).toFixed(1) + ' %',
     isHidden: () => false,
+    locale: 'es',
   };
   assert.deepEqual(funnel.tooltip!(series(VALUES), 0, format), { value: '1000', details: [['Del inicio', '100.0 %']] });
   assert.deepEqual(funnel.tooltip!(series(VALUES), 2, format), {

@@ -14,6 +14,7 @@ import { Legend, legendSVG, type LegendItem } from './core/legend';
 import { mount, unmount, type Mounted } from './core/mount';
 import { injectStyles, MAX_COLORS, resolveTheme, themeVars, type Theme } from './core/theme';
 import { niceDomain } from './core/ticks';
+import { messages, type Messages } from './core/i18n';
 
 const PANEL_HEIGHT = 180;
 const r = (v: number) => Math.round(v * 100) / 100;
@@ -58,7 +59,7 @@ export class LozMultiples implements Mounted {
   private readonly colorScheme: MediaQueryList | null;
 
   constructor(target: string | HTMLElement, options: MultiplesOptions) {
-    this.element = resolveElement(target);
+    this.element = resolveElement(target, options?.locale);
     mount(this);
     injectStyles(document);
     this.opts = options;
@@ -143,7 +144,7 @@ export class LozMultiples implements Mounted {
       return Promise.resolve();
     }
     const { markup, width, height } = this.exportSVG();
-    return downloadImage(markup, width, height, type, name);
+    return downloadImage(markup, width, height, type, name, this.opts.locale);
   }
 
   /**
@@ -196,7 +197,7 @@ export class LozMultiples implements Mounted {
     this.renderHeader();
     this.renderLegend();
     this.grid.style.gridTemplateColumns = this.baseColumns();
-    this.grid.setAttribute('aria-label', this.opts.title ?? 'Gráficos en cuadrícula');
+    this.grid.setAttribute('aria-label', this.opts.title ?? this.t.chart.grid);
 
     const specs = this.specs();
     const range = this.sharedRange(specs);
@@ -357,7 +358,12 @@ export class LozMultiples implements Mounted {
   private resolveTheme(): Theme {
     const t = this.opts.theme ?? 'auto';
     const mode = t === 'auto' ? (this.colorScheme?.matches ? 'dark' : 'light') : t;
-    return resolveTheme(mode, this.opts.palette);
+    return resolveTheme(mode, this.opts.palette, this.opts.locale);
+  }
+
+  /** Los textos del idioma (la opción locale, o el de la página): los paneles usan el mismo. */
+  private get t(): Messages {
+    return messages(this.opts.locale);
   }
 
   private applyTheme(): void {
@@ -414,7 +420,7 @@ export class LozMultiples implements Mounted {
     const top = !(typeof lg === 'object' && lg.position === 'bottom');
     if (top) this.grid.before(this.legend.el);
     else this.grid.after(this.legend.el);
-    this.legend.render(this.legendItems(), top);
+    this.legend.render(this.legendItems(), top, this.t.chart.legend);
   }
 
   // ------------------------------------------------------------ Exportar
@@ -455,7 +461,7 @@ export class LozMultiples implements Mounted {
     }
     const height = Math.ceil(bottom + pad);
     const markup =
-      `<svg xmlns="http://www.w3.org/2000/svg"${attrs({ width, height, viewBox: `0 0 ${width} ${height}`, 'font-family': family, role: 'img', 'aria-label': this.opts.title ?? 'Gráficos en cuadrícula' })}>` +
+      `<svg xmlns="http://www.w3.org/2000/svg"${attrs({ width, height, viewBox: `0 0 ${width} ${height}`, 'font-family': family, role: 'img', 'aria-label': this.opts.title ?? this.t.chart.grid })}>` +
       (this.opts.title ? `<title>${esc(this.opts.title)}</title>` : '') +
       `<rect width="100%" height="100%" fill="${th.surface}"/>` +
       head +

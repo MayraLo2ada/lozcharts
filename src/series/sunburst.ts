@@ -42,6 +42,7 @@
  *
  * Toda la geometría (jerarquía, ángulos, hit-test, etiquetas, colores) son funciones puras.
  */
+import { messages } from '../core/i18n';
 import {
   DIM_OPACITY,
   type DrawContext,
@@ -77,8 +78,6 @@ const FADE = { light: 0.16, dark: 0.12 };
 const MAX_FADE = { light: 0.56, dark: 0.4 };
 /** Velo de superficie sobre lo que no es la ruta activa. */
 const VEIL_ALPHA = 0.62;
-/** Nombre de un nivel vacío en medio de una ruta. */
-export const UNNAMED = 'Sin nombre';
 /** Separador de la ruta en el encabezado del tooltip. */
 const SEP = ' › ';
 
@@ -96,7 +95,6 @@ const MIN_CHARS = 4;
 // Centro.
 const TOTAL_MAX = 28;
 const TOTAL_MIN = 14;
-const CAPTION = 'Total';
 /** El total solo cabe si el agujero tiene al menos este radio. */
 const HOLE_MIN_FOR_TOTAL = 28;
 
@@ -141,11 +139,15 @@ export interface SunModel {
 
 const positive = (v: number) => isFinite(v) && v > 0;
 
-/** Ruta de una fila: los vacíos del final se quitan; los del medio se nombran "Sin nombre". */
-export function cleanPath(raw: readonly string[]): string[] {
+/**
+ * Ruta de una fila: los vacíos del final se quitan; los del medio se nombran "Sin nombre" (en el
+ * idioma dado).
+ */
+export function cleanPath(raw: readonly string[], locale?: string): string[] {
   let end = raw.length;
   while (end > 0 && !(raw[end - 1] ?? '').trim()) end--;
-  return raw.slice(0, end).map((s) => (s ?? '').trim() || UNNAMED);
+  const unnamed = messages(locale).data.unnamed;
+  return raw.slice(0, end).map((s) => (s ?? '').trim() || unnamed);
 }
 
 /**
@@ -157,6 +159,7 @@ export function buildHierarchy(
   paths: readonly (readonly string[])[],
   values: readonly number[],
   maxColors: number = MAX_COLORS,
+  locale?: string,
 ): SunModel {
   const nodes: SunNode[] = [];
   const roots: number[] = [];
@@ -165,7 +168,7 @@ export function buildHierarchy(
   const rowPath: string[][] = [];
   const ignored: number[] = [];
   for (let i = 0; i < values.length; i++) {
-    const path = cleanPath(paths[i] ?? []);
+    const path = cleanPath(paths[i] ?? [], locale);
     rowPath.push(path);
     if (!path.length || !positive(values[i])) {
       ignored.push(i);
@@ -444,7 +447,7 @@ const models = new WeakMap<readonly number[], SunModel>();
 function modelOf(ps: PreparedSeries): SunModel {
   let m = models.get(ps.values);
   if (!m) {
-    m = buildHierarchy(pathsOf(ps), ps.values);
+    m = buildHierarchy(pathsOf(ps), ps.values, MAX_COLORS, ps.locale);
     models.set(ps.values, m);
   }
   return m;
@@ -596,8 +599,9 @@ function centerMarkup(ctx: DrawContext, g: SunGeometry, value: number, caption: 
 function shares(m: SunModel, parent: number, v: number, format: TooltipFormat): [string, string][] {
   const out: [string, string][] = [];
   const p = parent >= 0 ? m.nodes[parent] : null;
-  if (p && p.value > 0) out.push([`De ${p.name}`, share(v / p.value, format.percent)]);
-  if (m.total > 0) out.push(['Del total', share(v / m.total, format.percent)]);
+  const t = messages(format.locale).data;
+  if (p && p.value > 0) out.push([t.of(p.name), share(v / p.value, format.percent)]);
+  if (m.total > 0) out.push([t.ofTotal, share(v / m.total, format.percent)]);
   return out;
 }
 
@@ -607,8 +611,6 @@ export const sunburst: SeriesImpl = {
   includeZero: true,
   layer: 0,
   legendSymbol: 'square',
-  label: 'anillos por niveles',
-  items: ['parte', 'partes'],
   texts: (o, x) => Object.fromEntries(levelFields(o, x).map((f, k) => [`level${k}`, f])),
   dimmable: true,
   draw(ctx) {
@@ -628,7 +630,7 @@ export const sunburst: SeriesImpl = {
       const label = labelMarkup(d, th, id);
       s += lit && !lit[id] && label ? `<g opacity="${DIM_OPACITY}">${label}</g>` : label;
     }
-    return s + centerMarkup(ctx, g, g.total, CAPTION, m.total);
+    return s + centerMarkup(ctx, g, g.total, messages(ctx.locale).data.total, m.total);
   },
   hit(ctx, px, py) {
     const { m, g } = drawnOf(ctx);
@@ -706,8 +708,9 @@ export const sunburst: SeriesImpl = {
     // Sin dato: el núcleo escribe "Sin dato".
     if (!isFinite(v)) return null;
     if (m.rowNode[i] < 0) {
-      const why = m.rowPath[i]?.length ? 'vale cero o menos' : 'le falta la ruta';
-      return { value: format.value(v), details: [['No aparece', why]] };
+      const t = messages(format.locale).data;
+      const why = m.rowPath[i]?.length ? t.zeroOrLess : t.noPath;
+      return { value: format.value(v), details: [[t.notShown, why]] };
     }
     // Una fila que es parte de un nodo: su valor propio, o una de varias filas con la misma ruta.
     return { value: format.value(v), details: shares(m, m.rowNode[i], v, format) };

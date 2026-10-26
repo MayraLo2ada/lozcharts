@@ -3,6 +3,7 @@
  * Sirve para mínimos y máximos, intervalos de confianza o metas con tolerancia;
  * suele ir con una línea encima que marque el valor central.
  */
+import { messages } from '../core/i18n';
 import type { SeriesImpl } from '../core/series';
 import { areaPath } from '../core/shapes';
 import { attrs } from '../core/dom';
@@ -14,7 +15,6 @@ const FILL_OPACITY = 0.16;
 export const range: SeriesImpl = {
   layer: 1,
   legendSymbol: 'square',
-  label: 'bandas de rango',
   columns: (o) => ({ low: o.low }),
   valueColumns: ['low'],
   draw(ctx) {
@@ -25,7 +25,7 @@ export const range: SeriesImpl = {
   tooltip(ps, i, format) {
     const lo = ps.columns.low[i];
     const hi = ps.values[i];
-    if (!isFinite(lo) || !isFinite(hi)) return { value: 'Sin dato' };
+    if (!isFinite(lo) || !isFinite(hi)) return { value: messages(format.locale).data.noData };
     return { value: `${format.value(lo)} – ${format.value(hi)}` };
   },
 };

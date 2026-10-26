@@ -97,6 +97,7 @@ function context(values: number[]): DrawContext {
     height: 200,
     n,
     isHidden: () => false,
+    locale: 'es',
     label: (i) => String(i),
     measure: (t) => t.length * 7,
     format: (v) => String(v),

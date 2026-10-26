@@ -34,6 +34,7 @@
  * Toda la geometría (lectura de fechas, carriles, filas, layout, ticks, etiquetas, hit-test y
  * duraciones) son funciones puras.
  */
+import { defaultLocale, messages } from '../core/i18n';
 import {
   dimmed,
   type DrawContext,
@@ -90,13 +91,9 @@ const LEFT_CLEAR = 18;
 const GUTTER_SHARE = 0.28;
 /** Tolerancia del puntero alrededor de una marca angosta (px). */
 const HIT_SLOP = 4;
-/** Idioma de las fechas y duraciones si el contexto no da uno. */
-const LOCALE = 'es';
 /** Franja de arriba para el texto de la línea de hoy, y su trazo discontinuo. */
 const TODAY_H = 20;
 const TODAY_DASH = '4 3';
-export const OTHERS = 'Otros';
-const NO_GROUP = 'Sin grupo';
 
 const MIN = 60_000;
 const HOUR = 60 * MIN;
@@ -175,14 +172,7 @@ export function durationParts(a: number, b: number): number[] {
   return [Math.floor(months / 12), months % 12, days, Math.floor(rest / HOUR), Math.floor((rest % HOUR) / MIN)];
 }
 
-const UNIT_NAMES: readonly (readonly [string, string])[] = [
-  ['año', 'años'],
-  ['mes', 'meses'],
-  ['día', 'días'],
-  ['hora', 'horas'],
-  ['minuto', 'minutos'],
-];
-/** Las mismas unidades para Intl, en el idioma del gráfico. */
+/** Las unidades de durationParts para Intl, en el idioma del gráfico (y en el catálogo, por si Intl no puede). */
 const INTL_UNITS = ['year', 'month', 'day', 'hour', 'minute'] as const;
 
 /** Intl.ListFormat es de ES2021 y el build apunta a ES2020: se usa si el entorno lo tiene. */
@@ -195,7 +185,7 @@ const ListFormatImpl = (Intl as unknown as { ListFormat?: ListFormatConstructor 
 const unitFormats = new Map<string, Intl.NumberFormat>();
 const listFormats = new Map<string, ListFormat>();
 
-/** "3 meses", "3 months": la cantidad con su unidad en el idioma dado; en español si Intl no puede. */
+/** "3 meses", "3 months": la cantidad con su unidad en el idioma dado; con el catálogo si Intl no puede. */
 function unitText(v: number, k: number, locale: string): string {
   const key = `${locale}|${k}`;
   let f = unitFormats.get(key);
@@ -203,7 +193,7 @@ function unitText(v: number, k: number, locale: string): string {
     try {
       f = new Intl.NumberFormat(locale, { style: 'unit', unit: INTL_UNITS[k], unitDisplay: 'long' });
     } catch {
-      return `${v} ${UNIT_NAMES[k][v === 1 ? 0 : 1]}`;
+      return `${v} ${messages(locale).timeline.units[k][v === 1 ? 0 : 1]}`;
     }
     unitFormats.set(key, f);
   }
@@ -218,20 +208,21 @@ function joinParts(parts: string[], locale: string): string {
       if (!ListFormatImpl) throw new Error('sin Intl.ListFormat');
       f = new ListFormatImpl(locale, { type: 'conjunction' });
     } catch {
-      return parts.join(' y ');
+      const and = messages(locale).timeline.and;
+      return parts.length < 2 ? parts.join('') : `${parts.slice(0, -1).join(', ')} ${and} ${parts[parts.length - 1]}`;
     }
     listFormats.set(locale, f);
   }
   return f.format(parts);
 }
-/** Cuántas unidades de UNIT_NAMES tienen sentido con cada precisión. */
+/** Cuántas unidades de INTL_UNITS tienen sentido con cada precisión. */
 const PRECISION_DEPTH: Record<TimeUnit, number> = { year: 1, month: 2, week: 3, day: 3, hour: 4, minute: 5 };
 
 /**
  * Duración legible: las dos unidades mayores que no son cero ("3 meses y 12 días", "2 años",
  * "5 horas y 20 minutos"), sin bajar de la precisión de los datos. '' si no dura nada.
  */
-export function durationText(a: number, b: number, precision: TimeUnit = 'minute', locale = LOCALE): string {
+export function durationText(a: number, b: number, precision: TimeUnit = 'minute', locale = defaultLocale()): string {
   const parts = durationParts(a, b);
   const pick = (limit: number) =>
     parts
@@ -240,7 +231,7 @@ export function durationText(a: number, b: number, precision: TimeUnit = 'minute
       .slice(0, 2);
   // Un tramo más corto que la precisión (dos horas en datos por día) dice igual cuánto duró.
   let shown = pick(PRECISION_DEPTH[precision]);
-  if (!shown.length) shown = pick(UNIT_NAMES.length);
+  if (!shown.length) shown = pick(INTL_UNITS.length);
   return joinParts(
     shown.map(([v, k]) => unitText(v, k, locale)),
     locale,
@@ -267,7 +258,7 @@ function dateOptions(precision: TimeUnit, year = true): Intl.DateTimeFormatOptio
 const clean = (s: string) => s.replace(/\./g, '');
 
 /** Fecha con la precisión de los datos: "1914", "mar 2026", "3 mar 2026", "3 mar 2026, 14:30". */
-export function formatTime(t: number, precision: TimeUnit, locale = LOCALE): string {
+export function formatTime(t: number, precision: TimeUnit, locale = defaultLocale()): string {
   return clean(timeTickLabel(t, 'day', locale, dateOptions(precision)));
 }
 
@@ -275,7 +266,7 @@ export function formatTime(t: number, precision: TimeUnit, locale = LOCALE): str
  * Inicio y fin juntos, sin repetir lo que comparten: "3 mar – 15 jun 2026" en un mismo año y
  * "3 mar 2026, 09:00 – 11:30" en un mismo día.
  */
-export function formatRange(a: number, b: number, precision: TimeUnit, locale = LOCALE): string {
+export function formatRange(a: number, b: number, precision: TimeUnit, locale = defaultLocale()): string {
   const s = new Date(a);
   const e = new Date(b);
   const sameYear = s.getFullYear() === e.getFullYear();
@@ -332,15 +323,20 @@ export interface TimelineModel {
 
 /**
  * Carriles de los grupos, en el orden dado (el de su primera aparición en el tiempo). Hasta
- * `maxColors` grupos, cada uno con su color; con más, los primeros `maxColors − 1` y "Otros".
+ * `maxColors` grupos, cada uno con su color; con más, los primeros `maxColors − 1` y "Otros" (en
+ * el idioma dado).
  */
-export function laneSlots(names: readonly string[], maxColors = MAX_COLORS): { lanes: Lane[]; laneOf: Map<string, number> } {
+export function laneSlots(
+  names: readonly string[],
+  maxColors = MAX_COLORS,
+  locale?: string,
+): { lanes: Lane[]; laneOf: Map<string, number> } {
   const fold = names.length > maxColors;
   const kept = fold ? names.slice(0, maxColors - 1) : names;
   const lanes: Lane[] = kept.map((name, slot) => ({ name, slot }));
   const laneOf = new Map(kept.map((name, k) => [name, k] as const));
   if (fold) {
-    lanes.push({ name: OTHERS, slot: -1 });
+    lanes.push({ name: messages(locale).data.others, slot: -1 });
     for (const name of names.slice(maxColors - 1)) laneOf.set(name, lanes.length - 1);
   }
   return { lanes, laneOf };
@@ -352,6 +348,7 @@ export function buildModel(
   ends: readonly string[],
   groups: readonly string[] | null,
   maxColors = MAX_COLORS,
+  locale?: string,
 ): TimelineModel {
   const spans: Span[] = [];
   const invalid: number[] = [];
@@ -376,6 +373,8 @@ export function buildModel(
   spans.sort((p, q) => p.start - q.start || q.end - p.end || p.index - q.index);
   let lanes: Lane[] = [];
   if (groups) {
+    // Las filas sin grupo van juntas en un carril que lo dice.
+    const NO_GROUP = messages(locale).data.noGroup;
     const names: string[] = [];
     const seen = new Set<string>();
     for (const sp of spans) {
@@ -385,7 +384,7 @@ export function buildModel(
         names.push(g);
       }
     }
-    const slots = laneSlots(names, maxColors);
+    const slots = laneSlots(names, maxColors, locale);
     lanes = slots.lanes;
     for (const sp of spans) sp.lane = slots.laneOf.get(groups[sp.index] || NO_GROUP)!;
   }
@@ -520,7 +519,7 @@ export function axisTicks(
   maxX: number,
   precision: TimeUnit,
   measure: (s: string) => number,
-  locale = LOCALE,
+  locale = defaultLocale(),
 ): Tick[] {
   const fits = Math.max(1, Math.floor((right - left) / (measure('30 sept') + TICK_GAP)));
   const iv = chooseTimeInterval(d0, d1, fits, precision);
@@ -558,7 +557,7 @@ export function layoutTimeline(
   names: readonly string[] = [],
   labels = true,
   today: { time: number; text: string } | null = null,
-  locale = LOCALE,
+  locale = defaultLocale(),
 ): Geometry {
   const laneNames = m.grouped ? m.lanes.map((l) => l.name) : [];
   const widest = maxOf(laneNames.map(measure), 0);
@@ -667,7 +666,7 @@ function todayLine(x: number, text: string, from: number, to: number, measure: (
 export function todayMark(
   option: unknown,
   precision: TimeUnit,
-  locale = LOCALE,
+  locale = defaultLocale(),
   now = Date.now(),
 ): { time: number; text: string } | null {
   if (option === undefined || option === null || option === false) return null;
@@ -692,7 +691,7 @@ function todayWord(locale: string): string {
     const w = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(0, 'day');
     return w.charAt(0).toLocaleUpperCase(locale) + w.slice(1);
   } catch {
-    return 'Hoy';
+    return messages(locale).timeline.today;
   }
 }
 
@@ -782,16 +781,18 @@ function modelOf(ps: PreparedSeries): TimelineModel {
   let m = models.get(ps.values);
   if (m) return m;
   const empty = ps.values.map(() => '');
-  m = buildModel(ps.texts.start ?? empty, ps.texts.end ?? empty, ps.options.group ? (ps.texts.group ?? empty) : null);
+  m = buildModel(
+    ps.texts.start ?? empty,
+    ps.texts.end ?? empty,
+    ps.options.group ? (ps.texts.group ?? empty) : null,
+    MAX_COLORS,
+    ps.locale,
+  );
   models.set(ps.values, m);
   // Un aviso por conjunto de datos, no uno por cuadro.
   if (m.swapped.length) {
     const list = m.swapped.map((i) => `"${ps.texts.name?.[i] || ps.texts.start?.[i]}"`).join(', ');
-    const one = m.swapped.length === 1;
-    console.warn(
-      `LozCharts: en la línea de tiempo "${ps.name}", ${list} ${one ? 'termina' : 'terminan'} antes de empezar. ` +
-        `Lo dibujo con las fechas al revés; revisa el inicio y el fin de ${one ? 'esa fila' : 'esas filas'}.`,
-    );
+    console.warn(messages(ps.locale).warnings.timelineSwapped(ps.name, list, m.swapped.length));
   }
   return m;
 }
@@ -803,7 +804,7 @@ function geometryOf(ctx: DrawContext): { m: TimelineModel; g: Geometry } {
   const ps = ctx.frame.ps;
   const m = modelOf(ps);
   const labels = ps.options.labels !== false;
-  const locale = ctx.locale ?? LOCALE;
+  const locale = ctx.locale ?? defaultLocale();
   const today = todayMark(ps.options.today, m.precision, locale);
   const key = `${ctx.width}|${ctx.height}|${labels}|${locale}|${today?.time}|${today?.text}`;
   const c = last;
@@ -904,8 +905,6 @@ export const timeline: SeriesImpl = {
   coords: 'free',
   layer: 0,
   legendSymbol: 'square',
-  label: 'línea de tiempo',
-  items: ['tramo', 'tramos'],
   dimmable: true,
   texts: (o, x) => ({ name: o.label ?? o.field, start: x, end: o.end, group: o.group }),
   draw(ctx) {
@@ -977,21 +976,22 @@ export const timeline: SeriesImpl = {
     return modelOf(ps).spans.map((sp) => sp.index);
   },
   tooltip(ps: PreparedSeries, i: number, f: TooltipFormat): TooltipValue {
-    const locale = f.locale ?? LOCALE;
+    const locale = f.locale ?? defaultLocale();
+    const { data, timeline: t } = messages(locale);
     const m = modelOf(ps);
     const sp = m.byRow.get(i);
-    if (!sp) return { value: 'Sin fecha válida' };
+    if (!sp) return { value: t.noValidDate };
     const details: [string, string][] = [];
     let value: string;
     if (sp.milestone) {
       value = formatTime(sp.start, m.precision, locale);
-      if (sp.badEnd) details.push(['Fin', 'no es una fecha válida']);
+      if (sp.badEnd) details.push([t.end, t.notADate]);
     } else {
       value = formatRange(sp.start, sp.end, m.precision, locale);
-      details.push(['Duración', durationText(sp.start, sp.end, m.precision, locale)]);
-      if (sp.swapped) details.push(['Nota', 'las fechas venían al revés']);
+      details.push([t.duration, durationText(sp.start, sp.end, m.precision, locale)]);
+      if (sp.swapped) details.push([t.note, t.reversed]);
     }
-    if (m.grouped) details.push(['Grupo', ps.texts.group?.[i] || NO_GROUP]);
+    if (m.grouped) details.push([data.group, ps.texts.group?.[i] || data.noGroup]);
     return details.length ? { value, details } : { value };
   },
 };

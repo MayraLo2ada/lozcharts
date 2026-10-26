@@ -67,6 +67,7 @@ function series(rows: Row[], extra: Partial<PreparedSeries['options']> = {}): Pr
     texts: { to: c.to, from: c.from },
     stackKey: null,
     axis: 'left',
+    locale: 'es',
   };
 }
 
@@ -83,6 +84,7 @@ function context(ps: PreparedSeries, rows: Row[], width = 640, height = 360, y1 
     height,
     n,
     isHidden: () => false,
+    locale: 'es',
     label: (i) => rows[i][0],
     measure,
     format: (v) => String(v),
@@ -96,6 +98,7 @@ const format: TooltipFormat = {
   number: String,
   percent: (p) => `${Math.round(p * 1000) / 10} %`,
   isHidden: () => false,
+  locale: 'es',
   difference: String,
 };
 

@@ -30,6 +30,7 @@ function chart(extra: Partial<LozChartOptions> = {}): LozChart {
       { type: 'line', field: 'costos', name: 'Costos' },
     ],
     animate: false,
+    locale: 'es',
     ...extra,
   });
 }
@@ -157,6 +158,7 @@ const gridLines = (markup: string, color: string) =>
 test('yAxis.grid: false quita la rejilla del valor; la línea del cero queda', () => {
   const bars = (grid?: boolean) =>
     new LozChart(host(), {
+      locale: 'es',
       data,
       xAxis: { field: 'mes' },
       yAxis: { grid },
@@ -172,6 +174,7 @@ test("yAxis.type: 'log': marcas en 1, 2 y 5 × 10ⁿ o potencias de 10, y escala
   const seen = spy('prueba-log');
   const filas = [1, 30, 800, 2500, 90000].map((v, i) => ({ i: String(i), v }));
   const c = new LozChart(host(), {
+    locale: 'es',
     data: filas,
     xAxis: { field: 'i' },
     yAxis: { type: 'log' },
@@ -192,6 +195,7 @@ test("yAxis.type: 'log': marcas en 1, 2 y 5 × 10ⁿ o potencias de 10, y escala
 
 test('eje logarítmico: las barras parten del borde inferior y un cero no rompe nada', () => {
   const c = new LozChart(host(), {
+    locale: 'es',
     data: [
       { x: 'a', v: 0 },
       { x: 'b', v: 20 },
@@ -304,6 +308,7 @@ test('clic: onClick con la X, el índice y la serie; también con Enter o Espaci
 test('clic en dispersión: la serie del punto más cercano', () => {
   const clicks: unknown[][] = [];
   const c = new LozChart(host(), {
+    locale: 'es',
     data: [
       { x: 1, a: 10, b: 90 },
       { x: 2, a: 20, b: 80 },
@@ -382,6 +387,7 @@ test('preferredHeight: la serie pide su alto; un height explícito manda', () =>
 
 test('cascada: toCSV no repite el encabezado cuando el nombre es el campo', () => {
   const c = new LozChart(host(), {
+    locale: 'es',
     data: [
       { paso: 'Ventas', monto: 100 },
       { paso: 'Costos', monto: -40 },
@@ -430,6 +436,7 @@ test('onHover recibe también el índice de la fila y la serie', () => {
   // En un mapa de calor la X no identifica la celda; el índice sí, y la serie es la del mapa.
   const cells: unknown[][] = [];
   const h = new LozChart(host(), {
+    locale: 'es',
     data: [
       { dia: 'lun', hora: '9', n: 1 },
       { dia: 'lun', hora: '10', n: 2 },
@@ -475,6 +482,7 @@ test('highlight acepta varias X, y highlightIndex, índices', () => {
 
 test('selection: lo seleccionado se ve normal, el resto atenuado; anunciado y en la tabla', () => {
   const opts: LozChartOptions = {
+    locale: 'es',
     data,
     xAxis: { field: 'mes' },
     series: [{ type: 'bar', field: 'ventas', name: 'Ventas' }],
@@ -530,6 +538,7 @@ test('selection atenúa celdas, porciones, rectángulos y lugares', () => {
 
 test('descripción accesible: qué es, cuántos datos, de dónde a dónde y el más alto', () => {
   const one = new LozChart(host(), {
+    locale: 'es',
     title: 'Ventas por semana',
     data: [1, 2, 3, 4].map((semana, i) => ({ semana, ventas: [120, 180, 150, 90][i] })),
     xAxis: { field: 'semana', type: 'linear' },

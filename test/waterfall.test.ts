@@ -51,6 +51,7 @@ function prepared(rows: Row[], extra: Record<string, unknown> = {}) {
       xField: 'x',
       xType: 'category',
       series: [{ type: 'waterfall', field: 'v', total: 't', name: 'Resultado', ...extra }],
+      locale: 'es',
     },
     registry,
     8,
@@ -80,6 +81,7 @@ function context(
     height,
     n,
     isHidden: () => false,
+    locale: 'es',
     label: (i) => String(i),
     measure,
     format: (v) => String(v),
@@ -93,6 +95,7 @@ const format: TooltipFormat = {
   number: String,
   percent: (p) => `${Math.round(p * 100)} %`,
   isHidden: () => false,
+  locale: 'es',
   difference: (d) => signed(String, d),
 };
 

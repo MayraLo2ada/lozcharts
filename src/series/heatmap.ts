@@ -14,6 +14,7 @@
  *
  * Toda la geometría (rejilla, colores, contraste, hit-test, etiquetas) son funciones puras.
  */
+import { messages } from '../core/i18n';
 import {
   dimOpacity,
   type DrawContext,
@@ -407,8 +408,6 @@ export const heatmap: SeriesImpl = {
   coords: 'free',
   layer: 0,
   legendSymbol: 'square',
-  label: 'mapa de calor',
-  items: ['celda', 'celdas'],
   texts: (o, x) => ({ y: o.y, x }),
   dimmable: true,
   draw(ctx) {
@@ -489,17 +488,17 @@ export const heatmap: SeriesImpl = {
   step(ps, i, key) {
     return gridStep(gridOf(ps), ps.values, i, key);
   },
-  headline(ps, i, x) {
+  headline(ps, i, x, locale) {
     // La celda completa: columna y fila. Así el tooltip y la tabla oculta no necesitan detalle aparte.
     const row = ps.texts.y?.[i] ?? '';
     const name = row ? `${x} · ${row}` : x;
     // Un dato repetido que perdió su celda lo dice en la tabla oculta, en vez de contradecir al dibujo.
     const g = gridOf(ps);
     const shadowed = i < g.col.length && g.cell[g.row[i] * g.cols.length + g.col[i]] !== i;
-    return shadowed ? `${name} (repetida; se muestra la última)` : name;
+    return shadowed ? messages(locale).heatmap.repeated(name) : name;
   },
   tooltip(ps: PreparedSeries, i: number, format: TooltipFormat): TooltipValue {
     const v = ps.values[i];
-    return { value: isFinite(v) ? format.value(v) : 'Sin dato' };
+    return { value: isFinite(v) ? format.value(v) : messages(format.locale).data.noData };
   },
 };

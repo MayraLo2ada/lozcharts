@@ -390,6 +390,7 @@ test('mapa coroplético: la muestra del tooltip es el color del lugar en la ramp
     texts: {},
     stackKey: null,
     axis: 'left',
+    locale: 'es',
   };
   for (const theme of [LIGHT, DARK]) {
     const ctx: DrawContext = {
@@ -403,6 +404,7 @@ test('mapa coroplético: la muestra del tooltip es el color del lugar en la ramp
       height: 360,
       n: places.length,
       isHidden: () => false,
+      locale: 'es',
       label: (i) => places[i],
       measure: (s) => s.length * 7,
       format: String,
