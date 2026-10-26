@@ -16,6 +16,9 @@ import { injectStyles, MAX_COLORS, resolveTheme, themeVars, type Theme } from '.
 import { niceDomain } from './core/ticks';
 
 const PANEL_HEIGHT = 180;
+const r = (v: number) => Math.round(v * 100) / 100;
+/** El respiro a la izquierda del área de datos de un panel sin números en el eje (ver chart.ts). */
+const BARE_LEFT = 4;
 const MIN_WIDTH = 240;
 const EXPORT_PAD = 16;
 
@@ -192,10 +195,7 @@ export class LozMultiples implements Mounted {
     for (const p of this.panels) p.chart.destroy();
     this.renderHeader();
     this.renderLegend();
-    const { columns, minWidth = MIN_WIDTH } = this.opts;
-    this.grid.style.gridTemplateColumns = columns
-      ? `repeat(${columns}, minmax(0, 1fr))`
-      : `repeat(auto-fill, minmax(min(${minWidth}px, 100%), 1fr))`;
+    this.grid.style.gridTemplateColumns = this.baseColumns();
     this.grid.setAttribute('aria-label', this.opts.title ?? 'Gráficos en cuadrícula');
 
     const specs = this.specs();
@@ -269,6 +269,40 @@ export class LozMultiples implements Mounted {
       p.axisWidth = width;
       p.chart.setOptions({ yAxis: { width } }, animate);
     }
+    // Un panel sin números en el eje deja de todos modos un respiro a la izquierda del área de datos.
+    const bare = this.panels.some((p) => !p.edges.left);
+    this.fitColumns(bare ? width - BARE_LEFT : 0);
+  }
+
+  /**
+   * Columnas de la cuadrícula: las pedidas, o las que quepan con `minWidth`. Con auto-fit, si hay
+   * menos paneles que columnas posibles, los paneles se reparten todo el ancho en vez de dejar
+   * columnas vacías a la derecha.
+   */
+  private baseColumns(): string {
+    const { columns, minWidth = MIN_WIDTH } = this.opts;
+    return columns ? `repeat(${columns}, minmax(0, 1fr))` : `repeat(auto-fit, minmax(min(${minWidth}px, 100%), 1fr))`;
+  }
+
+  /**
+   * La primera columna es `extra` px más ancha que las demás (lo que ocupan los números del eje),
+   * así el área de datos mide lo mismo en todos los paneles: con columnas iguales, la del eje
+   * quedaría más angosta y la misma pendiente se vería distinta según la columna.
+   */
+  private fitColumns(extra: number): void {
+    const base = this.baseColumns();
+    this.grid.style.gridTemplateColumns = base;
+    if (!(extra > 0) || typeof getComputedStyle !== 'function') return;
+    const style = getComputedStyle(this.grid);
+    // Las columnas que resultan de la plantilla (auto-fit deja en 0 px las que sobran).
+    const k = (style.gridTemplateColumns || '')
+      .trim()
+      .split(/\s+/)
+      .filter((t) => /px$/.test(t) && parseFloat(t) > 0).length;
+    const gap = parseFloat(style.columnGap) || 0;
+    if (k < 2) return;
+    const rest = `(100% - ${r(extra)}px - ${r((k - 1) * gap)}px) / ${k}`;
+    this.grid.style.gridTemplateColumns = `calc(${r(extra)}px + ${rest}) repeat(${k - 1}, minmax(0, 1fr))`;
   }
 
   /**
@@ -302,6 +336,8 @@ export class LozMultiples implements Mounted {
 
   /** Al cambiar el ancho puede cambiar el número de columnas, y con él qué panel lleva qué etiquetas. */
   private readonly onResize = () => {
+    // Con las columnas de siempre: cuántas caben a este ancho lo decide `minWidth`, no el ajuste.
+    this.grid.style.gridTemplateColumns = this.baseColumns();
     const edges = this.edges(this.panels.map((p) => p.el));
     this.panels.forEach((p, i) => {
       if (p.edges.left === edges[i].left && p.edges.bottom === edges[i].bottom) return;
