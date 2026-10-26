@@ -725,7 +725,8 @@ export const chord: SeriesImpl = {
     const m = modelOf(ps);
     if (m.loops.includes(i)) return { value, details: [['No aparece', 'empieza y termina en el mismo lugar']] };
     const l = m.byRow.get(i);
-    if (!l) return { value };
+    // Como en los demás tipos: lo que no se dibuja dice por qué.
+    if (!l) return { value, details: [['No aparece', v <= 0 ? 'vale cero o menos' : 'le falta el origen o el destino']] };
     const details: [string, string][] = [
       [`De lo que sale de ${m.names[l.source]}`, format.percent(l.value / m.outflow[l.source])],
       [`De lo que llega a ${m.names[l.target]}`, format.percent(l.value / m.inflow[l.target])],

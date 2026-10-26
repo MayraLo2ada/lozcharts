@@ -496,7 +496,7 @@ test('tooltip de flujos que no se dibujan y aviso de bucles', () => {
   }
   assert.equal(warnings.length, 1, 'un solo aviso por conjunto de datos');
   assert.ok(warnings[0].includes('"B → B"'));
-  assert.deepEqual(chord.tooltip!(ps, 2, format), { value: '0' });
+  assert.deepEqual(chord.tooltip!(ps, 2, format), { value: '0', details: [['No aparece', 'vale cero o menos']] });
   assert.equal(chord.tooltip!(ps, 3, format), null);
   assert.deepEqual(chord.navigable!(ps), [0]);
 });

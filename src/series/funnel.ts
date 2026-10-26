@@ -46,10 +46,13 @@ const EDGE = 2;
 const FONT_SIZE = 12;
 const SMALL_FONT = 11;
 
-/** Proporción a / b, o NaN si no se puede calcular (base cero, negativa o faltante). */
+/**
+ * Proporción a / b, o NaN si no se puede calcular (base cero, negativa o faltante, o una etapa
+ * negativa: un "0 %" junto a −80 parecería un cálculo).
+ */
 export function ratio(a: number, b: number): number {
-  if (!isFinite(a) || !isFinite(b) || b <= 0) return NaN;
-  return Math.max(0, a) / b;
+  if (!isFinite(a) || !isFinite(b) || b <= 0 || a < 0) return NaN;
+  return a / b;
 }
 
 /** Porcentaje de cada etapa respecto de la primera y respecto de la anterior (NaN en la primera). */
@@ -293,6 +296,8 @@ export const funnel: SeriesImpl = {
   tooltip(ps: PreparedSeries, i: number, format: TooltipFormat): TooltipValue | null {
     const v = ps.values[i];
     if (!isFinite(v)) return null;
+    // Una etapa negativa no tiene barra: el valor y por qué, como en los demás tipos.
+    if (v < 0) return { value: format.value(v), details: [['No aparece', 'vale menos de cero']] };
     const { fromStart, fromPrev } = conversions(ps.values);
     const details: [string, string][] = [];
     if (isFinite(fromStart[i])) details.push(['Del inicio', format.percent(fromStart[i])]);

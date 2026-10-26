@@ -385,7 +385,7 @@ test('tooltip de flujos que no se dibujan', () => {
   }
   assert.equal(warnings.length, 1, 'un solo aviso por conjunto de datos');
   assert.ok(warnings[0].includes('"B → A"'));
-  assert.deepEqual(sankey.tooltip!(ps, 2, format), { value: '0' });
+  assert.deepEqual(sankey.tooltip!(ps, 2, format), { value: '0', details: [['No aparece', 'vale cero o menos']] });
   assert.ok(!sankey.navigable!(ps).includes(2));
 });
 

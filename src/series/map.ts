@@ -13,7 +13,14 @@
  * - 'mapbubble': el mapa en gris y un círculo por fila, en su latitud y longitud (o en el centro
  *   del país si no las trae), con el área proporcional al valor.
  */
-import { dimOpacity, type DrawContext, type PreparedSeries, type SeriesImpl, type TooltipFormat } from '../core/series';
+import {
+  dimOpacity,
+  type DrawContext,
+  type PreparedSeries,
+  type SeriesImpl,
+  type TooltipFormat,
+  type TooltipValue,
+} from '../core/series';
 import { attrs, esc } from '../core/dom';
 import {
   contains,
@@ -268,6 +275,13 @@ const tooltip = (ps: PreparedSeries, i: number, format: TooltipFormat) => ({
   value: isFinite(ps.values[i]) ? format.value(ps.values[i]) : 'Sin dato',
 });
 
+/** En el mapa de burbujas, un valor de cero o menos no tiene burbuja: el tooltip lo dice. */
+const bubbleTooltip = (ps: PreparedSeries, i: number, format: TooltipFormat): TooltipValue => {
+  const v = ps.values[i];
+  if (isFinite(v) && v <= 0) return { value: format.value(v), details: [['No aparece', 'vale cero o menos']] };
+  return tooltip(ps, i, format);
+};
+
 /** Color de cada lugar con el valor de este cuadro: el de su fila (si una fila se repite, la última). */
 function placePaints(ctx: DrawContext, S: MapSetup): Map<number, Paint> {
   const out = new Map<number, Paint>();
@@ -414,5 +428,5 @@ export const mapbubble: SeriesImpl = {
   },
   navigable: (ps) => ranked(ps),
   headline: (ps, i, x) => placeName(ps, i, x),
-  tooltip,
+  tooltip: bubbleTooltip,
 };

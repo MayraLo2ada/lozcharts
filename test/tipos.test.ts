@@ -12,6 +12,8 @@ import { barGeometry } from '../src/series/bar';
 import { bubbleMax } from '../src/series/scatter';
 import { lookAt } from '../src/series/map';
 import { sliceTooltip } from '../src/series/pie';
+import { funnel } from '../src/series/funnel';
+import { mapbubble } from '../src/series/map';
 import { registerMap } from '../src/core/geo';
 import { world } from '../src/maps/world';
 import type { DrawContext, PreparedSeries, TooltipFormat } from '../src/core/series';
@@ -177,4 +179,14 @@ test('countUp: el número que se anima lleva los decimales del valor final', () 
   assert.equal(countUp(12.345, 1370.5), 12.3);
   assert.equal(countUp(0.123456, 0.25), 0.12);
   assert.equal(countUp(7.5, NaN), 7.5);
+});
+
+test('embudo y mapa de burbujas: un valor negativo dice que no aparece', () => {
+  const format = { value: (v: number) => String(v), percent: (v: number) => `${v * 100} %` } as unknown as TooltipFormat;
+  const ps = { values: [120, -80, 45] } as unknown as PreparedSeries;
+  assert.deepEqual(funnel.tooltip!(ps, 1, format), { value: '-80', details: [['No aparece', 'vale menos de cero']] });
+  // La etapa que sigue a una negativa no tiene conversión desde ella.
+  assert.deepEqual(funnel.tooltip!(ps, 2, format), { value: '45', details: [['Del inicio', '37.5 %']] });
+  assert.deepEqual(mapbubble.tooltip!(ps, 1, format), { value: '-80', details: [['No aparece', 'vale cero o menos']] });
+  assert.deepEqual(mapbubble.tooltip!(ps, 0, format), { value: '120' });
 });

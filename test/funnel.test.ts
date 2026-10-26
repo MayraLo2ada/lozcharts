@@ -67,6 +67,8 @@ test('división por cero: etapas vacías dan NaN, no Infinity', () => {
   assert.ok(Number.isNaN(ratio(5, 0)));
   assert.ok(Number.isNaN(ratio(NaN, 10)));
   assert.equal(ratio(0, 10), 0);
+  // Una etapa negativa no tiene parte del inicio: sin "0 %" que parezca un cálculo.
+  assert.ok(Number.isNaN(ratio(-80, 120)));
   const { fromStart, fromPrev } = conversions([0, 0, 3]);
   assert.ok(fromStart.every(Number.isNaN));
   assert.ok(Number.isNaN(fromPrev[1]) && Number.isNaN(fromPrev[2]));

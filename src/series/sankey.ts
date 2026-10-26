@@ -787,7 +787,8 @@ export const sankey: SeriesImpl = {
     const m = modelOf(ps);
     if (m.dropped.includes(i)) return { value, details: [['No aparece', 'cerraría un ciclo']] };
     const l = m.byRow.get(i);
-    if (!l) return { value };
+    // Como en los demás tipos: lo que no se dibuja dice por qué.
+    if (!l) return { value, details: [['No aparece', v <= 0 ? 'vale cero o menos' : 'le falta el origen o el destino']] };
     const details: [string, string][] = [];
     if (m.outflow[l.source] > 0)
       details.push([`De lo que sale de ${m.names[l.source]}`, format.percent(l.value / m.outflow[l.source])]);
