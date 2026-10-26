@@ -57,6 +57,9 @@ const PAD = 8;
 const COL_GAP = 6;
 /** Separación mínima entre dos etiquetas de columna, y alto mínimo de fila por etiqueta. */
 const LABEL_SPACING = 12;
+/** Una etiqueta de columna ocupa como máximo esta fracción del ancho, y nunca menos de MIN_COL_LABEL px. */
+const MAX_COL_SHARE = 0.35;
+const MIN_COL_LABEL = 48;
 const ROW_LABEL_PITCH = 14;
 /** Una celda lleva su valor si el texto cabe con 4 px por lado y la celda mide al menos esto de alto. */
 const VALUE_PAD = 8;
@@ -321,7 +324,10 @@ function setup(ctx: DrawContext): Setup {
   const grid = gridOf(ps);
   const { domain, ramp } = colorScale(ctx);
   const legend = domain ? legendSpec(domain, ctx.format) : null;
-  const colTexts = grid.first.map((i) => ctx.label(i));
+  // Columnas con nombres larguísimos se recortan con "…", como las categorías de un eje: sin el
+  // recorte, el nombre más largo decidiría el paso y quedaría una sola columna con nombre.
+  const colMax = Math.max(MIN_COL_LABEL, ctx.width * MAX_COL_SHARE);
+  const colTexts = grid.first.map((i) => fitText(ctx.label(i), colMax, ctx.measure));
   const colWidths = colTexts.map((t) => ctx.measure(t));
   const rowLabel = maxOf(
     grid.rows.map((t) => ctx.measure(t)),

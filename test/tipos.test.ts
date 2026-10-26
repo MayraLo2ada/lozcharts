@@ -5,7 +5,7 @@
 import './dom';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { host } from './dom';
+import { host, resize } from './dom';
 import { LozChart, type LozChartOptions } from '../src/index';
 import { maxOf } from '../src/series/common';
 import { barGeometry } from '../src/series/bar';
@@ -109,6 +109,20 @@ test('globo: por defecto mira a los países con datos, aunque fit sea "all"', ()
   assert.ok(Math.abs(lon - 20) < 0.5 && Math.abs(lat) < 0.5, `${lon}, ${lat}`);
   const [plon] = lookAt([], [[-70, 0]]);
   assert.ok(Math.abs(plon + 70) < 1e-6);
+});
+
+test('mapa de calor: con nombres larguísimos, las columnas se recortan y se nombra más de una', () => {
+  resize(340);
+  try {
+    const largo = (k: number) => `Región Autónoma número ${k} de un nombre larguísimo 🌵`;
+    const data = [0, 1, 2, 3, 4, 5].flatMap((k) => ['Mañana', 'Tarde'].map((f, j) => ({ c: largo(k), f, v: k + j })));
+    const markup = svgOf({ data, xAxis: { field: 'c' }, series: [{ type: 'heatmap', field: 'v', y: 'f', name: 'V' }] });
+    const cols = [...markup.matchAll(/>(Región Autónoma[^<]*)</g)].map((m) => m[1]);
+    assert.ok(cols.length >= 2, `columnas con nombre: ${cols.length}`);
+    assert.ok(cols.every((t) => t.endsWith('…')));
+  } finally {
+    resize(600);
+  }
 });
 
 test('bala: con filas muy juntas no se dibujan los valores (se enciman); con lugar, sí', () => {
