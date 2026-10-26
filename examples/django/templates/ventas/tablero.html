@@ -21,7 +21,7 @@
     </div>
     <div id="contenido">{% include "ventas/_tablero.html" %}</div>
 
-    <!-- dist/lozcharts.umd.js copiado a static/ (o desde un CDN cuando esté publicado en npm). -->
+    <!-- lozcharts.umd.js copiado a static/, o directo desde https://cdn.jsdelivr.net/npm/lozcharts@1/dist/lozcharts.umd.js -->
     <script src="{% static 'lozcharts.umd.js' %}"></script>
     <script src="{% static 'htmx.min.js' %}"></script>
     <script>

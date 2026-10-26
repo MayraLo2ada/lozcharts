@@ -27,10 +27,14 @@
 - React: `import { Chart, Multiples } from 'lozcharts/react'`; las opciones van como props
   (`<Chart data={filas} xAxis={{ field: 'mes', type: 'time' }} series={[...]} />`); `ref` da la instancia.
 - Angular, Vue, Svelte: `import 'lozcharts/element'` y `<loz-chart [options]="opciones">`
-  (eventos `lozhover`, `lozzoom`). En Angular, `schemas: [CUSTOM_ELEMENTS_SCHEMA]`.
+  (eventos `lozhover`, `lozzoom`, `lozclick`; `elemento.chart` es la instancia). En Angular,
+  `schemas: [CUSTOM_ELEMENTS_SCHEMA]`; en Vue, `:options="opciones"` y
+  `compilerOptions.isCustomElement: (tag) => tag === 'loz-chart'` en el plugin de Vue.
 - Django + HTMX: `<div data-lozchart="#id-json">` + `{{ opciones|json_script:"id-json" }}` y
   `htmx.onLoad((el) => LozChart.initAll(el))`.
 - Mapas: además `import 'lozcharts/maps/world'` o `<script src="maps/world.umd.js">`.
+- TypeScript: tipos incluidos (`LozChartOptions`, `SeriesOptions`, `MultiplesOptions`). Las filas
+  de datos, con `type Fila = { … }` y no con `interface` (una interface no encaja en `data`).
 
 ## Tipos de serie (`series[].type`) y sus campos
 
@@ -72,13 +76,15 @@
 - `yAxis`: `format` ('auto'|'compact'|'number'|'percent'|'currency'|función), `title`, `min`, `max`,
   `zero`, `labels`, `width`, `index` (base 100), `type: 'log'` (escala logarítmica), `grid: false`
   (sin rejilla). `xAxis`: `field`, `type`, `format`, `title`, `labels`, `band`.
+- `yAxis2` (eje derecho, para series con `axis: 'right'`): `format`, `title`, `min`, `max`.
 - `zoom: true | { range: [desde, hasta], scrollbar: false, reset: false }`, `onZoom(rango, ventana)`
   (`ventana` = `{ start, end }` en fracciones del eje).
 - `onClick(x, indice, serie)`: clic, Enter o Espacio en un dato. `onHover(x, indice, serie)` igual.
 - `selection: [indices de fila]`: lo seleccionado normal y el resto atenuado (`chart.select([...])`).
 - `annotations: [{ y: 80000, label: 'Meta' }, { x: ['2026-06-01', '2026-06-30'], label: 'Campaña' }]`
   (un valor = línea, dos = franja; `axis: 'right'` con `yAxis2`).
-- `endLabels: true | { value: true }`, `emphasis: 'Serie' | ['A', 'B']`, `onHover(x)`.
+- `endLabels: true | { value: true }`, `emphasis: 'Serie' | ['A', 'B']`.
+- `orientation: 'horizontal'` (categorías en el eje vertical).
 - Con `format: 'percent'`, los datos van como fracción (0.25 = 25 %).
 
 ## Métodos
@@ -87,8 +93,8 @@
 `highlightIndex(i | [i])`, `select([i] | null)`, `selection`, `zoomTo(desde, hasta)`, `resetZoom()`,
 `zoomRange`, `zoomWindow`, `setZoomWindow({ start, end })`,
 `redraw()`, `toSVG()`, `toCSV()`,
-`download('png'|'svg'|'csv')`, `destroy()`; estáticos `LozChart.multiples(el, { facet: 'series' | { field }, ... })`,
-`LozChart.initAll(raiz)`, `LozChart.registerMap(nombre, topojsonOGeojson)`, `LozChart.registerSeries(nombre, impl)`.
+`download('png'|'svg'|'csv')`, `destroy()`, `visibleSeries`; estáticos `LozChart.multiples(el, { facet: 'series' | { field }, ... })`,
+`LozChart.initAll(raiz)`, `LozChart.destroyAll(raiz)`, `LozChart.getChart(elemento)`, `LozChart.registerMap(nombre, topojsonOGeojson)`, `LozChart.registerSeries(nombre, impl)`.
 
 ## Ejemplo
 

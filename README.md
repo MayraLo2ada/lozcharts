@@ -39,20 +39,40 @@ tu proyecto:
 `@1` te da siempre la última versión 1.x, que nunca rompe lo que ya funciona. Si prefieres fijar
 una versión exacta, escribe por ejemplo `@1.1.0`.
 
-### Compilar desde el código
+## Tu primer gráfico
 
-Si quieres cambiar la librería o correr sus pruebas:
+Copia esto en un archivo `ventas.html` y ábrelo con doble clic. No necesitas instalar nada:
 
-```bash
-npm install
-npm run build   # dist/: lozcharts.js (ESM), lozcharts.umd.js (UMD), react.js, maps/ y types/
-npm test        # pruebas (node:test)
-npm run check   # formato, tipos y pruebas: lo mismo que corre la integración continua
+```html
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Mi primer gráfico</title>
+  </head>
+  <body>
+    <div id="grafico"></div>
+    <script src="https://cdn.jsdelivr.net/npm/lozcharts@1/dist/lozcharts.umd.js"></script>
+    <script>
+      new LozChart('#grafico', {
+        title: 'Ventas por mes',
+        data: [
+          { mes: '2026-01', ventas: 42000 },
+          { mes: '2026-02', ventas: 45500 },
+          { mes: '2026-03', ventas: 51200 },
+        ],
+        xAxis: { field: 'mes', type: 'time' },
+        yAxis: { format: 'currency' },
+        series: [{ type: 'bar', field: 'ventas', name: 'Ventas' }],
+      });
+    </script>
+  </body>
+</html>
 ```
 
-Después de compilar, abre `demo/index.html` con doble clic y tienes la galería. No hace falta
-servidor. Para probar tus cambios en otro proyecto de tu máquina, instálala desde la carpeta:
-`npm install ../lozcharts` (se compila sola al instalarse).
+Eso es todo: los datos son una lista de filas, `xAxis.field` dice qué campo va en el eje X y cada
+serie dice su `type` y su `field`. El tooltip, el teclado, el modo oscuro y la tabla para lectores
+de pantalla ya vienen.
 
 ## Tres formas de usarla
 
@@ -67,17 +87,20 @@ el gráfico.
 </script>
 ```
 
-**2. Con `import` (Vite, webpack) o `require` (Node, Jest).** Acuérdate de llamar a `destroy()`
+**2. Con `import` (Vite, webpack, Angular CLI) o `require` (Node, Jest).** Acuérdate de llamar a `destroy()`
 cuando desmontes el componente. En React no tienes que hacerlo a mano si usas los componentes de
 `lozcharts/react` (ver [React](#react)), y en Angular, Vue o Svelte tienes el elemento
 `<loz-chart>` (ver [`<loz-chart>`](#loz-chart-angular-vue-svelte-o-html-puro)).
 
 ```js
-import { LozChart } from 'lozcharts';
+import { LozChart } from 'lozcharts'; // o: const { LozChart } = require('lozcharts');
 const chart = new LozChart(elemento, opciones);
 // al desmontar el componente:
 chart.destroy();
 ```
+
+`LozChart` dibuja en la página, así que necesita un navegador (o un DOM de pruebas, como jsdom en
+Jest). En Node sin DOM puedes importarla, pero no crear gráficos.
 
 **3. Con Django + HTMX.** Pon las opciones en JSON en el atributo `data-lozchart`, o el selector de
 un `<script type="application/json">`. Luego vuelve a iniciar los gráficos cada vez que HTMX cambie
@@ -504,6 +527,46 @@ export class VentasComponent {
 - `elemento.chart` es la instancia, con todos sus métodos. Cuando quitas el elemento de la página,
   el gráfico se destruye solo, así que dentro de fragmentos HTMX no necesitas `initAll`.
 
+En Vue, dile al compilador que `loz-chart` es un elemento propio de la página y no un componente;
+si no, funciona igual pero te avisa en la consola con "Failed to resolve component":
+
+```js
+// vite.config.js
+import vue from '@vitejs/plugin-vue';
+export default {
+  plugins: [vue({ template: { compilerOptions: { isCustomElement: (tag) => tag === 'loz-chart' } } })],
+};
+```
+
+```html
+<script setup>
+  import 'lozcharts/element';
+</script>
+<template>
+  <loz-chart :options="opciones" @lozclick="(e) => console.log(e.detail)"></loz-chart>
+</template>
+```
+
+## TypeScript
+
+Los tipos vienen en el paquete y funcionan con cualquier `moduleResolution` (`bundler`, `node16`,
+`nodenext` o el antiguo `node`). Si escribes una opción que no existe o con un error de tipeo
+(`heigth`, `smoth`, `theme: 'oscuro'`), el editor te lo marca y te sugiere la buena.
+
+```ts
+import { LozChart, type LozChartOptions, type SeriesOptions } from 'lozcharts';
+
+const series: SeriesOptions[] = [{ type: 'line', field: 'ventas', name: 'Ventas' }];
+const opciones: LozChartOptions = { data: filas, xAxis: { field: 'mes', type: 'time' }, series };
+const grafico: LozChart = new LozChart('#grafico', opciones);
+```
+
+Para tus filas usa `type` en vez de `interface`: `type Venta = { mes: string; ventas: number }`.
+Una `interface` de TypeScript no acepta campos que no declaró, y por eso no encaja con `data`, que
+es una lista de objetos con cualquier campo. Con `type` encaja sin conversiones.
+
+En un proyecto CommonJS (`require`) los tipos son los mismos y se importan igual que arriba.
+
 ## LozCharts con IA
 
 Si le pides gráficos a ChatGPT, Claude o Copilot, dile que use LozCharts y pásale el archivo
@@ -578,8 +641,9 @@ se comparan de un vistazo.
 - Con `facet: 'series'`, `context: true` dibuja en cada panel las demás series en gris, detrás de
   la suya.
 - Las `annotations` se dibujan en todos los paneles, por ejemplo una meta común.
-- Métodos: `setData`, `setOptions`, `setTheme`, `toggleSeries`, `toSVG`, `download`, `destroy` y
-  `charts` (los gráficos de cada panel). En HTMX, `initAll` los crea si el JSON trae `facet`.
+- Métodos: `setData`, `setOptions`, `setTheme`, `toggleSeries`, `toSVG`, `toCSV`, `download`,
+  `destroy` y `charts` (los gráficos de cada panel). En HTMX, `initAll` los crea si el JSON trae
+  `facet`.
 
 ## Dos medidas con distintas unidades
 
@@ -794,9 +858,17 @@ new LozChart('#grafico', {
 | `toCSV()`                                                 | Los datos como CSV (números sin formato, fechas en ISO), para una hoja de cálculo.               |
 | `download('png' \| 'svg' \| 'csv', nombre?)`              | Descarga la imagen (PNG al doble de resolución) o los datos en CSV.                              |
 | `destroy()`                                               | Quita el gráfico y deja de escuchar sus eventos.                                                 |
+| `visibleSeries`                                           | Nombres de las series visibles (las que no ocultaste en la leyenda).                             |
+| `element`                                                 | El elemento de la página donde está el gráfico.                                                  |
+| `LozChart.multiples(elemento, opciones)`                  | Crea small multiples. Ver [Small multiples](#small-multiples).                                   |
+| `LozChart.getChart(elemento)`                             | El gráfico que ya está montado en ese elemento (o en ese selector), si hay uno.                  |
 | `LozChart.initAll(raíz)`, `destroyAll(raíz)`, `cleanup()` | Montaje automático para HTMX.                                                                    |
 | `LozChart.registerSeries(nombre, impl)`                   | Agrega un tipo de serie.                                                                         |
+| `LozChart.seriesTypes`                                    | Los nombres de los tipos de serie registrados.                                                   |
 | `LozChart.registerMap(nombre, topojsonOGeojson)`          | Agrega un mapa para `choropleth` y `mapbubble`.                                                  |
+
+Los métodos que cambian algo devuelven el mismo gráfico, así que puedes encadenarlos:
+`chart.setTheme('dark').toggleSeries('Tienda', false)`.
 
 ## Accesibilidad
 
@@ -918,6 +990,22 @@ formatos (`valueFormatter`, `compactFormatter`, `axisFormatter`, `parseTime`, `t
 `BandScale`, `ContinuousScale`), formas (`linePath`, `areaPath`, `barPath`, `stepPath`,
 `polarPoint`, `r2`), la selección (`DIM_OPACITY`, `dimOpacity`, `dimmed`, `paintDimmed`) y `esc`,
 `attrs`, `textWidth`, `fitText`, `toCSV`, `slug` y `swatchOf`.
+
+## Compilar desde el código
+
+Si quieres cambiar la librería o correr sus pruebas:
+
+```bash
+npm install
+npm run build   # dist/: lozcharts.js (ESM), lozcharts.umd.js (UMD), react.js, maps/ y types/
+npm test        # pruebas (node:test)
+npm run check   # formato, tipos y pruebas: lo mismo que corre la integración continua
+```
+
+Después de compilar, abre `demo/index.html` con doble clic y tienes la galería. No hace falta
+servidor. Para probar tus cambios en otro proyecto de tu máquina, instálala desde la carpeta:
+`npm install ../lozcharts`. Queda enlazada a la carpeta, así que después de cada cambio corre
+`npm run build` y recarga.
 
 ## Reglas de diseño
 

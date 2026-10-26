@@ -9,7 +9,10 @@ Archivos de ejemplo para una app de Django (`ventas`):
 - `templates/ventas/_tablero.html`: el fragmento. Las opciones van con `json_script`, que las
   escapa (nunca pongas datos en el HTML sin escapar).
 
-Copia `dist/lozcharts.umd.js` (después de `npm run build`) a la carpeta `static/` de la app.
+Copia `lozcharts.umd.js` a la carpeta `static/` de la app: lo encuentras en
+`node_modules/lozcharts/dist/` después de `npm install lozcharts`, o lo bajas de
+`https://cdn.jsdelivr.net/npm/lozcharts@1/dist/lozcharts.umd.js`. También puedes dejar el
+`<script>` apuntando a esa dirección y no copiar nada.
 
 Las dos líneas que conectan LozCharts con HTMX:
 
