@@ -195,12 +195,23 @@ El oscuro tiene sus propios valores; no es una inversión.
 
 - Selección al arrastrar: el primer color de la paleta al 10 % con borde, de alto completo, y el
   tramo en texto arriba ("mar – jun"): no se confunde con una franja y se sabe a dónde se acerca.
+  Con zoom en Y es un rectángulo; un arrastre casi plano (menos de 8 px) en un eje no lo cambia.
 - La ventana muestra al menos 5 datos; los ticks de fecha nunca bajan de la granularidad de los
   datos (con datos diarios no aparecen horas).
-- Barra de desplazamiento de 36 px, 10 px bajo las etiquetas X, alineada con el área de datos: mini
-  gráfico en el gris de contexto, lo que está fuera de la ventana velado al 72 % con la superficie,
-  ventana con borde de 1 px en texto secundario (3:1 o más contra la superficie) y bordes de
-  10 × 22 px (área táctil de 26 × 38 px) para estirarla.
+- Deslizante delgado (por defecto): 22 px de alto, 4 px bajo las etiquetas X, alineado con el área
+  de datos. Pista de 2 px en el color de la línea del cero; el tramo visible encima, de 3 px en texto
+  secundario; perillas redondas de 14 px con relleno de superficie, borde de 1,5 px en el color del
+  texto y una sombra mínima. Área táctil de 24 px (44 px con puntero grueso). Si la ventana es
+  angosta, las perillas se separan hacia afuera (22 px entre centros como mínimo).
+- Zoom en Y: el mismo deslizante, vertical, a la izquierda de los números del eje Y (22 px más 6 de
+  respiro), a lo alto del área de datos y con el inicio abajo. El título del eje empieza donde
+  empiezan los números. Los extremos del eje son los de la ventana, sin redondear, y las marcas se
+  recalculan redondas; el recorte es exacto arriba y abajo.
+- `scrollbar: 'mini'`: barra de 36 px, 10 px bajo las etiquetas X: mini gráfico en el gris de
+  contexto, lo que está fuera de la ventana velado al 72 % con la superficie, ventana con borde de
+  1 px en texto secundario (3:1 o más contra la superficie) y bordes de 10 × 22 px (área táctil de
+  26 × 38 px) para estirarla.
+
 - "Ver todo" va en el encabezado, a la derecha del título; su lugar queda reservado aunque no se vea,
   así el gráfico no salta al acercar y el botón nunca tapa datos ni anotaciones. Con
   `zoom: { reset: false }` no hay botón ni lugar reservado (quien lo quita da su propio control).

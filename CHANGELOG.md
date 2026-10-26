@@ -32,7 +32,17 @@ Primera versión en npm.
 - **Zoom exacto:** `onZoom` recibe también la ventana en fracciones del eje (`{ start, end }`), y
   `setZoomWindow` la fija sin redondear a un dato; `zoomWindow` la da. Sirve para sincronizar
   varios gráficos.
+- **Deslizante del zoom delgado:** el de siempre ahora es una línea fina con el tramo visible
+  marcado y una perilla redonda en cada extremo, en claro y oscuro. La barra con mini gráfico
+  sigue disponible con `zoom: { scrollbar: 'mini' }`.
+- **Zoom en Y:** `zoom: { y: true }` suma un deslizante vertical a la izquierda del eje Y. El eje
+  muestra el tramo elegido con marcas redondas y las series se recortan al área. Arrastrar marca un
+  rectángulo y acerca los dos ejes; Ctrl + rueda sobre el eje Y acerca solo Y; doble clic, 0, "Ver
+  todo" y `resetZoom()` vuelven a todo en los dos. `onZoom` recibe la ventana Y como tercer
+  argumento, `zoomYWindow` la da y `setZoomWindow(x, y)` la fija. Con `x: false`, el zoom es solo
+  en Y.
 - **`chart.redraw()`:** vuelve a dibujar con el estado actual, sin animar.
+
 - **Más para crear tipos:** `ctx.purpose` (`'screen'`, `'export'` u `'overview'`), `ctx.locale` y
   `ctx.currency` (también en el `format` del tooltip), `ctx.siblings()`, `hit` también en
   cartesiano, el gancho `click(ctx, i, evento)`, `preferredHeight(ps, ancho)` y `derivedName`.

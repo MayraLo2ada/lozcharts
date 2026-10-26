@@ -734,11 +734,26 @@ pantalla táctil, con dos dedos pellizcas y mueves, y con uno sigues recorriendo
 tooltip. La rueda sola sigue moviendo la página: el gráfico no te la secuestra. Al acercar,
 el eje del valor se ajusta a lo que se ve.
 
-Debajo aparece una barra con un mini gráfico de todos los datos. Puedes arrastrar la ventana o sus
-bordes, o moverla con el teclado. `zoom: { scrollbar: false }` quita la barra, y
-`zoom: { reset: false }` quita el botón "Ver todo", por si pones tu propio control. Con el foco en
-el gráfico, + y − acercan y alejan, 0 vuelve a todo, y si con las flechas llegas a un dato fuera de
-la ventana, la ventana lo sigue.
+Debajo aparece un deslizante delgado: una línea con el tramo visible marcado y una perilla redonda en
+cada extremo. Puedes arrastrar el tramo o sus perillas, hacer clic en la línea para centrar ahí la
+ventana, o moverla con el teclado. `zoom: { scrollbar: 'mini' }` lo cambia por una barra con un mini
+gráfico de todos los datos, `zoom: { scrollbar: false }` lo quita, y `zoom: { reset: false }` quita
+el botón "Ver todo", por si pones tu propio control. Con el foco en el gráfico, + y − acercan y
+alejan, 0 vuelve a todo, y si con las flechas llegas a un dato fuera de la ventana, la ventana lo
+sigue.
+
+El **zoom en el eje Y** (`zoom: { y: true }`) suma otro deslizante delgado, de pie a la izquierda del
+eje Y, con el inicio abajo. Su ventana es una fracción del eje con todos los datos: el eje muestra
+ese tramo con marcas redondas, y lo que queda fuera se corta en el borde del área. Con él, el eje del
+valor ya no se ajusta solo a la ventana de X: manda el deslizante. Arrastrar sobre el gráfico marca
+un rectángulo y acerca los dos ejes (un arrastre casi plano acerca solo uno), y Ctrl + rueda sobre
+los números del eje Y acerca solo Y. Doble clic, 0, "Ver todo" y `resetZoom()` vuelven a todo en los
+dos ejes. `zoom: { x: false, y: true }` deja el zoom solo en Y. Funciona en gráficos con eje Y
+numérico, lineal o logarítmico, en vertical; en los demás se ignora.
+
+```js
+new LozChart('#sensor', { ...opciones, zoom: { y: true }, onZoom: (rango, x, y) => console.log(y) }); // y: { start, end }
+```
 
 Si tienes varios gráficos con el mismo eje, como precio arriba y volumen abajo, puedes mover el zoom
 de todos a la vez. `onZoom` recibe también la ventana exacta en fracciones del eje, y
@@ -766,53 +781,53 @@ panel: su serie en color y las demás en gris detrás.
 
 ## Opciones
 
-| Opción                       | Tipo                                        | Por defecto                     | Qué hace                                                                                                                  |
-| ---------------------------- | ------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `title`, `subtitle`          | texto                                       | —                               | Encabezado del gráfico (también va en la exportación).                                                                    |
-| `data`                       | arreglo de objetos                          | —                               | Una fila por punto.                                                                                                       |
-| `xAxis.field`                | texto                                       | —                               | Campo de la posición X.                                                                                                   |
-| `xAxis.type`                 | `'category'` `'time'` `'linear'`            | `'category'`                    | Fechas aceptan `Date`, milisegundos o texto (`'2026-03'` se lee en hora local).                                           |
-| `xAxis.format`               | formato u opciones de `Intl.DateTimeFormat` | automático                      | Etiquetas del eje X.                                                                                                      |
-| `xAxis.title`, `yAxis.title` | texto                                       | —                               | Títulos de los ejes.                                                                                                      |
-| `yAxis.format`               | ver abajo                                   | `'auto'`                        | Formato del eje Y y del tooltip.                                                                                          |
-| `yAxis.min`, `yAxis.max`     | número                                      | calculados                      | Límites fijos.                                                                                                            |
-| `yAxis2`                     | `{ format, title, min, max }`               | —                               | Eje derecho para las series con `axis: 'right'`.                                                                          |
-| `series[].axis`              | `'left'` `'right'`                          | `'left'`                        | Eje del valor de la serie.                                                                                                |
-| `yAxis.index`                | booleano                                    | `false`                         | Índice base 100: cada serie respecto de su primer valor.                                                                  |
-| `yAxis.width`                | px                                          | —                               | Ancho mínimo para los números del eje; alinea varios gráficos.                                                            |
-| `xAxis.labels`               | booleano                                    | `true`                          | `false` oculta las etiquetas del eje X.                                                                                   |
-| `xAxis.band`                 | booleano                                    | `false`                         | Fuerza la escala de banda (puntos al centro de su franja), para alinear con barras.                                       |
-| `xAxis.grid`                 | booleano                                    | con fechas o números, `true`    | Líneas verticales de la rejilla en cada marca del eje X. Con categorías no van, salvo que las pidas.                      |
-| `yAxis.labels`               | booleano                                    | `true`                          | `false` oculta los números del eje (la rejilla queda).                                                                    |
-| `yAxis.zero`                 | booleano                                    | `false`                         | Fuerza el cero (barras y áreas ya lo incluyen).                                                                           |
-| `yAxis.type`                 | `'linear'` `'log'`                          | `'linear'`                      | Escala logarítmica: marcas en 1, 2 y 5 × 10ⁿ; solo cuentan los valores positivos y no hay cero.                           |
-| `yAxis.grid`                 | booleano                                    | `true`                          | `false` quita la rejilla del valor (la línea del cero queda).                                                             |
-| `series[].type`              | ver [Tipos de serie](#tipos-de-serie)       | —                               | Tipo registrado.                                                                                                          |
-| `series[].field`             | texto                                       | —                               | Campo numérico.                                                                                                           |
-| `series[].name`              | texto                                       | el campo                        | Nombre visible; debe ser único.                                                                                           |
-| `series[].stack`             | `true` o texto                              | —                               | Apila barras o áreas del mismo grupo. Positivos y negativos se apilan por separado.                                       |
-| `series[].smooth`            | booleano                                    | `false`                         | Curva monótona (línea y área).                                                                                            |
-| `series[].color`             | 1 a 8                                       | su posición                     | Lugar en la paleta.                                                                                                       |
-| `series[].visible`           | booleano                                    | `true`                          | Visible al inicio.                                                                                                        |
-| `series[].format`            | formato                                     | el del eje Y                    | Formato propio en el tooltip.                                                                                             |
-| `orientation`                | `'vertical'` `'horizontal'`                 | `'vertical'`                    | En horizontal, las categorías van en el eje vertical.                                                                     |
-| `theme`                      | `'light'` `'dark'` `'auto'`                 | `'auto'`                        | `auto` sigue al sistema y cambia en vivo.                                                                                 |
-| `palette`                    | arreglo de colores o `{ light, dark }`      | la de LozCharts                 | Colores propios en orden (máximo 8). Ver [Paleta propia](#paleta-propia).                                                 |
-| `height`                     | px                                          | `320`                           | Alto del área del gráfico con sus ejes (un tipo de serie puede pedir otro; el dado aquí manda).                           |
-| `legend`                     | `false` o `{ position: 'top' \| 'bottom' }` | abajo                           | Solo aparece con 2 o más series.                                                                                          |
-| `tooltip`                    | booleano o `{ float }`                      | `true`                          | `false` apaga tooltip y puntero; `{ float: false }` quita solo el recuadro (queda todo lo demás).                         |
-| `animate`                    | booleano                                    | `true`                          | `false` dibuja sin animación.                                                                                             |
-| `locale`, `currency`         | texto                                       | el `lang` de la página, `'USD'` | Idioma de los textos de la librería (`'es'`, `'en'`, `'pt-BR'`) y de los números y fechas con `Intl`.                     |
-| `background`                 | booleano                                    | `true`                          | Pinta la superficie del tema detrás del gráfico.                                                                          |
-| `onHover`                    | función                                     | —                               | Recibe la X del dato activo (o null al salir), su índice de fila (−1) y su serie. Con `highlight(x)` sincroniza gráficos. |
-| `selection`                  | arreglo de índices de fila                  | —                               | Datos seleccionados: se ven normal y los demás quedan atenuados. Ver `select()`.                                          |
-| `zoom`                       | booleano o `{ range, scrollbar, reset }`    | `false`                         | Zoom en el eje X con barra de desplazamiento. Ver [Zoom](#zoom-anotaciones-y-etiquetas-directas).                         |
-| `onZoom`                     | función                                     | —                               | Recibe el primer y el último dato visibles (o null al ver todo) y la ventana `{ start, end }`.                            |
-| `onClick`                    | función                                     | —                               | Clic, Enter o Espacio en un dato: recibe su X, su índice y la serie (o null si es de todas).                              |
-| `annotations`                | arreglo de `{ x \| y, label, axis }`        | —                               | Líneas de referencia (un valor) y franjas (dos valores).                                                                  |
-| `endLabels`                  | booleano o `{ value }`                      | `false`                         | Nombre (y valor) al final de cada línea, área o escalón.                                                                  |
-| `emphasis`                   | texto o arreglo                             | —                               | Series destacadas; las demás van en gris como contexto.                                                                   |
-| `ariaLabel`                  | texto                                       | automático                      | Descripción para lectores de pantalla.                                                                                    |
+| Opción                       | Tipo                                           | Por defecto                     | Qué hace                                                                                                                                                                    |
+| ---------------------------- | ---------------------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title`, `subtitle`          | texto                                          | —                               | Encabezado del gráfico (también va en la exportación).                                                                                                                      |
+| `data`                       | arreglo de objetos                             | —                               | Una fila por punto.                                                                                                                                                         |
+| `xAxis.field`                | texto                                          | —                               | Campo de la posición X.                                                                                                                                                     |
+| `xAxis.type`                 | `'category'` `'time'` `'linear'`               | `'category'`                    | Fechas aceptan `Date`, milisegundos o texto (`'2026-03'` se lee en hora local).                                                                                             |
+| `xAxis.format`               | formato u opciones de `Intl.DateTimeFormat`    | automático                      | Etiquetas del eje X.                                                                                                                                                        |
+| `xAxis.title`, `yAxis.title` | texto                                          | —                               | Títulos de los ejes.                                                                                                                                                        |
+| `yAxis.format`               | ver abajo                                      | `'auto'`                        | Formato del eje Y y del tooltip.                                                                                                                                            |
+| `yAxis.min`, `yAxis.max`     | número                                         | calculados                      | Límites fijos.                                                                                                                                                              |
+| `yAxis2`                     | `{ format, title, min, max }`                  | —                               | Eje derecho para las series con `axis: 'right'`.                                                                                                                            |
+| `series[].axis`              | `'left'` `'right'`                             | `'left'`                        | Eje del valor de la serie.                                                                                                                                                  |
+| `yAxis.index`                | booleano                                       | `false`                         | Índice base 100: cada serie respecto de su primer valor.                                                                                                                    |
+| `yAxis.width`                | px                                             | —                               | Ancho mínimo para los números del eje; alinea varios gráficos.                                                                                                              |
+| `xAxis.labels`               | booleano                                       | `true`                          | `false` oculta las etiquetas del eje X.                                                                                                                                     |
+| `xAxis.band`                 | booleano                                       | `false`                         | Fuerza la escala de banda (puntos al centro de su franja), para alinear con barras.                                                                                         |
+| `xAxis.grid`                 | booleano                                       | con fechas o números, `true`    | Líneas verticales de la rejilla en cada marca del eje X. Con categorías no van, salvo que las pidas.                                                                        |
+| `yAxis.labels`               | booleano                                       | `true`                          | `false` oculta los números del eje (la rejilla queda).                                                                                                                      |
+| `yAxis.zero`                 | booleano                                       | `false`                         | Fuerza el cero (barras y áreas ya lo incluyen).                                                                                                                             |
+| `yAxis.type`                 | `'linear'` `'log'`                             | `'linear'`                      | Escala logarítmica: marcas en 1, 2 y 5 × 10ⁿ; solo cuentan los valores positivos y no hay cero.                                                                             |
+| `yAxis.grid`                 | booleano                                       | `true`                          | `false` quita la rejilla del valor (la línea del cero queda).                                                                                                               |
+| `series[].type`              | ver [Tipos de serie](#tipos-de-serie)          | —                               | Tipo registrado.                                                                                                                                                            |
+| `series[].field`             | texto                                          | —                               | Campo numérico.                                                                                                                                                             |
+| `series[].name`              | texto                                          | el campo                        | Nombre visible; debe ser único.                                                                                                                                             |
+| `series[].stack`             | `true` o texto                                 | —                               | Apila barras o áreas del mismo grupo. Positivos y negativos se apilan por separado.                                                                                         |
+| `series[].smooth`            | booleano                                       | `false`                         | Curva monótona (línea y área).                                                                                                                                              |
+| `series[].color`             | 1 a 8                                          | su posición                     | Lugar en la paleta.                                                                                                                                                         |
+| `series[].visible`           | booleano                                       | `true`                          | Visible al inicio.                                                                                                                                                          |
+| `series[].format`            | formato                                        | el del eje Y                    | Formato propio en el tooltip.                                                                                                                                               |
+| `orientation`                | `'vertical'` `'horizontal'`                    | `'vertical'`                    | En horizontal, las categorías van en el eje vertical.                                                                                                                       |
+| `theme`                      | `'light'` `'dark'` `'auto'`                    | `'auto'`                        | `auto` sigue al sistema y cambia en vivo.                                                                                                                                   |
+| `palette`                    | arreglo de colores o `{ light, dark }`         | la de LozCharts                 | Colores propios en orden (máximo 8). Ver [Paleta propia](#paleta-propia).                                                                                                   |
+| `height`                     | px                                             | `320`                           | Alto del área del gráfico con sus ejes (un tipo de serie puede pedir otro; el dado aquí manda).                                                                             |
+| `legend`                     | `false` o `{ position: 'top' \| 'bottom' }`    | abajo                           | Solo aparece con 2 o más series.                                                                                                                                            |
+| `tooltip`                    | booleano o `{ float }`                         | `true`                          | `false` apaga tooltip y puntero; `{ float: false }` quita solo el recuadro (queda todo lo demás).                                                                           |
+| `animate`                    | booleano                                       | `true`                          | `false` dibuja sin animación.                                                                                                                                               |
+| `locale`, `currency`         | texto                                          | el `lang` de la página, `'USD'` | Idioma de los textos de la librería (`'es'`, `'en'`, `'pt-BR'`) y de los números y fechas con `Intl`.                                                                       |
+| `background`                 | booleano                                       | `true`                          | Pinta la superficie del tema detrás del gráfico.                                                                                                                            |
+| `onHover`                    | función                                        | —                               | Recibe la X del dato activo (o null al salir), su índice de fila (−1) y su serie. Con `highlight(x)` sincroniza gráficos.                                                   |
+| `selection`                  | arreglo de índices de fila                     | —                               | Datos seleccionados: se ven normal y los demás quedan atenuados. Ver `select()`.                                                                                            |
+| `zoom`                       | booleano o `{ range, x, y, scrollbar, reset }` | `false`                         | Zoom con un deslizante delgado (`scrollbar: 'mini'` para la barra con mini gráfico). `y: true` acerca también el eje Y. Ver [Zoom](#zoom-anotaciones-y-etiquetas-directas). |
+| `onZoom`                     | función                                        | —                               | Recibe el primer y el último dato visibles (o null al ver todo), la ventana `{ start, end }` y la ventana Y.                                                                |
+| `onClick`                    | función                                        | —                               | Clic, Enter o Espacio en un dato: recibe su X, su índice y la serie (o null si es de todas).                                                                                |
+| `annotations`                | arreglo de `{ x \| y, label, axis }`           | —                               | Líneas de referencia (un valor) y franjas (dos valores).                                                                                                                    |
+| `endLabels`                  | booleano o `{ value }`                         | `false`                         | Nombre (y valor) al final de cada línea, área o escalón.                                                                                                                    |
+| `emphasis`                   | texto o arreglo                                | —                               | Series destacadas; las demás van en gris como contexto.                                                                                                                     |
+| `ariaLabel`                  | texto                                          | automático                      | Descripción para lectores de pantalla.                                                                                                                                      |
 
 Los formatos son `'auto'` (compacto desde mil: 0 / 1 mil / 2 mil), `'compact'`, `'number'`,
 `'percent'` (los datos van como fracción: `0.25` = 25 %), `'currency'` o una función
@@ -866,33 +881,35 @@ new LozChart('#grafico', {
 
 ## Métodos
 
-| Método                                                    | Qué hace                                                                                         |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `setData(datos)`                                          | Cambia los datos y anima desde el estado actual (aunque haya una animación a medias).            |
-| `options`                                                 | Opciones vigentes, con los valores por defecto (solo lectura).                                   |
-| `setOptions({...}, animar?)`                              | Combina opciones nuevas con las actuales y redibuja.                                             |
-| `axisWidth`                                               | Ancho que necesitan hoy los números del eje Y (para alinear gráficos con `yAxis.width`).         |
-| `highlight(x)`                                            | Marca el dato con esa X (o varios, con una lista), sin tooltip; `null` limpia.                   |
-| `highlightIndex(i)`                                       | Como `highlight`, por índice de fila o lista de índices (una celda de un mapa de calor).         |
-| `select(índices)`, `selection`                            | Selecciona datos por índice (los demás se atenúan) y lo anuncia; `null` quita la selección.      |
-| `zoomTo(desde, hasta)`, `resetZoom()`                     | Acerca el eje X a un tramo (con barras, incluye las categorías de los extremos) o vuelve a todo. |
-| `zoomRange`                                               | Primer y último dato visibles con zoom, o null.                                                  |
-| `zoomWindow`, `setZoomWindow({ start, end } \| null)`     | La ventana exacta del zoom en fracciones del eje X, y fijarla (para sincronizar gráficos).       |
-| `redraw()`                                                | Vuelve a dibujar con el estado actual, sin animar (para tipos cuyo dibujo cambia por fuera).     |
-| `setTheme('dark')`                                        | Cambia el tema.                                                                                  |
-| `toggleSeries('En línea', visible?)`                      | Oculta o muestra una serie; las demás conservan su color.                                        |
-| `toSVG()`                                                 | SVG completo como texto, con título y leyenda.                                                   |
-| `toCSV()`                                                 | Los datos como CSV (números sin formato, fechas en ISO), para una hoja de cálculo.               |
-| `download('png' \| 'svg' \| 'csv', nombre?)`              | Descarga la imagen (PNG al doble de resolución) o los datos en CSV.                              |
-| `destroy()`                                               | Quita el gráfico y deja de escuchar sus eventos.                                                 |
-| `visibleSeries`                                           | Nombres de las series visibles (las que no ocultaste en la leyenda).                             |
-| `element`                                                 | El elemento de la página donde está el gráfico.                                                  |
-| `LozChart.multiples(elemento, opciones)`                  | Crea small multiples. Ver [Small multiples](#small-multiples).                                   |
-| `LozChart.getChart(elemento)`                             | El gráfico que ya está montado en ese elemento (o en ese selector), si hay uno.                  |
-| `LozChart.initAll(raíz)`, `destroyAll(raíz)`, `cleanup()` | Montaje automático para HTMX.                                                                    |
-| `LozChart.registerSeries(nombre, impl)`                   | Agrega un tipo de serie.                                                                         |
-| `LozChart.seriesTypes`                                    | Los nombres de los tipos de serie registrados.                                                   |
-| `LozChart.registerMap(nombre, topojsonOGeojson)`          | Agrega un mapa para `choropleth` y `mapbubble`.                                                  |
+| Método                                                    | Qué hace                                                                                                                      |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `setData(datos)`                                          | Cambia los datos y anima desde el estado actual (aunque haya una animación a medias).                                         |
+| `options`                                                 | Opciones vigentes, con los valores por defecto (solo lectura).                                                                |
+| `setOptions({...}, animar?)`                              | Combina opciones nuevas con las actuales y redibuja.                                                                          |
+| `axisWidth`                                               | Ancho que necesitan hoy los números del eje Y (para alinear gráficos con `yAxis.width`).                                      |
+| `highlight(x)`                                            | Marca el dato con esa X (o varios, con una lista), sin tooltip; `null` limpia.                                                |
+| `highlightIndex(i)`                                       | Como `highlight`, por índice de fila o lista de índices (una celda de un mapa de calor).                                      |
+| `select(índices)`, `selection`                            | Selecciona datos por índice (los demás se atenúan) y lo anuncia; `null` quita la selección.                                   |
+| `zoomTo(desde, hasta)`, `resetZoom()`                     | Acerca el eje X a un tramo (con barras, incluye las categorías de los extremos) o vuelve a todo en los dos ejes.              |
+| `zoomRange`                                               | Primer y último dato visibles con zoom, o null.                                                                               |
+| `zoomWindow`, `setZoomWindow({ start, end } \| null)`     | La ventana exacta del zoom en fracciones del eje X, y fijarla (para sincronizar gráficos).                                    |
+| `zoomYWindow`, `setZoomWindow(x, { start, end } \| null)` | La ventana del zoom en Y, en fracciones del eje desde abajo, y fijarla (pasa `chart.zoomWindow` como `x` para dejar X igual). |
+
+| `redraw()` | Vuelve a dibujar con el estado actual, sin animar (para tipos cuyo dibujo cambia por fuera). |
+| `setTheme('dark')` | Cambia el tema. |
+| `toggleSeries('En línea', visible?)` | Oculta o muestra una serie; las demás conservan su color. |
+| `toSVG()` | SVG completo como texto, con título y leyenda. |
+| `toCSV()` | Los datos como CSV (números sin formato, fechas en ISO), para una hoja de cálculo. |
+| `download('png' \| 'svg' \| 'csv', nombre?)` | Descarga la imagen (PNG al doble de resolución) o los datos en CSV. |
+| `destroy()` | Quita el gráfico y deja de escuchar sus eventos. |
+| `visibleSeries` | Nombres de las series visibles (las que no ocultaste en la leyenda). |
+| `element` | El elemento de la página donde está el gráfico. |
+| `LozChart.multiples(elemento, opciones)` | Crea small multiples. Ver [Small multiples](#small-multiples). |
+| `LozChart.getChart(elemento)` | El gráfico que ya está montado en ese elemento (o en ese selector), si hay uno. |
+| `LozChart.initAll(raíz)`, `destroyAll(raíz)`, `cleanup()` | Montaje automático para HTMX. |
+| `LozChart.registerSeries(nombre, impl)` | Agrega un tipo de serie. |
+| `LozChart.seriesTypes` | Los nombres de los tipos de serie registrados. |
+| `LozChart.registerMap(nombre, topojsonOGeojson)` | Agrega un mapa para `choropleth` y `mapbubble`. |
 
 Los métodos que cambian algo devuelven el mismo gráfico, así que puedes encadenarlos:
 `chart.setTheme('dark').toggleSeries('Tienda', false)`.

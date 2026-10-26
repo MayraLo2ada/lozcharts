@@ -79,8 +79,11 @@
   `zero`, `labels`, `width`, `index` (base 100), `type: 'log'` (logarithmic scale), `grid: false`
   (no grid). `xAxis`: `field`, `type`, `format`, `title`, `labels`, `band`, `grid` (vertical lines; on by default with dates or numbers).
 - `yAxis2` (right axis, for series with `axis: 'right'`): `format`, `title`, `min`, `max`.
-- `zoom: true | { range: [from, to], scrollbar: false, reset: false }`, `onZoom(range, window)`
-  (`window` = `{ start, end }` as fractions of the axis).
+- `zoom: true | { range: [from, to], x: false, y: true, scrollbar: false | 'mini', reset: false }`,
+  `onZoom(range, window, yWindow)` (`window` and `yWindow` = `{ start, end }` as fractions of the
+  axis; Y counts from the bottom). The default slider is a thin line with two round knobs;
+  `scrollbar: 'mini'` is the bar with a mini chart. `y: true` adds a vertical slider left of the
+  Y axis (vertical charts with a numeric Y axis only; ignored elsewhere).
 - `onClick(x, index, series)`: click, Enter or Space on a data point. `onHover(x, index, series)` works the same way.
 - `selection: [row indices]`: the selected rows look normal and the rest are dimmed (`chart.select([...])`).
 - `annotations: [{ y: 80000, label: 'Target' }, { x: ['2026-06-01', '2026-06-30'], label: 'Campaign' }]`
@@ -93,7 +96,8 @@
 
 `setData`, `setOptions(options, animate?)`, `setTheme`, `toggleSeries(name)`, `highlight(x | [x])`,
 `highlightIndex(i | [i])`, `select([i] | null)`, `selection`, `zoomTo(from, to)`, `resetZoom()`,
-`zoomRange`, `zoomWindow`, `setZoomWindow({ start, end })`,
+`zoomRange`, `zoomWindow`, `zoomYWindow`, `setZoomWindow({ start, end }, yWindow?)`,
+
 `redraw()`, `toSVG()`, `toCSV()`,
 `download('png'|'svg'|'csv')`, `destroy()`, `visibleSeries`; static `LozChart.multiples(el, { facet: 'series' | { field }, ... })`,
 `LozChart.initAll(root)`, `LozChart.destroyAll(root)`, `LozChart.getChart(element)`, `LozChart.registerMap(name, topojsonOrGeojson)`, `LozChart.registerSeries(name, impl)`.

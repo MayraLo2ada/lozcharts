@@ -737,11 +737,26 @@ everything. On a touch screen, you pinch and pan with two fingers, and with one 
 through the data with the tooltip. The wheel on its own still scrolls the page: the chart doesn't
 hijack it. When you zoom in, the value axis adjusts to what's visible.
 
-Underneath there's a bar with a mini chart of all the data. You can drag the window or its edges, or
-move it with the keyboard. `zoom: { scrollbar: false }` removes the bar, and
-`zoom: { reset: false }` removes the "Show all" button, in case you add your own control. With focus
-on the chart, + and − zoom in and out, 0 goes back to everything, and if the arrow keys take you to a
-data point outside the window, the window follows it.
+Underneath there's a thin slider: a line with the visible span marked and a round knob at each end.
+You can drag the span or its knobs, click the line to center the window there, or move it with the
+keyboard. `zoom: { scrollbar: 'mini' }` swaps it for a bar with a mini chart of all the data,
+`zoom: { scrollbar: false }` removes it, and `zoom: { reset: false }` removes the "Show all" button,
+in case you add your own control. With focus on the chart, + and − zoom in and out, 0 goes back to
+everything, and if the arrow keys take you to a data point outside the window, the window follows it.
+
+**Zoom on the Y axis** (`zoom: { y: true }`) adds a second thin slider, standing up to the left of
+the Y axis, with its start at the bottom. Its window is a fraction of the axis with all the data:
+the axis shows that span with round tick marks, and whatever falls outside is clipped at the edge of
+the plot. With it on, the value axis no longer adjusts to the X window on its own; the slider is in
+charge. Dragging over the chart marks a rectangle and zooms in on both axes (a nearly flat drag zooms
+only one), and Ctrl + wheel over the Y axis numbers zooms only Y. Double-click, 0, "Show all", and
+`resetZoom()` go back to everything on both axes. `zoom: { x: false, y: true }` zooms only Y. It
+works on charts with a numeric Y axis, linear or log, in vertical orientation; on the rest it's
+ignored.
+
+```js
+new LozChart('#sensor', { ...options, zoom: { y: true }, onZoom: (range, x, y) => console.log(y) }); // y: { start, end }
+```
 
 If you have several charts with the same axis, like price on top and volume below, you can move the
 zoom on all of them at once. `onZoom` also gets the exact window in fractions of the axis, and
@@ -769,53 +784,53 @@ panel: its series in color and the others in gray behind it.
 
 ## Options
 
-| Option                       | Type                                         | Default                       | What it does                                                                                                                     |
-| ---------------------------- | -------------------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `title`, `subtitle`          | text                                         | —                             | The chart's heading (it's also included in the export).                                                                          |
-| `data`                       | array of objects                             | —                             | One row per point.                                                                                                               |
-| `xAxis.field`                | text                                         | —                             | Field for the X position.                                                                                                        |
-| `xAxis.type`                 | `'category'` `'time'` `'linear'`             | `'category'`                  | Dates accept `Date`, milliseconds, or text (`'2026-03'` is read in local time).                                                  |
-| `xAxis.format`               | format or `Intl.DateTimeFormat` options      | automatic                     | X axis labels.                                                                                                                   |
-| `xAxis.title`, `yAxis.title` | text                                         | —                             | Axis titles.                                                                                                                     |
-| `yAxis.format`               | see below                                    | `'auto'`                      | Format for the Y axis and the tooltip.                                                                                           |
-| `yAxis.min`, `yAxis.max`     | number                                       | calculated                    | Fixed limits.                                                                                                                    |
-| `yAxis2`                     | `{ format, title, min, max }`                | —                             | Right axis for the series with `axis: 'right'`.                                                                                  |
-| `series[].axis`              | `'left'` `'right'`                           | `'left'`                      | The series' value axis.                                                                                                          |
-| `yAxis.index`                | boolean                                      | `false`                       | Base-100 index: each series relative to its first value.                                                                         |
-| `yAxis.width`                | px                                           | —                             | Minimum width for the axis numbers; lines up several charts.                                                                     |
-| `xAxis.labels`               | boolean                                      | `true`                        | `false` hides the X axis labels.                                                                                                 |
-| `xAxis.band`                 | boolean                                      | `false`                       | Forces a band scale (points in the middle of their slot), to line up with bars.                                                  |
-| `xAxis.grid`                 | boolean                                      | with dates or numbers, `true` | Vertical grid lines at each X axis tick. With categories they're off unless you ask for them.                                    |
-| `yAxis.labels`               | boolean                                      | `true`                        | `false` hides the axis numbers (the grid stays).                                                                                 |
-| `yAxis.zero`                 | boolean                                      | `false`                       | Forces zero in (bars and areas already include it).                                                                              |
-| `yAxis.type`                 | `'linear'` `'log'`                           | `'linear'`                    | Log scale: ticks at 1, 2, and 5 × 10ⁿ; only positive values count and there's no zero.                                           |
-| `yAxis.grid`                 | boolean                                      | `true`                        | `false` removes the value grid (the zero line stays).                                                                            |
-| `series[].type`              | see [Series types](#series-types)            | —                             | A registered type.                                                                                                               |
-| `series[].field`             | text                                         | —                             | Numeric field.                                                                                                                   |
-| `series[].name`              | text                                         | the field                     | Visible name; must be unique.                                                                                                    |
-| `series[].stack`             | `true` or text                               | —                             | Stacks bars or areas in the same group. Positive and negative values stack separately.                                           |
-| `series[].smooth`            | boolean                                      | `false`                       | Monotone curve (line and area).                                                                                                  |
-| `series[].color`             | 1 to 8                                       | its position                  | Spot in the palette.                                                                                                             |
-| `series[].visible`           | boolean                                      | `true`                        | Visible at the start.                                                                                                            |
-| `series[].format`            | format                                       | the Y axis one                | Its own format in the tooltip.                                                                                                   |
-| `orientation`                | `'vertical'` `'horizontal'`                  | `'vertical'`                  | In horizontal, the categories go on the vertical axis.                                                                           |
-| `theme`                      | `'light'` `'dark'` `'auto'`                  | `'auto'`                      | `auto` follows the system and changes live.                                                                                      |
-| `palette`                    | array of colors or `{ light, dark }`         | the LozCharts one             | Your own colors, in order (8 at most). See [Custom palette](#custom-palette).                                                    |
-| `height`                     | px                                           | `320`                         | Height of the chart area with its axes (a series type can ask for a different one; the one you set here wins).                   |
-| `legend`                     | `false` or `{ position: 'top' \| 'bottom' }` | bottom                        | Only shows up with 2 or more series.                                                                                             |
-| `tooltip`                    | boolean or `{ float }`                       | `true`                        | `false` turns off the tooltip and the pointer; `{ float: false }` removes just the box (everything else stays).                  |
-| `animate`                    | boolean                                      | `true`                        | `false` draws without animation.                                                                                                 |
-| `locale`, `currency`         | text                                         | the page's `lang`, `'USD'`    | Language of the library's own text (`'es'`, `'en'`, `'pt-BR'`) and of numbers and dates with `Intl`.                             |
-| `background`                 | boolean                                      | `true`                        | Paints the theme's surface behind the chart.                                                                                     |
-| `onHover`                    | function                                     | —                             | Gets the X of the active data point (or null on leave), its row index (−1), and its series. With `highlight(x)` it syncs charts. |
-| `selection`                  | array of row indexes                         | —                             | Selected data: shown normally while the rest is dimmed. See `select()`.                                                          |
-| `zoom`                       | boolean or `{ range, scrollbar, reset }`     | `false`                       | Zoom on the X axis with a scrollbar. See [Zoom](#zoom-annotations-and-direct-labels).                                            |
-| `onZoom`                     | function                                     | —                             | Gets the first and last visible data points (or null when showing everything) and the window `{ start, end }`.                   |
-| `onClick`                    | function                                     | —                             | Click, Enter, or Space on a data point: gets its X, its index, and the series (or null if it's for all of them).                 |
-| `annotations`                | array of `{ x \| y, label, axis }`           | —                             | Reference lines (one value) and bands (two values).                                                                              |
-| `endLabels`                  | boolean or `{ value }`                       | `false`                       | Name (and value) at the end of each line, area, or step.                                                                         |
-| `emphasis`                   | text or array                                | —                             | Highlighted series; the rest go gray as context.                                                                                 |
-| `ariaLabel`                  | text                                         | automatic                     | Description for screen readers.                                                                                                  |
+| Option                       | Type                                           | Default                       | What it does                                                                                                                                                   |
+| ---------------------------- | ---------------------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title`, `subtitle`          | text                                           | —                             | The chart's heading (it's also included in the export).                                                                                                        |
+| `data`                       | array of objects                               | —                             | One row per point.                                                                                                                                             |
+| `xAxis.field`                | text                                           | —                             | Field for the X position.                                                                                                                                      |
+| `xAxis.type`                 | `'category'` `'time'` `'linear'`               | `'category'`                  | Dates accept `Date`, milliseconds, or text (`'2026-03'` is read in local time).                                                                                |
+| `xAxis.format`               | format or `Intl.DateTimeFormat` options        | automatic                     | X axis labels.                                                                                                                                                 |
+| `xAxis.title`, `yAxis.title` | text                                           | —                             | Axis titles.                                                                                                                                                   |
+| `yAxis.format`               | see below                                      | `'auto'`                      | Format for the Y axis and the tooltip.                                                                                                                         |
+| `yAxis.min`, `yAxis.max`     | number                                         | calculated                    | Fixed limits.                                                                                                                                                  |
+| `yAxis2`                     | `{ format, title, min, max }`                  | —                             | Right axis for the series with `axis: 'right'`.                                                                                                                |
+| `series[].axis`              | `'left'` `'right'`                             | `'left'`                      | The series' value axis.                                                                                                                                        |
+| `yAxis.index`                | boolean                                        | `false`                       | Base-100 index: each series relative to its first value.                                                                                                       |
+| `yAxis.width`                | px                                             | —                             | Minimum width for the axis numbers; lines up several charts.                                                                                                   |
+| `xAxis.labels`               | boolean                                        | `true`                        | `false` hides the X axis labels.                                                                                                                               |
+| `xAxis.band`                 | boolean                                        | `false`                       | Forces a band scale (points in the middle of their slot), to line up with bars.                                                                                |
+| `xAxis.grid`                 | boolean                                        | with dates or numbers, `true` | Vertical grid lines at each X axis tick. With categories they're off unless you ask for them.                                                                  |
+| `yAxis.labels`               | boolean                                        | `true`                        | `false` hides the axis numbers (the grid stays).                                                                                                               |
+| `yAxis.zero`                 | boolean                                        | `false`                       | Forces zero in (bars and areas already include it).                                                                                                            |
+| `yAxis.type`                 | `'linear'` `'log'`                             | `'linear'`                    | Log scale: ticks at 1, 2, and 5 × 10ⁿ; only positive values count and there's no zero.                                                                         |
+| `yAxis.grid`                 | boolean                                        | `true`                        | `false` removes the value grid (the zero line stays).                                                                                                          |
+| `series[].type`              | see [Series types](#series-types)              | —                             | A registered type.                                                                                                                                             |
+| `series[].field`             | text                                           | —                             | Numeric field.                                                                                                                                                 |
+| `series[].name`              | text                                           | the field                     | Visible name; must be unique.                                                                                                                                  |
+| `series[].stack`             | `true` or text                                 | —                             | Stacks bars or areas in the same group. Positive and negative values stack separately.                                                                         |
+| `series[].smooth`            | boolean                                        | `false`                       | Monotone curve (line and area).                                                                                                                                |
+| `series[].color`             | 1 to 8                                         | its position                  | Spot in the palette.                                                                                                                                           |
+| `series[].visible`           | boolean                                        | `true`                        | Visible at the start.                                                                                                                                          |
+| `series[].format`            | format                                         | the Y axis one                | Its own format in the tooltip.                                                                                                                                 |
+| `orientation`                | `'vertical'` `'horizontal'`                    | `'vertical'`                  | In horizontal, the categories go on the vertical axis.                                                                                                         |
+| `theme`                      | `'light'` `'dark'` `'auto'`                    | `'auto'`                      | `auto` follows the system and changes live.                                                                                                                    |
+| `palette`                    | array of colors or `{ light, dark }`           | the LozCharts one             | Your own colors, in order (8 at most). See [Custom palette](#custom-palette).                                                                                  |
+| `height`                     | px                                             | `320`                         | Height of the chart area with its axes (a series type can ask for a different one; the one you set here wins).                                                 |
+| `legend`                     | `false` or `{ position: 'top' \| 'bottom' }`   | bottom                        | Only shows up with 2 or more series.                                                                                                                           |
+| `tooltip`                    | boolean or `{ float }`                         | `true`                        | `false` turns off the tooltip and the pointer; `{ float: false }` removes just the box (everything else stays).                                                |
+| `animate`                    | boolean                                        | `true`                        | `false` draws without animation.                                                                                                                               |
+| `locale`, `currency`         | text                                           | the page's `lang`, `'USD'`    | Language of the library's own text (`'es'`, `'en'`, `'pt-BR'`) and of numbers and dates with `Intl`.                                                           |
+| `background`                 | boolean                                        | `true`                        | Paints the theme's surface behind the chart.                                                                                                                   |
+| `onHover`                    | function                                       | —                             | Gets the X of the active data point (or null on leave), its row index (−1), and its series. With `highlight(x)` it syncs charts.                               |
+| `selection`                  | array of row indexes                           | —                             | Selected data: shown normally while the rest is dimmed. See `select()`.                                                                                        |
+| `zoom`                       | boolean or `{ range, x, y, scrollbar, reset }` | `false`                       | Zoom with a thin slider (`scrollbar: 'mini'` for the bar with a mini chart). `y: true` also zooms the Y axis. See [Zoom](#zoom-annotations-and-direct-labels). |
+| `onZoom`                     | function                                       | —                             | Gets the first and last visible data points (or null when showing everything), the window `{ start, end }`, and the Y window.                                  |
+| `onClick`                    | function                                       | —                             | Click, Enter, or Space on a data point: gets its X, its index, and the series (or null if it's for all of them).                                               |
+| `annotations`                | array of `{ x \| y, label, axis }`             | —                             | Reference lines (one value) and bands (two values).                                                                                                            |
+| `endLabels`                  | boolean or `{ value }`                         | `false`                       | Name (and value) at the end of each line, area, or step.                                                                                                       |
+| `emphasis`                   | text or array                                  | —                             | Highlighted series; the rest go gray as context.                                                                                                               |
+| `ariaLabel`                  | text                                           | automatic                     | Description for screen readers.                                                                                                                                |
 
 The formats are `'auto'` (compact from a thousand up: 0 / 1K / 2K), `'compact'`, `'number'`,
 `'percent'` (the data goes in as a fraction: `0.25` = 25%), `'currency'`, or a function
@@ -871,33 +886,35 @@ new LozChart('#chart', {
 
 ## Methods
 
-| Method                                                    | What it does                                                                                     |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `setData(data)`                                           | Changes the data and animates from the current state (even mid-animation).                       |
-| `options`                                                 | The current options, with the defaults filled in (read-only).                                    |
-| `setOptions({...}, animate?)`                             | Merges new options with the current ones and redraws.                                            |
-| `axisWidth`                                               | The width the Y axis numbers need right now (to line up charts with `yAxis.width`).              |
-| `highlight(x)`                                            | Marks the data point with that X (or several, with a list), without a tooltip; `null` clears.    |
-| `highlightIndex(i)`                                       | Like `highlight`, by row index or list of indexes (a cell in a heatmap).                         |
-| `select(indexes)`, `selection`                            | Selects data by index (the rest is dimmed) and announces it; `null` clears the selection.        |
-| `zoomTo(from, to)`, `resetZoom()`                         | Zooms the X axis in on a span (with bars, it includes the categories at the ends) or shows all.  |
-| `zoomRange`                                               | The first and last data points visible with zoom, or null.                                       |
-| `zoomWindow`, `setZoomWindow({ start, end } \| null)`     | The exact zoom window in fractions of the X axis, and setting it (to sync charts).               |
-| `redraw()`                                                | Draws again with the current state, without animating (for types whose drawing changes outside). |
-| `setTheme('dark')`                                        | Changes the theme.                                                                               |
-| `toggleSeries('Online', visible?)`                        | Hides or shows a series; the others keep their color.                                            |
-| `toSVG()`                                                 | The full SVG as text, with title and legend.                                                     |
-| `toCSV()`                                                 | The data as CSV (unformatted numbers, ISO dates), for a spreadsheet.                             |
-| `download('png' \| 'svg' \| 'csv', name?)`                | Downloads the image (PNG at double resolution) or the data as CSV.                               |
-| `destroy()`                                               | Removes the chart and stops listening to its events.                                             |
-| `visibleSeries`                                           | Names of the visible series (the ones you didn't hide in the legend).                            |
-| `element`                                                 | The page element the chart lives in.                                                             |
-| `LozChart.multiples(element, options)`                    | Creates small multiples. See [Small multiples](#small-multiples).                                |
-| `LozChart.getChart(element)`                              | The chart already mounted on that element (or that selector), if there is one.                   |
-| `LozChart.initAll(root)`, `destroyAll(root)`, `cleanup()` | Automatic mounting for HTMX.                                                                     |
-| `LozChart.registerSeries(name, impl)`                     | Adds a series type.                                                                              |
-| `LozChart.seriesTypes`                                    | The names of the registered series types.                                                        |
-| `LozChart.registerMap(name, topojsonOrGeojson)`           | Adds a map for `choropleth` and `mapbubble`.                                                     |
+| Method                                                    | What it does                                                                                                                   |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `setData(data)`                                           | Changes the data and animates from the current state (even mid-animation).                                                     |
+| `options`                                                 | The current options, with the defaults filled in (read-only).                                                                  |
+| `setOptions({...}, animate?)`                             | Merges new options with the current ones and redraws.                                                                          |
+| `axisWidth`                                               | The width the Y axis numbers need right now (to line up charts with `yAxis.width`).                                            |
+| `highlight(x)`                                            | Marks the data point with that X (or several, with a list), without a tooltip; `null` clears.                                  |
+| `highlightIndex(i)`                                       | Like `highlight`, by row index or list of indexes (a cell in a heatmap).                                                       |
+| `select(indexes)`, `selection`                            | Selects data by index (the rest is dimmed) and announces it; `null` clears the selection.                                      |
+| `zoomTo(from, to)`, `resetZoom()`                         | Zooms the X axis in on a span (with bars, it includes the categories at the ends) or shows all on both axes.                   |
+| `zoomRange`                                               | The first and last data points visible with zoom, or null.                                                                     |
+| `zoomWindow`, `setZoomWindow({ start, end } \| null)`     | The exact zoom window in fractions of the X axis, and setting it (to sync charts).                                             |
+| `zoomYWindow`, `setZoomWindow(x, { start, end } \| null)` | The Y zoom window, in fractions of the axis from the bottom, and setting it (pass `chart.zoomWindow` as `x` to leave X alone). |
+
+| `redraw()` | Draws again with the current state, without animating (for types whose drawing changes outside). |
+| `setTheme('dark')` | Changes the theme. |
+| `toggleSeries('Online', visible?)` | Hides or shows a series; the others keep their color. |
+| `toSVG()` | The full SVG as text, with title and legend. |
+| `toCSV()` | The data as CSV (unformatted numbers, ISO dates), for a spreadsheet. |
+| `download('png' \| 'svg' \| 'csv', name?)` | Downloads the image (PNG at double resolution) or the data as CSV. |
+| `destroy()` | Removes the chart and stops listening to its events. |
+| `visibleSeries` | Names of the visible series (the ones you didn't hide in the legend). |
+| `element` | The page element the chart lives in. |
+| `LozChart.multiples(element, options)` | Creates small multiples. See [Small multiples](#small-multiples). |
+| `LozChart.getChart(element)` | The chart already mounted on that element (or that selector), if there is one. |
+| `LozChart.initAll(root)`, `destroyAll(root)`, `cleanup()` | Automatic mounting for HTMX. |
+| `LozChart.registerSeries(name, impl)` | Adds a series type. |
+| `LozChart.seriesTypes` | The names of the registered series types. |
+| `LozChart.registerMap(name, topojsonOrGeojson)` | Adds a map for `choropleth` and `mapbubble`. |
 
 The methods that change something return the same chart, so you can chain them:
 `chart.setTheme('dark').toggleSeries('In store', false)`.
