@@ -40,8 +40,10 @@ function inline(text) {
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/(^|[\s(])_([^_]+)_(?=[\s).,;:]|$)/g, '$1<em>$2</em>')
     .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, t, url) => {
-      // Los enlaces internos del README apuntan a anclas de esta misma página.
-      const href = url.startsWith('#') ? url : url.replace(/^\.\//, 'https://github.com/MayraLo2ada/lozcharts/blob/main/');
+      // Las anclas del README apuntan a esta misma página; los archivos del repositorio
+      // (llms.txt, DESIGN.md) no viven en el sitio, así que van a GitHub.
+      const relativo = !url.startsWith('#') && !/^[a-z]+:/i.test(url);
+      const href = relativo ? 'https://github.com/MayraLo2ada/lozcharts/blob/main/' + url.replace(/^\.\//, '') : url;
       return `<a href="${href}">${t}</a>`;
     })
     .replace(/\u0000(\d+)\u0000/g, (_, n) => `<code>${esc(codigos[n])}</code>`);
