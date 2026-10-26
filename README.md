@@ -561,9 +561,9 @@ const opciones: LozChartOptions = { data: filas, xAxis: { field: 'mes', type: 't
 const grafico: LozChart = new LozChart('#grafico', opciones);
 ```
 
-Para tus filas usa `type` en vez de `interface`: `type Venta = { mes: string; ventas: number }`.
-Una `interface` de TypeScript no acepta campos que no declaró, y por eso no encaja con `data`, que
-es una lista de objetos con cualquier campo. Con `type` encaja sin conversiones.
+Tus filas pueden tener su propio tipo, con `interface` o con `type`
+(`interface Venta { mes: string; ventas: number }`), y `type` de cada serie te sugiere los 26
+tipos mientras escribes.
 
 En un proyecto CommonJS (`require`) los tipos son los mismos y se importan igual que arriba.
 

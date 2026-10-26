@@ -33,8 +33,8 @@
 - Django + HTMX: `<div data-lozchart="#id-json">` + `{{ opciones|json_script:"id-json" }}` y
   `htmx.onLoad((el) => LozChart.initAll(el))`.
 - Mapas: además `import 'lozcharts/maps/world'` o `<script src="maps/world.umd.js">`.
-- TypeScript: tipos incluidos (`LozChartOptions`, `SeriesOptions`, `MultiplesOptions`). Las filas
-  de datos, con `type Fila = { … }` y no con `interface` (una interface no encaja en `data`).
+- TypeScript: tipos incluidos (`LozChartOptions`, `SeriesOptions`, `SeriesType`, `MultiplesOptions`).
+  Las filas pueden tipar con `interface` o con `type`.
 
 ## Tipos de serie (`series[].type`) y sus campos
 
