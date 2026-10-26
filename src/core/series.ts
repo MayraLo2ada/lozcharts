@@ -13,6 +13,7 @@
 import type { SeriesOptions } from '../types';
 import type { LinearScale, XScale } from './scales';
 import type { Theme } from './theme';
+import type { Localized } from './i18n';
 
 /** Una serie ya preparada por el núcleo. */
 export interface PreparedSeries {
@@ -188,10 +189,11 @@ export interface SeriesImpl {
   /** Índices que recorre el teclado (por defecto, todos). Un gauge solo tiene el que dibuja. */
   navigable?(ps: PreparedSeries): number[];
   /**
-   * Cómo se llaman sus datos en la descripción accesible: ['etapa', 'etapas']. Por defecto, puntos.
-   * Los del catálogo de idiomas (`types.<nombre>.items`, ver LozChart.registerLocale) mandan sobre este.
+   * Cómo se llaman sus datos en la descripción accesible: ['etapa', 'etapas'], uno por idioma
+   * (`{ es: ['etapa', 'etapas'], en: ['stage', 'stages'] }`) o una función del locale. Por defecto,
+   * puntos. Los del catálogo de idiomas (`types.<nombre>.items`) mandan sobre este.
    */
-  items?: readonly [singular: string, plural: string];
+  items?: Localized<readonly [singular: string, plural: string]>;
   /**
    * Índice del dato bajo el punto (px, py), o -1. En 'free', px del área; en 'cartesian', del plano
    * lógico (px a lo largo del eje del índice y del eje del valor, como dibuja la serie), así vale en
@@ -214,10 +216,11 @@ export interface SeriesImpl {
   /**
    * Con `derive`: cómo se llama el valor calculado ('acumulado'). Si el nombre de la serie coincide
    * con el de un campo que también se exporta, toCSV titula así la columna del valor: "monto
-   * (acumulado)" junto a "monto". Por defecto 'valor' en el idioma del gráfico. El del catálogo
+   * (acumulado)" junto a "monto". Un texto, uno por idioma o una función del locale, como `label`.
+   * Por defecto 'valor' en el idioma del gráfico. El del catálogo
    * (`types.<nombre>.derived`) manda sobre este.
    */
-  derivedName?: string;
+  derivedName?: Localized<string>;
   /** En 'free': dónde apoyar el tooltip del dato i (px del área). */
   anchor?(ctx: DrawContext, i: number): [number, number] | null;
   /** Necesita escala de banda en X (barras, velas). */
@@ -238,11 +241,11 @@ export interface SeriesImpl {
   /** Muestra en leyenda: cuadrado (barras, áreas), trazo (líneas) o punto (dispersión). */
   legendSymbol?: 'line' | 'square' | 'dot';
   /**
-   * Nombre para la descripción accesible ("barras", "líneas"…), en un solo idioma. Para varios, se
-   * registra en el catálogo con LozChart.registerLocale(code, { types: { <nombre>: { label } } }),
-   * que manda sobre este.
+   * Nombre para la descripción accesible ("barras", "líneas"…): un texto, uno por idioma
+   * (`{ es: 'barras', en: 'bar chart', pt: 'barras' }`) o una función del locale. El del catálogo
+   * (`types.<nombre>.label`, ver LozChart.registerLocale) manda sobre este.
    */
-  label?: string;
+  label?: Localized<string>;
   /**
    * Cómo encuentra el puntero el dato: 'index' (crosshair sobre el índice más cercano en X)
    * o 'nearest' (el punto más cercano en el plano, para dispersión). Por defecto 'index'.

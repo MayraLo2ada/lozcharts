@@ -4,9 +4,9 @@
  */
 import type { MapSource } from '../core/geo';
 import { world } from './world';
-import { withPortuguese } from './nomes';
+import { withNames } from './nomes';
 
-withPortuguese(world);
+withNames(world);
 
 const host = (globalThis as { LozChart?: { registerMap(name: string, source: MapSource): void } }).LozChart;
 if (host) {

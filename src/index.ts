@@ -57,8 +57,8 @@ export { LozChart, LozMultiples };
 export default LozChart;
 export { LIGHT, DARK } from './core/theme';
 // Idiomas: el catálogo de textos (para extensiones y tipos de serie propios) y cómo se elige.
-export { messages, registerLocale, defaultLocale } from './core/i18n';
-export type { Messages, PartialMessages, TypeTexts, Words } from './core/i18n';
+export { messages, registerLocale, defaultLocale, localized } from './core/i18n';
+export type { Messages, PartialMessages, TypeTexts, Words, Localized } from './core/i18n';
 export type { Theme } from './core/theme';
 export type {
   SeriesImpl,

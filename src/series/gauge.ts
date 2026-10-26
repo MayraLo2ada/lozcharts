@@ -115,7 +115,7 @@ export function lastFinite(values: readonly number[]): number {
 
 /** La marca de la meta dice qué es, no solo su número. */
 function targetLabel(ctx: DrawContext, t: number): string {
-  return `Meta ${ctx.format(t)}`;
+  return `${messages(ctx.locale).data.target} ${ctx.format(t)}`;
 }
 
 function target(ctx: DrawContext): number | undefined {

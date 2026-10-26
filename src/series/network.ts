@@ -906,12 +906,12 @@ export const network: SeriesImpl = {
     }
     return s;
   },
-  headline(ps, i, x) {
+  headline(ps, i, x, locale) {
     const m = modelOf(ps);
     const v = m.rowNode[i];
     if (v >= 0) return m.names[v];
     const to = ps.texts.to?.[i] ?? '';
-    return to ? `${x} y ${to}` : x;
+    return to ? messages(locale).network.pair(x, to) : x;
   },
   navigable(ps) {
     return nodeStops(modelOf(ps));

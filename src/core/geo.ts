@@ -440,13 +440,17 @@ export function normalizeKey(s: unknown): string {
 
 /**
  * Índice para encontrar un lugar por cualquiera de sus claves: el id y las propiedades de texto
- * (en el mapa del mundo: código numérico, ISO alfa-3 y nombre en inglés, español y portugués).
+ * (en el mapa del mundo: código numérico, ISO alfa-3, nombre en inglés, español y portugués, y
+ * otras formas comunes de escribirlo).
  */
 export function featureIndex(list: readonly GeoFeature[]): Map<string, number> {
   const index = new Map<string, number>();
   list.forEach((f, k) => {
-    // Solo el id y los textos: una propiedad numérica (población, área) no es una clave.
-    const keys = [f.id, ...Object.values(f.properties).filter((v) => typeof v === 'string')];
+    // Solo el id y los textos (también los de una lista, como `aliases`): una propiedad numérica
+    // (población, área) no es una clave.
+    const keys = [f.id, ...Object.values(f.properties).flatMap((v) => (Array.isArray(v) ? v : [v]))].filter(
+      (v) => typeof v === 'string',
+    );
     for (const key of keys) {
       const norm = normalizeKey(key);
       if (norm && !index.has(norm)) index.set(norm, k);

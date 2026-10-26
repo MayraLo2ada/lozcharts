@@ -1,7 +1,11 @@
 /**
- * Nombres en portugués de Brasil de los países del mapa del mundo, por su nombre de Natural Earth
- * (`name`). Al registrar el mapa, cada país los recibe como `nome`: así un gráfico en portugués
- * los muestra en el tooltip y en la tabla, y también los encuentra en los datos ("Alemanha").
+ * Nombres de los países del mapa del mundo, por su nombre de Natural Earth (`name`), además del
+ * inglés de Natural Earth (`name`) y el español (`nombre`) que ya trae:
+ * - `nome`: portugués de Brasil ("Alemanha").
+ * - `name_en`: el nombre completo en inglés cuando Natural Earth lo abrevia ("Dem. Rep. Congo").
+ * - `aliases`: otras formas comunes de escribirlo en los tres idiomas ("USA", "Holanda", "EE. UU.").
+ * Al registrar el mapa cada país los recibe: el gráfico encuentra los datos escritos de cualquiera
+ * de esas formas y muestra el nombre en el idioma del gráfico.
  */
 import type { Topology } from '../core/geo';
 
@@ -185,13 +189,75 @@ const NOMES: Record<string, string> = {
   'S. Sudan': 'Sudão do Sul',
 };
 
-/** Agrega `nome` (portugués) a cada país del mapa, una sola vez. Devuelve el mismo mapa. */
-export function withPortuguese(topo: Topology): Topology {
+/** Nombre completo en inglés de los que Natural Earth abrevia. */
+const FULL_EN: Record<string, string> = {
+  'W. Sahara': 'Western Sahara',
+  'United States of America': 'United States',
+  'Dem. Rep. Congo': 'Democratic Republic of the Congo',
+  'Dominican Rep.': 'Dominican Republic',
+  'Falkland Is.': 'Falkland Islands',
+  'Fr. S. Antarctic Lands': 'French Southern and Antarctic Lands',
+  'Central African Rep.': 'Central African Republic',
+  'Eq. Guinea': 'Equatorial Guinea',
+  eSwatini: 'Eswatini',
+  'Solomon Is.': 'Solomon Islands',
+  'N. Cyprus': 'Northern Cyprus',
+  'Bosnia and Herz.': 'Bosnia and Herzegovina',
+  Macedonia: 'North Macedonia',
+  'S. Sudan': 'South Sudan',
+};
+
+/** Otras formas comunes de escribir un país, en inglés, español y portugués. */
+const ALIASES: Record<string, readonly string[]> = {
+  'United States of America': [
+    'USA',
+    'US',
+    'U.S.',
+    'EE. UU.',
+    'EEUU',
+    'Estados Unidos de América',
+    'EUA',
+    'Estados Unidos da América',
+  ],
+  'United Kingdom': ['UK', 'Great Britain', 'Gran Bretaña', 'Grã-Bretanha'],
+  Netherlands: ['Holland', 'Holanda', 'Países Bajos'],
+  Czechia: ['Czech Republic', 'República Checa', 'República Tcheca', 'Chéquia'],
+  "Côte d'Ivoire": ['Ivory Coast'],
+  'Dem. Rep. Congo': ['DR Congo', 'DRC', 'RD Congo', 'RDC', 'Congo-Kinshasa'],
+  Congo: ['Republic of the Congo', 'República del Congo', 'República do Congo', 'Congo-Brazzaville'],
+  eSwatini: ['Swaziland', 'Suazilandia', 'Suazilândia', 'Eswatini'],
+  Macedonia: ['Macedonia del Norte', 'Macedônia'],
+  Myanmar: ['Burma', 'Birmania', 'Birmânia'],
+  'Timor-Leste': ['East Timor', 'Timor Leste'],
+  'South Korea': ['Korea', 'Republic of Korea', 'Corea', 'Coreia'],
+  'North Korea': ["Democratic People's Republic of Korea"],
+  Russia: ['Russian Federation', 'Federación de Rusia', 'Federação Russa'],
+  Vietnam: ['Viet Nam'],
+  Turkey: ['Türkiye', 'Turquia'],
+  Iran: ['Islamic Republic of Iran'],
+  Syria: ['Syrian Arab Republic'],
+  Laos: ["Lao People's Democratic Republic"],
+  Moldova: ['República de Moldavia', 'Moldávia'],
+  'Saudi Arabia': ['Arabia Saudí'],
+  Kazakhstan: ['Kazajstán'],
+  'Bosnia and Herz.': ['Bosnia', 'Bósnia'],
+  Palestine: ['State of Palestine', 'Estado de Palestina'],
+  Taiwan: ['Taiwán'],
+  'Papua New Guinea': ['Papua Nueva Guinea'],
+};
+
+/**
+ * Agrega a cada país del mapa `nome` (portugués), `name_en` (inglés completo, si Natural Earth
+ * lo abrevia) y `aliases`. Una sola vez; devuelve el mismo mapa.
+ */
+export function withNames(topo: Topology): Topology {
   for (const obj of Object.values(topo.objects)) {
     for (const g of obj.geometries) {
       const p = g.properties;
-      const nome = p && typeof p.name === 'string' ? NOMES[p.name] : undefined;
-      if (p && nome && !('nome' in p)) p.nome = nome;
+      if (!p || typeof p.name !== 'string' || 'nome' in p) continue;
+      if (NOMES[p.name]) p.nome = NOMES[p.name];
+      if (FULL_EN[p.name]) p.name_en = FULL_EN[p.name];
+      if (ALIASES[p.name]) p.aliases = ALIASES[p.name];
     }
   }
   return topo;

@@ -148,6 +148,8 @@ export interface Messages {
     none: string;
     noWeight: string;
     noSource: string;
+    /** Un vínculo entre dos nodos: "Ana y Luis". */
+    pair: (a: string, b: string) => string;
   };
   flows: {
     /** Parte de lo que sale de un nodo y de lo que llega a otro (sankey y cuerdas). */
@@ -321,6 +323,7 @@ const es: Messages = {
     none: 'ningún otro',
     noWeight: 'su peso es cero o menos',
     noSource: 'le falta el origen',
+    pair: (a, b) => `${a} y ${b}`,
   },
   flows: {
     outOf: (name) => `De lo que sale de ${name}`,
@@ -560,6 +563,7 @@ const en: Messages = {
     none: 'no others',
     noWeight: 'its weight is zero or less',
     noSource: 'it’s missing its source',
+    pair: (a, b) => `${a} and ${b}`,
   },
   flows: {
     outOf: (name) => `Of what leaves ${name}`,
@@ -798,6 +802,7 @@ const pt: Messages = {
     none: 'nenhum outro',
     noWeight: 'o peso é zero ou menos',
     noSource: 'falta a origem',
+    pair: (a, b) => `${a} e ${b}`,
   },
   flows: {
     outOf: (name) => `Do que sai de ${name}`,
@@ -1007,6 +1012,29 @@ export function defaultLocale(): string {
 /** Los mensajes de un idioma: su catálogo, el de su idioma sin región, o inglés. Sin idioma, el de la página. */
 export function messages(locale?: string): Messages {
   return lookup(locale ?? defaultLocale()) ?? en;
+}
+
+/**
+ * Un texto de una extensión en uno o varios idiomas: el mismo para todos ('barras'), uno por
+ * idioma ({ es: 'barras', en: 'bar chart', pt: 'barras' }, con o sin región: 'pt-BR') o una
+ * función del locale del gráfico.
+ */
+export type Localized<T> = T | Readonly<Record<string, T>> | ((locale: string) => T);
+
+/**
+ * El valor de un Localized en el idioma dado: su función, o la clave exacta ('pt-br'), la del
+ * idioma ('pt'), otra variante del idioma ('pt-BR' para 'pt-PT'), la del inglés o la primera que haya.
+ */
+export function localized<T>(value: Localized<T> | undefined, locale?: string): T | undefined {
+  if (value === undefined || value === null) return undefined;
+  const code = locale ?? defaultLocale();
+  if (typeof value === 'function') return (value as (locale: string) => T)(code);
+  if (typeof value !== 'object' || Array.isArray(value)) return value as T;
+  const byKey = new Map(Object.entries(value as Record<string, T>).map(([k, v]) => [keyOf(k), v] as const));
+  const lang = languageOf(code);
+  const sameLanguage = [...byKey].find(([k]) => languageOf(k) === lang)?.[1];
+  const english = [...byKey].find(([k]) => languageOf(k) === 'en')?.[1];
+  return byKey.get(keyOf(code)) ?? byKey.get(lang) ?? sameLanguage ?? english ?? byKey.values().next().value;
 }
 
 /** El idioma, sin la región, de un locale ('pt-BR' → 'pt'); sin locale, el de la página. */

@@ -10,7 +10,7 @@ import { LozChart, messages, registerLocale, defaultLocale, timeFullLabel, type 
 import { prepare } from '../src/core/prepare';
 import { registry } from './helpers';
 import { world } from '../src/maps/world';
-import { withPortuguese } from '../src/maps/nomes';
+import { withNames } from '../src/maps/nomes';
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun'];
 const data = MESES.map((mes, i) => ({ mes, ventas: 1000 + i * 100.5, costos: 600 + i * 50 }));
@@ -419,7 +419,7 @@ test('catálogo: español, inglés y portugués completos, con nombre para cada 
 });
 
 test('mapa del mundo: el nombre de cada país en el idioma del gráfico, y se encuentra escrito en cualquiera', () => {
-  LozChart.registerMap('mundo-idiomas', withPortuguese(world));
+  LozChart.registerMap('mundo-idiomas', withNames(world));
   const map = (locale: string, pais: string) =>
     firstSpoken({
       locale,
@@ -431,4 +431,89 @@ test('mapa del mundo: el nombre de cada país en el idioma del gráfico, y se en
   assert.equal(map('es', 'DEU'), 'Alemania: Ventas 5');
   assert.equal(map('en', 'DEU'), 'Germany: Ventas 5');
   assert.equal(map('en', 'Alemanha'), 'Germany: Ventas 5', 'el nombre en portugués también se encuentra');
+  // El inglés abreviado de Natural Earth se muestra completo, y las otras formas se encuentran.
+  assert.equal(map('en', 'Dem. Rep. Congo'), 'Democratic Republic of the Congo: Ventas 5');
+  for (const [pais, en, pt] of [
+    ['Estados Unidos', 'United States', 'Estados Unidos'],
+    ['EUA', 'United States', 'Estados Unidos'],
+    ['USA', 'United States', 'Estados Unidos'],
+    ['Reino Unido', 'United Kingdom', 'Reino Unido'],
+    ['Mexico', 'Mexico', 'México'],
+    ['México', 'Mexico', 'México'],
+    ['Holanda', 'Netherlands', 'Países Baixos'],
+    ['República Tcheca', 'Czechia', 'Tchéquia'],
+    ['Costa do Marfim', "Côte d'Ivoire", 'Costa do Marfim'],
+    ['Coreia do Sul', 'South Korea', 'Coreia do Sul'],
+    ['Suazilândia', 'Eswatini', 'Essuatíni'],
+  ]) {
+    assert.equal(map('en', pais), `${en}: Ventas 5`, pais);
+    assert.equal(map('pt-BR', pais), `${pt}: Ventas 5`, pais);
+  }
+});
+
+test('tipos de extensiones: label e items en un texto, uno por idioma o una función del locale', () => {
+  const draw = () => '';
+  LozChart.registerSeries('ext-uno', { label: 'barras propias', items: ['tarea', 'tareas'], draw });
+  LozChart.registerSeries('ext-varios', {
+    label: { es: 'diagrama de Gantt', en: 'Gantt chart', 'pt-BR': 'gráfico de Gantt' },
+    items: { es: ['tarea', 'tareas'], en: ['task', 'tasks'], pt: ['tarefa', 'tarefas'] },
+    draw,
+  });
+  LozChart.registerSeries('ext-funcion', {
+    label: (locale) => (locale.startsWith('pt') ? 'nuvem de pontos' : locale.startsWith('es') ? 'nube de puntos' : 'point cloud'),
+    draw,
+  });
+  const describe = (type: string, locale: string) => aria(chart({ locale, series: [{ type, field: 'ventas' }] }));
+  assert.match(describe('ext-uno', 'en'), /^Barras propias with 6 tareas\./, 'un solo texto vale para todos los idiomas');
+  assert.match(describe('ext-varios', 'es'), /^Gráfico de diagrama de Gantt con 6 tareas\./);
+  assert.match(describe('ext-varios', 'en-US'), /^Gantt chart with 6 tasks\./);
+  assert.match(describe('ext-varios', 'pt-BR'), /^Gráfico de gráfico de Gantt com 6 tarefas\./);
+  assert.match(describe('ext-varios', 'pt-PT'), /^Gráfico de gráfico de Gantt com 6 tarefas\./, 'la región cae en su idioma');
+  assert.match(describe('ext-varios', 'de'), /^Gantt chart with 6 tasks\./, 'un idioma que no está: el inglés');
+  assert.match(describe('ext-funcion', 'pt-BR'), /^Gráfico de nuvem de pontos com 6 categorias\./);
+  assert.match(describe('ext-funcion', 'en'), /^Point cloud with 6 categories\./);
+});
+
+test('moneda en forma compacta: el símbolo una sola vez en la bala, el medidor y los demás, en los tres idiomas', () => {
+  const rows = [
+    { k: 'Ventas', v: 200000, m: 210000 },
+    { k: 'Otra', v: 1234567.5, m: 1 },
+  ];
+  for (const locale of ['es', 'en', 'pt-BR']) {
+    for (const [type, extra] of [
+      ['bullet', { targetField: 'm', ranges: [100000, 250000] }],
+      ['gauge', { target: 180000 }],
+      ['donut', {}],
+      ['funnel', {}],
+      ['treemap', {}],
+      ['waterfall', {}],
+      ['bar', {}],
+    ] as const) {
+      for (const width of [600, 220]) {
+        const svgText = chart({
+          locale,
+          currency: 'BRL',
+          data: rows,
+          xAxis: { field: 'k' },
+          yAxis: { format: 'currency' },
+          series: [{ type, field: 'v', name: 'X', format: 'currency', ...extra } as never],
+        }).toSVG({ padding: width === 600 ? 16 : 0 });
+        const texts = [...svgText.matchAll(/<text[^>]*>([^<]*)</g)].map((m) => m[1]);
+        assert.deepEqual(
+          texts.filter((t) => (t.match(/R\$/g) ?? []).length > 1),
+          [],
+          `${type} en ${locale}`,
+        );
+      }
+    }
+  }
+  const gauge = (locale: string) =>
+    chart({
+      locale,
+      data: [{ k: 'a', v: 120 }],
+      xAxis: { field: 'k' },
+      series: [{ type: 'gauge', field: 'v', target: 150 }],
+    }).toSVG();
+  assert.match(gauge('en'), />Target 150</);
+  assert.match(gauge('pt-BR'), />Meta 150</);
 });

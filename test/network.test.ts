@@ -326,7 +326,9 @@ test('encabezado y tooltip, sin esperar al primer dibujo', () => {
   });
   const ps = series(TEAM);
   assert.equal(network.headline!(ps, 4, 'Pedro'), 'Pedro');
-  assert.equal(network.headline!(ps, 3, 'Pedro'), 'Pedro y Ana');
+  assert.equal(network.headline!(ps, 3, 'Pedro', 'es'), 'Pedro y Ana');
+  assert.equal(network.headline!(ps, 3, 'Pedro', 'en'), 'Pedro and Ana');
+  assert.equal(network.headline!(ps, 3, 'Pedro', 'pt-BR'), 'Pedro e Ana');
   assert.deepEqual(network.tooltip!(ps, 4, format), {
     value: '12',
     details: [

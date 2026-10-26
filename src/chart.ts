@@ -44,6 +44,7 @@ import { ZoomGestures } from './zoom';
 import { Scrollbar, SCROLLBAR_HEIGHT } from './scrollbar';
 import {
   defaultLocale,
+  localized,
   messages,
   registerLocale,
   type Messages,
@@ -530,7 +531,7 @@ export class LozChart {
       // Una serie sin nombre propio se llama como su campo: si ese campo también va como columna
       // (la variación de una cascada, junto al acumulado), el valor dice qué es.
       const clash = extra.some((c) => c.name === s.name);
-      const derived = this.typeTexts(s)?.derived ?? s.impl.derivedName ?? this.t.chart.value;
+      const derived = this.typeTexts(s)?.derived ?? localized(s.impl.derivedName, this.opts.locale) ?? this.t.chart.value;
       cols.push({ name: clash ? `${s.name} (${derived})` : s.name, at: (i) => values[i] });
       cols.push(...extra);
     }
@@ -921,7 +922,7 @@ export class LozChart {
   private itemWords(): Words {
     const p = this.prepared;
     const s = p.series[0];
-    const own = s && (this.typeTexts(s)?.items ?? s.impl.items);
+    const own = s && (this.typeTexts(s)?.items ?? localized(s.impl.items, this.opts.locale));
     if (own) return own;
     return p.pointLegend || (p.coords === 'cartesian' && p.xType === 'category') ? this.t.chart.categories : this.t.chart.points;
   }
@@ -1877,7 +1878,9 @@ export class LozChart {
     const p = this.prepared;
     const { series, n } = p;
     const t = this.t.chart;
-    const kinds = [...new Set(series.map((s) => this.typeTexts(s)?.label ?? s.impl.label ?? s.options.type))];
+    const kinds = [
+      ...new Set(series.map((s) => this.typeTexts(s)?.label ?? localized(s.impl.label, this.opts.locale) ?? s.options.type)),
+    ];
     const what = kinds.length ? t.chartOf(kinds) : t.chart;
     // Un título que ya cierra con su signo ("¿Qué destacan los clientes?") no lleva otro punto.
     const own = this.opts.title?.trim();
