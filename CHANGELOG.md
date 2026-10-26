@@ -43,6 +43,11 @@ Primera versión en npm.
   la tabla de datos. `onHover` recibe también el índice de la fila y la serie, y `highlight()`
   acepta varias X (`highlightIndex()`, índices).
 - **Corregido:** el tooltip oculto ya no abre un scroll horizontal al achicarse la ventana.
+- **Paquete:** los tipos funcionan con cualquier `moduleResolution` de TypeScript: `bundler`,
+  `node16` y `nodenext` (antes, ahí `LozChart` quedaba sin tipos y no avisaba de nada) y el antiguo
+  `node`, también en `lozcharts/react`, `lozcharts/element` y `lozcharts/maps/world`. `require`
+  tiene sus propios tipos. `lozcharts/react` y `lozcharts/element` se pueden cargar con `require`
+  en las versiones de Node que lo permiten, y el paquete expone `lozcharts/package.json`.
 
 ## 1.0.0 (25 de octubre de 2026)
 

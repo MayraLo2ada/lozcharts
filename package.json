@@ -6,24 +6,50 @@
   "main": "./dist/lozcharts.umd.cjs",
   "module": "./dist/lozcharts.js",
   "types": "./dist/types/index.d.ts",
+  "unpkg": "./dist/lozcharts.umd.js",
+  "jsdelivr": "./dist/lozcharts.umd.js",
   "exports": {
     ".": {
-      "types": "./dist/types/index.d.ts",
-      "import": "./dist/lozcharts.js",
-      "require": "./dist/lozcharts.umd.cjs"
+      "import": {
+        "types": "./dist/types/index.d.ts",
+        "default": "./dist/lozcharts.js"
+      },
+      "require": {
+        "types": "./dist/types/index.d.cts",
+        "default": "./dist/lozcharts.umd.cjs"
+      }
     },
     "./react": {
       "types": "./dist/types/react.d.ts",
-      "import": "./dist/react.js"
-    },
-    "./maps/world": {
-      "types": "./dist/types/maps/register-world.d.ts",
-      "import": "./dist/maps/world.js",
-      "require": "./dist/maps/world.cjs"
+      "default": "./dist/react.js"
     },
     "./element": {
       "types": "./dist/types/element.d.ts",
-      "import": "./dist/element.js"
+      "default": "./dist/element.js"
+    },
+    "./maps/world": {
+      "import": {
+        "types": "./dist/types/maps/register-world.d.ts",
+        "default": "./dist/maps/world.js"
+      },
+      "require": {
+        "types": "./dist/types/maps/register-world.d.cts",
+        "default": "./dist/maps/world.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "typesVersions": {
+    "*": {
+      "react": [
+        "./dist/types/react.d.ts"
+      ],
+      "element": [
+        "./dist/types/element.d.ts"
+      ],
+      "maps/world": [
+        "./dist/types/maps/register-world.d.ts"
+      ]
     }
   },
   "files": [
@@ -34,7 +60,7 @@
   ],
   "sideEffects": true,
   "scripts": {
-    "build": "tsc --noEmit && vite build && LC_FORMAT=umd vite build && LC_FORMAT=react vite build && LC_FORMAT=element vite build && LC_FORMAT=world vite build && LC_FORMAT=world-umd vite build && LC_FORMAT=world-cjs vite build && cp dist/lozcharts.umd.js dist/lozcharts.umd.cjs && tsc -p tsconfig.types.json",
+    "build": "tsc --noEmit && vite build && LC_FORMAT=umd vite build && LC_FORMAT=react vite build && LC_FORMAT=element vite build && LC_FORMAT=world vite build && LC_FORMAT=world-umd vite build && LC_FORMAT=world-cjs vite build && cp dist/lozcharts.umd.js dist/lozcharts.umd.cjs && tsc -p tsconfig.types.json && node scripts/tipos.mjs",
     "test": "esbuild test/*.test.ts --bundle --platform=node --format=esm --outdir=.pruebas --log-level=warning && node --test \".pruebas/*.test.js\"",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
@@ -45,15 +71,32 @@
   },
   "keywords": [
     "charts",
+    "chart",
+    "graph",
     "graficos",
     "svg",
     "dataviz",
+    "data-visualization",
     "visualizacion",
+    "accessibility",
+    "a11y",
     "accesible",
+    "dark-mode",
+    "typescript",
     "react",
+    "angular",
+    "vue",
+    "svelte",
     "web-components",
+    "custom-element",
     "htmx",
-    "maps"
+    "django",
+    "maps",
+    "choropleth",
+    "sankey",
+    "treemap",
+    "candlestick",
+    "timeline"
   ],
   "author": "Mayra Lozada",
   "homepage": "https://mayralo2ada.github.io/lozcharts/",
