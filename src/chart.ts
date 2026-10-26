@@ -54,6 +54,8 @@ export const X_LABEL_SPACE = FONT_SIZE + 12;
 export const AXIS_GAP = 8;
 /** El valor base de un índice: su línea se marca como referencia. */
 const INDEX_BASE = 100;
+/** Opacidad de la rejilla: tenue, para que guíe la vista sin competir con los datos. */
+const GRID_OPACITY = 0.55;
 /** Margen del recorte del área de datos: deja respirar trazos y puntos en el borde. */
 const CLIP_PAD = 6;
 /** Espacio aproximado por tick del eje del valor: vertical y horizontal. */
@@ -1272,14 +1274,14 @@ export class LozChart {
     }
     const th = this.theme;
     const vs = this.valueScale(frame, L);
-    const line = (x1: number, y1: number, x2: number, y2: number, color: string) =>
-      `<line${attrs({ x1, y1, x2, y2, stroke: color, 'stroke-width': 1, 'shape-rendering': 'crispEdges' })}/>`;
+    const line = (x1: number, y1: number, x2: number, y2: number, color: string, opacity?: number) =>
+      `<line${attrs({ x1, y1, x2, y2, stroke: color, 'stroke-width': 1, 'stroke-opacity': opacity, 'shape-rendering': 'crispEdges' })}/>`;
     const label = (x: number | string, y: number | string, text: string, extra: Record<string, string | number> = {}) =>
       `<text${attrs({ x, y, fill: th.textMuted, 'font-size': FONT_SIZE, ...extra })}>${esc(text)}</text>`;
     const measure = (s: string) => textWidth(s, L.font);
 
-    // Rejilla de 1 px, sólida y discreta; la línea del cero un poco más marcada. Con
-    // `yAxis.grid: false` solo queda la línea de referencia.
+    // Rejilla de 1 px, sólida y tenue (se lee sin competir con los datos); la línea del cero un
+    // poco más marcada. Con `yAxis.grid: false` solo queda la línea de referencia.
     const gridOn = this.opts.yAxis?.grid !== false;
     let grid = '';
     let axes = '';
@@ -1289,13 +1291,14 @@ export class LozChart {
       // La línea de referencia: el cero, o el 100 de un índice.
       const reference = v === (this.opts.yAxis?.index ? INDEX_BASE : 0);
       const color = reference ? th.zero : th.grid;
+      const opacity = reference ? undefined : GRID_OPACITY;
       const text = L.valueFormat(v);
       const drawn = gridOn || reference;
       if (L.horizontal) {
-        if (drawn) grid += line(pos, 0, pos, L.plotH, color);
+        if (drawn) grid += line(pos, 0, pos, L.plotH, color, opacity);
         if (L.valueLabels) axes += label(pos, L.plotH + 10, text, { 'text-anchor': 'middle', 'dominant-baseline': 'hanging' });
       } else {
-        if (drawn) grid += line(0, pos, L.plotW, pos, color);
+        if (drawn) grid += line(0, pos, L.plotW, pos, color, opacity);
         if (L.valueLabels) axes += label(-10, pos, text, { 'text-anchor': 'end', 'dominant-baseline': 'central' });
       }
     }
@@ -1321,9 +1324,19 @@ export class LozChart {
       for (const { pos, label: text } of indexLabels(this.prepared, L.x, FONT_SIZE + 6, L.left - 10, measure, ctx)) {
         axes += label(-10, pos.toFixed(1), text, { 'text-anchor': 'end', 'dominant-baseline': 'central' });
       }
-    } else if (this.opts.xAxis.labels !== false) {
-      for (const tk of xTicks(this.prepared, L.x, L.plotW, 2 - L.left, L.width - L.left - 2, measure, ctx)) {
-        axes += label(tk.px.toFixed(1), L.plotH + 10, tk.label, { 'text-anchor': tk.anchor, 'dominant-baseline': 'hanging' });
+    } else {
+      // Con fechas o números en X, una línea vertical en cada marca completa la rejilla; con
+      // categorías no va (las barras ya marcan cada una). `xAxis.grid` lo decide a mano.
+      const continuous = L.x.kind !== 'band' && this.prepared.xType !== 'category';
+      const xGrid = this.opts.xAxis.grid ?? continuous;
+      const labels = this.opts.xAxis.labels !== false;
+      if (labels || xGrid) {
+        for (const tk of xTicks(this.prepared, L.x, L.plotW, 2 - L.left, L.width - L.left - 2, measure, ctx)) {
+          const px = Math.round(tk.px) + 0.5;
+          if (xGrid && px > 1 && px < L.plotW - 1) grid += line(px, 0, px, L.plotH, th.grid, GRID_OPACITY);
+          if (labels)
+            axes += label(tk.px.toFixed(1), L.plotH + 10, tk.label, { 'text-anchor': tk.anchor, 'dominant-baseline': 'hanging' });
+        }
       }
     }
     const topTitle = L.horizontal ? this.opts.xAxis.title : this.opts.yAxis?.title;

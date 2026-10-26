@@ -75,7 +75,7 @@
   `background`, `ariaLabel`, `palette` (hasta 8 colores, o `{ light, dark }`).
 - `yAxis`: `format` ('auto'|'compact'|'number'|'percent'|'currency'|función), `title`, `min`, `max`,
   `zero`, `labels`, `width`, `index` (base 100), `type: 'log'` (escala logarítmica), `grid: false`
-  (sin rejilla). `xAxis`: `field`, `type`, `format`, `title`, `labels`, `band`.
+  (sin rejilla). `xAxis`: `field`, `type`, `format`, `title`, `labels`, `band`, `grid` (verticales; por defecto sí con fechas o números).
 - `yAxis2` (eje derecho, para series con `axis: 'right'`): `format`, `title`, `min`, `max`.
 - `zoom: true | { range: [desde, hasta], scrollbar: false, reset: false }`, `onZoom(rango, ventana)`
   (`ventana` = `{ start, end }` en fracciones del eje).

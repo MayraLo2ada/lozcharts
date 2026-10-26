@@ -87,6 +87,11 @@ export interface XAxisOptions {
   labels?: boolean;
   /** Fuerza la escala de banda (cada punto al centro de su franja), para alinear con gráficos de barras. */
   band?: boolean;
+  /**
+   * Líneas verticales de la rejilla en cada marca del eje. Por defecto, sí con fechas o números y
+   * no con categorías (las barras ya marcan cada una).
+   */
+  grid?: boolean;
 }
 
 export interface YAxisOptions {

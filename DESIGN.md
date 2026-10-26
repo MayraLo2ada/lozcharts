@@ -63,9 +63,11 @@ El oscuro tiene sus propios valores; no es una inversión.
 - Líneas: 2 px, uniones y extremos redondeados. Suave = curva monótona.
 - Áreas: relleno al 10 % del color de la serie y su línea encima.
 - Puntos de hover: radio 4,5 px con anillo de 2 px del color de la superficie.
-- Rejilla: 1 px sólida y discreta; la línea del cero un poco más marcada. `yAxis.grid: false` quita
-  la rejilla del valor, nunca la línea del cero (o la base, si el cero no se ve): sin ella las barras
-  flotan.
+- Rejilla: 1 px sólida y tenue, al 55 % del color de la rejilla: guía la vista sin competir con los
+  datos. Horizontal en cada marca del valor y, con fechas o números en X, vertical en cada marca del
+  eje X (con categorías no, las barras ya marcan cada una; `xAxis.grid` lo decide a mano). La línea
+  del cero, entera y un poco más marcada. `yAxis.grid: false` quita la rejilla del valor, nunca la
+  línea del cero (o la base, si el cero no se ve): sin ella las barras flotan.
 - Selección (`selection`): lo seleccionado queda como siempre y el resto al 25 % de opacidad,
   también sus etiquetas: la diferencia es de claridad, no de tono, y no depende de distinguir
   colores. Conectores, ejes, nodos de un sankey y arcos de cuerdas no se atenúan: son la

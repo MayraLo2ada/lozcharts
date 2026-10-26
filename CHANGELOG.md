@@ -48,6 +48,8 @@ Primera versión en npm.
   `node`, también en `lozcharts/react`, `lozcharts/element` y `lozcharts/maps/world`. `require`
   tiene sus propios tipos. `lozcharts/react` y `lozcharts/element` se pueden cargar con `require`
   en las versiones de Node que lo permiten, y el paquete expone `lozcharts/package.json`.
+- **Rejilla más limpia:** más tenue, y con fechas o números en X suma líneas verticales en cada
+  marca del eje (`xAxis.grid: false` las quita; con categorías no van).
 - **Sin datos:** el gráfico se queda vacío, sin letrero, y su elemento lleva `data-empty` para que
   cada página ponga su propio mensaje (ver README).
 - **TypeScript:** `data` acepta filas tipadas con `interface` (`DataRow`), y `type` de cada serie
