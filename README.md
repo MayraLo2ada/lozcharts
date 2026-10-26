@@ -870,6 +870,29 @@ new LozChart('#grafico', {
 Los métodos que cambian algo devuelven el mismo gráfico, así que puedes encadenarlos:
 `chart.setTheme('dark').toggleSeries('Tienda', false)`.
 
+### Cuando no hay datos
+
+El gráfico se queda vacío, sin letrero: el mensaje lo decides tú. Mientras no tiene datos, su
+elemento lleva el atributo `data-empty`, así que te basta una regla de CSS:
+
+```css
+#ventas[data-empty]::after {
+  content: 'Todavía no hay ventas este mes.';
+  display: grid;
+  place-items: center;
+  position: absolute;
+  inset: 0;
+  color: #52514e;
+}
+#ventas {
+  position: relative;
+}
+```
+
+Si prefieres hacerlo desde el código, pregunta por `chart.element.hasAttribute('data-empty')`
+después de `setData`. Quien usa un lector de pantalla igual oye que el gráfico todavía no tiene
+datos.
+
 ## Accesibilidad
 
 No tienes que activar nada de esto: viene en cada gráfico.

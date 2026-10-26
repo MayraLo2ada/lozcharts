@@ -192,3 +192,12 @@ test('descripción accesible: sin datos lo dice, y con todos los valores iguales
   const up = chart({ data: MESES.map((x, i) => ({ x, y: i })) });
   assert.match(label(up), /El más alto es jun, con 5\./);
 });
+
+test('sin datos: el elemento lleva data-empty, y lo pierde al llegar los datos', () => {
+  const vacio = chart({});
+  assert.ok(vacio.element.hasAttribute('data-empty'));
+  vacio.setData(MESES.map((x, i) => ({ x, y: i })));
+  assert.ok(!vacio.element.hasAttribute('data-empty'));
+  vacio.setData([]);
+  assert.ok(vacio.element.hasAttribute('data-empty'));
+});

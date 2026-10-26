@@ -48,6 +48,8 @@ Primera versión en npm.
   `node`, también en `lozcharts/react`, `lozcharts/element` y `lozcharts/maps/world`. `require`
   tiene sus propios tipos. `lozcharts/react` y `lozcharts/element` se pueden cargar con `require`
   en las versiones de Node que lo permiten, y el paquete expone `lozcharts/package.json`.
+- **Sin datos:** el gráfico se queda vacío, sin letrero, y su elemento lleva `data-empty` para que
+  cada página ponga su propio mensaje (ver README).
 - **TypeScript:** `data` acepta filas tipadas con `interface` (`DataRow`), y `type` de cada serie
   sugiere los 26 tipos de la librería (`SeriesType`).
 - **Avisos que te dicen qué pasó:** cuando un campo no aparece en ninguna fila, cuando hay filas sin

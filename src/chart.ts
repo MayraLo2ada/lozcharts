@@ -684,6 +684,9 @@ export class LozChart {
     this.retarget(true);
     this.renderTable();
     this.svgEl.setAttribute('aria-label', this.ariaLabel());
+    // Sin datos el gráfico queda vacío, sin letrero: el atributo deja que cada página ponga el suyo.
+    if (this.prepared.n === 0) this.element.setAttribute('data-empty', '');
+    else this.element.removeAttribute('data-empty');
     if (this.active >= this.prepared.n) this.clearActive();
     else if (this.active >= 0) this.fillTooltip(this.active);
     this.transition(animate && this.opts.animate);
