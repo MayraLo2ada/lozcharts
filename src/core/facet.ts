@@ -38,7 +38,7 @@ export function facetPanels(o: MultiplesOptions, base: LozChartOptions): PanelSp
   const keyOfX = xKeyReader(o.xAxis.type ?? 'category');
   const panels = new Map<string, Datum[]>();
   const xs = new Map<string | number, unknown>();
-  for (const row of o.data) {
+  for (const row of o.data as Datum[]) {
     const key = String(row[field] ?? '');
     if (!panels.has(key)) panels.set(key, []);
     panels.get(key)!.push(row);

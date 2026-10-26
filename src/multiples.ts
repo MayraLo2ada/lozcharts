@@ -5,7 +5,7 @@
  * El puntero se sincroniza (todos marcan el mismo dato), la leyenda es una sola y los números
  * del eje solo aparecen en la primera columna.
  */
-import type { LozChartOptions, MultiplesOptions, MultiplesUpdate, ThemeName, YAxisOptions } from './types';
+import type { Datum, LozChartOptions, MultiplesOptions, MultiplesUpdate, ThemeName, YAxisOptions } from './types';
 import { AXIS_GAP, LozChart, seriesSymbol, tickCountFor, usesBand, valueDomain, X_LABEL_SPACE } from './chart';
 import { facetPanels, type PanelSpec } from './core/facet';
 import { attrs, esc, html, resolveElement } from './core/dom';
@@ -152,7 +152,7 @@ export class LozMultiples implements Mounted {
     for (const row of this.opts.data) for (const k of Object.keys(row)) if (!fields.includes(k)) fields.push(k);
     const cell = (v: unknown): string | number =>
       typeof v === 'number' ? v : v instanceof Date ? csvDate(v.getTime()) : v == null ? '' : String(v);
-    return toCSV([fields, ...this.opts.data.map((row) => fields.map((k) => cell(row[k])))]);
+    return toCSV([fields, ...(this.opts.data as Datum[]).map((row) => fields.map((k) => cell(row[k])))]);
   }
 
   destroy(): void {

@@ -11,16 +11,7 @@
  * se refleja sobre su diagonal; la rejilla, los ejes y el tooltip sí conocen la orientación.
  * La lógica de datos vive en core/ y es pura; esta clase maneja estado, DOM y eventos.
  */
-import type {
-  Datum,
-  FormatSpec,
-  LozChartOptions,
-  LozChartUpdate,
-  MultiplesOptions,
-  ThemeName,
-  XValue,
-  ZoomWindow,
-} from './types';
+import type { FormatSpec, LozChartOptions, LozChartUpdate, MultiplesOptions, ThemeName, XValue, ZoomWindow } from './types';
 import type { LozMultiples } from './multiples';
 import {
   swatchOf,
@@ -414,7 +405,7 @@ export class LozChart {
   // ------------------------------------------------------------ API pública
 
   /** Cambia los datos y anima desde lo que se ve en pantalla. */
-  setData(data: Datum[]): this {
+  setData(data: readonly object[]): this {
     const hadPoints = this.prepared.pointLegend;
     this.opts.data = Array.isArray(data) ? data : [];
     this.prepared = this.prepare();

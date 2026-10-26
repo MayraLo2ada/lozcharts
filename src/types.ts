@@ -111,13 +111,42 @@ export interface YAxisOptions {
   grid?: boolean;
 }
 
+/**
+ * Los tipos que trae la librería. Un tipo propio registrado con LozChart.registerSeries también
+ * vale: `(string & {})` deja escribir cualquier nombre sin perder el autocompletado de estos.
+ */
+export type SeriesType =
+  | 'line'
+  | 'bar'
+  | 'area'
+  | 'step'
+  | 'range'
+  | 'scatter'
+  | 'bubble'
+  | 'candlestick'
+  | 'ohlc'
+  | 'pie'
+  | 'donut'
+  | 'gauge'
+  | 'radar'
+  | 'funnel'
+  | 'heatmap'
+  | 'treemap'
+  | 'sankey'
+  | 'choropleth'
+  | 'mapbubble'
+  | 'waterfall'
+  | 'bullet'
+  | 'sunburst'
+  | 'chord'
+  | 'network'
+  | 'timeline'
+  | 'wordcloud'
+  | (string & {});
+
 export interface SeriesOptions {
-  /**
-   * Tipo registrado: 'line', 'bar', 'area', 'step', 'range', 'scatter', 'bubble',
-   * 'candlestick', 'ohlc', 'pie', 'donut', 'gauge', 'radar', 'funnel', 'heatmap', 'treemap',
-   * 'sankey', 'choropleth', 'mapbubble' o uno propio.
-   */
-  type: string;
+  /** Tipo de la serie: uno de los 26 de la librería (ver SeriesType) o uno propio registrado. */
+  type: SeriesType;
   /** Campo numérico de cada fila. En velas y OHLC es el cierre; en 'range', el límite superior. */
   field: string;
   /** Nombre visible (leyenda, tooltip). Por defecto, el campo. Debe ser único. */
@@ -204,7 +233,11 @@ export interface LozChartOptions {
   orientation?: 'vertical' | 'horizontal';
   title?: string;
   subtitle?: string;
-  data: Datum[];
+  /**
+   * Las filas: objetos planos, uno por dato. Acepta filas tipadas con `interface` (no hace falta
+   * que tengan firma de índice).
+   */
+  data: readonly object[];
   xAxis: XAxisOptions;
   yAxis?: YAxisOptions;
   /**

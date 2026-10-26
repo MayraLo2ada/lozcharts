@@ -13,7 +13,7 @@
  */
 import { createElement, forwardRef, useEffect, useRef, type CSSProperties, type MutableRefObject, type Ref } from 'react';
 import { LozChart, type LozMultiples } from 'lozcharts';
-import type { Datum, LozChartOptions, MultiplesOptions } from 'lozcharts';
+import type { LozChartOptions, MultiplesOptions } from 'lozcharts';
 import { optionsKey, optionsPatch, withLatest } from './core/sync';
 
 export { optionsKey };
@@ -30,7 +30,7 @@ export type ChartProps = LozChartOptions & ContainerProps;
 export type MultiplesProps = MultiplesOptions & ContainerProps;
 
 interface Instance {
-  setData(data: Datum[]): unknown;
+  setData(data: readonly object[]): unknown;
   setOptions(options: object): unknown;
   destroy(): void;
 }
@@ -41,7 +41,7 @@ function split<T extends ContainerProps>(props: T): [Omit<T, keyof ContainerProp
   return [options, { className, style, id }];
 }
 
-function useInstance<O extends { data: Datum[] }, I extends Instance>(
+function useInstance<O extends { data: readonly object[] }, I extends Instance>(
   options: O,
   create: (el: HTMLElement, options: O) => I,
   ref: Ref<I | null>,

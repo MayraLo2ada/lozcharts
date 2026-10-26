@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { facetPanels } from '../src/core/facet';
-import type { LozChartOptions, MultiplesOptions } from '../src/types';
+import type { Datum, LozChartOptions, MultiplesOptions } from '../src/types';
 
 const series = [
   { type: 'line', field: 'online', name: 'Online' },
@@ -54,15 +54,15 @@ test('por campo: todos los paneles tienen las mismas X, en el mismo orden; las q
   const o: MultiplesOptions = { facet: { field: 'region' }, data: ventas, xAxis: { field: 'mes' }, series };
   const [norte, sur] = facetPanels(o, base(o));
   assert.deepEqual(
-    norte.options.data.map((r) => r.mes),
+    (norte.options.data as Datum[]).map((r) => r.mes),
     ['ene', 'feb', 'mar'],
   );
   assert.deepEqual(
-    sur.options.data.map((r) => r.mes),
+    (sur.options.data as Datum[]).map((r) => r.mes),
     ['ene', 'feb', 'mar'],
   );
-  assert.equal(norte.options.data[2].online, undefined);
-  assert.equal(sur.options.data[1].online, undefined);
+  assert.equal((norte.options.data as Datum[])[2].online, undefined);
+  assert.equal((sur.options.data as Datum[])[1].online, undefined);
 });
 
 test('por campo con fechas: "2026-01" y una Date del mismo día son la misma X', () => {

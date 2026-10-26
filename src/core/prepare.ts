@@ -31,7 +31,7 @@ export interface Prepared {
 }
 
 export interface PrepareInput {
-  data: Datum[];
+  data: readonly object[];
   xField: string;
   xType: XAxisType;
   series: SeriesOptions[];
@@ -57,7 +57,7 @@ export function toNumber(v: unknown): number {
 export function prepare(input: PrepareInput, registry: ReadonlyMap<string, SeriesImpl>, maxSeries: number): Prepared {
   const { xField, xType } = input;
   // Una fila que no es un objeto (null, un número) no tiene campos que leer.
-  let rows = input.data.filter((row) => row !== null && typeof row === 'object');
+  let rows = (input.data as Datum[]).filter((row) => row !== null && typeof row === 'object');
   if (rows.length < input.data.length) {
     console.warn(
       `LozCharts: ${input.data.length - rows.length} de las filas de data no son objetos y las dejo fuera. Cada fila debe ser como { mes: 'ene', ventas: 120 }.`,
