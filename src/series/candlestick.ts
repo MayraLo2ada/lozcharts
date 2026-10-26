@@ -57,8 +57,10 @@ function ohlcTooltip(ps: PreparedSeries, i: number, { value: format, number }: T
   const { open, high, low } = ps.columns;
   const close = ps.values[i];
   if (![open[i], high[i], low[i], close].every(isFinite)) return { value: 'Sin dato' };
-  // Variación de la sesión en %, con un decimal y el separador del idioma del gráfico.
-  const change = open[i] ? Math.round(((close - open[i]) / open[i]) * 1000) / 10 : 0;
+  // Variación de la sesión en %, con un decimal y el separador del idioma del gráfico. Sobre el
+  // valor absoluto de la apertura: con precios negativos (un futuro de petróleo), subir de −80 a
+  // −74 es +7 %, no −7 %.
+  const change = open[i] ? Math.round(((close - open[i]) / Math.abs(open[i])) * 1000) / 10 : 0;
   const sign = change > 0 ? '+' : change < 0 ? '−' : '';
   return {
     value: `${format(close)} (${sign}${number(Math.abs(change))} %)`,

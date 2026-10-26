@@ -13,6 +13,7 @@ import { bubbleMax } from '../src/series/scatter';
 import { lookAt } from '../src/series/map';
 import { sliceTooltip } from '../src/series/pie';
 import { funnel, percentLabel } from '../src/series/funnel';
+import { candlestick } from '../src/series/candlestick';
 import { mapbubble } from '../src/series/map';
 import { registerMap } from '../src/core/geo';
 import { world } from '../src/maps/world';
@@ -201,4 +202,12 @@ test('share: una parte que existe no se lee 0 %, ni una que no es todo, 100 %', 
   const whole = (v: number) => `${Math.round(v * 100)} %`;
   assert.equal(share(0.002, whole), '<1 %');
   assert.equal(percentLabel(0.997, whole), '>99 %');
+});
+
+test('velas: la variación con apertura negativa tiene el signo de lo que pasó', () => {
+  const format = { value: (v: number) => String(v), number: (v: number) => String(v) } as unknown as TooltipFormat;
+  const ps = { values: [-74], columns: { open: [-80], high: [-70], low: [-85] } } as unknown as PreparedSeries;
+  assert.equal(candlestick.tooltip!(ps, 0, format)!.value, '-74 (+7.5 %)');
+  const down = { values: [90], columns: { open: [100], high: [101], low: [89] } } as unknown as PreparedSeries;
+  assert.equal(candlestick.tooltip!(down, 0, format)!.value, '90 (−10 %)');
 });
