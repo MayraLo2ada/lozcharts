@@ -925,7 +925,12 @@ export const network: SeriesImpl = {
     const m = modelOf(ps);
     const v = m.rowNode[i];
     if (v < 0) {
-      if (m.rowLink[i] < 0) return { value: 'No aparece en el gráfico' };
+      if (m.rowLink[i] < 0) {
+        // Como en los demás tipos: el valor de la fila y por qué no se dibuja.
+        const raw = ps.values[i];
+        const why = Number.isNaN(weightOf(raw)) ? 'su peso es cero o menos' : 'le falta el origen';
+        return { value: Number.isNaN(raw) ? 'Sin dato' : format.value(raw), details: [['No aparece', why]] };
+      }
       const w = weightOf(ps.values[i]);
       return { value: m.weighted && isFinite(ps.values[i]) ? format.value(w) : format.number(w) };
     }

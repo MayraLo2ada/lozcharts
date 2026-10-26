@@ -300,7 +300,8 @@ test('tooltip y encabezado: parte del total y del grupo', () => {
   });
   assert.deepEqual(treemap.tooltip!(series([3, 1]), 1, format), { value: '1', details: [['Del total', '25.0 %']] });
   assert.equal(treemap.tooltip!(series([NaN, 1]), 0, format), null);
-  assert.deepEqual(treemap.tooltip!(series([-4, 1]), 0, format), { value: '-4' });
+  // Como en los demás tipos, un dato que no se dibuja dice por qué.
+  assert.deepEqual(treemap.tooltip!(series([-4, 1]), 0, format), { value: '-4', details: [['No aparece', 'vale cero o menos']] });
   assert.equal(treemap.headline!(ps, 4, 'Mesas'), 'Hogar › Mesas');
   assert.equal(treemap.headline!(series(VALUES), 4, 'Mesas'), 'Mesas');
   assert.equal(treemap.headline!(series([1], ['']), 0, 'X'), 'Sin grupo › X');

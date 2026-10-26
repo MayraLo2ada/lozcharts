@@ -436,7 +436,7 @@ export const treemap: SeriesImpl = {
     // Sin dato: el núcleo escribe "Sin dato".
     if (!isFinite(v)) return null;
     // Cero o negativo: el valor real (está en los datos), sin partes: no ocupa área.
-    if (v <= 0) return { value: format.value(v) };
+    if (v <= 0) return { value: format.value(v), details: [['No aparece', 'vale cero o menos']] };
     let total = 0;
     for (const x of ps.values) if (positive(x)) total += x;
     const details: [string, string][] = [['Del total', format.percent(v / total)]];

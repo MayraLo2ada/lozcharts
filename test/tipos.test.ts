@@ -11,9 +11,10 @@ import { maxOf } from '../src/series/common';
 import { barGeometry } from '../src/series/bar';
 import { bubbleMax } from '../src/series/scatter';
 import { lookAt } from '../src/series/map';
+import { sliceTooltip } from '../src/series/pie';
 import { registerMap } from '../src/core/geo';
 import { world } from '../src/maps/world';
-import type { DrawContext, PreparedSeries } from '../src/core/series';
+import type { DrawContext, PreparedSeries, TooltipFormat } from '../src/core/series';
 
 const svgOf = (o: Partial<LozChartOptions> & Pick<LozChartOptions, 'data' | 'xAxis' | 'series'>) =>
   new LozChart(host(), { animate: false, ...o }).toSVG();
@@ -136,4 +137,36 @@ test('bala: con filas muy juntas no se dibujan los valores (se enciman); con lug
   });
   assert.equal(values(svgOf(opts(60))), 0);
   assert.equal(values(svgOf(opts(6))), 6);
+});
+
+test('pie: un valor negativo no se dibuja, el tooltip lo dice y la consola avisa una vez', () => {
+  const format = {
+    value: (v: number) => String(v),
+    percent: (v: number) => `${Math.round(v * 1000) / 10} %`,
+    isHidden: () => false,
+  } as unknown as TooltipFormat;
+  const ps = { values: [30, -10, 70] } as unknown as PreparedSeries;
+  assert.deepEqual(sliceTooltip(ps, 1, format), { value: '-10', details: [['No aparece', 'vale menos de cero']] });
+  assert.deepEqual(sliceTooltip(ps, 2, format), { value: '70 (70 %)' });
+
+  const warn = console.warn;
+  const seen: string[] = [];
+  console.warn = (m: string) => seen.push(m);
+  try {
+    const c = new LozChart(host(), {
+      data: [
+        { x: 'A', v: 30 },
+        { x: 'B', v: -10 },
+        { x: 'C', v: 70 },
+      ],
+      xAxis: { field: 'x' },
+      series: [{ type: 'pie', field: 'v', name: 'Ventas' }],
+      animate: false,
+    });
+    c.redraw();
+  } finally {
+    console.warn = warn;
+  }
+  assert.equal(seen.length, 1);
+  assert.match(seen[0], /"Ventas", la fila 2 tiene un valor negativo/);
 });

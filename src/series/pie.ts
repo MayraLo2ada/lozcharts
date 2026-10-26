@@ -344,6 +344,22 @@ function sliceMarkup(ctx: DrawContext, g: Geometry, i: number, outer: number, dx
   })}/>`;
 }
 
+const warned = new WeakSet<readonly number[]>();
+
+/** Un aviso por conjunto de datos si hay valores negativos: cuentan como cero y no se dibujan. */
+function warnNegatives(ps: PreparedSeries): void {
+  if (warned.has(ps.values)) return;
+  warned.add(ps.values);
+  const rows = ps.values.map((v, i) => (v < 0 ? i + 1 : 0)).filter(Boolean);
+  if (!rows.length) return;
+  const one = rows.length === 1;
+  console.warn(
+    `LozCharts: en "${ps.name}", ${one ? 'la fila' : 'las filas'} ${rows.slice(0, 8).join(', ')}${rows.length > 8 ? '…' : ''} ` +
+      `${one ? 'tiene un valor negativo' : 'tienen valores negativos'}: un pie no puede mostrar partes negativas y ${one ? 'cuenta' : 'cuentan'} como cero. ` +
+      'Para comparar subidas y bajadas, usa barras o una cascada.',
+  );
+}
+
 function radial(defaultHole: number, label: string): SeriesImpl {
   return {
     coords: 'free',
@@ -355,6 +371,7 @@ function radial(defaultHole: number, label: string): SeriesImpl {
     label,
     dimmable: true,
     draw(ctx) {
+      warnNegatives(ctx.frame.ps);
       const g = geometry(ctx, defaultHole);
       if (!(g.outer > 0)) return '';
       let s = '';
@@ -401,6 +418,8 @@ function radial(defaultHole: number, label: string): SeriesImpl {
 export function sliceTooltip(ps: PreparedSeries, i: number, format: TooltipFormat): TooltipValue {
   const v = ps.values[i];
   if (!isFinite(v)) return { value: 'Sin dato' };
+  // Sin porcentaje: un "0 %" junto a un valor negativo parecería un cálculo.
+  if (v < 0) return { value: format.value(v), details: [['No aparece', 'vale menos de cero']] };
   if (format.isHidden(i)) return { value: format.value(v) };
   return { value: `${format.value(v)} (${format.percent(visibleShare(ps.values, i, format.isHidden))})` };
 }
