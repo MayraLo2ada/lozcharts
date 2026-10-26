@@ -41,6 +41,8 @@ const MIN_BAR_SHARE = 0.3;
 /** Aire entre las etiquetas y la zona de barras, y entre valor y porcentaje. */
 const PAD = 8;
 const INNER = 6;
+/** Aire entre la columna de la derecha y el borde del área. */
+const EDGE = 2;
 const FONT_SIZE = 12;
 const SMALL_FONT = 11;
 
@@ -194,6 +196,9 @@ function stageTexts(ctx: DrawContext): StageTexts {
 /** Layout del contexto: mide las etiquetas solo si están encendidas. */
 function layoutOf(ctx: DrawContext): { L: FunnelLayout; texts: StageTexts | null } {
   if (ctx.frame.ps.options.labels === false) return { L: funnelLayout(ctx.width, ctx.height, ctx.n, null), texts: null };
+  // La columna de la derecha termina EDGE px antes del borde: la medida de un texto puede quedar
+  // un píxel corta (las cifras tabulares son algo más anchas) y el último carácter se cortaría.
+  const width = ctx.width - EDGE;
   const texts = stageTexts(ctx);
   const widest = (list: string[]) =>
     maxOf(
@@ -206,7 +211,7 @@ function layoutOf(ctx: DrawContext): { L: FunnelLayout; texts: StageTexts | null
     percent: widest(texts.shares),
     conversion: widest(texts.steps),
   };
-  return { L: funnelLayout(ctx.width, ctx.height, ctx.n, widths), texts };
+  return { L: funnelLayout(width, ctx.height, ctx.n, widths), texts };
 }
 
 /** Ancho animado de la barra i (crece desde el centro); `max` es la etapa mayor, calculada una vez. */
