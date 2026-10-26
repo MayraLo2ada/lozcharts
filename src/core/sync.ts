@@ -32,11 +32,12 @@ export function optionsPatch<T extends object>(prev: object | null, next: T): T 
   for (const k of NESTED) {
     const a = before[k];
     const b = out[k];
-    if (a && typeof a === 'object' && b && typeof b === 'object') {
-      const merged: Record<string, unknown> = { ...(b as object) };
-      for (const key of Object.keys(a)) if (!(key in merged)) merged[key] = undefined;
-      out[k] = merged;
-    } else if (a && !b) out[k] = {};
+    if (!a || typeof a !== 'object') continue;
+    // setOptions combina el eje con el anterior: un eje que se quitó entero llega con cada una de
+    // sus claves en undefined (con {} quedaría, por ejemplo, el mínimo de antes).
+    const merged: Record<string, unknown> = b && typeof b === 'object' ? { ...(b as object) } : {};
+    for (const key of Object.keys(a)) if (!(key in merged)) merged[key] = undefined;
+    out[k] = merged;
   }
   return out as T;
 }

@@ -16,7 +16,8 @@ test('una opción que se quita llega como undefined, también dentro de los ejes
   const patch = optionsPatch(prev, next) as Record<string, unknown>;
   assert.ok('title' in patch && patch.title === undefined);
   assert.deepEqual(patch.xAxis, { field: 'mes', title: undefined });
-  assert.deepEqual(patch.yAxis, {});
+  // Quitar el eje entero también quita su mínimo (setOptions combina los ejes con los anteriores).
+  assert.deepEqual(patch.yAxis, { min: undefined });
   assert.equal(optionsPatch(null, next), next);
 });
 

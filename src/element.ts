@@ -28,6 +28,8 @@ export class LozChartElement extends Base {
   static observedAttributes = ['options'];
   private _options: Options | null = null;
   private _chart: LozChart | LozMultiples | null = null;
+  /** Las opciones que tiene el gráfico: las que llegan mientras el elemento está fuera de la página se aplican al volver. */
+  private _applied: Options | null = null;
   /** ¿El gráfico actual es de small multiples? Si eso cambia, se recrea. */
   private _multiples = false;
 
@@ -41,9 +43,8 @@ export class LozChartElement extends Base {
   }
 
   set options(value: Options | null) {
-    const prev = this._options;
     this._options = value;
-    this.render(prev);
+    this.render();
   }
 
   attributeChangedCallback(_name: string, _old: string | null, value: string | null): void {
@@ -68,8 +69,8 @@ export class LozChartElement extends Base {
     }
     if (!this.style.display) this.style.display = 'block';
     // Moverlo de lugar lo desconecta y lo vuelve a conectar: el gráfico que ya tiene se conserva
-    // (con su zoom y sus series ocultas).
-    if (!this._chart) this.render(null);
+    // (con su zoom y sus series ocultas), y las opciones que llegaron mientras estaba fuera se aplican.
+    if (!this._chart || this._applied !== this._options) this.render();
   }
 
   disconnectedCallback(): void {
@@ -79,12 +80,15 @@ export class LozChartElement extends Base {
       if (this.isConnected) return;
       this._chart?.destroy();
       this._chart = null;
+      this._applied = null;
     });
   }
 
-  private render(prev: Options | null): void {
+  private render(): void {
     const o = this._options;
     if (!o || !this.isConnected) return;
+    const prev = this._applied;
+    this._applied = o;
     const multiples = isMultiples(o);
     if (this._chart && multiples === this._multiples && prev) {
       if (optionsKey(prev) === optionsKey(o)) {
