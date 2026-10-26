@@ -10,6 +10,13 @@ export type XAxisType = 'category' | 'time' | 'linear';
 /** Una fila de datos: cualquier objeto plano. */
 export type Datum = Record<string, unknown>;
 
+/**
+ * Una fila tal como la das en `data`. El `any` es a propósito: así encajan filas tipadas con
+ * `interface` (que no tienen firma de índice) y, al leerlas de vuelta en `chart.options.data`,
+ * sus campos se usan sin conversiones.
+ */
+export type DataRow = { [campo: string]: any };
+
 /** Un valor del eje X: el texto de una categoría, una fecha o un número. */
 export type XValue = string | number | Date;
 
@@ -233,11 +240,8 @@ export interface LozChartOptions {
   orientation?: 'vertical' | 'horizontal';
   title?: string;
   subtitle?: string;
-  /**
-   * Las filas: objetos planos, uno por dato. Acepta filas tipadas con `interface` (no hace falta
-   * que tengan firma de índice).
-   */
-  data: readonly object[];
+  /** Las filas: objetos planos, uno por dato (ver DataRow). */
+  data: DataRow[];
   xAxis: XAxisOptions;
   yAxis?: YAxisOptions;
   /**
