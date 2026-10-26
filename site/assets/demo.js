@@ -78,7 +78,7 @@
     var principales = o.series.filter(function (s) {
       return s.type === tipos[0];
     }).length;
-    if (principales > 1) controles.push({ label: 'Apilar series', kind: 'toggle', key: 'apilar' });
+    if (principales > 1) controles.push({ label: 'Apilar una sobre otra', kind: 'toggle', key: 'apilar' });
     estado.suave = o.series.some(function (s) {
       return s.smooth;
     });
@@ -90,18 +90,18 @@
   }
   if (todos(['donut', 'pie'])) {
     estado.dona = tipos[0] === 'donut';
-    controles.push({ label: 'Con agujero (donut)', kind: 'toggle', key: 'dona' });
+    controles.push({ label: 'Con hueco al centro', kind: 'toggle', key: 'dona' });
   }
   // El globo gira con el puntero y los botones: cambiarle la proyección lo dejaría sin sus arcos.
   if (todos(['choropleth', 'mapbubble']) && !ej.globo) {
     estado.proyeccion = o.series[0].projection || 'equalEarth';
     controles.push({
-      label: 'Proyección',
+      label: 'Forma del mapa',
       kind: 'select',
       key: 'proyeccion',
       options: [
-        ['equalEarth', 'Equal Earth (áreas reales)'],
-        ['mercator', 'Mercator'],
+        ['equalEarth', 'Áreas reales (Equal Earth)'],
+        ['mercator', 'Plano clásico (Mercator)'],
         ['orthographic', 'Globo'],
       ],
     });
@@ -226,7 +226,7 @@
     var c3 = document.createElement('code');
     c3.textContent = 'setOptions';
     nota.append(
-      'El código dibuja el globo. Los arcos y el giro con el puntero son un agregado de esta página: para girarlo, cambia ',
+      'El código dibuja el globo. Los arcos y el giro con el puntero los pone esta página: para girarlo desde tu código, cambia ',
       c2,
       ' con ',
       c3,

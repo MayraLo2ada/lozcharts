@@ -6,7 +6,7 @@
     <title>LozCharts · Gráficos para la web, gratis y accesibles</title>
     <meta
       name="description"
-      content="LozCharts es una librería de gráficos para la web: 26 tipos que se leen con teclado y lector de pantalla, claro y oscuro, zoom y exportar a PNG, SVG y CSV. Gratis, MIT, sin dependencias y en 79 KB."
+      content="LozCharts es una librería de gráficos para la web: 26 tipos que se leen con teclado y lector de pantalla, en claro y oscuro, con zoom, y se guardan como imagen o como hoja de datos. Gratis, con licencia MIT, sin nada más que instalar y en 79 KB."
     />
     <link rel="canonical" href="https://mayralo2ada.github.io/lozcharts/" />
     <meta name="author" content="Mayra Lozada" />
@@ -21,7 +21,7 @@
     <meta property="og:title" content="LozCharts · Tus números, en grande." />
     <meta
       property="og:description"
-      content="26 tipos de gráfico para la web, accesibles, sin dependencias y en 79 KB. Gratis para todos, también para empresas."
+      content="26 tipos de gráfico para la web, accesibles, sin nada más que instalar y en 79 KB. Gratis para todos, también para empresas."
     />
     <meta property="og:image" content="https://mayralo2ada.github.io/lozcharts/assets/og-portada.png" />
     <meta property="og:image:width" content="1200" />
@@ -34,7 +34,7 @@
     <meta name="twitter:title" content="LozCharts · Tus números, en grande." />
     <meta
       name="twitter:description"
-      content="26 tipos de gráfico para la web, accesibles, sin dependencias y en 79 KB. Gratis, licencia MIT."
+      content="26 tipos de gráfico para la web, accesibles, sin nada más que instalar y en 79 KB. Gratis, con licencia MIT."
     />
     <meta name="twitter:image" content="https://mayralo2ada.github.io/lozcharts/assets/og-portada.png" />
 
@@ -43,7 +43,7 @@
         "@context": "https://schema.org",
         "@type": ["SoftwareApplication", "SoftwareSourceCode"],
         "name": "LozCharts",
-        "description": "Librería de gráficos para la web: 26 tipos accesibles con teclado, lector de pantalla y colores para daltonismo, modo claro y oscuro, zoom y exportar a PNG, SVG y CSV. Sin dependencias y en 79 KB comprimida.",
+        "description": "Librería de gráficos para la web: 26 tipos accesibles con teclado, lector de pantalla y colores para daltonismo, modo claro y oscuro, zoom, y se guardan como imagen o como hoja de datos. Sin nada más que instalar y en 79 KB comprimida.",
         "url": "https://mayralo2ada.github.io/lozcharts/",
         "codeRepository": "https://github.com/MayraLo2ada/lozcharts",
         "programmingLanguage": ["TypeScript", "JavaScript"],
@@ -122,8 +122,9 @@
 
         <div class="pie-portada">
           <p>
-            <b>LozCharts</b> es mi librería de gráficos para la web. 26 tipos, de la línea de toda la vida al sankey, que se leen
-            con teclado y con lector de pantalla. Pasa el puntero por las barras y busca el mes en que esta tienda pasó su meta.
+            <b>LozCharts</b> es mi librería de gráficos para la web. 26 tipos, de la línea de toda la vida al diagrama de flujos,
+            que se leen con teclado y con lector de pantalla. Pasa el puntero por las barras y busca el mes en que esta tienda
+            pasó su meta.
           </p>
           <ul class="sellos" aria-label="En resumen">
             <li>Gratis</li>
@@ -230,7 +231,7 @@
             </h2>
             <p class="texto">
               Elige por la pregunta que quieres contestar, no por el nombre del gráfico. Pasa el puntero por uno y se vuelve a
-              dibujar. Ninguno es una imagen: son los mismos que vas a poner en tu web, con su tooltip y su teclado.
+              dibujar. Ninguno es una imagen: son los mismos que vas a poner en tu página, con su cajita de datos y su teclado.
             </p>
           </div>
           <div class="bento" id="bento"></div>
@@ -253,7 +254,7 @@
             <div>
               <div class="marco" id="marco-acc"><div class="acc-grafico" id="g-acc"></div></div>
               <button type="button" class="boton boton-borde interruptor" id="dalt" aria-pressed="false">
-                Verlo con deuteranopia
+                Verlo con daltonismo
               </button>
             </div>
             <div>
@@ -286,12 +287,12 @@
           </div>
           <div class="kb-lado">
             <p class="texto">
-              Comprimida, sin dependencias, sin nada más que instalar ni actualizar cada lunes. Exporta a PNG, SVG y CSV, tiene
-              zoom, y cambia sola a modo oscuro cuando tu sistema lo hace.
+              Comprimida y sin nada aparte que instalar ni actualizar cada lunes. Guarda el gráfico como imagen (PNG o SVG) y los
+              datos como hoja (CSV), tiene zoom, y cambia sola a modo oscuro cuando tu sistema lo hace.
             </p>
             <p class="texto">
-              Trae un <a href="llms.txt">llms.txt</a> para que la IA con la que programas sepa qué opciones existen y no se
-              invente otras.
+              Trae un <a href="llms.txt">llms.txt</a>, una hoja de instrucciones para que la IA con la que programas sepa qué
+              opciones existen y no se invente otras.
             </p>
             <p class="donde-rotulo">Funciona donde ya trabajas</p>
             <p class="grito donde-lista">
@@ -343,14 +344,14 @@
             <h3 class="grito" id="t-gratis">Gratis.</h3>
             <p class="bajada">Para siempre, para todos. También si eres una empresa grande.</p>
             <ul class="incluye">
-              <li><b>Los 26 tipos</b> y los small multiples</li>
+              <li><b>Los 26 tipos</b> y las rejillas de gráficos pequeños</li>
               <li>Zoom, anotaciones y nombres al final de cada línea</li>
-              <li>Exportar a PNG, SVG y CSV</li>
+              <li>Guardar como imagen (PNG, SVG) o como hoja (CSV)</li>
               <li>Teclado, lector de pantalla y colores para daltonismo</li>
               <li>Modo claro y oscuro</li>
               <li>React, Angular, Vue, Svelte y Django + HTMX</li>
               <li>llms.txt para tu asistente de código</li>
-              <li><b>Licencia MIT:</b> úsala, cámbiala, métela en tu producto</li>
+              <li><b>Licencia MIT:</b> úsala gratis, cámbiala, métela en tu producto</li>
             </ul>
             <div class="cola">
               <a class="boton boton-lima" href="https://github.com/MayraLo2ada/lozcharts">
@@ -365,10 +366,10 @@
             <p class="bajada">Para cuando el gráfico ya no basta y lo que te piden es el informe.</p>
             <ul class="incluye">
               <li>Informes en PDF y Excel</li>
-              <li>Tableros con filtros cruzados y KPIs</li>
-              <li>Gantt con ruta crítica</li>
-              <li>Gráfico bursátil con indicadores</li>
-              <li>Millones de puntos sin que se trabe</li>
+              <li>Tableros con tus números clave, donde un clic filtra todo</li>
+              <li>Plan de proyecto (Gantt) con las tareas que no pueden atrasarse</li>
+              <li>Gráfico de la bolsa con sus indicadores</li>
+              <li>Millones de datos sin que se trabe</li>
               <li>Un narrador que explica el gráfico en palabras</li>
               <li>Un revisor que te avisa cuando un gráfico confunde</li>
               <li>El constructor: pegas una tabla y sale el gráfico, sin código</li>
@@ -388,7 +389,9 @@
       <section class="dudas wrap" aria-labelledby="t-dudas">
         <h2 class="grito armar" id="t-dudas" data-arma>¿Du<span class="rosa">das?</span></h2>
         <div>
-          <a class="humano" href="https://github.com/MayraLo2ada/lozcharts/issues">Abre un issue en GitHub y te contesto yo.</a>
+          <a class="humano" href="https://github.com/MayraLo2ada/lozcharts/issues"
+            >Déjame tu pregunta en GitHub y te contesto yo.</a
+          >
           <p class="texto">Soy Mayra Lozada. Hice LozCharts y la sigo cuidando.</p>
         </div>
       </section>
@@ -422,9 +425,9 @@
          versión que le pone npm run site, cuando lo necesita. -->
     <script type="text/plain" id="mapa-mundo" src="lib/maps/world.umd.js?v=9007b00172"></script>
     <script defer src="lib/lozcharts.umd.js?v=5c068e8c64"></script>
-    <script defer src="assets/ejemplos.js?v=51571bbccf"></script>
-    <script defer src="assets/portada.js?v=5198d2f24e"></script>
-    <script defer src="assets/portada-lab.js?v=f1de10b995"></script>
-    <script defer src="assets/portada-tipos.js?v=90d4ce7e36"></script>
+    <script defer src="assets/ejemplos.js?v=60e0b41dfc"></script>
+    <script defer src="assets/portada.js?v=5fb60ac074"></script>
+    <script defer src="assets/portada-lab.js?v=a8af83eaf6"></script>
+    <script defer src="assets/portada-tipos.js?v=9cb2b1210f"></script>
   </body>
 </html>

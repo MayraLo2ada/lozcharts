@@ -381,7 +381,7 @@
     var on = this.getAttribute('aria-pressed') !== 'true';
     this.setAttribute('aria-pressed', String(on));
     $('#marco-acc').classList.toggle('daltonismo', on);
-    this.textContent = on ? 'Volver a los colores normales' : 'Verlo con deuteranopia';
+    this.textContent = on ? 'Volver a los colores normales' : 'Verlo con daltonismo';
   });
 
   // ------------------------------------------------------------ Arranque y tamaño

@@ -61,7 +61,7 @@
     },
     {
       id: 'web',
-      boton: 'Una web',
+      boton: 'Un sitio web',
       rotulo: 'Visitas del semestre',
       formato: 'compact',
       meses: ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06'],
@@ -176,9 +176,9 @@
     { id: 'bar', nombre: 'Barras' },
     { id: 'line', nombre: 'Líneas' },
     { id: 'area', nombre: 'Área' },
-    { id: 'donut', nombre: 'Donut' },
-    { id: 'sankey', nombre: 'Sankey' },
-    { id: 'treemap', nombre: 'Treemap' },
+    { id: 'donut', nombre: 'Dona' },
+    { id: 'sankey', nombre: 'Flujos' },
+    { id: 'treemap', nombre: 'Rectángulos' },
   ];
 
   /** Opciones completas de LozCharts para un juego, sus números y un tipo. */

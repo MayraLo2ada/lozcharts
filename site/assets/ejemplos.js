@@ -180,7 +180,7 @@
     {
       id: 'metas',
       tipo: 'LozBullet',
-      clase: 'Bala',
+      clase: 'Metas (bala)',
       familia: 'Comparar',
       desc: 'Una fila por región, todas en la misma escala. La barra delgada es lo vendido y la raya, la meta. Los grises del fondo marcan hasta dónde es bajo, aceptable o bueno.',
       opciones: {
@@ -316,7 +316,7 @@
       tipo: 'LozArea',
       clase: 'Áreas apiladas',
       familia: 'En el tiempo',
-      desc: 'Las áreas apiladas muestran el total y la mezcla al mismo tiempo. Con tres series se leen bien; pasadas las cuatro, las de arriba bailan sobre las de abajo y cuesta seguirlas.',
+      desc: 'Las áreas apiladas muestran el total y la mezcla al mismo tiempo. Con tres capas se leen bien; pasadas las cuatro, las de arriba bailan sobre las de abajo y cuesta seguirlas.',
       opciones: {
         title: 'Casi todo el crecimiento vino del móvil',
         subtitle: 'Visitas al mes por dispositivo, 2026',
@@ -410,7 +410,7 @@
       desc: 'Una dona va bien con pocas partes que suman un todo. Si hay más de cinco, o dos parecidas que importa distinguir, unas barras se leen mejor.',
       opciones: {
         title: 'Los buscadores traen más pedidos que las redes y el correo juntos',
-        subtitle: 'Pedidos en línea según el canal de llegada, octubre de 2026',
+        subtitle: 'Pedidos en línea según por dónde llegó el cliente, octubre de 2026',
         data: filas(
           [
             ['Búsqueda', 4120],
@@ -428,7 +428,7 @@
     {
       id: 'productos',
       tipo: 'LozTreemap',
-      clase: 'Treemap',
+      clase: 'Rectángulos (treemap)',
       familia: 'Partes de un todo',
       tamano: 'grande',
       desc: 'Cada rectángulo ocupa tanto como vende su producto, y los de una misma categoría quedan juntos. Rinde cuando hay muchas partes y además una jerarquía.',
@@ -492,9 +492,9 @@
     {
       id: 'meta',
       tipo: 'LozGauge',
-      clase: 'Indicador',
+      clase: 'Medidor',
       familia: 'Partes de un todo',
-      desc: 'Un número contra su meta, para la pantalla de inicio de un panel. Si son varios indicadores, un gráfico de bala ocupa menos y los compara mejor.',
+      desc: 'Un número contra su meta, para lo primero que se ve en un tablero. Si son varios números, un gráfico de metas (bala) ocupa menos y los compara mejor.',
       opciones: {
         title: 'Siete puntos por debajo de lo previsto',
         subtitle: 'Avance de la meta de ventas del año a octubre. La marca es donde deberíamos ir.',
@@ -512,7 +512,7 @@
       desc: 'Los pasos van uno debajo del otro, con lo que se pierde entre cada uno. Las barras son rectas y no trapecios porque los largos se comparan mejor que las formas.',
       opciones: {
         title: 'Solo el 5 % de las visitas termina en una compra',
-        subtitle: 'Sesiones de octubre de 2026 en cada paso de la compra',
+        subtitle: 'Visitas de octubre de 2026 en cada paso de la compra',
         data: filas(
           [
             ['Visitas', 48210],
@@ -524,7 +524,7 @@
           ['paso', 'sesiones'],
         ),
         xAxis: { field: 'paso' },
-        series: [{ type: 'funnel', field: 'sesiones', name: 'Sesiones' }],
+        series: [{ type: 'funnel', field: 'sesiones', name: 'Visitas' }],
       },
     },
     {
@@ -568,7 +568,7 @@
       tipo: 'LozRadar',
       clase: 'Radar',
       familia: 'Relaciones',
-      desc: 'Compara dos o tres perfiles con los mismos criterios. Con más series se vuelve una maraña, y ahí conviene un panel pequeño por cada una.',
+      desc: 'Compara dos o tres perfiles con los mismos criterios. Con más perfiles se vuelve una maraña, y ahí conviene un panel pequeño por cada una.',
       opciones: {
         title: 'El modelo B gana en cámara y velocidad, pero cuesta más',
         subtitle: 'Puntaje de 0 a 10 en seis pruebas; en precio, 10 es el más barato',
@@ -644,13 +644,13 @@
     {
       id: 'recorrido',
       tipo: 'LozSankey',
-      clase: 'Sankey',
+      clase: 'Flujos (sankey)',
       familia: 'Flujos y mapas',
       tamano: 'grande',
-      desc: 'Se lee de izquierda a derecha: de dónde llegan las visitas, por qué páginas pasan y cómo terminan. El grosor de cada flujo es la cantidad de sesiones.',
+      desc: 'Se lee de izquierda a derecha: de dónde llegan las visitas, por qué páginas pasan y cómo terminan. El grosor de cada flujo es la cantidad de visitas.',
       opciones: {
         title: 'La mayoría ve un producto y se va sin comprar',
-        subtitle: 'Sesiones de octubre de 2026, del canal de llegada al final de la visita',
+        subtitle: 'Visitas de octubre de 2026, desde que llegan hasta que se van',
         data: filas(
           [
             ['Búsqueda', 'Inicio', 5200],
@@ -669,7 +669,7 @@
           ['origen', 'destino', 'sesiones'],
         ),
         xAxis: { field: 'origen' },
-        series: [{ type: 'sankey', field: 'sesiones', name: 'Sesiones', to: 'destino' }],
+        series: [{ type: 'sankey', field: 'sesiones', name: 'Visitas', to: 'destino' }],
       },
     },
     {
@@ -731,7 +731,7 @@
       tipo: 'LozMap',
       clase: 'Mapa coloreado',
       familia: 'Flujos y mapas',
-      desc: 'Cada país con datos se pinta según su valor y los demás quedan en gris. La proyección por defecto respeta las áreas, así ningún país parece más grande de lo que es.',
+      desc: 'Cada país con datos se pinta según su valor y los demás quedan en gris. La forma de mapa que trae de entrada respeta las áreas, así ningún país parece más grande de lo que es.',
       opciones: {
         title: 'Brasil y México suman más de la mitad de los usuarios',
         subtitle: 'Usuarios activos en América Latina, octubre de 2026',
