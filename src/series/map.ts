@@ -122,6 +122,9 @@ function setup(ctx: DrawContext, legend: boolean): MapSetup | null {
   // Con fit 'data' se encuadran solo los lugares con datos; los demás se dibujan igual y el
   // recorte del área esconde lo que queda fuera.
   const framed = fit === 'data' ? features.filter((f) => used.has(all.indexOf(f))) : features;
+  // Con burbujas, el mapa deja de margen la burbuja más grande: una en el borde (Japón en el canto
+  // del globo, Fiyi en el del mundo) no queda cortada por el área.
+  const pad = ps.impl === mapbubble ? largestBubble(ctx.width, plotH) + 2 : 4;
   let project: (lon: number, lat: number) => [number, number];
   let toPolys: (f: GeoFeature) => [number, number][][][];
   let sphere: MapSetup['sphere'] = null;
@@ -132,7 +135,7 @@ function setup(ctx: DrawContext, legend: boolean): MapSetup | null {
     const withData = features.filter((f) => used.has(all.indexOf(f)));
     const points: [number, number][] = [];
     for (let i = 0; i < ctx.n; i++) if (located(i)) points.push([lon[i], lat[i]]);
-    const g = globe(ctx.width, plotH, rotate ?? lookAt(withData.length || points.length ? withData : features, points));
+    const g = globe(ctx.width, plotH, rotate ?? lookAt(withData.length || points.length ? withData : features, points), pad);
     project = (lo, la) => {
       const [x, y, visible] = g.point(lo, la);
       return visible ? [x, y] : [NaN, NaN];
@@ -140,7 +143,7 @@ function setup(ctx: DrawContext, legend: boolean): MapSetup | null {
     toPolys = (f) => projectOnGlobe(f, g);
     sphere = { cx: g.cx, cy: g.cy, r: g.r, graticule: graticule(g) };
   } else {
-    const fitted = fitProjection(rawProjection(projection), framed.length ? framed : features, ctx.width, plotH);
+    const fitted = fitProjection(rawProjection(projection), framed.length ? framed : features, ctx.width, plotH, pad);
     project = fitted;
     toPolys = (f) => projectFeature(f, fitted);
   }
@@ -350,6 +353,11 @@ export const choropleth: SeriesImpl = {
   tooltip,
 };
 
+/** Radio de la burbuja más grande para un área de `width` × `height`. */
+function largestBubble(width: number, height: number): number {
+  return Math.min(MAX_BUBBLE, Math.min(width, height) * BUBBLE_SHARE);
+}
+
 /** Radio de cada burbuja: área proporcional al valor respecto del mayor. */
 export function bubbleRadius(v: number, max: number, largest: number): number {
   if (!(v > 0) || !(max > 0)) return 0;
@@ -375,7 +383,7 @@ function bubbleScale(ctx: DrawContext, S: MapSetup) {
     ctx.frame.ps.values.filter((v) => isFinite(v)),
     0,
   );
-  const largest = Math.min(MAX_BUBBLE, Math.min(ctx.width, S.plotH) * BUBBLE_SHARE);
+  const largest = largestBubble(ctx.width, S.plotH);
   return { max, largest, centers: bubbleCenters(ctx, S) };
 }
 
