@@ -9,44 +9,34 @@
       return e.id === id;
     }) || EJEMPLOS[0];
 
-  // Una frase por ejemplo: para qué sirve, dicho como lo diría una persona.
-  var DESC = {
-    ventas: 'Barras apiladas: ves el total de cada mes y de qué está hecho, con la meta como una línea encima.',
-    paginas: 'Barras horizontales: cuando los nombres son largos, así se leen completos y se comparan mejor.',
-    usuarios: 'Cada línea lleva su nombre al final, así no tienes que ir y volver a la leyenda.',
-    'visitas-dia': 'Un año entero, día por día. Arrastra sobre el gráfico para acercarte o mueve la barra de abajo.',
-    dispositivos: 'Áreas apiladas para ver cómo cambia la mezcla de un mes a otro: aquí, el móvil le va ganando al escritorio.',
-    tasa: 'Una línea escalonada, para valores que se quedan quietos y cambian de golpe, como una tasa o una tarifa.',
-    precios: 'Una vela por día: dónde abrió el precio, hasta dónde subió y bajó, y dónde cerró.',
-    categorias: 'Cómo se reparte un total. Funciona bien con pocas categorías; si son más de cinco, prueba con barras.',
-    productos: 'Para muchas categorías a la vez: cada rectángulo ocupa tanto como vale.',
-    meta: 'Un solo número contra su meta: cuánto llevas y cuánto te falta.',
-    embudo: 'Los pasos de un proceso y cuánta gente llega de uno al siguiente. Enseguida ves en qué paso se van.',
-    tiendas: 'Tres datos por tienda en un solo punto: las ventas a lo ancho, el margen a lo alto y los clientes en el tamaño.',
-    modelos: 'Para comparar perfiles en varios criterios a la vez, como dos teléfonos en batería, cámara o precio.',
-    'visitas-hora': 'Una rejilla de días por horas: el color te dice a qué horas llega más gente.',
-    recorrido: 'De dónde llega la gente, por dónde pasa y dónde termina. Cuanto más grueso el flujo, más personas lo siguen.',
-    paises: 'Cada país pintado según su valor: cuanto más intenso el color, más usuarios.',
-    'tiendas-mapa': 'Una burbuja por ciudad, en su lugar del mapa: cuanto más grande, más ventas.',
-    regiones: 'Un gráfico pequeño por región. Las demás quedan en gris detrás, para que compares sin perderte.',
-    resultado: 'Cómo se llega de un número a otro: lo que suma, lo que resta y dónde terminas.',
-    metas: 'Cada región contra su meta, con los rangos de bajo, aceptable y bueno de fondo.',
-    opiniones: 'Las palabras que más se repiten en las opiniones: cuanto más aparece una, más grande se ve.',
-    lanzamiento: 'Un plan en el tiempo: quién hace qué y cuándo. Los rombos son los hitos.',
-    mercados: 'Una jerarquía en anillos: región, país y ciudad. Pasa el puntero para ver la ruta completa.',
-    equipo: 'Quién trabaja con quién, y quién queda en el centro de todo.',
-    mudanzas: 'Quién se muda a dónde, en las dos direcciones. Cada cinta lleva el color de la región de donde salió.',
-  };
-
   var o = JSON.parse(JSON.stringify(ej.opciones));
   // Las funciones (formatos propios) no pasan por JSON: se recuperan.
   if (ej.opciones.yAxis && typeof ej.opciones.yAxis.format === 'function') o.yAxis.format = ej.opciones.yAxis.format;
 
-  document.title = o.title + ' · LozCharts';
-  byId('crumb').textContent = ej.tipo;
-  byId('tipo').textContent = ej.tipo;
+  document.title = o.title + ' · Galería de LozCharts';
+  byId('clase').textContent = ej.clase;
   byId('titulo').textContent = o.title;
-  byId('desc').textContent = DESC[ej.id] || o.subtitle || '';
+  byId('sub').textContent = o.subtitle || '';
+  byId('desc').textContent = ej.desc || '';
+  // El nombre técnico, donde aporta: junto al código.
+  var tecnico = byId('nombre-tecnico');
+  var tiposSerie = o.series
+    .map(function (s) {
+      return s.type;
+    })
+    .filter(function (t, i, a) {
+      return a.indexOf(t) === i;
+    });
+  var c1 = document.createElement('code');
+  c1.textContent = ej.tipo;
+  tecnico.append('En la librería este gráfico es ', c1, ', con ');
+  tiposSerie.forEach(function (t, i) {
+    var c = document.createElement('code');
+    c.textContent = "type: '" + t + "'";
+    if (i) tecnico.append(i === tiposSerie.length - 1 ? ' y ' : ', ');
+    tecnico.append(c);
+  });
+  tecnico.append(ej.multiples ? ' en cada panel.' : '.');
 
   // ------------------------------------------------------------ Ajustes
 
@@ -59,8 +49,11 @@
     });
   };
   var esCartesiano = todos(['bar', 'line', 'area', 'step', 'range', 'scatter', 'bubble', 'candlestick', 'ohlc']);
+  // Alto inicial: lo que deja la pantalla bajo el título, entre 340 y 820 px (menos en el teléfono).
+  var altoInicial = Math.round(Math.min(innerWidth < 700 ? 380 : 820, Math.max(340, innerHeight - 380)) / 20) * 20;
+  if (ej.tipo === 'LozBullet') altoInicial = Math.min(altoInicial, 400);
   var estado = {
-    altura: 360,
+    altura: altoInicial,
     leyenda: o.legend !== false,
     animar: true,
   };
@@ -82,7 +75,10 @@
     estado.apilar = o.series.some(function (s) {
       return s.stack;
     });
-    if (o.series.length > 1) controles.push({ label: 'Apilar series', kind: 'toggle', key: 'apilar' });
+    var principales = o.series.filter(function (s) {
+      return s.type === tipos[0];
+    }).length;
+    if (principales > 1) controles.push({ label: 'Apilar series', kind: 'toggle', key: 'apilar' });
     estado.suave = o.series.some(function (s) {
       return s.smooth;
     });
@@ -114,7 +110,7 @@
     controles.push({ label: 'Zoom', kind: 'toggle', key: 'zoom' });
   }
   if (o.series.length > 1 && !ej.multiples) controles.push({ label: 'Leyenda', kind: 'toggle', key: 'leyenda' });
-  if (!ej.multiples) controles.push({ label: 'Altura', kind: 'range', key: 'altura', min: 220, max: 560, step: 20 });
+  if (!ej.multiples) controles.push({ label: 'Alto', kind: 'range', key: 'altura', min: 220, max: 900, step: 20 });
 
   /** Las opciones que salen de los ajustes: siempre todas las claves, así quitar algo también se ve. */
   function opciones() {
@@ -123,8 +119,11 @@
     r.series = o.series.map(function (s) {
       var c = Object.assign({}, s);
       if (estado.tipo) {
-        c.type = estado.tipo;
-        c.stack = estado.apilar && estado.tipo !== 'line' && estado.tipo !== 'step' ? true : undefined;
+        // Solo cambian las series del tipo principal: la meta de las ventas sigue siendo línea.
+        if (s.type === tipos[0]) {
+          c.type = estado.tipo;
+          c.stack = estado.apilar && estado.tipo !== 'line' && estado.tipo !== 'step' ? true : undefined;
+        }
         c.smooth = estado.suave || undefined;
       }
       if (estado.dona !== undefined) c.type = estado.dona ? 'donut' : 'pie';
@@ -184,14 +183,15 @@
   var chart;
   function crear() {
     if (chart) chart.destroy();
-    // El título ya está arriba de la página: el gráfico no lo repite (el código sí lo lleva).
-    var op = Object.assign({ background: false }, opciones(), { title: undefined, subtitle: undefined });
+    // El título ya está arriba de la página: el del gráfico se oculta con CSS (.lienzo), pero
+    // sigue en su nombre accesible y en el código.
+    var op = Object.assign({ background: false }, opciones());
     chart = siteChart(ej.multiples ? LozChart.multiples('#grafico', op) : new LozChart('#grafico', op));
   }
   function aplicar(animar) {
     // Pasar de cartesiano a mapa u otra forma: se recrea; si no, cambia animando.
     if (ej.multiples) crear();
-    else chart.setOptions(Object.assign({ background: false }, opciones(), { title: undefined, subtitle: undefined }), animar);
+    else chart.setOptions(Object.assign({ background: false }, opciones()), animar);
     mostrarCodigo();
   }
   crear();
@@ -381,20 +381,32 @@
     });
   });
 
-  // ------------------------------------------------------------ Más ejemplos
+  // ------------------------------------------------------------ Otros ejemplos
 
-  EJEMPLOS.filter(function (e) {
+  // Primero los de la misma familia, después el resto en el orden de la galería.
+  var otros = EJEMPLOS.filter(function (e) {
     return e.id !== ej.id;
-  })
+  });
+  otros
+    .filter(function (e) {
+      return e.familia === ej.familia;
+    })
+    .concat(
+      otros.filter(function (e) {
+        return e.familia !== ej.familia;
+      }),
+    )
     .slice(0, 8)
     .forEach(function (e) {
+      var li = document.createElement('li');
       var a = document.createElement('a');
       a.href = 'demo.html?id=' + e.id;
       var t = document.createElement('strong');
       t.textContent = e.opciones.title;
       var s = document.createElement('span');
-      s.textContent = e.tipo;
+      s.textContent = e.clase;
       a.append(t, s);
-      byId('mas').appendChild(a);
+      li.appendChild(a);
+      byId('mas').appendChild(li);
     });
 })();

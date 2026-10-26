@@ -4,7 +4,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Galería · LozCharts</title>
-    <meta name="description" content="Todos los tipos de gráfico de LozCharts funcionando, cada uno con el código que lo crea." />
+    <meta
+      name="description"
+      content="Un ejemplo de cada tipo de gráfico de LozCharts, con datos inventados y el código que lo dibuja."
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -12,115 +15,6 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="assets/site.css" />
-    <style>
-      .head {
-        padding: var(--s7) 0 var(--s5);
-      }
-      .filters {
-        position: sticky;
-        top: 64px;
-        z-index: 10;
-        background: var(--surface);
-        padding: var(--s3) 0;
-        border-bottom: 1px solid var(--line);
-        margin-bottom: var(--s6);
-      }
-      .filter-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--s3);
-        justify-content: space-between;
-        align-items: center;
-      }
-      .search input {
-        min-height: 40px;
-        width: min(300px, 100%);
-        padding: 8px 14px;
-        border-radius: 999px;
-        border: 1px solid var(--line-strong);
-        background: var(--raised);
-        color: var(--ink);
-        font: 400 14.5px/1.2 var(--font);
-      }
-      .empty {
-        color: var(--muted);
-        margin: var(--s4) 0 0;
-      }
-      .cards {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        /* Las fichas anchas ocupan una fila entera: dense rellena el hueco que dejarían. */
-        grid-auto-flow: row dense;
-        gap: var(--s7) var(--s6);
-      }
-      @media (min-width: 1800px) {
-        .cards {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-        /* Con tres columnas, un mapa a todo el ancho completa las filas y se lee mejor. */
-        .card-wide-xl {
-          grid-column: 1 / -1;
-        }
-      }
-      .card {
-        min-width: 0;
-        scroll-margin-top: 140px;
-      }
-      .card[hidden] {
-        display: none;
-      }
-      .card-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: var(--s3);
-        margin-bottom: var(--s3);
-      }
-      .card-tipo {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--muted);
-      }
-      .card-tools {
-        display: flex;
-        gap: var(--s2);
-      }
-      .card-tools button {
-        border: 1px solid var(--line);
-        background: transparent;
-        color: var(--muted);
-        font: 500 13px/1 var(--font);
-        padding: 8px 12px;
-        border-radius: var(--radius-sm);
-        cursor: pointer;
-      }
-      .card-tools .abrir {
-        font: 600 13px/1 var(--font);
-        padding: 8px 12px;
-        border-radius: var(--radius-sm);
-        background: var(--ink);
-        color: var(--surface);
-        text-decoration: none;
-      }
-      .card-tools button:hover,
-      .card-tools button[aria-expanded='true'] {
-        color: var(--ink);
-        border-color: var(--line-strong);
-      }
-      .card .code {
-        margin-top: var(--s4);
-        max-height: 360px;
-        font-size: 12.5px;
-      }
-      .card-wide {
-        grid-column: 1 / -1;
-      }
-      @media (max-width: 900px) {
-        .cards {
-          grid-template-columns: minmax(0, 1fr);
-        }
-      }
-    </style>
   </head>
   <body>
     <a class="sr-only" href="#contenido">Saltar al contenido</a>
@@ -150,24 +44,27 @@
       </div>
     </header>
 
-    <main id="contenido" class="wrap">
-      <div class="head">
+    <main id="contenido">
+      <header class="wrap gal-cabeza">
         <h1>Galería</h1>
-        <p class="lead">
-          Todos los ejemplos funcionan de verdad: pasa el puntero, recórrelos con el teclado y mira el código que los crea.
+        <p class="gal-intro">
+          Veinticinco ejemplos con datos inventados, de las ventas de una tienda a las mudanzas de un país. Abre cualquiera para
+          cambiarle los ajustes y llevarte el código.
         </p>
-      </div>
-      <div class="filters">
-        <div class="filter-row">
+      </header>
+      <div class="gal-filtros">
+        <div class="wrap">
           <div class="tabs" role="group" aria-label="Filtrar por familia" id="familias"></div>
-          <label class="search"
+          <label class="gal-buscar"
             ><span class="sr-only">Buscar un gráfico</span
             ><input type="search" id="buscar" placeholder="Buscar: barras, mapa, embudo…" autocomplete="off"
           /></label>
         </div>
-        <p class="empty" id="vacio" hidden>Nada con ese nombre. Prueba con “línea”, “mapa” o “pie”.</p>
       </div>
-      <div class="cards" id="cards"></div>
+      <div class="wrap">
+        <p class="gal-vacio" id="vacio" role="status" hidden></p>
+        <div class="gal-rejilla" id="cards"></div>
+      </div>
     </main>
 
     <footer class="foot">
@@ -189,14 +86,37 @@
       (function () {
         var cards = document.getElementById('cards');
         var familias = ['Todos'];
+        var cuenta = { Todos: EJEMPLOS.length };
+        var graficos = [];
+
+        /** Alto de los gráficos: proporcional al ancho de una columna de la rejilla. */
+        function altoBase() {
+          var cols = getComputedStyle(cards).gridTemplateColumns.split(' ').length;
+          var gap = parseFloat(getComputedStyle(cards).columnGap) || 0;
+          var col = (cards.clientWidth - gap * (cols - 1)) / cols;
+          return Math.round(Math.min(560, Math.max(250, col * 0.64)));
+        }
+        // Small multiples a lo ancho de la rejilla: todos los paneles en una fila si caben.
+        function paneles() {
+          var w = cards.clientWidth;
+          return { height: Math.round(altoBase() * 0.6), columns: w >= 1000 ? 6 : w >= 560 ? 3 : 2 };
+        }
+        // Tipos que calculan su propio alto (una fila por tarea o por indicador) o que no lo usan.
+        var altoPropio = function (ej) {
+          return ej.multiples || ej.tipo === 'LozTimeline' || ej.tipo === 'LozBullet';
+        };
+
         EJEMPLOS.forEach(function (ej) {
           if (familias.indexOf(ej.familia) < 0) familias.push(ej.familia);
+          cuenta[ej.familia] = (cuenta[ej.familia] || 0) + 1;
           var card = document.createElement('article');
-          card.className = 'card' + (ej.multiples || ej.ancho ? ' card-wide' : '') + (ej.anchoGrande ? ' card-wide-xl' : '');
+          card.className = 'ficha' + (ej.tamano ? ' ficha-' + (ej.tamano === 'ancho' ? 'ancha' : 'grande') : '');
           card.id = ej.id;
           card.dataset.familia = ej.familia;
           card.dataset.buscar = [
             ej.opciones.title,
+            ej.opciones.subtitle,
+            ej.clase,
             ej.tipo,
             ej.familia,
             ej.opciones.series
@@ -205,62 +125,91 @@
               })
               .join(' '),
           ].join(' ');
-          var head = document.createElement('div');
-          head.className = 'card-head';
-          var tipo = document.createElement('span');
-          tipo.className = 'card-tipo';
-          tipo.textContent = ej.tipo;
-          var tools = document.createElement('div');
-          tools.className = 'card-tools';
-          var abrir = document.createElement('a');
-          abrir.href = 'demo.html?id=' + ej.id;
-          abrir.className = 'abrir';
-          abrir.textContent = 'Abrir y personalizar';
+          card.setAttribute('aria-labelledby', 't-' + ej.id);
+
+          var h = document.createElement('h2');
+          h.className = 'ficha-titulo';
+          h.id = 't-' + ej.id;
+          var enlace = document.createElement('a');
+          enlace.href = 'demo.html?id=' + ej.id;
+          enlace.textContent = ej.opciones.title;
+          h.appendChild(enlace);
+          var sub = document.createElement('p');
+          sub.className = 'ficha-sub';
+          sub.textContent = ej.opciones.subtitle || '';
+
+          var lienzo = document.createElement('div');
+          lienzo.className = 'lienzo';
+
+          var pie = document.createElement('div');
+          pie.className = 'ficha-pie';
+          var clase = document.createElement('span');
+          clase.className = 'ficha-clase';
+          clase.textContent = ej.clase;
+          var acciones = document.createElement('div');
+          acciones.className = 'ficha-acciones';
           var ver = document.createElement('button');
           ver.type = 'button';
-          ver.textContent = 'Ver código';
           ver.setAttribute('aria-expanded', 'false');
-          tools.append(abrir, ver);
-          head.append(tipo, tools);
-          var box = document.createElement('div');
+          ver.innerHTML = 'Código<span class="sr-only"> de este gráfico</span>';
+          var abrir = document.createElement('a');
+          abrir.href = 'demo.html?id=' + ej.id;
+          abrir.innerHTML = 'Abrir y ajustar<span aria-hidden="true">&nbsp;→</span>';
+          acciones.append(ver, abrir);
+          pie.append(clase, acciones);
+
           var pre = document.createElement('pre');
           pre.className = 'code';
           pre.hidden = true;
+          pre.id = 'codigo-' + ej.id;
+          ver.setAttribute('aria-controls', pre.id);
           var code = document.createElement('code');
-          code.innerHTML = siteHighlight(codigoEjemplo(ej));
           pre.appendChild(code);
-          ver.setAttribute('aria-controls', (pre.id = 'codigo-' + ej.id));
-          card.append(head, box, pre);
+
+          card.append(h);
+          if (sub.textContent) card.append(sub);
+          card.append(lienzo, pie, pre);
           cards.appendChild(card);
-          crearEjemplo(ej, box);
+          var extra = ej.multiples ? paneles() : altoPropio(ej) ? {} : { height: altoBase() };
+          graficos.push({ ej: ej, chart: crearEjemplo(ej, lienzo, extra) });
+
           ver.addEventListener('click', function () {
+            if (!code.innerHTML) code.innerHTML = siteHighlight(codigoEjemplo(ej));
             pre.hidden = !pre.hidden;
             ver.setAttribute('aria-expanded', String(!pre.hidden));
-            ver.textContent = pre.hidden ? 'Ver código' : 'Ocultar código';
+            card.classList.toggle('con-codigo', !pre.hidden);
           });
         });
+
+        // Al cambiar el ancho (o las columnas), los gráficos acompañan con su alto.
+        var ultimo = altoBase();
+        var espera;
+        addEventListener('resize', function () {
+          clearTimeout(espera);
+          espera = setTimeout(function () {
+            var alto = altoBase();
+            if (Math.abs(alto - ultimo) < 12) return;
+            ultimo = alto;
+            graficos.forEach(function (g) {
+              if (g.ej.multiples) g.chart.setOptions(paneles());
+              else if (!altoPropio(g.ej)) g.chart.setOptions({ height: alto }, false);
+            });
+          }, 200);
+        });
+
         var familia = 'Todos';
-        // Busca en el nombre, el tipo y la familia, sin importar acentos ni mayúsculas.
+        // Busca en el título, el nombre del tipo y la familia, sin importar acentos ni mayúsculas.
         var plano = function (t) {
-          return t
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .toLowerCase();
+          return t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
         };
-        var SINONIMOS = {
-          linea: 'line',
-          barra: 'bar',
-          area: 'area',
-          torta: 'pie',
-          dona: 'donut',
-          mapa: 'map',
-          calor: 'heatmap',
-          flujo: 'sankey',
-        };
+        // Los nombres de la galería ya están en español; solo faltan los otros nombres de la dona.
+        var SINONIMOS = { torta: 'donut', pastel: 'donut', pie: 'donut', dona: 'donut' };
+        var vacio = document.getElementById('vacio');
         function filtrar() {
-          var q = plano(document.getElementById('buscar').value.trim());
+          var crudo = document.getElementById('buscar').value.trim();
+          var q = plano(crudo);
           var visibles = 0;
-          cards.querySelectorAll('.card').forEach(function (c) {
+          cards.querySelectorAll('.ficha').forEach(function (c) {
             var texto = plano(c.dataset.buscar);
             var palabra = Object.keys(SINONIMOS).find(function (k) {
               return q && q.indexOf(k) === 0;
@@ -269,15 +218,25 @@
             c.hidden = !coincide || (familia !== 'Todos' && c.dataset.familia !== familia);
             if (!c.hidden) visibles++;
           });
-          document.getElementById('vacio').hidden = visibles > 0;
+          vacio.hidden = visibles > 0;
+          vacio.textContent = visibles
+            ? ''
+            : 'No hay ningún gráfico que se llame “' +
+              crudo +
+              '”' +
+              (familia !== 'Todos' ? ' en ' + familia : '') +
+              '. Prueba con “línea”, “mapa” o “torta”.';
         }
         document.getElementById('buscar').addEventListener('input', filtrar);
         var bar = document.getElementById('familias');
         familias.forEach(function (f, i) {
           var b = document.createElement('button');
           b.type = 'button';
-          b.textContent = f;
           b.setAttribute('aria-pressed', String(i === 0));
+          var n = document.createElement('span');
+          n.className = 'n';
+          n.textContent = cuenta[f];
+          b.append(f, ' ', n);
           b.addEventListener('click', function () {
             bar.querySelectorAll('button').forEach(function (o) {
               o.setAttribute('aria-pressed', String(o === b));

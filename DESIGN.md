@@ -7,9 +7,9 @@ Reglas fijas para todos los tipos de gráfico. Los valores viven en `src/core/th
 
 Cada tipo tiene un nombre de la familia: LozLine, LozBar, LozArea, LozStep, LozRange, LozScatter,
 LozBubble, LozCandle, LozOHLC, LozPie, LozDonut, LozGauge, LozRadar, LozFunnel, LozHeatmap, LozTreemap, LozSankey, LozWaterfall, LozBullet, LozSunburst, LozChord, LozNetwork,
-LozTimeline, LozWordcloud, LozMap y LozMultiples. En la galería aparecen como etiquetas de 12 px con
-borde redondeado, en texto secundario (sin mayúsculas sostenidas). En el código, el tipo usa su
-nombre corto (`type: 'bar'`).
+LozTimeline, LozWordcloud, LozMap y LozMultiples. Ese nombre técnico solo aparece junto al código
+(en la página de cada ejemplo); en la galería cada ficha dice el tipo como lo diría una persona
+("Barras apiladas", "Mapa de calor"). En el código, el tipo usa su nombre corto (`type: 'bar'`).
 
 ## Paleta categórica "Violeta" (orden fijo, validada para daltonismo)
 
@@ -232,3 +232,17 @@ del color de la serie.
 
 Hanken Grotesk con la fuente del sistema como respaldo. Separadores de 1 px en vez de tarjetas.
 Cuadrícula de 2 columnas que pasa a 1 bajo 860 px. Selector de tema segmentado arriba a la derecha.
+
+## Sitio: galería y página de un ejemplo
+
+- Cada ejemplo tiene un título que dice algo de sus datos ("El Sur quedó lejos de su meta") y un
+  subtítulo con la medida, la unidad y el periodo. Nada de títulos que describan el tipo de gráfico.
+  Los datos son inventados, pero las cifras del título tienen que cuadrar con el gráfico.
+- Galería: rejilla fluida de 1, 2, 3 (desde 1280 px) y 4 columnas (desde 2200 px), con fichas
+  normales, grandes (dos columnas) y anchas (la fila entera); el orden de `ejemplos.js` arma filas
+  completas en tres columnas. Cada ficha: título de la página (enlace al ejemplo) y subtítulo, el
+  gráfico sin su propio encabezado (sigue en su nombre accesible) y al pie el tipo en palabras.
+  "Código" y "Abrir y ajustar" aparecen al pasar o enfocar (siempre visibles en pantallas táctiles).
+- Los gráficos de la galería toman el alto del ancho de su columna (entre 250 y 560 px).
+- Página de un ejemplo: gráfico grande con "Por qué esta forma" y los ajustes al lado; abajo, el
+  código con "Para usarlo" y el nombre técnico al lado. Alto inicial según la pantalla (340 a 820 px).

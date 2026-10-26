@@ -16,14 +16,23 @@
   for (var m = 0; m < 12; m++) MESES.push('2026-' + pad(m + 1));
   var r = rng(11);
 
-  var ventas = MESES.map(function (mes, i) {
-    var k = [0.82, 0.78, 0.9, 0.94, 1, 0.97, 0.95, 1.02, 0.98, 1.06, 1.24, 1.42][i];
-    return {
-      mes: mes,
-      online: Math.round((41000 + i * 1900 + r() * 6000) * k),
-      tienda: Math.round((33000 + r() * 5000) * k),
-      meta: Math.round((74000 + i * 2600) * (i > 9 ? 1.18 : 1)),
-    };
+  // Ventas por canal: la tienda en línea alcanza a la física a mitad de año y la temporada de
+  // fin de año empuja a las dos.
+  var ventas = [
+    [28400, 39800, 70000],
+    [27100, 36900, 70000],
+    [33500, 40200, 72000],
+    [36200, 39400, 74000],
+    [39800, 40100, 76000],
+    [43900, 38600, 78000],
+    [45200, 37200, 80000],
+    [48700, 38100, 82000],
+    [47900, 36400, 84000],
+    [53600, 37900, 88000],
+    [68400, 44700, 104000],
+    [79200, 51800, 118000],
+  ].map(function (v, i) {
+    return { mes: MESES[i], online: v[0], tienda: v[1], meta: v[2] };
   });
 
   var ciudades = ['Lima', 'Bogotá', 'Quito', 'Santiago', 'Ciudad de México'];
@@ -94,20 +103,27 @@
     });
   };
 
+  // Cada ejemplo: `tipo` es el nombre en la librería (va en el código), `clase` el nombre que
+  // lee una persona, `tamano` cuánto ocupa en la galería ('grande': dos columnas; 'ancho': la
+  // fila entera) y `desc` por qué esta forma sirve para estos datos (la página del ejemplo).
+  // El orden importa: arma filas completas en la galería de tres columnas.
   window.EJEMPLOS = [
     {
       id: 'ventas',
       tipo: 'LozBar',
+      clase: 'Barras apiladas con meta',
       familia: 'Comparar',
+      tamano: 'grande',
+      desc: 'Apilar los dos canales deja ver el total del mes y, a la vez, cuánto pone cada uno. La meta va como línea para que nadie la confunda con una barra más.',
       opciones: {
-        title: 'Ventas por mes',
-        subtitle: 'Tienda física y en línea, frente a la meta',
+        title: 'La tienda en línea pasó a la física en junio',
+        subtitle: 'Ventas por mes en 2026, en dólares. La línea es la meta mensual.',
         data: ventas,
         xAxis: { field: 'mes', type: 'time' },
         yAxis: { format: 'currency' },
         series: [
           { type: 'bar', field: 'online', name: 'En línea', stack: true },
-          { type: 'bar', field: 'tienda', name: 'Tienda', stack: true },
+          { type: 'bar', field: 'tienda', name: 'Tienda física', stack: true },
           { type: 'line', field: 'meta', name: 'Meta', smooth: true },
         ],
       },
@@ -115,10 +131,12 @@
     {
       id: 'paginas',
       tipo: 'LozBar',
+      clase: 'Barras horizontales',
       familia: 'Comparar',
+      desc: 'Con nombres largos, las barras acostadas se leen sin torcer la cabeza. Ordenadas de mayor a menor, la comparación sale de un vistazo.',
       opciones: {
-        title: 'Páginas más visitadas',
-        subtitle: 'Visitas únicas en octubre',
+        title: 'Las preguntas frecuentes ya reciben más visitas que el carrito',
+        subtitle: 'Visitas únicas por página, octubre de 2026',
         orientation: 'horizontal',
         data: filas(
           [
@@ -138,10 +156,12 @@
     {
       id: 'resultado',
       tipo: 'LozWaterfall',
+      clase: 'Cascada',
       familia: 'Comparar',
+      desc: 'Una cascada explica cómo se pasa de un número a otro. Cada barra empieza donde terminó la anterior, y los subtotales vuelven a partir de cero.',
       opciones: {
-        title: 'De las ventas a la utilidad',
-        subtitle: 'Estado de resultados del año',
+        title: 'De cada dólar vendido quedan 20 centavos',
+        subtitle: 'Estado de resultados de 2026, en dólares',
         data: [
           { paso: 'Ventas', monto: 1250000 },
           { paso: 'Costo de ventas', monto: -520000 },
@@ -160,10 +180,12 @@
     {
       id: 'metas',
       tipo: 'LozBullet',
+      clase: 'Bala',
       familia: 'Comparar',
+      desc: 'Una fila por región, todas en la misma escala. La barra delgada es lo vendido y la raya, la meta. Los grises del fondo marcan hasta dónde es bajo, aceptable o bueno.',
       opciones: {
-        title: 'Ventas del trimestre contra la meta',
-        subtitle: 'En miles de dólares. Al fondo: hasta 300 es bajo, hasta 450 aceptable y hasta 600 bueno',
+        title: 'El Sur quedó lejos de su meta',
+        subtitle: 'Ventas del tercer trimestre, en miles de dólares. La raya es la meta de cada región.',
         data: filas(
           [
             ['Norte', 512, 480],
@@ -181,10 +203,12 @@
     {
       id: 'opiniones',
       tipo: 'LozWordcloud',
+      clase: 'Nube de palabras',
       familia: 'Comparar',
+      desc: 'Da una idea rápida de qué se habla, no una medida: el tamaño de una palabra se compara peor que el largo de una barra. Para la cifra exacta, pasa el puntero por la palabra.',
       opciones: {
-        title: '¿Qué destacan los clientes?',
-        subtitle: 'Palabras más repetidas en 2.140 opiniones',
+        title: 'Lo que más agradecen es la atención',
+        subtitle: 'Palabras más repetidas en 2.140 opiniones de clientes, por tema',
         data: filas(
           [
             ['atención', 412, 'Servicio'],
@@ -225,28 +249,37 @@
       },
     },
     {
-      id: 'usuarios',
-      tipo: 'LozLine',
-      familia: 'En el tiempo',
+      id: 'regiones',
+      tipo: 'LozMultiples',
+      clase: 'Paneles pequeños',
+      familia: 'Comparar',
+      tamano: 'ancho',
+      multiples: true,
+      desc: 'Un panel por región, todos con la misma escala. Detrás de cada uno, en gris, van las demás: así se compara la forma sin andar buscando colores.',
       opciones: {
-        title: 'Usuarios activos por ciudad',
-        subtitle: 'En miles, con el nombre de cada ciudad al final de su línea',
-        data: usuarios,
+        title: 'El Norte perdió más de la mitad de sus ventas en el año',
+        subtitle: 'Ventas por mes en 2026, en miles de dólares. En gris, las otras regiones.',
+        facet: 'series',
+        context: true,
+        data: porRegion,
         xAxis: { field: 'mes', type: 'time' },
-        series: ciudades.map(function (c) {
-          return { type: 'line', field: c, name: c };
+        series: regiones.map(function (rg) {
+          return { type: 'line', field: rg, name: rg };
         }),
-        endLabels: { value: true },
+        minWidth: 170,
+        height: 140,
       },
     },
     {
       id: 'visitas-dia',
       tipo: 'LozLine',
+      clase: 'Líneas con zoom',
       familia: 'En el tiempo',
-      ancho: true,
+      tamano: 'ancho',
+      desc: 'Un año día por día es demasiado para verlo de una vez. Acércate a unas semanas, mueve la ventana con la barra de abajo y, con doble clic, vuelve a verlo entero.',
       opciones: {
-        title: 'Visitas diarias',
-        subtitle: 'Arrastra para acercar o usa la barra de abajo',
+        title: 'Con la campaña de verano, la web pasó por primera vez la meta',
+        subtitle: 'Visitas diarias, noviembre de 2025 a octubre de 2026. Arrastra sobre el gráfico para acercarte.',
         data: dias,
         xAxis: { field: 'fecha', type: 'time' },
         series: [
@@ -262,12 +295,31 @@
       },
     },
     {
+      id: 'usuarios',
+      tipo: 'LozLine',
+      clase: 'Líneas con nombre al final',
+      familia: 'En el tiempo',
+      desc: 'Con cinco líneas, ir y volver a la leyenda cansa. Aquí cada ciudad lleva su nombre y su último valor donde termina la línea.',
+      opciones: {
+        title: 'Ciudad de México duplicó sus usuarios en un año',
+        subtitle: 'Usuarios activos al mes, en miles',
+        data: usuarios,
+        xAxis: { field: 'mes', type: 'time' },
+        series: ciudades.map(function (c) {
+          return { type: 'line', field: c, name: c };
+        }),
+        endLabels: { value: true },
+      },
+    },
+    {
       id: 'dispositivos',
       tipo: 'LozArea',
+      clase: 'Áreas apiladas',
       familia: 'En el tiempo',
+      desc: 'Las áreas apiladas muestran el total y la mezcla al mismo tiempo. Con tres series se leen bien; pasadas las cuatro, las de arriba bailan sobre las de abajo y cuesta seguirlas.',
       opciones: {
-        title: 'Visitas por dispositivo',
-        subtitle: 'El móvil crece mes a mes y el escritorio baja de a poco',
+        title: 'Casi todo el crecimiento vino del móvil',
+        subtitle: 'Visitas al mes por dispositivo, 2026',
         data: MESES.map(function (mes, i) {
           return { mes: mes, movil: 5200 + i * 310, escritorio: 4100 - i * 60, tableta: 900 + i * 20 };
         }),
@@ -283,10 +335,12 @@
     {
       id: 'tasa',
       tipo: 'LozStep',
+      clase: 'Escalones',
       familia: 'En el tiempo',
+      desc: 'Entre una decisión y la siguiente la tasa no se mueve, así que una línea inclinada mentiría. Los escalones marcan el salto el día en que ocurre.',
       opciones: {
-        title: 'Tasa de interés de referencia',
-        subtitle: 'Se queda fija y cambia de golpe con cada decisión',
+        title: 'Siete recortes seguidos',
+        subtitle: 'Tasa de interés de referencia, de enero de 2025 a octubre de 2026',
         data: filas(
           [
             ['2025-01', 0.1125],
@@ -306,26 +360,15 @@
       },
     },
     {
-      id: 'precios',
-      tipo: 'LozCandle',
-      familia: 'En el tiempo',
-      opciones: {
-        title: 'Precio de la acción',
-        subtitle: 'Apertura, máximo, mínimo y cierre por día',
-        data: precios,
-        xAxis: { field: 'fecha', type: 'time' },
-        yAxis: { format: 'currency' },
-        series: [{ type: 'candlestick', field: 'cierre', open: 'apertura', high: 'maximo', low: 'minimo', name: 'AURF' }],
-      },
-    },
-    {
       id: 'lanzamiento',
       tipo: 'LozTimeline',
+      clase: 'Línea de tiempo',
       familia: 'En el tiempo',
-      ancho: true,
+      tamano: 'grande',
+      desc: 'Un carril por equipo y una barra por tarea, de su inicio a su fin. Lo que no tiene fecha de fin es un hito y va en rombo; la línea punteada es hoy.',
       opciones: {
-        title: 'Lanzamiento de la app',
-        subtitle: 'Cada equipo en su carril; los rombos son hitos',
+        title: 'Ocho meses de la primera entrevista al lanzamiento',
+        subtitle: 'Plan de la app de pagos por equipo, 2026. Los rombos son hitos.',
         data: [
           { tarea: 'Investigación', inicio: '2026-01-12', fin: '2026-02-27', equipo: 'Producto' },
           { tarea: 'Definición del alcance', inicio: '2026-02-16', fin: '2026-03-13', equipo: 'Producto' },
@@ -345,33 +388,53 @@
       },
     },
     {
+      id: 'precios',
+      tipo: 'LozCandle',
+      clase: 'Velas',
+      familia: 'En el tiempo',
+      desc: 'Cada vela es un día. El cuerpo va de la apertura al cierre, hueco si el precio subió y relleno si bajó, y la mecha llega al máximo y al mínimo.',
+      opciones: {
+        title: 'AURF perdió casi un 9 % en tres semanas',
+        subtitle: 'Precio diario de la acción en dólares, septiembre y octubre de 2026',
+        data: precios,
+        xAxis: { field: 'fecha', type: 'time' },
+        yAxis: { format: 'currency' },
+        series: [{ type: 'candlestick', field: 'cierre', open: 'apertura', high: 'maximo', low: 'minimo', name: 'AURF' }],
+      },
+    },
+    {
       id: 'categorias',
       tipo: 'LozDonut',
+      clase: 'Dona',
       familia: 'Partes de un todo',
+      desc: 'Una dona va bien con pocas partes que suman un todo. Si hay más de cinco, o dos parecidas que importa distinguir, unas barras se leen mejor.',
       opciones: {
-        title: 'Ventas por canal',
+        title: 'Los buscadores traen más pedidos que las redes y el correo juntos',
+        subtitle: 'Pedidos en línea según el canal de llegada, octubre de 2026',
         data: filas(
           [
-            ['Búsqueda', 41],
-            ['Directo', 20],
-            ['Redes', 18],
-            ['Correo', 12],
-            ['Referidos', 9],
+            ['Búsqueda', 4120],
+            ['Directo', 2010],
+            ['Redes', 1790],
+            ['Correo', 1220],
+            ['Referidos', 880],
           ],
-          ['canal', 'ventas'],
+          ['canal', 'pedidos'],
         ),
         xAxis: { field: 'canal' },
-        yAxis: { format: 'percent' },
-        series: [{ type: 'donut', field: 'ventas', name: 'Ventas' }],
+        series: [{ type: 'donut', field: 'pedidos', name: 'Pedidos' }],
       },
     },
     {
       id: 'productos',
       tipo: 'LozTreemap',
+      clase: 'Treemap',
       familia: 'Partes de un todo',
+      tamano: 'grande',
+      desc: 'Cada rectángulo ocupa tanto como vende su producto, y los de una misma categoría quedan juntos. Rinde cuando hay muchas partes y además una jerarquía.',
       opciones: {
-        title: 'Ventas por producto',
-        subtitle: 'Agrupadas por categoría',
+        title: 'Electrónica vende más que todo lo demás junto',
+        subtitle: 'Ventas de 2026 por producto y categoría, en dólares',
         data: filas(
           [
             ['Laptops', 'Electrónica', 420000],
@@ -396,10 +459,12 @@
     {
       id: 'mercados',
       tipo: 'LozSunburst',
+      clase: 'Anillos (sunburst)',
       familia: 'Partes de un todo',
+      desc: 'Del centro hacia afuera: región, país y ciudad. Pasa el puntero por una ciudad y se ilumina su camino hasta el centro.',
       opciones: {
-        title: 'Ventas por región, país y ciudad',
-        subtitle: 'Pasa el puntero para ver la ruta completa',
+        title: 'Casi un tercio de las ventas sale de México',
+        subtitle: 'Ventas de 2026 por región, país y ciudad, en dólares',
         data: filas(
           [
             ['América', 'México', 'Ciudad de México', 412000],
@@ -427,9 +492,12 @@
     {
       id: 'meta',
       tipo: 'LozGauge',
+      clase: 'Indicador',
       familia: 'Partes de un todo',
+      desc: 'Un número contra su meta, para la pantalla de inicio de un panel. Si son varios indicadores, un gráfico de bala ocupa menos y los compara mejor.',
       opciones: {
-        title: 'Avance de la meta anual',
+        title: 'Siete puntos por debajo de lo previsto',
+        subtitle: 'Avance de la meta de ventas del año a octubre. La marca es donde deberíamos ir.',
         data: [{ mes: 'Octubre', avance: 0.78 }],
         xAxis: { field: 'mes' },
         yAxis: { format: 'percent', min: 0, max: 1 },
@@ -439,9 +507,12 @@
     {
       id: 'embudo',
       tipo: 'LozFunnel',
+      clase: 'Embudo',
       familia: 'Partes de un todo',
+      desc: 'Los pasos van uno debajo del otro, con lo que se pierde entre cada uno. Las barras son rectas y no trapecios porque los largos se comparan mejor que las formas.',
       opciones: {
-        title: 'Embudo de compra',
+        title: 'Solo el 5 % de las visitas termina en una compra',
+        subtitle: 'Sesiones de octubre de 2026 en cada paso de la compra',
         data: filas(
           [
             ['Visitas', 48210],
@@ -459,10 +530,13 @@
     {
       id: 'tiendas',
       tipo: 'LozBubble',
+      clase: 'Burbujas',
       familia: 'Relaciones',
+      tamano: 'grande',
+      desc: 'Tres medidas en un punto: ventas a lo ancho, margen a lo alto y clientes en el tamaño. Lo que crece con el valor es el área de la burbuja, no su radio.',
       opciones: {
-        title: 'Tiendas: ventas y margen',
-        subtitle: 'El tamaño es la cantidad de clientes',
+        title: 'Las tiendas grandes venden más, pero con menos margen',
+        subtitle: 'Nueve tiendas en 2026. El tamaño de cada burbuja es su cantidad de clientes.',
         data: filas(
           [
             [0.6, 0.39, 1200, 'Sur'],
@@ -492,10 +566,12 @@
     {
       id: 'modelos',
       tipo: 'LozRadar',
+      clase: 'Radar',
       familia: 'Relaciones',
+      desc: 'Compara dos o tres perfiles con los mismos criterios. Con más series se vuelve una maraña, y ahí conviene un panel pequeño por cada una.',
       opciones: {
-        title: 'Dos modelos de teléfono',
-        subtitle: 'Puntaje de 0 a 10 en seis criterios',
+        title: 'El modelo B gana en cámara y velocidad, pero cuesta más',
+        subtitle: 'Puntaje de 0 a 10 en seis pruebas; en precio, 10 es el más barato',
         data: filas(
           [
             ['Batería', 8, 6],
@@ -518,9 +594,13 @@
     {
       id: 'visitas-hora',
       tipo: 'LozHeatmap',
+      clase: 'Mapa de calor',
       familia: 'Relaciones',
+      tamano: 'grande',
+      desc: 'Siete días por veinticuatro horas son 168 números. Pintados en una rejilla, el patrón aparece antes de leer cualquier cifra.',
       opciones: {
-        title: 'Visitas por día y hora',
+        title: 'Las visitas tocan techo a media tarde',
+        subtitle: 'Visitas por hora en una semana típica de octubre',
         data: visitasHora,
         xAxis: { field: 'hora' },
         series: [{ type: 'heatmap', field: 'visitas', name: 'Visitas', y: 'dia' }],
@@ -529,19 +609,21 @@
     {
       id: 'equipo',
       tipo: 'LozNetwork',
+      clase: 'Red',
       familia: 'Relaciones',
+      desc: 'Cada línea une a dos personas que se escriben, más gruesa cuantos más mensajes. Quien conecta dos áreas queda entre ellas.',
       opciones: {
-        title: 'Quién trabaja con quién',
-        subtitle: 'Mensajes por semana entre personas de cuatro áreas',
+        title: 'Cada área habla sobre todo consigo misma',
+        subtitle: 'Mensajes por semana entre doce personas de cuatro áreas',
         data: filas(
           [
-            ['Ana', 'Luis', 18, 'Diseño'],
+            ['Luis', 'Ana', 18, 'Diseño'],
             ['Ana', 'Marta', 11, 'Diseño'],
-            ['Luis', 'Marta', 7, 'Diseño'],
+            ['Marta', 'Luis', 7, 'Diseño'],
             ['Ana', 'Pedro', 6, 'Diseño'],
             ['Pedro', 'Sofía', 21, 'Datos'],
             ['Pedro', 'Jorge', 13, 'Datos'],
-            ['Sofía', 'Jorge', 9, 'Datos'],
+            ['Jorge', 'Sofía', 9, 'Datos'],
             ['Sofía', 'Elena', 4, 'Datos'],
             ['Carla', 'Elena', 16, 'Ventas'],
             ['Elena', 'Raúl', 12, 'Ventas'],
@@ -562,10 +644,13 @@
     {
       id: 'recorrido',
       tipo: 'LozSankey',
+      clase: 'Sankey',
       familia: 'Flujos y mapas',
+      tamano: 'grande',
+      desc: 'Se lee de izquierda a derecha: de dónde llegan las visitas, por qué páginas pasan y cómo terminan. El grosor de cada flujo es la cantidad de sesiones.',
       opciones: {
-        title: 'Recorrido de las visitas',
-        subtitle: 'De dónde llegan y cómo terminan',
+        title: 'La mayoría ve un producto y se va sin comprar',
+        subtitle: 'Sesiones de octubre de 2026, del canal de llegada al final de la visita',
         data: filas(
           [
             ['Búsqueda', 'Inicio', 5200],
@@ -590,10 +675,12 @@
     {
       id: 'mudanzas',
       tipo: 'LozChord',
+      clase: 'Cuerdas',
       familia: 'Flujos y mapas',
+      desc: 'Las cuerdas muestran idas y vueltas entre los mismos lugares. Cada cinta tiene el color de la región de donde se fue la gente.',
       opciones: {
-        title: 'Mudanzas entre regiones',
-        subtitle: 'En miles de personas; cada cinta lleva el color de la región de donde salieron',
+        title: 'De la capital se va más gente de la que llega',
+        subtitle: 'Mudanzas entre regiones en 2025, en miles de personas',
         data: filas(
           [
             ['Capital', 'Centro', 182],
@@ -616,12 +703,38 @@
       },
     },
     {
+      id: 'tiendas-mapa',
+      tipo: 'LozMap',
+      clase: 'Mapa de burbujas',
+      familia: 'Flujos y mapas',
+      tamano: 'grande',
+      desc: 'Una burbuja por ciudad, en su lugar del mapa. El tamaño da el orden de magnitud; el valor exacto aparece al pasar el puntero.',
+      opciones: {
+        title: 'São Paulo ya vende más que Ciudad de México',
+        subtitle: 'Ventas de octubre de 2026 por ciudad, en miles de dólares',
+        data: [
+          { ciudad: 'Ciudad de México', lat: 19.43, lon: -99.13, ventas: 4200 },
+          { ciudad: 'Bogotá', lat: 4.71, lon: -74.07, ventas: 2600 },
+          { ciudad: 'Lima', lat: -12.05, lon: -77.04, ventas: 1900 },
+          { ciudad: 'Santiago', lat: -33.45, lon: -70.67, ventas: 1500 },
+          { ciudad: 'Buenos Aires', lat: -34.6, lon: -58.38, ventas: 3100 },
+          { ciudad: 'São Paulo', lat: -23.55, lon: -46.63, ventas: 5200 },
+          { ciudad: 'Madrid', lat: 40.42, lon: -3.7, ventas: 2800 },
+          { ciudad: 'Miami', lat: 25.76, lon: -80.19, ventas: 3600 },
+        ],
+        xAxis: { field: 'ciudad' },
+        series: [{ type: 'mapbubble', field: 'ventas', name: 'Ventas', lat: 'lat', lon: 'lon' }],
+      },
+    },
+    {
       id: 'paises',
       tipo: 'LozMap',
+      clase: 'Mapa coloreado',
       familia: 'Flujos y mapas',
+      desc: 'Cada país con datos se pinta según su valor y los demás quedan en gris. La proyección por defecto respeta las áreas, así ningún país parece más grande de lo que es.',
       opciones: {
-        title: 'Usuarios activos por país',
-        subtitle: 'Latinoamérica, datos de ejemplo',
+        title: 'Brasil y México suman más de la mitad de los usuarios',
+        subtitle: 'Usuarios activos en América Latina, octubre de 2026',
         data: filas(
           [
             ['MEX', 1830],
@@ -649,47 +762,6 @@
         xAxis: { field: 'pais' },
         yAxis: { format: 'compact' },
         series: [{ type: 'choropleth', field: 'usuarios', name: 'Usuarios', fit: 'data' }],
-      },
-    },
-    {
-      id: 'tiendas-mapa',
-      tipo: 'LozMap',
-      familia: 'Flujos y mapas',
-      anchoGrande: true,
-      opciones: {
-        title: 'Ventas por ciudad',
-        subtitle: 'Cuanto más grande la burbuja, más ventas',
-        data: [
-          { ciudad: 'Ciudad de México', lat: 19.43, lon: -99.13, ventas: 4200 },
-          { ciudad: 'Bogotá', lat: 4.71, lon: -74.07, ventas: 2600 },
-          { ciudad: 'Lima', lat: -12.05, lon: -77.04, ventas: 1900 },
-          { ciudad: 'Santiago', lat: -33.45, lon: -70.67, ventas: 1500 },
-          { ciudad: 'Buenos Aires', lat: -34.6, lon: -58.38, ventas: 3100 },
-          { ciudad: 'São Paulo', lat: -23.55, lon: -46.63, ventas: 5200 },
-          { ciudad: 'Madrid', lat: 40.42, lon: -3.7, ventas: 2800 },
-          { ciudad: 'Miami', lat: 25.76, lon: -80.19, ventas: 3600 },
-        ],
-        xAxis: { field: 'ciudad' },
-        series: [{ type: 'mapbubble', field: 'ventas', name: 'Ventas', lat: 'lat', lon: 'lon' }],
-      },
-    },
-    {
-      id: 'regiones',
-      tipo: 'LozMultiples',
-      familia: 'Comparar',
-      multiples: true,
-      opciones: {
-        title: 'Ventas por región',
-        subtitle: 'Cada región en su color, con las demás en gris detrás',
-        facet: 'series',
-        context: true,
-        data: porRegion,
-        xAxis: { field: 'mes', type: 'time' },
-        series: regiones.map(function (rg) {
-          return { type: 'line', field: rg, name: rg };
-        }),
-        minWidth: 170,
-        height: 140,
       },
     },
   ];

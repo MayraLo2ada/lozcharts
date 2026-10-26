@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Demo · LozCharts</title>
+    <title>Ejemplo · LozCharts</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -11,261 +11,6 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="assets/site.css" />
-    <style>
-      .crumbs {
-        padding-top: var(--s6);
-        font-size: 14px;
-        color: var(--muted);
-      }
-      .crumbs a {
-        color: var(--muted);
-      }
-      .demo-head {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        align-items: end;
-        gap: var(--s4);
-        margin: var(--s3) 0 var(--s6);
-      }
-      .demo-head h1 {
-        font-size: clamp(32px, 4vw, 48px);
-        letter-spacing: -0.045em;
-      }
-      .demo-head p {
-        margin: var(--s2) 0 0;
-        color: var(--muted);
-        font-size: 17px;
-        max-width: 42em;
-      }
-      .tipo {
-        display: inline-block;
-        font-size: 13px;
-        font-weight: 600;
-        padding: 4px 10px;
-        border-radius: 999px;
-        background: var(--sunken);
-        color: var(--muted);
-      }
-      .demo {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 300px;
-        gap: var(--s5);
-        align-items: start;
-      }
-      .stage {
-        background: var(--raised);
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        padding: var(--s5);
-        min-width: 0;
-      }
-      .panel {
-        position: sticky;
-        top: 84px;
-        background: var(--raised);
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        padding: var(--s4) var(--s5) var(--s5);
-      }
-      .panel h2 {
-        font-size: 16px;
-        letter-spacing: -0.01em;
-        margin-bottom: var(--s3);
-      }
-      .ctl {
-        display: grid;
-        gap: 6px;
-        padding: var(--s3) 0;
-        border-top: 1px solid var(--line);
-        font-size: 14px;
-      }
-      .ctl > span {
-        font-weight: 600;
-      }
-      .ctl select,
-      .ctl input[type='range'] {
-        width: 100%;
-      }
-      .ctl select {
-        min-height: 40px;
-        padding: 6px 10px;
-        border-radius: var(--radius-sm);
-        border: 1px solid var(--line-strong);
-        background: var(--surface);
-        color: var(--ink);
-        font: 500 14px/1.2 var(--font);
-      }
-      .ctl input[type='range'] {
-        accent-color: var(--brand);
-      }
-      .ctl.toggle {
-        grid-template-columns: 1fr auto;
-        align-items: center;
-        cursor: pointer;
-      }
-      .ctl.toggle input {
-        width: 40px;
-        height: 22px;
-        appearance: none;
-        border-radius: 999px;
-        background: var(--line-strong);
-        position: relative;
-        cursor: pointer;
-        transition: background 0.15s;
-      }
-      .ctl.toggle input::after {
-        content: '';
-        position: absolute;
-        top: 3px;
-        left: 3px;
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        background: #fff;
-        transition: transform 0.15s;
-      }
-      .ctl.toggle input:checked {
-        background: var(--brand);
-      }
-      .ctl.toggle input:checked::after {
-        transform: translateX(18px);
-      }
-      .panel .btn {
-        width: 100%;
-        justify-content: center;
-        margin-top: var(--s3);
-      }
-      .code-box {
-        margin-top: var(--s5);
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        overflow: hidden;
-        background: var(--code-bg);
-      }
-      .code-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: var(--s3);
-        padding: var(--s2) var(--s3);
-        border-bottom: 1px solid var(--line);
-        flex-wrap: wrap;
-      }
-      .code-actions {
-        display: flex;
-        gap: var(--s2);
-      }
-      .code-actions .btn {
-        min-height: 36px;
-        padding: 6px 12px;
-        font-size: 14px;
-      }
-      .code-box .code {
-        border: 0;
-        border-radius: 0;
-        margin: 0;
-        max-height: 460px;
-      }
-      .steps {
-        margin: var(--s6) 0 0;
-        padding: 0;
-        list-style: none;
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: var(--s5);
-        counter-reset: paso;
-      }
-      .steps li {
-        counter-increment: paso;
-        color: var(--muted);
-        font-size: 15px;
-      }
-      .steps li::before {
-        content: counter(paso);
-        display: inline-grid;
-        place-items: center;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: var(--ink);
-        color: var(--surface);
-        font-weight: 700;
-        font-size: 14px;
-        margin-bottom: var(--s2);
-      }
-      .steps strong {
-        display: block;
-        color: var(--ink);
-        font-size: 16px;
-        margin-bottom: 2px;
-      }
-      .toast {
-        position: fixed;
-        left: 50%;
-        bottom: 24px;
-        transform: translate(-50%, 20px);
-        opacity: 0;
-        background: var(--ink);
-        color: var(--surface);
-        padding: 10px 16px;
-        border-radius: 999px;
-        font-weight: 600;
-        font-size: 14px;
-        transition:
-          opacity 0.2s,
-          transform 0.2s;
-        pointer-events: none;
-      }
-      .toast.show {
-        opacity: 1;
-        transform: translate(-50%, 0);
-      }
-      .more {
-        margin-top: var(--s8);
-      }
-      .more-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: var(--s3);
-        margin-top: var(--s4);
-      }
-      .more-grid a {
-        padding: var(--s3) var(--s4);
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        text-decoration: none;
-        display: grid;
-        gap: 2px;
-      }
-      .more-grid a:hover {
-        border-color: var(--line-strong);
-        background: var(--raised);
-      }
-      .more-grid span {
-        color: var(--muted);
-        font-size: 13px;
-      }
-      @media (max-width: 960px) {
-        .demo {
-          grid-template-columns: minmax(0, 1fr);
-        }
-        .panel {
-          position: static;
-        }
-        .steps {
-          grid-template-columns: minmax(0, 1fr);
-        }
-        .more-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-      }
-      @media (max-width: 520px) {
-        .stage {
-          padding: var(--s3);
-        }
-      }
-    </style>
   </head>
   <body>
     <a class="sr-only" href="#contenido">Saltar al contenido</a>
@@ -296,52 +41,56 @@
     </header>
 
     <main id="contenido" class="wrap">
-      <p class="crumbs"><a href="galeria.html">Galería</a> / <span id="crumb"></span></p>
-      <div class="demo-head">
-        <div>
-          <span class="tipo" id="tipo"></span>
-          <h1 id="titulo"></h1>
-          <p id="desc"></p>
-        </div>
-      </div>
+      <nav class="ej-migas" aria-label="Ruta"><a href="galeria.html">Galería</a> / <span id="clase"></span></nav>
+      <header class="ej-cabeza">
+        <h1 id="titulo"></h1>
+        <p class="ej-sub" id="sub"></p>
+      </header>
 
-      <div class="demo">
-        <div class="stage"><div id="grafico"></div></div>
-        <aside class="panel" aria-labelledby="ajustes-titulo">
-          <h2 id="ajustes-titulo">Ajústalo</h2>
-          <div id="controles"></div>
-          <button type="button" class="btn" id="repetir">Repetir la animación</button>
+      <div class="ej-rejilla">
+        <div class="ej-escena"><div id="grafico" class="lienzo"></div></div>
+        <aside class="ej-lado" aria-label="Sobre este gráfico">
+          <section class="ej-porque" aria-labelledby="porque-titulo">
+            <h2 id="porque-titulo">Por qué esta forma</h2>
+            <p id="desc"></p>
+          </section>
+          <section class="ej-ajustes" aria-labelledby="ajustes-titulo">
+            <h2 id="ajustes-titulo">Ajustes</h2>
+            <div id="controles"></div>
+            <button type="button" class="btn" id="repetir">Repetir la animación</button>
+          </section>
+        </aside>
+
+        <section class="ej-codigo" aria-labelledby="codigo-titulo">
+          <div class="ej-codigo-barra">
+            <h2 id="codigo-titulo" class="sr-only">Código</h2>
+            <div class="tabs" role="tablist" aria-label="Lenguaje" data-tabs="lenguaje">
+              <button type="button" role="tab" data-tab="js" aria-selected="true">JavaScript</button>
+              <button type="button" role="tab" data-tab="react">React</button>
+              <button type="button" role="tab" data-tab="html">HTML completo</button>
+            </div>
+            <div class="ej-codigo-acciones">
+              <button type="button" class="btn" id="copiar">Copiar</button>
+              <button type="button" class="btn primary" id="descargar">Descargar HTML</button>
+            </div>
+          </div>
+          <pre class="code"><code id="codigo"></code></pre>
+        </section>
+        <aside class="ej-uso" aria-labelledby="uso-titulo">
+          <h2 id="uso-titulo">Para usarlo</h2>
+          <p>El HTML descargado trae la librería y los datos adentro. Se abre con doble clic, sin instalar nada.</p>
+          <p>
+            Para poner tus datos, cambia las filas de <code>datos</code>. El código copiado las lleva todas; en pantalla solo se
+            ven las primeras.
+          </p>
+          <p id="nombre-tecnico"></p>
+          <p><a href="docs.html#tipos-de-serie">Todas las opciones en la documentación</a></p>
         </aside>
       </div>
 
-      <section class="code-box" aria-labelledby="codigo-titulo">
-        <div class="code-bar">
-          <h2 id="codigo-titulo" class="sr-only">Código</h2>
-          <div class="tabs" role="tablist" aria-label="Lenguaje" data-tabs="lenguaje">
-            <button type="button" role="tab" data-tab="js" aria-selected="true">JavaScript</button>
-            <button type="button" role="tab" data-tab="react">React</button>
-            <button type="button" role="tab" data-tab="html">HTML completo</button>
-          </div>
-          <div class="code-actions">
-            <button type="button" class="btn" id="copiar">Copiar</button>
-            <button type="button" class="btn primary" id="descargar">Descargar HTML</button>
-          </div>
-        </div>
-        <pre class="code"><code id="codigo"></code></pre>
-      </section>
-
-      <ol class="steps">
-        <li>
-          <strong>Descarga el HTML</strong>Lleva la librería y los datos adentro: ábrelo con doble clic y funciona, sin instalar
-          nada.
-        </li>
-        <li><strong>Cambia los datos</strong>Son una lista de filas y cada fila es un punto del gráfico. Pon las tuyas.</li>
-        <li><strong>Pégalo en tu proyecto</strong>O copia arriba solo el código de React o de JavaScript.</li>
-      </ol>
-
-      <section class="more" aria-labelledby="mas-titulo">
-        <h2 id="mas-titulo">Más ejemplos</h2>
-        <div class="more-grid" id="mas"></div>
+      <section class="ej-mas" aria-labelledby="mas-titulo">
+        <h2 id="mas-titulo">Otros ejemplos</h2>
+        <ul class="ej-mas-lista" id="mas"></ul>
       </section>
     </main>
 
@@ -355,7 +104,7 @@
         </nav>
       </div>
     </footer>
-    <div class="toast" id="toast" role="status"></div>
+    <div class="aviso" id="toast" role="status"></div>
 
     <script src="lib/lozcharts.umd.js"></script>
     <script src="lib/maps/world.umd.js"></script>
