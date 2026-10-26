@@ -45,10 +45,21 @@ export const scatter: SeriesImpl = {
   hover: (ctx, i) => dot(ctx, i, DOT_RADIUS + 2),
 };
 
+/**
+ * El tamaño mayor entre las series de burbujas a la vista: todas comparten la escala, así una
+ * burbuja de 100 mide lo mismo en cualquier serie (con una escala por serie, la mayor de cada una
+ * tendría el mismo radio aunque valiera la cuarta parte).
+ */
+export function bubbleMax(ctx: DrawContext): number {
+  let max = 0;
+  for (const c of ctx.siblings?.() ?? [ctx]) max = maxOf(c.frame.ps.columns.size, max);
+  return max;
+}
+
 /** El área del círculo, no su radio, es proporcional al valor: r = √(v / máx) · rMáx. */
 function bubbleRadius(ctx: DrawContext): (i: number) => number {
   const sizes = ctx.frame.cols.size;
-  const max = maxOf(ctx.frame.ps.columns.size, 0);
+  const max = bubbleMax(ctx);
   const rMax = Math.min(BUBBLE_MAX, Math.min(ctx.width, ctx.height) * BUBBLE_SHARE);
   return (i) => (max > 0 && sizes[i] > 0 ? Math.max(BUBBLE_MIN, Math.sqrt(sizes[i] / max) * rMax) : 0);
 }
