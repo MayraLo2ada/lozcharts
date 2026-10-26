@@ -822,6 +822,31 @@ The formats are `'auto'` (compact from a thousand up: 0 / 1K / 2K), `'compact'`,
 `(v) => text`. The format changes what you see on the axis; the tooltip always shows the exact
 value.
 
+## Languages
+
+The chart speaks English, Spanish and Brazilian Portuguese: the tooltip, the legend, the buttons,
+what a screen reader hears, the data table and the console warnings. It picks the language like
+this:
+
+1. The `locale` option, if you set it (`'en'`, `'es'`, `'pt-BR'`, or any region such as `'es-MX'`).
+2. Otherwise, the page's language (`<html lang="pt-BR">`).
+3. Otherwise, English.
+
+`locale` also sets how numbers and dates look: `'es-MX'` uses the Spanish text with Mexican
+number formats.
+
+Want another language, or to change a single text? Register it:
+
+```js
+LozChart.registerLocale('fr', { chart: { showAll: 'Tout voir' } }); // whatever is missing comes from English
+LozChart.registerLocale('es', { chart: { showAll: 'Mostrar todo' } }); // change one text
+```
+
+The full list of texts is the `Messages` type (in `src/core/i18n.ts`). A series type of your own can
+give its name per language: `label: { en: 'Gantt chart', es: 'diagrama de Gantt', pt: 'gráfico de Gantt' }`.
+The world map finds countries by their ISO code or by their name in English, Spanish or Portuguese
+(`'Germany'`, `'Alemania'`, `'Alemanha'`, and common forms like `'USA'` or `'EE. UU.'`).
+
 ## Custom palette
 
 LozCharts comes with its own palette of 8 colors, checked for color blindness and with shades made

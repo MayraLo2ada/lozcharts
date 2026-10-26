@@ -818,6 +818,30 @@ Los formatos son `'auto'` (compacto desde mil: 0 / 1 mil / 2 mil), `'compact'`, 
 `'percent'` (los datos van como fracción: `0.25` = 25 %), `'currency'` o una función
 `(v) => texto`. El formato cambia lo que ves en el eje; el tooltip siempre muestra el valor exacto.
 
+## Idiomas
+
+El gráfico habla español, inglés y portugués de Brasil: el tooltip, la leyenda, los botones, lo que
+oye un lector de pantalla, la tabla de datos y los avisos de la consola. Elige el idioma así:
+
+1. La opción `locale`, si la das (`'es'`, `'en'`, `'pt-BR'` o con región, como `'es-MX'`).
+2. Si no, el idioma de la página (`<html lang="es">`).
+3. Si tampoco, inglés.
+
+`locale` decide también cómo se ven los números y las fechas: `'es-MX'` usa los textos en español
+con los números de México.
+
+¿Quieres otro idioma, o cambiar un solo texto? Regístralo:
+
+```js
+LozChart.registerLocale('fr', { chart: { showAll: 'Tout voir' } }); // lo que falte sale del inglés
+LozChart.registerLocale('es', { chart: { showAll: 'Mostrar todo' } }); // cambia un texto
+```
+
+La lista completa de textos es el tipo `Messages` (en `src/core/i18n.ts`). Un tipo de serie propio
+puede dar su nombre en cada idioma: `label: { es: 'diagrama de Gantt', en: 'Gantt chart', pt: 'gráfico de Gantt' }`.
+El mapa del mundo encuentra los países por su código ISO o por su nombre en español, inglés o
+portugués (`'Alemania'`, `'Germany'`, `'Alemanha'`, y formas comunes como `'EE. UU.'` o `'USA'`).
+
 ## Paleta propia
 
 LozCharts trae su propia paleta de 8 colores, validada para daltonismo y con tonos pensados para el

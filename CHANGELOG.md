@@ -4,6 +4,13 @@
 
 Primera versión en npm.
 
+- **Tres idiomas:** todo lo que dice el gráfico (tooltip, leyenda, botones, barra del zoom,
+  descripción accesible, anuncios, tabla de datos y avisos de consola) en español, inglés y
+  portugués de Brasil. `locale` decide los textos y los formatos; sin él, el idioma de la página
+  (`<html lang>`) y, si no hay, inglés. `LozChart.registerLocale()` agrega un idioma o cambia
+  textos, y los tipos propios dan su nombre por idioma. El mapa del mundo reconoce los países en los
+  tres idiomas. La documentación y el sitio, también en los tres.
+
 - **Siete tipos nuevos:** cascada (`waterfall`), bala (`bullet`), sunburst, cuerdas (`chord`),
   red (`network`), línea de tiempo (`timeline`) y nube de palabras (`wordcloud`). Igual que los
   demás, traen tooltip, teclado, tabla de datos, tema oscuro y animación.
