@@ -61,10 +61,12 @@
         font-size: 15px;
         line-height: 1.5;
       }
+      /* La galería usa todo el ancho: márgenes que crecen con la pantalla y más columnas en monitores grandes. */
       .page {
-        max-width: 1240px;
+        --margen: clamp(16px, 4vw, 96px);
+        width: min(100% - 2 * var(--margen), 2400px);
         margin: 0 auto;
-        padding: calc(var(--space) * 5) calc(var(--space) * 5) calc(var(--space) * 10);
+        padding: calc(var(--space) * 5) 0 calc(var(--space) * 10);
       }
 
       header.top {
@@ -161,8 +163,8 @@
 
       .grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        column-gap: calc(var(--space) * 6);
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 620px), 1fr));
+        column-gap: clamp(32px, 3vw, 72px);
       }
       figure {
         margin: 0;
@@ -246,7 +248,7 @@
 
       @media (max-width: 860px) {
         .page {
-          padding: calc(var(--space) * 3) 16px calc(var(--space) * 8);
+          padding: calc(var(--space) * 3) 0 calc(var(--space) * 8);
         }
         .grid {
           grid-template-columns: minmax(0, 1fr);
