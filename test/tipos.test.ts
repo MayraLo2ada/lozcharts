@@ -110,3 +110,16 @@ test('globo: por defecto mira a los países con datos, aunque fit sea "all"', ()
   const [plon] = lookAt([], [[-70, 0]]);
   assert.ok(Math.abs(plon + 70) < 1e-6);
 });
+
+test('bala: con filas muy juntas no se dibujan los valores (se enciman); con lugar, sí', () => {
+  const rows = (n: number) => Array.from({ length: n }, (_, i) => ({ x: `P${i}`, v: 1001 + i, meta: 1100 }));
+  const values = (markup: string) => (markup.match(/>1\.0\d\d</g) ?? []).length;
+  const opts = (n: number): LozChartOptions => ({
+    data: rows(n),
+    xAxis: { field: 'x' },
+    height: 280,
+    series: [{ type: 'bullet', field: 'v', targetField: 'meta', name: 'V' }],
+  });
+  assert.equal(values(svgOf(opts(60))), 0);
+  assert.equal(values(svgOf(opts(6))), 6);
+});

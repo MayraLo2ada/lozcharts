@@ -162,6 +162,11 @@ export interface BulletLayout {
   axisY: number;
   /** Con filas muy juntas, se nombra una de cada `every`. */
   every: number;
+  /**
+   * ¿Caben los valores junto a las barras? Solo si cada fila tiene el alto de una línea de texto:
+   * un valor por fila no se puede saltear como los nombres sin que el lector pierda a cuál va.
+   */
+  values: boolean;
   n: number;
 }
 
@@ -188,6 +193,7 @@ export function bulletLayout(n: number, width: number, height: number, labelWidt
     target,
     axisY: pitch * n + AXIS_GAP,
     every: pitch > 0 ? Math.max(1, Math.ceil(NAME_LINE / pitch)) : 1,
+    values: pitch >= NAME_LINE,
     n,
   };
 }
@@ -299,7 +305,8 @@ function layoutOf(ctx: DrawContext): BulletLayout {
   // último número del eje no se corte.
   const ticks = axisTicks(ctx.y.d0, ctx.y.d1, ctx.width * (1 - MAX_NAME_SHARE));
   let pad = ctx.measure(tickText(ctx, ticks[ticks.length - 1] ?? 0)) / 2 + 2;
-  if (labels) {
+  // Sin lugar para los valores no se les reserva espacio: las barras usan todo el ancho.
+  if (labels && bulletLayout(ctx.n, ctx.width, ctx.height, Math.ceil(names)).values) {
     let widest = 0;
     for (const v of ps.values) if (isFinite(v)) widest = Math.max(widest, ctx.measure(ctx.format(v)));
     pad = Math.max(pad, Math.min(widest + LABEL_GAP + 2, ctx.width * 0.2));
@@ -381,7 +388,7 @@ function rowMarkup(ctx: DrawContext, L: BulletLayout, i: number, ranges: readonl
 
   // Etiqueta con el valor final: no salta ni cambia de lado a mitad de la animación.
   const final = ps.values[i];
-  if (ps.options.labels !== false && isFinite(final)) {
+  if (ps.options.labels !== false && L.values && isFinite(final)) {
     for (const body of [ctx.format(final), ctx.compact(final)]) {
       const at = placeValueLabel(xb, X(final), tx, ctx.measure(body), L.x0, ctx.width);
       if (!at) continue;
