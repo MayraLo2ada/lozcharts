@@ -13,13 +13,22 @@ const RADIUS = 4;
 /** Fracción de la banda que puede ocupar el grupo; el resto es aire entre categorías. */
 const GROUP_FILL = 0.72;
 
-/** Ancho de cada barra y su desplazamiento respecto al centro de la banda. */
-function geometry(ctx: DrawContext): { width: number; offset: number } {
-  const { slot, slots } = ctx.frame;
+/**
+ * Ancho de cada barra y su desplazamiento respecto al centro de la banda. Con bandas muy angostas
+ * (muchas categorías), primero se achica el aire entre las barras del grupo y después las barras,
+ * hasta 1 px: el grupo nunca se sale de su banda ni pisa al de la categoría vecina.
+ */
+export function barGeometry(step: number, slot: number, slots: number): { width: number; offset: number; group: number } {
   const count = Math.max(1, slots);
-  const width = Math.max(1, Math.min(MAX_WIDTH, (ctx.x.step * GROUP_FILL - (count - 1) * GAP) / count));
-  const group = count * width + (count - 1) * GAP;
-  return { width, offset: -group / 2 + slot * (width + GAP) };
+  const room = step * GROUP_FILL;
+  const gap = count > 1 ? Math.max(0, Math.min(GAP, (room - count) / (count - 1))) : 0;
+  const width = Math.max(1, Math.min(MAX_WIDTH, (room - (count - 1) * gap) / count));
+  const group = count * width + (count - 1) * gap;
+  return { width, offset: -group / 2 + slot * (width + gap), group };
+}
+
+function geometry(ctx: DrawContext): { width: number; offset: number } {
+  return barGeometry(ctx.x.step, ctx.frame.slot, ctx.frame.slots);
 }
 
 export const bar: SeriesImpl = {

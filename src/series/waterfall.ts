@@ -40,13 +40,11 @@ import {
 } from '../core/series';
 import { attrs, esc } from '../core/dom';
 import { barPath, r2 } from '../core/shapes';
+import { barGeometry as bandGeometry } from './bar';
 
-/** Marcas de barra (ver DESIGN.md): 24 px como máximo, punta de 4 px y 2 px entre vecinas. */
-const MAX_WIDTH = 24;
+/** Marcas de barra (ver DESIGN.md y bar.ts): punta de 4 px y 2 px entre vecinas. */
 const GAP = 2;
 const RADIUS = 4;
-/** Fracción de la banda que puede ocupar el grupo; el resto es aire entre categorías. */
-const GROUP_FILL = 0.72;
 /** Borde de una bajada (hueca), por dentro de la barra: mide lo mismo que una rellena. */
 const STROKE = 1.5;
 /** Con menos alto que esto, una barra hueca no se distingue de una raya: se rellena. */
@@ -161,15 +159,10 @@ export function signed(format: (v: number) => string, d: number): string {
 }
 
 /**
- * Ancho de cada barra, su desplazamiento respecto al centro de la banda (como en las barras) y
- * el ancho de todo el grupo, que es lo que saltan los conectores.
+ * Ancho de cada barra, su desplazamiento respecto al centro de la banda y el ancho de todo el grupo,
+ * que es lo que saltan los conectores: los de las barras (ver bar.ts).
  */
-export function barGeometry(step: number, slot: number, slots: number): { width: number; offset: number; group: number } {
-  const count = Math.max(1, slots);
-  const width = Math.max(1, Math.min(MAX_WIDTH, (step * GROUP_FILL - (count - 1) * GAP) / count));
-  const group = count * width + (count - 1) * GAP;
-  return { width, offset: -group / 2 + slot * (width + GAP), group };
-}
+export const barGeometry = bandGeometry;
 
 /** ¿Esta barra se dibuja hueca? Las bajadas, salvo las que no tienen alto o ancho para verse huecas. */
 export function hollowAt(kind: StepKind, length: number, width: number): boolean {

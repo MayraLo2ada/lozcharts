@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import { host } from './dom';
 import { LozChart, type LozChartOptions } from '../src/index';
 import { maxOf } from '../src/series/common';
+import { barGeometry } from '../src/series/bar';
 import { bubbleMax } from '../src/series/scatter';
 import { lookAt } from '../src/series/map';
 import { registerMap } from '../src/core/geo';
@@ -66,6 +67,22 @@ test('burbujas: varias series comparten la escala del tamaño', () => {
   // Con un contexto armado a mano (sin siblings), la escala es la de la propia serie.
   const ps = { columns: { size: [1, 8, NaN] } } as unknown as PreparedSeries;
   assert.equal(bubbleMax({ frame: { ps } } as unknown as DrawContext), 8);
+});
+
+test('barras agrupadas en bandas angostas: el grupo no se sale de su banda', () => {
+  for (const step of [5, 8, 12, 40]) {
+    for (const slots of [2, 3, 5]) {
+      const g = barGeometry(step, 0, slots);
+      assert.ok(g.group <= Math.max(step * 0.72, slots) + 1e-9, `paso ${step}, ${slots} series: grupo ${g.group}`);
+      // El aire se achica antes que las barras.
+      if (g.width > 1) assert.ok(g.group - slots * g.width >= 0);
+    }
+  }
+  // Con lugar de sobra, todo como siempre: barras de 24 px y 2 px de aire.
+  const wide = barGeometry(200, 1, 3);
+  assert.equal(wide.width, 24);
+  assert.equal(wide.group, 3 * 24 + 2 * 2);
+  assert.equal(wide.offset, -wide.group / 2 + 26);
 });
 
 test('globo: por defecto mira a los países con datos, aunque fit sea "all"', () => {
