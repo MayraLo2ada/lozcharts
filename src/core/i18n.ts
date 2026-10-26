@@ -544,7 +544,7 @@ const en: Messages = {
   bullet: {
     band: 'Band',
     upTo: (v) => `Up to ${v}`,
-    between: (a, b) => `Between ${a} and ${b}`,
+    between: (a, b) => `${a} to ${b}`,
     above: (v) => `Over ${v} (past the last band)`,
     position: (k, n) => `(${k} of ${n})`,
   },

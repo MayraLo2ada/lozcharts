@@ -114,7 +114,7 @@ test('rangos: finitos, ordenados y sin repetir; cada valor en el suyo', () => {
   assert.equal(rangeText(60, r, String, 'es'), 'Entre 50 y 75 (2 de 3)');
   assert.equal(rangeText(20, r, String, 'es'), 'Hasta 50 (1 de 3)');
   assert.equal(rangeText(130, r, String, 'es'), 'Más de 100 (pasa la última)');
-  assert.equal(rangeText(60, r, String, 'en'), 'Between 50 and 75 (2 of 3)');
+  assert.equal(rangeText(60, r, String, 'en'), '50 to 75 (2 of 3)');
   assert.equal(rangeText(130, r, String, 'en'), 'Over 100 (past the last band)');
   assert.equal(rangeText(60, r, String, 'pt-BR'), 'Entre 50 e 75 (2 de 3)');
   assert.equal(rangeText(20, r, String, 'pt-BR'), 'Até 50 (1 de 3)');

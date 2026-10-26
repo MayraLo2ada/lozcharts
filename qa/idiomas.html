@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Idiomas</title>
+    <style>
+      :root {
+        --surface: #fcfcfb;
+        --text: #0b0b0b;
+        --muted: #52514e;
+        --line: #e7e6e1;
+        --margen: clamp(16px, 3vw, 96px);
+      }
+      :root[data-theme='dark'] {
+        --surface: #1a1a19;
+        --text: #f0efec;
+        --muted: #c3c2b7;
+        --line: #2f2f2d;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 16px var(--margen) 48px;
+        background: var(--surface);
+        color: var(--text);
+        font:
+          clamp(14px, 0.3vw + 10px, 17px) / 1.45 system-ui,
+          sans-serif;
+      }
+      h1 {
+        font-size: clamp(22px, 1.6vw + 8px, 40px);
+        margin: 8px 0 4px;
+      }
+      header p {
+        max-width: 70ch;
+        color: var(--muted);
+        margin: 0 0 8px;
+      }
+      h2 {
+        margin: clamp(24px, 2.5vw, 56px) 0 8px;
+        font-size: clamp(16px, 0.6vw + 10px, 24px);
+      }
+      .fila {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: clamp(12px, 1.2vw, 32px);
+      }
+      @media (max-width: 900px) {
+        .fila {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .caso {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 8px;
+        min-width: 0;
+      }
+      .caso > p:first-child {
+        margin: 0 0 6px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      /* Con ?tips el tooltip se ve ya, sin esperar su transición (un panel oculto la congela). */
+      .lc-tooltip {
+        transition: none !important;
+      }
+      .descripcion {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Los textos en español, inglés y portugués</h1>
+      <p>
+        Cada tipo tres veces, uno por idioma (<code>locale: 'es' | 'en' | 'pt-BR'</code>). Con <code>?tips</code>, cada gráfico
+        abre el tooltip de su primer dato como si se recorriera con el teclado; con <code>?tema=dark</code>, en oscuro. Debajo de
+        cada gráfico va su descripción accesible.
+      </p>
+    </header>
+    <main id="casos"></main>
+
+    <script src="../dist/lozcharts.umd.js"></script>
+    <script src="../dist/maps/world.umd.js"></script>
+    <script>
+      const params = new URLSearchParams(location.search);
+      const theme = params.get('tema') === 'dark' ? 'dark' : 'light';
+      document.documentElement.dataset.theme = theme;
+      const IDIOMAS = [
+        ['es', 'Español'],
+        ['en', 'English'],
+        ['pt-BR', 'Português'],
+      ];
+      const meses = ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08'];
+
+      // Cada caso: un título y sus opciones. Los datos son los mismos en los tres idiomas.
+      const CASOS = [
+        [
+          'Barras apiladas con eje derecho y zoom',
+          {
+            title: 'Ventas y margen',
+            data: meses.map((mes, i) => ({ mes, online: 1200 + i * 310.5, tienda: 800 + i * 95, margen: 0.21 + i * 0.01 })),
+            xAxis: { field: 'mes', type: 'time' },
+            yAxis2: { format: 'percent' },
+            series: [
+              { type: 'bar', field: 'online', name: 'Online', stack: true },
+              { type: 'bar', field: 'tienda', name: 'Tienda', stack: true },
+              { type: 'line', field: 'margen', name: 'Margen', axis: 'right' },
+            ],
+            zoom: { range: ['2026-03', '2026-07'] },
+          },
+        ],
+        [
+          'Pie con más categorías que colores',
+          {
+            data: ['México', 'Brasil', 'Colombia', 'Argentina', 'Chile', 'Perú', 'Uruguay', 'Paraguay', 'Bolivia'].map(
+              (pais, i) => ({ pais, clientes: 4200 - i * 410 }),
+            ),
+            xAxis: { field: 'pais' },
+            series: [{ type: 'donut', field: 'clientes', name: 'Clientes' }],
+          },
+        ],
+        [
+          'Velas',
+          {
+            data: meses.map((dia, i) => ({ dia, o: 100 + i * 3, h: 112 + i * 3, l: 95 + i * 3, c: 107.5 + i * 2 - (i % 3) * 6 })),
+            xAxis: { field: 'dia', type: 'time' },
+            series: [{ type: 'candlestick', field: 'c', name: 'ACME', open: 'o', high: 'h', low: 'l', format: 'currency' }],
+          },
+        ],
+        [
+          'Cascada',
+          {
+            data: [
+              { paso: 'Ingresos', monto: 48200 },
+              { paso: 'Costos', monto: -21500 },
+              { paso: 'Marketing', monto: -6400 },
+              { paso: 'Subtotal', total: true },
+              { paso: 'Impuestos', monto: -5100 },
+              { paso: 'Neto', total: true },
+            ],
+            xAxis: { field: 'paso' },
+            series: [{ type: 'waterfall', field: 'monto', total: 'total', name: 'Resultado', format: 'currency' }],
+          },
+        ],
+        [
+          'Línea de tiempo con grupos y hoy',
+          {
+            data: [
+              { inicio: '2026-01-05', fin: '2026-02-20', tarea: 'Investigación', equipo: 'Producto' },
+              { inicio: '2026-02-10', fin: '2026-04-30', tarea: 'Diseño', equipo: 'Producto' },
+              { inicio: '2026-03-01', fin: '2026-06-15', tarea: 'Desarrollo', equipo: 'Ingeniería' },
+              { inicio: '2026-06-20', tarea: 'Lanzamiento', equipo: '' },
+            ],
+            xAxis: { field: 'inicio' },
+            series: [
+              {
+                type: 'timeline',
+                field: 'tarea',
+                end: 'fin',
+                label: 'tarea',
+                group: 'equipo',
+                name: 'Plan',
+                today: '2026-04-01',
+              },
+            ],
+          },
+        ],
+        [
+          'Sankey',
+          {
+            data: [
+              { de: 'Visitas', a: 'Registro', v: 5200 },
+              { de: 'Visitas', a: 'Salida', v: 8100 },
+              { de: 'Registro', a: 'Compra', v: 1900 },
+              { de: 'Registro', a: 'Abandono', v: 3300 },
+            ],
+            xAxis: { field: 'de' },
+            series: [{ type: 'sankey', field: 'v', to: 'a', name: 'Personas' }],
+          },
+        ],
+        [
+          'Mapa de calor',
+          {
+            data: ['lun', 'mar', 'mié', 'jue', 'vie'].flatMap((dia, i) =>
+              ['Mañana', 'Tarde', 'Noche'].map((turno, k) => ({ dia, turno, pedidos: ((i + 2) * (k + 3) * 7) % 53 })),
+            ),
+            xAxis: { field: 'dia' },
+            series: [{ type: 'heatmap', field: 'pedidos', y: 'turno', name: 'Pedidos' }],
+          },
+        ],
+        [
+          'Bala (metas)',
+          {
+            data: [
+              { kpi: 'Ingresos', real: 82, meta: 90 },
+              { kpi: 'Clientes nuevos', real: 140, meta: 120 },
+              { kpi: 'Satisfacción', real: 4.3, meta: 4.5 },
+            ],
+            xAxis: { field: 'kpi' },
+            series: [{ type: 'bullet', field: 'real', targetField: 'meta', name: 'Avance', ranges: [50, 100, 150] }],
+          },
+        ],
+        [
+          'Mapa por colores',
+          {
+            data: [
+              { pais: 'BRA', v: 214 },
+              { pais: 'MEX', v: 128 },
+              { pais: 'USA', v: 333 },
+              { pais: 'DEU', v: 83 },
+              { pais: 'ESP', v: 48 },
+            ],
+            xAxis: { field: 'pais' },
+            series: [{ type: 'choropleth', field: 'v', name: 'Población (M)' }],
+          },
+        ],
+        [
+          'Nube de palabras con grupos',
+          {
+            data: [
+              ['rápido', 40, 'Bueno'],
+              ['claro', 32, 'Bueno'],
+              ['accesible', 28, 'Bueno'],
+              ['lento', 18, 'Malo'],
+              ['confuso', 12, 'Malo'],
+              ['precio', 22, ''],
+            ].map(([palabra, n, tono]) => ({ palabra, n, tono })),
+            xAxis: { field: 'palabra' },
+            series: [{ type: 'wordcloud', field: 'n', group: 'tono', name: 'Menciones' }],
+          },
+        ],
+      ];
+
+      const main = document.getElementById('casos');
+      for (const [titulo, opciones] of CASOS) {
+        const h = document.createElement('h2');
+        h.textContent = titulo;
+        const fila = document.createElement('div');
+        fila.className = 'fila';
+        main.append(h, fila);
+        for (const [locale, nombre] of IDIOMAS) {
+          const caso = document.createElement('section');
+          caso.className = 'caso';
+          const p = document.createElement('p');
+          p.textContent = nombre;
+          const el = document.createElement('div');
+          const desc = document.createElement('p');
+          desc.className = 'descripcion';
+          caso.append(p, el, desc);
+          fila.append(caso);
+          const c = new LozChart(el, { ...opciones, locale, theme, animate: false });
+          desc.textContent = el.querySelector('svg').getAttribute('aria-label');
+          if (params.has('tips')) {
+            const svg = el.querySelector('svg');
+            svg.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+          }
+        }
+      }
+    </script>
+  </body>
+</html>
