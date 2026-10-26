@@ -225,6 +225,21 @@ svg {
     display: none;
   }
 }
+/* En un teléfono de 375 px la marca, dos enlaces y el botón de tema entran justos. */
+@media (max-width: 400px) {
+  .top .wrap {
+    gap: 0;
+  }
+  .wordmark {
+    gap: 8px;
+  }
+  .nav {
+    gap: 0;
+  }
+  .nav a {
+    padding-inline: 7px;
+  }
+}
 
 /* ------------------------------------------------------------ Botones */
 
@@ -626,6 +641,155 @@ code {
   .gal-buscar input {
     width: 100%;
   }
+}
+
+/* ------------------------------------------------------------ El globo que gira (galería y su página) */
+
+/* En la galería ocupa la fila entera: el texto y la lista de envíos a un lado, el globo al otro. */
+@media (min-width: 1100px) {
+  .ficha-globo {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 8fr);
+    grid-template-rows: auto auto 1fr auto auto;
+    column-gap: clamp(32px, 4vw, 120px);
+  }
+  .ficha-globo > * {
+    grid-column: 1;
+  }
+  .ficha-globo > .lienzo {
+    grid-column: 2;
+    grid-row: 1 / 5;
+    margin-top: 0;
+  }
+  .ficha-globo > .code {
+    grid-column: 1 / -1;
+  }
+}
+.globo-rutas {
+  margin-top: clamp(20px, 2vw, 48px);
+  max-width: 34em;
+}
+.globo-rutas-titulo {
+  margin: 0 0 var(--s2);
+  font-size: clamp(13px, 0.2vw + 10px, 15px);
+  font-weight: 600;
+  color: var(--muted);
+}
+.globo-rutas ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: ruta;
+  font-size: clamp(15px, 0.3vw + 10.5px, 19px);
+}
+.globo-rutas li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+.globo-rutas li strong {
+  font-weight: 600;
+}
+.globo-rutas li span::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 2px;
+  margin-right: 10px;
+  vertical-align: middle;
+  background: var(--accent);
+}
+.ej-escena .globo-rutas {
+  max-width: none;
+}
+@media (min-width: 700px) {
+  .ej-escena .globo-rutas ol {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: clamp(20px, 2vw, 48px);
+  }
+}
+
+.globo-lienzo {
+  position: relative;
+  cursor: grab;
+  /* Con el dedo, el globo gira de lado y la página sigue subiendo y bajando. */
+  touch-action: pan-y;
+}
+.globo-lienzo.arrastrando {
+  cursor: grabbing;
+}
+.globo-arcos {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  font: 500 clamp(12px, 0.25vw + 8px, 15px) / 1 var(--font);
+}
+.globo-arcos .arco {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.globo-arcos .visible .arco {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 1.1s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.globo-arcos .ciudad {
+  fill: var(--ink);
+  stroke: var(--surface);
+  stroke-width: 1.5;
+  opacity: 0;
+  transition: opacity 0.4s ease 0.8s;
+}
+.globo-arcos .nombre {
+  fill: var(--ink);
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity 0.5s ease 0.9s;
+}
+.globo-arcos .origen .ciudad {
+  fill: var(--accent);
+}
+.globo-arcos .visible .ciudad,
+.globo-arcos .visible .nombre {
+  opacity: 1;
+}
+.globo-arcos.ya * {
+  transition: none !important;
+}
+.globo-mandos {
+  position: relative;
+  margin-top: var(--s2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.globo-mandos .btn {
+  min-width: 44px;
+  justify-content: center;
+  padding-inline: 12px;
+  background: color-mix(in srgb, var(--raised) 92%, transparent);
+}
+.globo-mandos .btn[hidden] {
+  display: none;
+}
+.globo-pista {
+  align-self: center;
+  margin-left: var(--s2);
+  font-size: clamp(13px, 0.2vw + 10px, 15px);
+  color: var(--muted);
 }
 
 /* ------------------------------------------------------------ Página de un ejemplo */

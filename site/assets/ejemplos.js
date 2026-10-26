@@ -764,7 +764,445 @@
         series: [{ type: 'choropleth', field: 'usuarios', name: 'Usuarios', fit: 'data' }],
       },
     },
+    {
+      id: 'globo',
+      tipo: 'LozMap',
+      clase: 'Mapa en globo',
+      familia: 'Flujos y mapas',
+      tamano: 'ancho',
+      desc: 'En un globo las distancias se ven como son: Madrid queda al otro lado del océano y no estirado en una esquina, como en un mapa plano. Para comparar países conviene el mapa de áreas iguales; el globo sirve cuando importa dónde queda cada cosa y qué tan lejos.',
+      // La galería y la página del ejemplo lo hacen girar con girarGlobo(): entra girando, frena
+      // sobre `destino` ([longitud, latitud]) y dibuja encima los arcos de `rutas`.
+      globo: {
+        destino: [-66, -6],
+        origen: { nombre: 'Ciudad de México', lon: -99.13, lat: 19.43 },
+        rutas: [
+          { nombre: 'Bogotá', lon: -74.07, lat: 4.71, envios: 1390 },
+          { nombre: 'São Paulo', lon: -46.63, lat: -23.55, envios: 980 },
+          { nombre: 'Lima', lon: -77.04, lat: -12.05, envios: 610, izq: true },
+          { nombre: 'Buenos Aires', lon: -58.38, lat: -34.6, envios: 540 },
+          { nombre: 'Madrid', lon: -3.7, lat: 40.42, envios: 460 },
+          { nombre: 'Santiago', lon: -70.67, lat: -33.45, envios: 420, izq: true },
+        ],
+      },
+      opciones: {
+        title: 'Madrid es el único envío que cruza el océano, y ya pide más que Santiago',
+        subtitle: 'Envíos de octubre de 2026 desde Ciudad de México (arcos) y clientes por país (color)',
+        data: filas(
+          [
+            ['BRA', 2650],
+            ['MEX', 1830],
+            ['USA', 1150],
+            ['COL', 980],
+            ['ARG', 760],
+            ['ESP', 690],
+            ['PER', 520],
+            ['CHL', 410],
+            ['CAN', 260],
+            ['ECU', 230],
+            ['VEN', 180],
+            ['DOM', 140],
+            ['PRT', 140],
+            ['GTM', 120],
+            ['BOL', 110],
+            ['URY', 95],
+            ['PRY', 80],
+            ['CRI', 70],
+            ['PAN', 65],
+            ['HND', 55],
+            ['SLV', 50],
+            ['CUB', 40],
+            ['NIC', 35],
+          ],
+          ['pais', 'clientes'],
+        ),
+        xAxis: { field: 'pais' },
+        yAxis: { format: 'compact' },
+        series: [{ type: 'choropleth', field: 'clientes', name: 'Clientes', projection: 'orthographic', rotate: [-66, -6] }],
+      },
+    },
   ];
+
+  /** Los mapas necesitan el mapa del mundo (siteMapa) antes de dibujarse. */
+  window.esMapa = function (ej) {
+    return ej.opciones.series.some(function (s) {
+      return s.type === 'choropleth' || s.type === 'mapbubble';
+    });
+  };
+
+  /** La lista de envíos del globo: lo que dicen los arcos, en texto (también para el lector de pantalla). */
+  window.rutasGlobo = function (ej) {
+    var g = ej.globo;
+    var nf = new Intl.NumberFormat('es-CO');
+    var caja = document.createElement('div');
+    caja.className = 'globo-rutas';
+    var t = document.createElement('p');
+    t.className = 'globo-rutas-titulo';
+    t.textContent = 'Envíos desde ' + g.origen.nombre;
+    var ol = document.createElement('ol');
+    g.rutas
+      .slice()
+      .sort(function (a, b) {
+        return b.envios - a.envios;
+      })
+      .forEach(function (r) {
+        var li = document.createElement('li');
+        var n = document.createElement('span');
+        n.textContent = r.nombre;
+        var v = document.createElement('strong');
+        v.textContent = nf.format(r.envios);
+        li.append(n, v);
+        ol.appendChild(li);
+      });
+    caja.append(t, ol);
+    return caja;
+  };
+
+  /**
+   * El globo que gira (viene de la propuesta "Globo"). Entra girando y frena sobre su destino,
+   * se arrastra con inercia (con el dedo, solo de lado: hacia arriba y abajo la página sigue),
+   * se gira con botones desde el teclado y dibuja encima los arcos de los envíos. Solo anima
+   * mientras se ve; con movimiento reducido queda quieto en su destino y se mueve sin inercia.
+   * `chart` es el LozChart del ejemplo y `lienzo` su contenedor. Devuelve { redibujar, destruir }.
+   */
+  window.girarGlobo = function (chart, lienzo, ej) {
+    var cfg = ej.globo;
+    var RAD = Math.PI / 180;
+    var quieto = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var clamp = function (v, a, b) {
+      return Math.max(a, Math.min(b, v));
+    };
+    var suave = function (t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    };
+    var destino = cfg.destino;
+    var rot = quieto ? destino.slice() : [destino[0] - 200, 24];
+
+    // ---- Capa de arcos y botones, encima del gráfico
+    var NS = 'http://www.w3.org/2000/svg';
+    var el = function (tag, attrs, padre) {
+      var n = document.createElementNS(NS, tag);
+      for (var k in attrs) n.setAttribute(k, attrs[k]);
+      if (padre) padre.appendChild(n);
+      return n;
+    };
+    lienzo.classList.add('globo-lienzo');
+    var capa = el('svg', { class: 'globo-arcos', 'aria-hidden': 'true', focusable: 'false' });
+    lienzo.appendChild(capa);
+    var mandos = document.createElement('div');
+    mandos.className = 'globo-mandos';
+    var boton = function (texto, etiqueta) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'btn';
+      b.textContent = texto;
+      if (etiqueta) b.setAttribute('aria-label', etiqueta);
+      mandos.appendChild(b);
+      return b;
+    };
+    var oeste = boton('←', 'Girar el globo hacia el oeste');
+    var este = boton('→', 'Girar el globo hacia el este');
+    var volver = boton('Volver a Latinoamérica');
+    volver.hidden = true;
+    var pista = document.createElement('span');
+    pista.className = 'globo-pista';
+    pista.textContent = 'Arrástralo para girarlo';
+    mandos.appendChild(pista);
+    lienzo.appendChild(mandos);
+
+    // ---- Proyección: la misma del globo de la librería; k > 1 levanta el punto sobre la superficie
+    var geo = { cx: 0, cy: 0, r: 0 };
+    function medir() {
+      var c = lienzo.querySelector('.lc-root svg circle');
+      if (!c) return;
+      var m = lienzo.getBoundingClientRect();
+      var b = c.getBoundingClientRect();
+      geo = { cx: b.left + b.width / 2 - m.left, cy: b.top + b.height / 2 - m.top, r: b.width / 2 };
+      capa.setAttribute('viewBox', '0 0 ' + Math.round(m.width) + ' ' + Math.round(m.height));
+    }
+    var vec = function (lon, lat) {
+      var l = lon * RAD;
+      var p = lat * RAD;
+      return [Math.cos(p) * Math.cos(l), Math.cos(p) * Math.sin(l), Math.sin(p)];
+    };
+    function proyectar(v, k) {
+      var lon = Math.atan2(v[1], v[0]);
+      var lat = Math.asin(clamp(v[2], -1, 1));
+      var l = lon - rot[0] * RAD;
+      var p0 = rot[1] * RAD;
+      var cp = Math.cos(lat);
+      var x = cp * Math.sin(l);
+      var y = Math.cos(p0) * Math.sin(lat) - Math.sin(p0) * cp * Math.cos(l);
+      var z = Math.sin(p0) * Math.sin(lat) + Math.cos(p0) * cp * Math.cos(l);
+      return [geo.cx + geo.r * k * x, geo.cy - geo.r * k * y, z >= 0 || Math.hypot(x, y) * k > 1];
+    }
+    var slerp = function (a, b, ang, t) {
+      var s = Math.sin(ang) || 1;
+      var ka = Math.sin((1 - t) * ang) / s;
+      var kb = Math.sin(t * ang) / s;
+      return [a[0] * ka + b[0] * kb, a[1] * ka + b[1] * kb, a[2] * ka + b[2] * kb];
+    };
+
+    var vOrigen = vec(cfg.origen.lon, cfg.origen.lat);
+    var lugar = function (g, nombre, r, izq) {
+      var o = { punto: el('circle', { class: 'ciudad', r: r }, g), nombre: el('text', { class: 'nombre' }, g), izq: izq };
+      o.nombre.textContent = nombre;
+      if (izq) o.nombre.setAttribute('text-anchor', 'end');
+      return o;
+    };
+    var grupoOrigen = el('g', { class: 'ruta origen' }, capa);
+    var origen = lugar(grupoOrigen, cfg.origen.nombre, 4.5);
+    var rutas = cfg.rutas.map(function (r) {
+      var g = el('g', { class: 'ruta' }, capa);
+      var o = { g: g, v: vec(r.lon, r.lat), arco: el('path', { class: 'arco', pathLength: 1 }, g) };
+      o.lugar = lugar(g, r.nombre, 3, r.izq);
+      o.ang = Math.acos(clamp(vOrigen[0] * o.v[0] + vOrigen[1] * o.v[1] + vOrigen[2] * o.v[2], -1, 1));
+      o.alto = 0.04 + 0.22 * (o.ang / Math.PI);
+      return o;
+    });
+    function colocar(o, v) {
+      var q = proyectar(v, 1);
+      o.punto.setAttribute('cx', q[0].toFixed(1));
+      o.punto.setAttribute('cy', q[1].toFixed(1));
+      o.nombre.setAttribute('x', (q[0] + (o.izq ? -8 : 8)).toFixed(1));
+      o.nombre.setAttribute('y', (q[1] + 4).toFixed(1));
+      o.punto.style.display = o.nombre.style.display = q[2] ? '' : 'none';
+    }
+    function dibujarArcos() {
+      colocar(origen, vOrigen);
+      rutas.forEach(function (o) {
+        var d = '';
+        var abierto = false;
+        for (var i = 0; i <= 48; i++) {
+          var t = i / 48;
+          var q = proyectar(slerp(vOrigen, o.v, o.ang, t), 1 + o.alto * Math.sin(Math.PI * t));
+          if (!q[2]) {
+            abierto = false;
+            continue;
+          }
+          d += (abierto ? 'L' : 'M') + q[0].toFixed(1) + ',' + q[1].toFixed(1);
+          abierto = true;
+        }
+        o.arco.setAttribute('d', d || 'M0,0');
+        colocar(o.lugar, o.v);
+      });
+    }
+    var arcosVistos = false;
+    function mostrarArcos(ya) {
+      if (arcosVistos) return;
+      arcosVistos = true;
+      if (ya || quieto) {
+        capa.classList.add('ya');
+        capa.querySelectorAll('.ruta').forEach(function (g) {
+          g.classList.add('visible');
+        });
+        return;
+      }
+      grupoOrigen.classList.add('visible');
+      rutas.forEach(function (o, i) {
+        tiempos.push(
+          setTimeout(
+            function () {
+              o.g.classList.add('visible');
+            },
+            200 + i * 160,
+          ),
+        );
+      });
+    }
+    var tiempos = [];
+
+    // ---- Dibujar: la serie con la rotación de ahora (el resto de opciones queda como esté)
+    function dibujar() {
+      var series = chart.options.series.map(function (s, i) {
+        return i ? s : Object.assign({}, s, { rotate: [+rot[0].toFixed(2), +rot[1].toFixed(2)] });
+      });
+      chart.setOptions({ series: series }, false);
+      medir();
+      dibujarArcos();
+      var lejos = Math.abs(((((rot[0] - destino[0]) % 360) + 540) % 360) - 180) > 2 || Math.abs(rot[1] - destino[1]) > 2;
+      volver.hidden = !lejos || entrando;
+    }
+    var pendiente = false;
+    function pedirDibujo() {
+      if (pendiente) return;
+      pendiente = true;
+      requestAnimationFrame(function () {
+        pendiente = false;
+        if (!vivo) return;
+        dibujar();
+      });
+    }
+
+    // ---- Animación: solo corre mientras el globo se ve
+    var vivo = true;
+    var seVe = false;
+    var tarea = null; // función (t) => true si quiere otro cuadro
+    var corriendo = false;
+    function cuadro(t) {
+      if (!vivo || !tarea || !seVe) {
+        corriendo = false;
+        return;
+      }
+      var seguir = tarea(t);
+      if (!seguir) tarea = null;
+      dibujar();
+      requestAnimationFrame(cuadro);
+    }
+    function animar(fn) {
+      tarea = fn;
+      if (!corriendo && seVe) {
+        corriendo = true;
+        requestAnimationFrame(cuadro);
+      }
+    }
+    function irA(meta, ms, alTerminar) {
+      var desde = rot.slice();
+      var largo = ms > 2000;
+      var dLon = largo ? meta[0] - desde[0] : ((((meta[0] - desde[0]) % 360) + 540) % 360) - 180;
+      if (quieto) {
+        rot = [desde[0] + dLon, meta[1]];
+        tarea = null;
+        pedirDibujo();
+        if (alTerminar) alTerminar();
+        return;
+      }
+      var inicio = null;
+      animar(function (t) {
+        if (inicio === null) inicio = t;
+        var k = clamp((t - inicio) / ms, 0, 1);
+        var e = largo ? 1 - Math.pow(1 - k, 4) : suave(k);
+        rot = [desde[0] + dLon * e, desde[1] + (meta[1] - desde[1]) * e];
+        if (k < 1) return true;
+        if (alTerminar) alTerminar();
+        return false;
+      });
+    }
+
+    var primeraVez = true;
+    var entrando = !quieto;
+    var vigia = new IntersectionObserver(
+      function (es) {
+        seVe = es[es.length - 1].isIntersecting;
+        if (!seVe) return;
+        if (primeraVez) {
+          primeraVez = false;
+          medir();
+          // Entra girando y frena sobre su destino; los arcos salen cuando ya se detuvo.
+          if (quieto) mostrarArcos(true);
+          else
+            irA(destino, 4400, function () {
+              entrando = false;
+              mostrarArcos(false);
+            });
+        } else if (tarea && !corriendo) {
+          corriendo = true;
+          requestAnimationFrame(cuadro);
+        }
+      },
+      { threshold: 0.3 },
+    );
+    vigia.observe(lienzo);
+
+    // Cambia el ancho o el alto: el gráfico se redibuja solo; los arcos lo siguen en el cuadro siguiente.
+    var medidas = new ResizeObserver(function () {
+      requestAnimationFrame(function () {
+        if (!vivo) return;
+        medir();
+        dibujarArcos();
+      });
+    });
+    medidas.observe(lienzo);
+
+    // ---- Arrastrar, con inercia
+    var arrastre = null;
+    function alBajar(e) {
+      if (e.button !== 0 || e.target.closest('.globo-mandos')) return;
+      tarea = null;
+      entrando = false;
+      mostrarArcos(true);
+      arrastre = { x: e.clientX, y: e.clientY, rot: rot.slice(), t: e.timeStamp, vx: 0, vy: 0, lx: e.clientX, ly: e.clientY };
+      arrastre.tactil = e.pointerType === 'touch';
+      // Grados por píxel: la superficie sigue al puntero.
+      arrastre.k = 57.3 / Math.max(40, geo.r || 200);
+      lienzo.classList.add('arrastrando');
+      if (!arrastre.tactil) lienzo.setPointerCapture(e.pointerId);
+    }
+    function alMover(e) {
+      if (!arrastre) return;
+      var k = arrastre.k;
+      var dy = arrastre.tactil ? 0 : e.clientY - arrastre.y;
+      rot = [arrastre.rot[0] - (e.clientX - arrastre.x) * k, clamp(arrastre.rot[1] + dy * k, -60, 60)];
+      var dt = Math.max(1, e.timeStamp - arrastre.t);
+      arrastre.vx = (-(e.clientX - arrastre.lx) * k) / dt;
+      arrastre.vy = arrastre.tactil ? 0 : ((e.clientY - arrastre.ly) * k) / dt;
+      arrastre.lx = e.clientX;
+      arrastre.ly = e.clientY;
+      arrastre.t = e.timeStamp;
+      pedirDibujo();
+    }
+    function alSoltar() {
+      if (!arrastre) return;
+      var vx = arrastre.vx;
+      var vy = arrastre.vy;
+      arrastre = null;
+      lienzo.classList.remove('arrastrando');
+      if (quieto || Math.hypot(vx, vy) < 0.01) return pedirDibujo();
+      var ultimo = null;
+      animar(function (t) {
+        var dt = ultimo === null ? 16 : Math.min(48, t - ultimo);
+        ultimo = t;
+        rot = [rot[0] + vx * dt, clamp(rot[1] + vy * dt, -60, 60)];
+        var f = Math.pow(0.94, dt / 16);
+        vx *= f;
+        vy *= f;
+        return Math.hypot(vx, vy) > 0.004;
+      });
+    }
+    lienzo.addEventListener('pointerdown', alBajar);
+    lienzo.addEventListener('pointermove', alMover);
+    lienzo.addEventListener('pointerup', alSoltar);
+    lienzo.addEventListener('pointercancel', alSoltar);
+
+    // ---- Botones (y teclado)
+    var girar = function (paso) {
+      entrando = false;
+      mostrarArcos(true);
+      irA([rot[0] + paso, rot[1]], 650);
+    };
+    oeste.addEventListener('click', function () {
+      girar(-45);
+    });
+    este.addEventListener('click', function () {
+      girar(45);
+    });
+    volver.addEventListener('click', function () {
+      irA(destino, 1300, function () {
+        pedirDibujo();
+        este.focus();
+      });
+    });
+
+    dibujar();
+    return {
+      /** Vuelve a poner la rotación actual (después de cambiar otras opciones del gráfico). */
+      redibujar: pedirDibujo,
+      destruir: function () {
+        vivo = false;
+        tarea = null;
+        vigia.disconnect();
+        medidas.disconnect();
+        tiempos.forEach(clearTimeout);
+        lienzo.removeEventListener('pointerdown', alBajar);
+        lienzo.removeEventListener('pointermove', alMover);
+        lienzo.removeEventListener('pointerup', alSoltar);
+        lienzo.removeEventListener('pointercancel', alSoltar);
+        lienzo.classList.remove('globo-lienzo', 'arrastrando');
+        capa.remove();
+        mandos.remove();
+      },
+    };
+  };
 
   /** Crea el ejemplo en un elemento, con el tema del sitio. */
   window.crearEjemplo = function (ej, el, extra) {

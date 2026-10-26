@@ -59,6 +59,33 @@
     return chart;
   };
 
+  // ------------------------------------------------------------ Mapa del mundo, cuando haga falta
+
+  // Los contornos de los países pesan unos 110 KB y solo los usan los mapas. Las páginas los
+  // dejan en una etiqueta que el navegador no baja,
+  //   <script type="text/x-diferido" data-mapa src="lib/maps/world.umd.js?v=…"></script>
+  // (así el armado del sitio igual le pone la versión), y siteMapa() los pide la primera vez que
+  // un mapa los necesita. Devuelve una promesa; las siguientes llamadas reciben la misma.
+  var mapa = null;
+  window.siteMapa = function () {
+    if (!mapa)
+      mapa = new Promise(function (listo, fallo) {
+        if (window.LozChartWorld) return listo();
+        var marca = document.querySelector('script[data-mapa]');
+        var s = document.createElement('script');
+        s.src = (marca && marca.getAttribute('src')) || 'lib/maps/world.umd.js';
+        s.onload = function () {
+          listo();
+        };
+        s.onerror = function () {
+          mapa = null;
+          fallo(new Error('No se pudo cargar el mapa del mundo'));
+        };
+        document.head.appendChild(s);
+      });
+    return mapa;
+  };
+
   // ------------------------------------------------------------ Código
 
   /** Resalta JS, JSON, HTML y Python de forma simple: textos, números, palabras clave y comentarios. */

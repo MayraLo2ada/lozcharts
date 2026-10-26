@@ -92,7 +92,8 @@
     estado.dona = tipos[0] === 'donut';
     controles.push({ label: 'Con agujero (donut)', kind: 'toggle', key: 'dona' });
   }
-  if (todos(['choropleth', 'mapbubble'])) {
+  // El globo gira con el puntero y los botones: cambiarle la proyección lo dejaría sin sus arcos.
+  if (todos(['choropleth', 'mapbubble']) && !ej.globo) {
     estado.proyeccion = o.series[0].projection || 'equalEarth';
     controles.push({
       label: 'Proyección',
@@ -181,20 +182,58 @@
   // ------------------------------------------------------------ Gráfico
 
   var chart;
+  var globo = null;
   function crear() {
+    if (!listo) return;
+    if (globo) globo.destruir();
     if (chart) chart.destroy();
     // El título ya está arriba de la página: el del gráfico se oculta con CSS (.lienzo), pero
     // sigue en su nombre accesible y en el código.
     var op = Object.assign({ background: false }, opciones());
     chart = siteChart(ej.multiples ? LozChart.multiples('#grafico', op) : new LozChart('#grafico', op));
+    globo = ej.globo ? girarGlobo(chart, byId('grafico'), ej) : null;
   }
   function aplicar(animar) {
+    if (!chart) return mostrarCodigo();
     // Pasar de cartesiano a mapa u otra forma: se recrea; si no, cambia animando.
     if (ej.multiples) crear();
     else chart.setOptions(Object.assign({ background: false }, opciones()), animar);
+    // El globo conserva hacia dónde lo dejaste.
+    if (globo) globo.redibujar();
     mostrarCodigo();
   }
-  crear();
+  // Los mapas esperan el mapa del mundo, que se baja solo en sus páginas.
+  var listo = !esMapa(ej);
+  if (listo) crear();
+  else {
+    byId('grafico').style.minHeight = estado.altura + 'px';
+    siteMapa().then(
+      function () {
+        listo = true;
+        byId('grafico').style.minHeight = '';
+        crear();
+      },
+      function () {
+        byId('grafico').textContent = 'No se pudo cargar el mapa. Revisa la conexión y vuelve a cargar la página.';
+      },
+    );
+  }
+  if (ej.globo) {
+    byId('grafico').after(rutasGlobo(ej));
+    var nota = document.createElement('p');
+    var c2 = document.createElement('code');
+    c2.textContent = 'rotate';
+    var c3 = document.createElement('code');
+    c3.textContent = 'setOptions';
+    nota.append(
+      'El código dibuja el globo. Los arcos y el giro con el puntero son un agregado de esta página: para girarlo, cambia ',
+      c2,
+      ' con ',
+      c3,
+      '.',
+    );
+    byId('nombre-tecnico').after(nota);
+  }
   byId('repetir').addEventListener('click', crear);
 
   // ------------------------------------------------------------ Código

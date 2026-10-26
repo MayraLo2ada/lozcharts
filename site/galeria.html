@@ -14,7 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/site.css?v=35e1d141db" />
+    <link rel="stylesheet" href="assets/site.css?v=7a8cf8cab4" />
   </head>
   <body>
     <a class="sr-only" href="#contenido">Saltar al contenido</a>
@@ -48,7 +48,7 @@
       <header class="wrap gal-cabeza">
         <h1>Galería</h1>
         <p class="gal-intro">
-          Veinticinco ejemplos con datos inventados, de las ventas de una tienda a las mudanzas de un país. Abre cualquiera para
+          Veintiséis ejemplos con datos inventados, de las ventas de una tienda a las mudanzas de un país. Abre cualquiera para
           cambiarle los ajustes y llevarte el código.
         </p>
       </header>
@@ -79,9 +79,10 @@
     </footer>
 
     <script src="lib/lozcharts.umd.js?v=5c068e8c64"></script>
-    <script src="lib/maps/world.umd.js?v=9007b00172"></script>
-    <script src="assets/site.js?v=fc5a15a9f6"></script>
-    <script src="assets/ejemplos.js?v=af372cfb25"></script>
+    <!-- El mapa del mundo (unos 110 KB) se pide con siteMapa() cuando una ficha de mapa se acerca a la pantalla. -->
+    <script type="text/x-diferido" data-mapa src="lib/maps/world.umd.js?v=9007b00172"></script>
+    <script src="assets/site.js?v=d49f75731c"></script>
+    <script src="assets/ejemplos.js?v=51571bbccf"></script>
     <script>
       (function () {
         var cards = document.getElementById('cards');
@@ -105,12 +106,54 @@
         var altoPropio = function (ej) {
           return ej.multiples || ej.tipo === 'LozTimeline' || ej.tipo === 'LozBullet';
         };
+        // El globo ocupa la fila entera con su texto al lado: es más alto que los demás.
+        function altoGlobo(lienzo) {
+          var w = lienzo.clientWidth || cards.clientWidth;
+          return Math.round(Math.min(900, Math.max(340, w * (w < 700 ? 1.05 : 0.72))));
+        }
+        function extraDe(g) {
+          if (g.ej.globo) return { height: altoGlobo(g.lienzo) };
+          return g.ej.multiples ? paneles() : altoPropio(g.ej) ? {} : { height: altoBase() };
+        }
+        function crear(g) {
+          if (g.chart) return;
+          g.chart = crearEjemplo(g.ej, g.lienzo, extraDe(g));
+          g.lienzo.style.minHeight = '';
+          if (g.ej.globo) g.globo = girarGlobo(g.chart, g.lienzo, g.ej);
+          reubicar();
+        }
+
+        // Los mapas (y el globo) se dibujan cuando su ficha se acerca a la pantalla. El primero
+        // que llega pide el mapa del mundo; mientras tanto la ficha guarda su alto, sin saltos.
+        var porDibujar = new IntersectionObserver(
+          function (es) {
+            es.forEach(function (e) {
+              if (!e.isIntersecting) return;
+              porDibujar.unobserve(e.target);
+              var g = graficos.find(function (x) {
+                return x.card === e.target;
+              });
+              siteMapa().then(
+                function () {
+                  crear(g);
+                },
+                function () {
+                  g.lienzo.textContent = 'No se pudo cargar el mapa. Revisa la conexión y vuelve a cargar la página.';
+                },
+              );
+            });
+          },
+          { rootMargin: '400px 0px' },
+        );
 
         EJEMPLOS.forEach(function (ej) {
           if (familias.indexOf(ej.familia) < 0) familias.push(ej.familia);
           cuenta[ej.familia] = (cuenta[ej.familia] || 0) + 1;
           var card = document.createElement('article');
-          card.className = 'ficha' + (ej.tamano ? ' ficha-' + (ej.tamano === 'ancho' ? 'ancha' : 'grande') : '');
+          card.className =
+            'ficha' +
+            (ej.tamano ? ' ficha-' + (ej.tamano === 'ancho' ? 'ancha' : 'grande') : '') +
+            (ej.globo ? ' ficha-globo' : '');
           card.id = ej.id;
           card.dataset.familia = ej.familia;
           card.dataset.buscar = [
@@ -168,10 +211,15 @@
 
           card.append(h);
           if (sub.textContent) card.append(sub);
+          if (ej.globo) card.append(rutasGlobo(ej));
           card.append(lienzo, pie, pre);
           cards.appendChild(card);
-          var extra = ej.multiples ? paneles() : altoPropio(ej) ? {} : { height: altoBase() };
-          graficos.push({ ej: ej, chart: crearEjemplo(ej, lienzo, extra) });
+          var g = { ej: ej, card: card, lienzo: lienzo, chart: null };
+          graficos.push(g);
+          if (esMapa(ej)) {
+            lienzo.style.minHeight = (extraDe(g).height || altoBase()) + 'px';
+            porDibujar.observe(card);
+          } else crear(g);
 
           ver.addEventListener('click', function () {
             if (!code.innerHTML) code.innerHTML = siteHighlight(codigoEjemplo(ej));
@@ -188,10 +236,20 @@
           clearTimeout(espera);
           espera = setTimeout(function () {
             var alto = altoBase();
+            graficos.forEach(function (g) {
+              if (g.ej.globo) {
+                var h = altoGlobo(g.lienzo);
+                if (g.chart) g.chart.setOptions({ height: h }, false);
+                else g.lienzo.style.minHeight = h + 'px';
+              }
+            });
             if (Math.abs(alto - ultimo) < 12) return;
             ultimo = alto;
             graficos.forEach(function (g) {
-              if (g.ej.multiples) g.chart.setOptions(paneles());
+              if (g.ej.globo) return;
+              if (!g.chart) {
+                if (!altoPropio(g.ej)) g.lienzo.style.minHeight = alto + 'px';
+              } else if (g.ej.multiples) g.chart.setOptions(paneles());
               else if (!altoPropio(g.ej)) g.chart.setOptions({ height: alto }, false);
             });
           }, 200);
@@ -248,13 +306,27 @@
         });
 
         // Un enlace a una ficha (galeria.html#paises): con los gráficos y la letra ya cargados, se vuelve a ubicar.
+        // Los mapas llegan después y pueden cambiar un poco de alto: hasta que la persona mueva la
+        // página, cada mapa nuevo vuelve a ubicar la ficha.
         var destino = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
-        if (destino)
-          addEventListener('load', function () {
-            requestAnimationFrame(function () {
-              destino.scrollIntoView();
-            });
+        if (destino) {
+          addEventListener('load', reubicar);
+          ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(function (t) {
+            addEventListener(
+              t,
+              function () {
+                destino = null;
+              },
+              { once: true, passive: true },
+            );
           });
+        }
+        function reubicar() {
+          if (!destino) return;
+          requestAnimationFrame(function () {
+            if (destino) destino.scrollIntoView();
+          });
+        }
       })();
     </script>
   </body>
