@@ -6,7 +6,7 @@
     <title>Documentación · LozCharts</title>
     <meta
       name="description"
-      content="Cómo instalar y usar LozCharts: opciones, tipos de gráfico, React, Angular, HTMX y mapas."
+      content="Cómo instalar y usar LozCharts: opciones, tipos de gráfico, React, Angular, HTMX y mapas, con ejemplos que puedes copiar."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,127 +16,460 @@
     />
     <link rel="stylesheet" href="assets/site.css" />
     <style>
+      /*
+       * Documentación. Los estilos compartidos viven en assets/site.css; aquí solo va lo propio.
+       * Medidas: el índice y los huecos crecen con la pantalla; solo la prosa tiene tope (--medida).
+       * Hasta 1279 px: una columna. Desde 1280: cada par de prosa y ejemplo va en dos columnas.
+       */
+      .docs-pagina {
+        --indice: clamp(200px, 11vw + 40px, 320px);
+        --hueco: clamp(28px, 3vw, 96px);
+        --medida: min(65ch, 36vw);
+        --barra: clamp(64px, 3.4vw, 88px);
+      }
       .docs {
         display: grid;
-        grid-template-columns: 240px minmax(0, 1fr);
-        gap: var(--s7);
-        padding-top: var(--s6);
+        grid-template-columns: var(--indice) minmax(0, 1fr);
+        gap: var(--hueco);
+        padding-top: clamp(32px, 3vw, 80px);
       }
-      .toc {
+      main {
+        min-width: 0;
+      }
+
+      /* ---------------------------------------------------------- Índice */
+
+      .indice {
         position: sticky;
-        top: 88px;
+        top: calc(var(--barra) + 24px);
         align-self: start;
-        max-height: calc(100vh - 110px);
+        max-height: calc(100vh - var(--barra) - 48px);
         overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: 2px 4px var(--s5) 2px;
+        font-size: clamp(14px, 0.25vw + 10.5px, 17px);
       }
-      .toc ol {
+      .indice-titulo {
+        margin: 0 0 var(--s3);
+        font-size: 1em;
+        font-weight: 600;
+      }
+      .indice ol {
         list-style: none;
         margin: 0;
         padding: 0;
+      }
+      .indice .grupo + .grupo {
+        margin-top: var(--s5);
+      }
+      .grupo-titulo {
+        display: block;
+        margin-bottom: var(--s2);
+        color: var(--muted);
+        font-size: 0.86em;
+        font-weight: 600;
+      }
+      .grupo ol {
         border-left: 1px solid var(--line);
       }
-      .toc a {
+      .indice a {
         display: block;
-        padding: 5px 0 5px var(--s4);
         margin-left: -1px;
+        padding: 5px var(--s2) 5px var(--s4);
         border-left: 2px solid transparent;
         color: var(--muted);
         text-decoration: none;
-        font-size: 14px;
         line-height: 1.35;
       }
-      .toc a:hover {
+      .indice a:hover {
         color: var(--ink);
       }
-      .toc a.on {
+      .indice a[aria-current='true'] {
         color: var(--ink);
         border-left-color: var(--accent);
         font-weight: 600;
       }
-      .toc code {
-        font-size: 12px;
+      .indice a:focus-visible {
+        outline-offset: -2px;
       }
-      .prose {
-        max-width: 760px;
+      .indice code {
+        font-size: 0.86em;
       }
-      .prose h2 {
-        font-size: 32px;
-        margin: var(--s8) 0 var(--s4);
-        padding-top: var(--s2);
+
+      /* ---------------------------------------------------------- Encabezado de la página */
+
+      .cabeza {
+        display: grid;
+        gap: var(--s6) var(--hueco);
+        padding-bottom: clamp(32px, 3vw, 80px);
       }
-      .prose h2:first-of-type {
-        margin-top: 0;
+      .cabeza h1 {
+        margin: 0;
+        font: 700 clamp(40px, 3.4vw, 96px) / 1.02 var(--display, var(--font));
+        letter-spacing: -0.03em;
       }
-      .prose h3 {
+      .intro {
+        max-width: 62ch;
+      }
+      .intro p {
+        font-size: clamp(17px, 0.45vw + 11px, 23px);
+        line-height: 1.6;
+        margin: var(--s4) 0 0;
+      }
+      .intro p:first-child {
+        color: var(--ink);
+      }
+      .intro p + p {
+        color: var(--muted);
+      }
+      .atajos {
+        align-self: end;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--raised);
+        padding: clamp(16px, 1.4vw, 32px);
+      }
+      .atajos h2 {
+        margin: 0 0 var(--s3);
+        font-size: 1em;
+        font-weight: 600;
+      }
+      .atajos ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+        gap: var(--s2);
+      }
+      .atajos a {
+        display: block;
+        height: 100%;
+        padding: var(--s3) var(--s4);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        text-decoration: none;
+      }
+      .atajos a:hover {
+        border-color: var(--line-strong);
+        background: var(--sunken);
+      }
+      .atajos strong {
+        display: block;
+        font-weight: 600;
+      }
+      .atajos span {
+        display: block;
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 0.86em;
+        line-height: 1.4;
+      }
+
+      /* ---------------------------------------------------------- Secciones */
+
+      .sec {
+        border-top: 1px solid var(--line);
+        padding-block: clamp(36px, 3.4vw, 96px) 0;
+      }
+      .sec h2 {
+        margin: 0 0 clamp(16px, 1.2vw, 32px);
+        max-width: 30ch;
+        font-size: clamp(26px, 1vw + 13px, 42px);
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+      }
+      .sec h2 code {
+        font-size: 0.82em;
+      }
+      .sec h3 {
         margin: var(--s6) 0 var(--s3);
       }
-      .prose p,
-      .prose li {
+      .par,
+      .sec > .tabla {
+        margin-bottom: clamp(24px, 2.2vw, 56px);
+      }
+      .par {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--s5);
+      }
+      .txt {
+        max-width: 65ch;
+        min-width: 0;
+      }
+      .txt > :first-child {
+        margin-top: 0;
+      }
+      .txt p,
+      .txt li {
         line-height: 1.65;
       }
-      .prose ul {
+      .txt p {
+        margin: 0 0 var(--s4);
+      }
+      .txt ul {
+        margin: 0 0 var(--s4);
         padding-left: 1.2em;
       }
-      .prose li + li {
+      .txt li + li {
         margin-top: var(--s2);
       }
-      .prose blockquote {
+      .txt a,
+      .intro a {
+        color: var(--brand);
+        text-underline-offset: 0.15em;
+      }
+      .txt blockquote {
         margin: var(--s5) 0;
         padding: var(--s3) var(--s4);
         border-left: 3px solid var(--accent);
         background: var(--sunken);
         border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
       }
-      .prose a {
+      .ej {
+        display: grid;
+        gap: var(--s4);
+        align-content: start;
+        min-width: 0;
+      }
+      @media (min-width: 1280px) {
+        .par {
+          grid-template-columns: minmax(0, var(--medida)) minmax(0, 1fr);
+          column-gap: var(--hueco);
+          align-items: start;
+        }
+        .cabeza {
+          grid-template-columns: minmax(0, var(--medida)) minmax(0, 1fr);
+        }
+        .cabeza h1 {
+          grid-column: 1 / -1;
+        }
+        /* Secciones de pura prosa con lista: la lista se reparte en columnas y usa el ancho. */
+        .par.solo {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .par.solo .txt {
+          max-width: none;
+        }
+        .par.solo .txt > :not(ul) {
+          max-width: var(--medida);
+        }
+        .par.solo ul {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(min(100%, 34ch), 1fr));
+          gap: var(--s4) var(--hueco);
+          padding: 0;
+          list-style: none;
+        }
+        .par.solo li {
+          margin: 0;
+          padding-left: var(--s4);
+          border-left: 2px solid var(--line-strong);
+          max-width: 65ch;
+        }
+      }
+
+      /* ---------------------------------------------------------- Código */
+
+      .bloque {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--code-bg);
+        min-width: 0;
+      }
+      .bloque-barra {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--s3);
+        min-height: 40px;
+        padding: 4px 6px 4px var(--s4);
+        border-bottom: 1px solid var(--line);
+        color: var(--muted);
+        font: 500 13px/1.2 var(--font);
+      }
+      .copiar {
+        min-height: 32px;
+        padding: 4px 12px;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius-sm);
+        background: var(--raised);
+        color: var(--ink);
+        font: 500 13px/1 var(--font);
+        cursor: pointer;
+      }
+      .copiar:hover {
+        border-color: var(--ink);
+      }
+      .copiar[data-hecho] {
+        border-color: var(--brand);
         color: var(--brand);
       }
-      .prose .code {
-        margin: var(--s4) 0;
+      @media (pointer: coarse) {
+        .copiar {
+          min-height: 44px;
+          padding-inline: 16px;
+        }
       }
-      .table {
+      /* Nada se esconde: las líneas largas bajan a la siguiente en vez de cortarse. */
+      .bloque .code {
+        border: 0;
+        border-radius: 0 0 var(--radius) var(--radius);
+        background: none;
+        white-space: break-spaces;
+        overflow-wrap: anywhere;
+        overflow-x: visible;
+        padding: var(--s4) clamp(14px, 1.2vw, 28px);
+      }
+
+      /* ---------------------------------------------------------- Gráficos vivos */
+
+      .vivo {
+        margin: 0;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--raised);
+        padding: clamp(12px, 1.2vw, 28px);
+        min-width: 0;
+      }
+      .vivo figcaption {
+        display: flex;
+        gap: var(--s2);
+        align-items: baseline;
+        margin-bottom: var(--s3);
+        color: var(--muted);
+        font-size: 0.86em;
+        line-height: 1.45;
+      }
+      .vivo figcaption b {
+        flex: none;
+        color: var(--brand);
+        font-weight: 600;
+      }
+      .vivo-grafico {
+        min-height: 200px;
+      }
+
+      /* ---------------------------------------------------------- Tablas */
+
+      .tabla {
         overflow-x: auto;
-        margin: var(--s4) 0;
         border: 1px solid var(--line);
         border-radius: var(--radius);
       }
-      table {
+      .tabla table {
         border-collapse: collapse;
         width: 100%;
-        font-size: 14px;
+        font-size: 0.9em;
       }
-      th,
-      td {
+      .tabla th,
+      .tabla td {
         text-align: left;
         vertical-align: top;
-        padding: 10px 14px;
+        padding: clamp(8px, 0.5vw, 14px) clamp(12px, 0.9vw, 22px);
         border-bottom: 1px solid var(--line);
+        line-height: 1.5;
       }
-      th {
+      .tabla th {
+        position: sticky;
+        top: 0;
         background: var(--sunken);
         font-weight: 600;
-      }
-      tr:last-child td {
-        border-bottom: 0;
-      }
-      td code,
-      th code {
         white-space: nowrap;
       }
-      .menu-toc {
+      .tabla tbody tr:hover td {
+        background: color-mix(in srgb, var(--sunken) 60%, transparent);
+      }
+      .tabla tr:last-child td {
+        border-bottom: 0;
+      }
+      .tabla td:first-child code {
+        white-space: nowrap;
+      }
+
+      /* En el celular cada fila es una ficha: el nombre arriba y el resto con su rótulo. */
+      @media (max-width: 699px) {
+        .tabla {
+          border: 0;
+          overflow: visible;
+        }
+        .tabla thead {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip: rect(0 0 0 0);
+        }
+        .tabla table,
+        .tabla tbody,
+        .tabla tr,
+        .tabla td {
+          display: block;
+        }
+        .tabla tr {
+          border: 1px solid var(--line);
+          border-radius: var(--radius);
+          padding: var(--s3) var(--s4);
+        }
+        .tabla tr + tr {
+          margin-top: var(--s2);
+        }
+        .tabla td {
+          display: grid;
+          grid-template-columns: 7.5em minmax(0, 1fr);
+          gap: var(--s3);
+          padding: 3px 0;
+          border: 0;
+        }
+        .tabla td::before {
+          content: attr(data-th);
+          color: var(--muted);
+          font-size: 0.9em;
+        }
+        .tabla td:first-child {
+          display: block;
+          padding-bottom: var(--s2);
+          font-weight: 600;
+        }
+        .tabla td:first-child::before {
+          content: none;
+        }
+        .tabla td:empty {
+          display: none;
+        }
+        .tabla tbody tr:hover td {
+          background: none;
+        }
+        .tabla td:first-child code {
+          white-space: normal;
+        }
+      }
+
+      /* ---------------------------------------------------------- Móvil */
+
+      .ir {
         display: none;
       }
-      @media (max-width: 900px) {
+      @media (max-width: 899px) {
+        /* El selector de secciones queda fijo bajo la barra: los títulos no deben quedar debajo. */
+        html {
+          scroll-padding-top: calc(var(--barra, 64px) + 84px);
+        }
         .docs {
           grid-template-columns: minmax(0, 1fr);
         }
-        .toc {
+        .indice {
           display: none;
         }
-        .menu-toc {
+        .ir {
           display: block;
+          position: sticky;
+          top: calc(var(--barra) + 8px);
+          z-index: 5;
           margin-bottom: var(--s5);
         }
-        .menu-toc select {
+        .ir select {
           width: 100%;
           min-height: 44px;
           padding: 8px 10px;
@@ -149,7 +482,7 @@
       }
     </style>
   </head>
-  <body>
+  <body class="docs-pagina">
     <a class="sr-only" href="#contenido">Saltar al contenido</a>
     <header class="top">
       <div class="wrap">
@@ -178,17 +511,46 @@
     </header>
 
     <div class="docs wrap">
-      <nav class="toc" aria-label="En esta página">
+      <nav class="indice" aria-labelledby="indice-titulo">
+        <h2 class="indice-titulo" id="indice-titulo">En esta página</h2>
         <ol>
           <!--INDICE-->
         </ol>
       </nav>
-      <main id="contenido" class="prose">
-        <label class="menu-toc"
+      <main id="contenido">
+        <label class="ir"
           ><span class="sr-only">Ir a la sección</span
           ><select id="ir"></select
         ></label>
-        <h1>Documentación</h1>
+        <div class="cabeza">
+          <h1>Documentación</h1>
+          <!--INTRO-->
+          <nav class="atajos" aria-labelledby="atajos-titulo">
+            <h2 id="atajos-titulo">Lo que más se consulta</h2>
+            <ul>
+              <li>
+                <a href="#tres-formas-de-usarla"
+                  ><strong>Tres formas de usarla</strong><span>Con &lt;script&gt;, con import o con HTMX</span></a
+                >
+              </li>
+              <li>
+                <a href="#tipos-de-serie"><strong>Tipos de serie</strong><span>Los 26 tipos y los campos de cada uno</span></a>
+              </li>
+              <li>
+                <a href="#opciones"><strong>Opciones</strong><span>Todo lo que acepta un gráfico</span></a>
+              </li>
+              <li>
+                <a href="#métodos"><strong>Métodos</strong><span>setData, zoomTo, download y los demás</span></a>
+              </li>
+              <li>
+                <a href="#react"><strong>React</strong><span>El componente Chart y sus props</span></a>
+              </li>
+              <li>
+                <a href="#lozcharts-con-ia"><strong>LozCharts con IA</strong><span>El archivo para tu asistente</span></a>
+              </li>
+            </ul>
+          </nav>
+        </div>
         <!--CONTENIDO-->
       </main>
     </div>
@@ -203,18 +565,27 @@
         </nav>
       </div>
     </footer>
+    <p class="sr-only" id="aviso" aria-live="polite"></p>
 
+    <script src="lib/lozcharts.umd.js"></script>
+    <script src="lib/maps/world.umd.js"></script>
     <script src="assets/site.js"></script>
     <script>
       (function () {
-        // Índice: marca la sección que se está leyendo; en móvil, un selector para saltar.
-        var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+        // Índice: marca la sección que estás leyendo; en el celular, un selector para saltar.
+        var links = Array.prototype.slice.call(document.querySelectorAll('.indice a'));
+        var indice = document.querySelector('.indice');
         var select = document.getElementById('ir');
-        links.forEach(function (a) {
-          var o = document.createElement('option');
-          o.value = a.getAttribute('href');
-          o.textContent = a.textContent;
-          select.appendChild(o);
+        document.querySelectorAll('.indice .grupo').forEach(function (g) {
+          var og = document.createElement('optgroup');
+          og.label = g.querySelector('.grupo-titulo').textContent;
+          g.querySelectorAll('a').forEach(function (a) {
+            var o = document.createElement('option');
+            o.value = a.getAttribute('href');
+            o.textContent = a.textContent;
+            og.appendChild(o);
+          });
+          select.appendChild(og);
         });
         select.addEventListener('change', function () {
           location.hash = select.value;
@@ -222,18 +593,427 @@
         var heads = links.map(function (a) {
           return document.getElementById(decodeURIComponent(a.getAttribute('href').slice(1)));
         });
+        var activo = -1;
         var marcar = function () {
-          var y = window.scrollY + 120;
+          var y = window.scrollY + window.innerHeight * 0.3;
           var k = 0;
           heads.forEach(function (h, i) {
-            if (h && h.offsetTop <= y) k = i;
+            if (h && h.getBoundingClientRect().top + window.scrollY <= y) k = i;
           });
+          if (k === activo) return;
+          activo = k;
           links.forEach(function (a, i) {
-            a.classList.toggle('on', i === k);
+            if (i === k) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
           });
+          select.value = links[k].getAttribute('href');
+          // Que el enlace activo se vea dentro del índice, sin mover la página.
+          var a = links[k];
+          var top = a.offsetTop - indice.offsetTop;
+          if (top < indice.scrollTop + 40 || top > indice.scrollTop + indice.clientHeight - 60)
+            indice.scrollTop = top - indice.clientHeight / 3;
         };
         window.addEventListener('scroll', marcar, { passive: true });
+        window.addEventListener('resize', marcar);
         marcar();
+
+        // Botón de copiar en cada bloque de código.
+        var aviso = document.getElementById('aviso');
+        // Con el portapapeles moderno si se puede; si el navegador lo niega, con una selección oculta.
+        var copiarViejo = function (texto) {
+          var t = document.createElement('textarea');
+          t.value = texto;
+          t.setAttribute('readonly', '');
+          t.style.position = 'fixed';
+          t.style.opacity = '0';
+          document.body.appendChild(t);
+          t.select();
+          var hecho = false;
+          try {
+            hecho = document.execCommand('copy');
+          } catch (e) {
+            hecho = false;
+          }
+          t.remove();
+          return hecho ? Promise.resolve() : Promise.reject();
+        };
+        var copiar = function (texto) {
+          if (!navigator.clipboard || !window.isSecureContext) return copiarViejo(texto);
+          return navigator.clipboard.writeText(texto).catch(function () {
+            return copiarViejo(texto);
+          });
+        };
+        document.querySelectorAll('.bloque').forEach(function (b) {
+          var boton = b.querySelector('.copiar');
+          var codigo = b.querySelector('pre');
+          boton.hidden = false;
+          boton.setAttribute('aria-label', 'Copiar el código (' + b.querySelector('.bloque-barra span').textContent + ')');
+          var reloj;
+          boton.addEventListener('click', function () {
+            copiar(codigo.textContent).then(
+              function () {
+                boton.textContent = 'Copiado';
+                boton.setAttribute('data-hecho', '');
+                aviso.textContent = 'Código copiado.';
+                clearTimeout(reloj);
+                reloj = setTimeout(function () {
+                  boton.textContent = 'Copiar';
+                  boton.removeAttribute('data-hecho');
+                  aviso.textContent = '';
+                }, 1800);
+              },
+              function () {
+                aviso.textContent = 'No se pudo copiar. Selecciona el código y copia con el teclado.';
+              },
+            );
+          });
+        });
+
+        // Una tabla que no cabe se desplaza de lado: con foco, también con las flechas.
+        var tablas = Array.prototype.slice.call(document.querySelectorAll('.tabla'));
+        var revisarTablas = function () {
+          tablas.forEach(function (t) {
+            var desborda = t.scrollWidth > t.clientWidth + 1;
+            if (desborda) {
+              t.tabIndex = 0;
+              t.setAttribute('role', 'region');
+              t.setAttribute('aria-label', 'Tabla (se desplaza de lado)');
+            } else {
+              t.removeAttribute('tabindex');
+              t.removeAttribute('role');
+              t.removeAttribute('aria-label');
+            }
+          });
+        };
+        window.addEventListener('resize', revisarTablas);
+        revisarTablas();
+
+        // ------------------------------------------------------ Gráficos vivos
+        // Cada <!-- vivo: nombre --> del README se dibuja aquí con datos de ejemplo.
+        if (!window.LozChart) return;
+        var azar = function (semilla) {
+          return function () {
+            semilla |= 0;
+            semilla = (semilla + 0x6d2b79f5) | 0;
+            var t = Math.imul(semilla ^ (semilla >>> 15), 1 | semilla);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        };
+        var meses = function (valores) {
+          return valores.map(function (v, i) {
+            return '2026-' + (i < 9 ? '0' : '') + (i + 1);
+          });
+        };
+        var dias2026 = function () {
+          var out = [];
+          for (var d = new Date(2026, 0, 1); d.getFullYear() === 2026; d.setDate(d.getDate() + 1)) {
+            out.push(new Date(d));
+          }
+          return out;
+        };
+        var iso = function (d) {
+          return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        };
+        var nuevo = function (el, o) {
+          // Sin superficie propia: el gráfico toma el fondo de su recuadro, en claro y en oscuro.
+          o.background = false;
+          return window.siteChart(new LozChart(el, o));
+        };
+
+        var VIVOS = {
+          ejemplo: {
+            nota: 'El ejemplo de arriba con los doce meses. Pasa el puntero por las barras.',
+            crear: function (el) {
+              var online = [42000, 45500, 47200, 49800, 51000, 53900, 52600, 55100, 58300, 60200, 64800, 71500];
+              var tienda = [31000, 29800, 30500, 31200, 30100, 32400, 33800, 32900, 31700, 33100, 36200, 41800];
+              var meta = [80000, 82000, 82000, 84000, 84000, 86000, 86000, 88000, 88000, 90000, 95000, 105000];
+              nuevo(el, {
+                title: 'Ventas por mes',
+                subtitle: 'Enero a diciembre 2026',
+                data: meses(online).map(function (m, i) {
+                  return { mes: m, online: online[i], tienda: tienda[i], meta: meta[i] };
+                }),
+                xAxis: { field: 'mes', type: 'time' },
+                yAxis: { format: 'currency' },
+                series: [
+                  { type: 'bar', field: 'online', name: 'Online', stack: true },
+                  { type: 'bar', field: 'tienda', name: 'Tienda', stack: true },
+                  { type: 'line', field: 'meta', name: 'Meta', smooth: true },
+                ],
+                height: 320,
+                legend: { position: 'bottom' },
+                locale: 'es',
+                currency: 'USD',
+              });
+            },
+          },
+          categorias: {
+            nota: 'El donut de arriba con cinco categorías. Toca una en la leyenda para ocultarla.',
+            crear: function (el) {
+              nuevo(el, {
+                data: [
+                  { categoria: 'Electrónica', ventas: 184200 },
+                  { categoria: 'Hogar', ventas: 126400 },
+                  { categoria: 'Moda', ventas: 98300 },
+                  { categoria: 'Deportes', ventas: 61700 },
+                  { categoria: 'Juguetes', ventas: 38900 },
+                ],
+                xAxis: { field: 'categoria' },
+                yAxis: { format: 'currency' },
+                series: [{ type: 'donut', field: 'ventas', name: 'Ventas' }],
+              });
+            },
+          },
+          meta: {
+            nota: 'El gauge: 78 % de avance contra una meta de 85 %.',
+            crear: function (el) {
+              nuevo(el, {
+                data: [{ mes: 'Octubre', avance: 0.78 }],
+                xAxis: { field: 'mes' },
+                yAxis: { format: 'percent', min: 0, max: 1 },
+                series: [{ type: 'gauge', field: 'avance', name: 'Avance', target: 0.85 }],
+              });
+            },
+          },
+          calor: {
+            nota: 'Visitas por día y hora, con datos inventados. Con el foco en el gráfico, las flechas recorren la rejilla.',
+            crear: function (el) {
+              var dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+              var r = azar(7);
+              var data = [];
+              dias.forEach(function (dia, d) {
+                for (var h = 8; h <= 20; h++) {
+                  var base = d < 5 ? 90 + 70 * Math.sin(((h - 8) / 12) * Math.PI) : 40 + 30 * Math.sin(((h - 10) / 10) * Math.PI);
+                  data.push({
+                    hora: (h < 10 ? '0' : '') + h + ':00',
+                    dia: dia,
+                    visitas: Math.max(5, Math.round(base + r() * 30)),
+                  });
+                }
+              });
+              nuevo(el, {
+                data: data,
+                xAxis: { field: 'hora' },
+                series: [{ type: 'heatmap', field: 'visitas', name: 'Visitas', y: 'dia' }],
+              });
+            },
+          },
+          resultado: {
+            nota: 'La cascada del código, tal cual.',
+            crear: function (el) {
+              nuevo(el, {
+                title: 'De las ventas a la utilidad',
+                data: [
+                  { paso: 'Ventas', monto: 1200 },
+                  { paso: 'Costo de ventas', monto: -500 },
+                  { paso: 'Utilidad bruta', total: true },
+                  { paso: 'Gastos', monto: -300 },
+                  { paso: 'Impuestos', monto: -135 },
+                  { paso: 'Utilidad neta', total: true },
+                ],
+                xAxis: { field: 'paso' },
+                series: [{ type: 'waterfall', field: 'monto', name: 'Resultado', total: 'total' }],
+              });
+            },
+          },
+          kpi: {
+            nota: 'La bala del código: el Sur va lejos de su meta.',
+            crear: function (el) {
+              nuevo(el, {
+                title: 'Ventas del trimestre por región',
+                data: [
+                  { region: 'Norte', ventas: 512, meta: 480 },
+                  { region: 'Sur', ventas: 297, meta: 420 },
+                ],
+                xAxis: { field: 'region' },
+                series: [{ type: 'bullet', field: 'ventas', name: 'Ventas', targetField: 'meta', ranges: [300, 450, 600] }],
+              });
+            },
+          },
+          plan: {
+            nota: 'La línea de tiempo del código, con la línea de hoy.',
+            crear: function (el) {
+              nuevo(el, {
+                title: 'Lanzamiento 2026',
+                data: [
+                  { tarea: 'Investigación', inicio: '2026-01-12', fin: '2026-02-27', equipo: 'Producto' },
+                  { tarea: 'App móvil', inicio: '2026-04-20', fin: '2026-08-28', equipo: 'Ingeniería' },
+                  { tarea: 'Lanzamiento', inicio: '2026-09-15', equipo: 'Marketing' },
+                ],
+                xAxis: { field: 'inicio', type: 'time' },
+                series: [{ type: 'timeline', field: 'tarea', end: 'fin', group: 'equipo', name: 'Plan', today: true }],
+              });
+            },
+          },
+          usuarios: {
+            nota: 'El mapa del código: tres países, cada uno escrito de una forma distinta.',
+            crear: function (el) {
+              nuevo(el, {
+                data: [
+                  { pais: 'COL', usuarios: 980000 },
+                  { pais: 'México', usuarios: 1830000 },
+                  { pais: 'Brazil', usuarios: 2650000 },
+                ],
+                xAxis: { field: 'pais' },
+                series: [{ type: 'choropleth', field: 'usuarios', name: 'Usuarios', fit: 'data' }],
+              });
+            },
+          },
+          muchos: {
+            nota: '100 000 puntos en una línea.',
+            crear: function (el, nota) {
+              var r = azar(42);
+              var data = new Array(100000);
+              var v = 500;
+              for (var i = 0; i < data.length; i++) {
+                v += (r() - 0.5) * 6;
+                data[i] = { i: i, valor: Math.round(v * 10) / 10 };
+              }
+              var t0 = performance.now();
+              nuevo(el, {
+                data: data,
+                xAxis: { field: 'i', type: 'linear' },
+                yAxis: { format: 'number' },
+                series: [{ type: 'line', field: 'valor', name: 'Valor' }],
+                zoom: true,
+                animate: false,
+              });
+              var ms = Math.round(performance.now() - t0);
+              nota.textContent =
+                '100 000 puntos en una línea. Tu navegador lo creó en ' + ms + ' ms. Arrastra sobre él para acercar.';
+            },
+          },
+          ciudades: {
+            nota: 'Seis ciudades, un panel cada una, todas con la misma escala. Valores aproximados.',
+            crear: function (el) {
+              var c = [
+                ['miami', 'Miami', [24, 25, 26, 28, 30, 32, 32, 32, 31, 29, 27, 25]],
+                ['madrid', 'Madrid', [10, 12, 16, 18, 22, 28, 32, 31, 26, 19, 13, 10]],
+                ['bogota', 'Bogotá', [19, 20, 19, 19, 19, 18, 18, 18, 19, 19, 19, 19]],
+                ['cdmx', 'Ciudad de México', [22, 24, 26, 27, 27, 25, 24, 24, 23, 23, 23, 22]],
+                ['santiago', 'Santiago', [30, 30, 28, 23, 18, 15, 15, 17, 19, 23, 26, 29]],
+                ['bsas', 'Buenos Aires', [30, 29, 26, 23, 19, 16, 15, 17, 19, 22, 25, 28]],
+              ];
+              var data = meses(c[0][2]).map(function (m, i) {
+                var fila = { mes: m };
+                c.forEach(function (x) {
+                  fila[x[0]] = x[2][i];
+                });
+                return fila;
+              });
+              window.siteChart(
+                LozChart.multiples(el, {
+                  title: 'Temperatura máxima media por mes',
+                  facet: 'series',
+                  data: data,
+                  xAxis: { field: 'mes', type: 'time' },
+                  yAxis: {
+                    format: function (v) {
+                      return v + ' °C';
+                    },
+                  },
+                  series: c.map(function (x) {
+                    return { type: 'line', field: x[0], name: x[1] };
+                  }),
+                  height: 150,
+                  minWidth: 200,
+                  background: false,
+                }),
+              );
+            },
+          },
+          zoom: {
+            nota: 'Un año de visitas inventadas. Arrastra sobre el gráfico, mueve la barra de abajo o usa + y −.',
+            crear: function (el) {
+              var r = azar(3);
+              var data = dias2026().map(function (d, i) {
+                var campana = d >= new Date(2026, 5, 29) && d <= new Date(2026, 6, 21) ? 1400 : 0;
+                var finde = d.getDay() === 0 || d.getDay() === 6 ? -900 : 0;
+                return {
+                  fecha: iso(d),
+                  web: Math.round(6200 + 900 * Math.sin(i / 58) + campana + finde + r() * 700),
+                  app: Math.round(3400 + i * 6 + campana * 0.6 + finde * 0.4 + r() * 500),
+                };
+              });
+              nuevo(el, {
+                title: 'Visitas diarias',
+                data: data,
+                xAxis: { field: 'fecha', type: 'time' },
+                series: [
+                  { type: 'line', field: 'web', name: 'Web' },
+                  { type: 'line', field: 'app', name: 'App' },
+                ],
+                zoom: { range: ['2026-06-01', '2026-08-31'] },
+                endLabels: true,
+                annotations: [
+                  { y: 8000, label: 'Meta diaria' },
+                  { x: ['2026-06-29', '2026-07-21'], label: 'Campaña de verano' },
+                ],
+              });
+            },
+          },
+          teclado: {
+            nota: 'Haz clic en el gráfico (o llega con Tab) y recórrelo con las flechas. Escape cierra el tooltip.',
+            crear: function (el) {
+              nuevo(el, {
+                title: 'Consultas por canal',
+                data: [
+                  { canal: 'Chat', consultas: 860 },
+                  { canal: 'Redes', consultas: 540 },
+                  { canal: 'Correo', consultas: 420 },
+                  { canal: 'Teléfono', consultas: 310 },
+                  { canal: 'Tienda', consultas: 190 },
+                ],
+                xAxis: { field: 'canal' },
+                orientation: 'horizontal',
+                series: [{ type: 'bar', field: 'consultas', name: 'Consultas' }],
+                height: 240,
+              });
+            },
+          },
+        };
+
+        // Se dibujan al acercarse a la pantalla: así la página abre rápido.
+        var pendientes = [];
+        document.querySelectorAll('.vivo').forEach(function (fig) {
+          var v = VIVOS[fig.getAttribute('data-vivo')];
+          if (!v) {
+            fig.remove();
+            return;
+          }
+          fig.innerHTML = '<figcaption><b>En vivo</b><span></span></figcaption><div class="vivo-grafico"></div>';
+          var nota = fig.querySelector('figcaption span');
+          nota.textContent = v.nota;
+          pendientes.push({ fig: fig, v: v, nota: nota });
+        });
+        var dibujar = function (p) {
+          if (p.hecho) return;
+          p.hecho = true;
+          try {
+            p.v.crear(p.fig.querySelector('.vivo-grafico'), p.nota);
+          } catch (e) {
+            p.fig.remove();
+            console.warn('Gráfico vivo sin dibujar:', p.fig.getAttribute('data-vivo'), e);
+          }
+        };
+        if ('IntersectionObserver' in window) {
+          var io = new IntersectionObserver(
+            function (entradas) {
+              entradas.forEach(function (e) {
+                if (!e.isIntersecting) return;
+                io.unobserve(e.target);
+                pendientes.forEach(function (p) {
+                  if (p.fig === e.target) dibujar(p);
+                });
+              });
+            },
+            { rootMargin: '600px 0px' },
+          );
+          pendientes.forEach(function (p) {
+            io.observe(p.fig);
+          });
+        } else pendientes.forEach(dibujar);
       })();
     </script>
   </body>
