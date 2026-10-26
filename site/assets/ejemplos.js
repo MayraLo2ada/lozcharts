@@ -86,6 +86,20 @@
     });
   }
 
+  // Una cámara de frío medida cada hora durante tres meses: entre 2 y 5 °C, salvo los picos de
+  // cuando se deja la puerta abierta. Los picos aplastan la franja que importa: zoom en Y.
+  var camara = [];
+  var pico = 0;
+  for (var h = 0; h < 2000; h++) {
+    var fh = new Date(2026, 6, 1, h);
+    if (pico < 0.2 && r() < 0.01) pico = 8 + r() * 9;
+    pico *= 0.6;
+    camara.push({
+      hora: fh.getFullYear() + '-' + pad(fh.getMonth() + 1) + '-' + pad(fh.getDate()) + 'T' + pad(fh.getHours()) + ':00',
+      temp: Math.round((3.4 + 0.5 * Math.sin(((h % 24) / 24) * 2 * Math.PI) + (r() - 0.5) * 0.6 + pico) * 10) / 10,
+    });
+  }
+
   var precios = [];
   var cierre = 182;
   for (var p = 0; p < 40; p++) {
@@ -617,9 +631,9 @@
       familia: TIEMPO,
       tamano: 'ancho',
       desc: tx({
-        es: 'Un año día por día es demasiado para verlo de una vez. Acércate a unas semanas, mueve la ventana con la barra de abajo y, con doble clic, vuelve a verlo entero.',
-        en: 'A year, day by day, is too much to take in at once. Zoom in on a few weeks, move the window with the bar below, and double-click to see the whole year again.',
-        pt: 'Um ano dia a dia é demais para ver de uma vez. Dê zoom em algumas semanas, mova a janela com a barra de baixo e, com um clique duplo, volte a ver o ano inteiro.',
+        es: 'Un año día por día es demasiado para verlo de una vez. Acércate a unas semanas, mueve la ventana con el deslizante de abajo y, con doble clic, vuelve a verlo entero.',
+        en: 'A year, day by day, is too much to take in at once. Zoom in on a few weeks, move the window with the slider below, and double-click to see the whole year again.',
+        pt: 'Um ano dia a dia é demais para ver de uma vez. Dê zoom em algumas semanas, mova a janela com o controle de baixo e, com um clique duplo, volte a ver o ano inteiro.',
       }),
       opciones: {
         // En Brasil julio es invierno y vacaciones escolares: allá la campaña es de vacaciones.
@@ -651,7 +665,38 @@
       },
     },
     {
+      id: 'camara-fria',
+      tipo: 'LozLine',
+      clase: tx({ es: 'Líneas con zoom en Y', en: 'Lines with Y zoom', pt: 'Linhas com zoom no Y' }),
+      familia: TIEMPO,
+      tamano: 'ancho',
+      desc: tx({
+        es: 'Unos cuantos picos de más de 10 °C dejan la franja que importa, de 2 a 5 °C, hecha una raya. Con el deslizante de la izquierda te acercas a esos grados sin perder de vista las semanas.',
+        en: 'A few spikes over 10 °C squash the range that matters, 2 to 5 °C, into a flat line. With the slider on the left you zoom in on those degrees without losing sight of the weeks.',
+        pt: 'Alguns picos de mais de 10 °C deixam a faixa que importa, de 2 a 5 °C, achatada numa linha. Com o controle da esquerda você chega perto desses graus sem perder as semanas de vista.',
+      }),
+      opciones: {
+        title: tx({
+          es: 'La cámara de frío se mantuvo entre 2 y 5 °C casi todo el verano',
+          en: 'The cold room stayed between 2 and 5 °C almost all summer',
+          pt: 'A câmara fria ficou entre 2 e 5 °C quase o inverno todo',
+        }),
+        subtitle: tx({
+          es: 'Temperatura cada hora, julio a septiembre de 2026. Los picos son la puerta abierta.',
+          en: 'Hourly temperature, July to September 2026. The spikes are the door left open.',
+          pt: 'Temperatura a cada hora, de julho a setembro de 2026. Os picos são a porta aberta.',
+        }),
+        data: camara,
+        xAxis: { field: 'hora', type: 'time' },
+        yAxis: { title: '°C' },
+        series: [{ type: 'line', field: 'temp', name: tx({ es: 'Temperatura', en: 'Temperature', pt: 'Temperatura' }) }],
+        annotations: [{ y: [2, 5], label: tx({ es: 'Rango seguro', en: 'Safe range', pt: 'Faixa segura' }) }],
+        zoom: { y: true },
+      },
+    },
+    {
       id: 'usuarios',
+
       tipo: 'LozLine',
       clase: tx({ es: 'Líneas con nombre al final', en: 'Lines labeled at the end', pt: 'Linhas com nome no fim' }),
       familia: TIEMPO,
