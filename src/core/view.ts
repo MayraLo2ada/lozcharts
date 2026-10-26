@@ -1,12 +1,15 @@
 /**
- * Ventana del zoom: qué parte del eje X se ve.
+ * Ventana del zoom: qué parte del eje X (y, si se pide, del Y) se ve.
  *
  * Se guarda como fracciones del largo total del eje: { start: 0.25, end: 0.5 } es el segundo
  * cuarto. Así la misma ventana vale para barras (bandas), fechas y números, y no depende del
  * ancho en px: si el gráfico cambia de tamaño, se sigue viendo lo mismo.
  * Las escalas reciben la ventana y estiran el eje: lo que queda fuera cae fuera del área.
+ * En el eje Y la ventana es una fracción del dominio completo, de abajo (0) hacia arriba (1).
  */
+import type { AxisDomain } from './frame';
 import type { XScale } from './scales';
+import { logTicks, niceStep, numberTicks } from './ticks';
 
 export interface View {
   start: number;
@@ -66,6 +69,50 @@ export function panView(v: View, delta: number): View {
   const span = v.end - v.start;
   const start = Math.max(0, Math.min(1 - span, v.start + delta));
   return { start, end: start + span };
+}
+
+// ---------------------------------------------------------------- Eje Y
+
+/**
+ * Tramo mínimo de la ventana del eje Y: un cincuentavo del dominio. No depende de los datos;
+ * más cerca ya no se ve el detalle de una línea, solo su grosor.
+ */
+export const MIN_Y_SPAN = 0.02;
+
+/** Dónde cae un valor en el dominio, de 0 (abajo) a 1 (arriba); en log, en su escala. */
+export function valueFraction(d: AxisDomain, v: number): number {
+  if (d.log) return v > 0 && d.d1 > d.d0 ? Math.log(v / d.d0) / Math.log(d.d1 / d.d0) : 0;
+  return d.d1 === d.d0 ? 0 : (v - d.d0) / (d.d1 - d.d0);
+}
+
+/** Valor en una fracción del dominio (lo contrario de valueFraction). */
+export function valueAt(d: AxisDomain, f: number): number {
+  return d.log ? d.d0 * Math.pow(d.d1 / d.d0, f) : d.d0 + f * (d.d1 - d.d0);
+}
+
+/**
+ * Dominio del eje Y con la ventana `v`: los extremos son los de la ventana, sin redondear (el
+ * deslizante manda), y el paso se recalcula para ese tramo, así las marcas siguen siendo redondas.
+ */
+export function windowDomain(d: AxisDomain, v: View, ticks: number): AxisDomain {
+  const d0 = valueAt(d, v.start);
+  const d1 = valueAt(d, v.end);
+  if (!d.log) return { d0, d1, step: niceStep(d1 - d0, ticks) };
+  const marks = valueTicks({ d0, d1, step: 0, log: true }, ticks);
+  // En log el paso es la menor marca (decide los decimales); si salieron marcas lineales, la
+  // distancia entre ellas.
+  const step = marks.length > 1 ? Math.min(marks[0], marks[1] - marks[0]) : d0;
+  return { d0, d1, step, log: true };
+}
+
+/**
+ * Marcas de un eje del valor. En log, las redondas de su escala; si en el tramo caben menos de
+ * dos (con zoom en Y: entre 23 y 41 no hay ningún 1, 2 o 5 × 10ⁿ), unas lineales redondas.
+ */
+export function valueTicks(d: AxisDomain, count: number): number[] {
+  if (!d.log) return numberTicks(d.d0, d.d1, d.step);
+  const marks = logTicks(d.d0, d.d1, count);
+  return marks.length >= 2 ? marks : numberTicks(d.d0, d.d1, niceStep(d.d1 - d.d0, count));
 }
 
 /**

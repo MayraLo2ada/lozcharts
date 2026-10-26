@@ -1,6 +1,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { clampView, FULL_VIEW, isFull, minSpan, panView, visibleIndices, zoomView } from '../src/core/view';
+import {
+  clampView,
+  FULL_VIEW,
+  isFull,
+  minSpan,
+  panView,
+  valueAt,
+  valueFraction,
+  valueTicks,
+  visibleIndices,
+  windowDomain,
+  zoomView,
+} from '../src/core/view';
 import { BandScale, ContinuousScale } from '../src/core/scales';
 import { buildFrame } from '../src/core/frame';
 import { chooseTimeInterval, detectTimeUnit } from '../src/core/ticks';
@@ -120,4 +132,29 @@ test('ventana sobre un hueco con una meta: el eje no se arma solo con la meta', 
   const all = buildFrame(p, new Set(), { ticks: 5, include: [100] });
   const gap = buildFrame(p, new Set(), { ticks: 5, include: [100], range: [6, 8] });
   assert.deepEqual([gap.d0, gap.d1], [all.d0, all.d1]);
+});
+
+test('ventana Y: el dominio es el tramo exacto, con un paso redondo para sus marcas', () => {
+  const d = windowDomain({ d0: 0, d1: 200, step: 50 }, { start: 0.25, end: 0.6 }, 5);
+  assert.deepEqual([d.d0, d.d1], [50, 120]);
+  assert.equal(d.step, 10);
+  assert.deepEqual(valueTicks(d, 5), [50, 60, 70, 80, 90, 100, 110, 120]);
+  // Los extremos no tienen que ser marcas: estas empiezan en la primera redonda.
+  assert.deepEqual(valueTicks(windowDomain({ d0: 0, d1: 200, step: 50 }, { start: 0.23, end: 0.6 }, 3), 3), [60, 80, 100, 120]);
+  // Toda la ventana es el dominio de siempre.
+  const all = windowDomain({ d0: 0, d1: 200, step: 50 }, FULL_VIEW, 5);
+  assert.deepEqual([all.d0, all.d1], [0, 200]);
+});
+
+test('ventana Y en log: se mide en su escala y, si no caben marcas redondas, van lineales', () => {
+  const log = { d0: 1, d1: 10_000, step: 1, log: true };
+  // La mitad de cuatro décadas: de 1 a 100.
+  const half = windowDomain(log, { start: 0, end: 0.5 }, 5);
+  assert.ok(near(half.d0, 1) && near(half.d1, 100));
+  assert.ok(near(valueFraction(log, 100), 0.5) && near(valueAt(log, 0.25), 10));
+  // De 23 a 41 no hay ningún 1, 2 o 5 × 10ⁿ: las marcas son lineales y redondas.
+  const narrow = { d0: 23, d1: 41, step: 23, log: true };
+  assert.deepEqual(valueTicks(narrow, 5), [25, 30, 35, 40]);
+  const w = windowDomain(log, { start: valueFraction(log, 23), end: valueFraction(log, 41) }, 5);
+  assert.equal(w.step, 5);
 });
