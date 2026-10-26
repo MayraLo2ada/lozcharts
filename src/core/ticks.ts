@@ -51,15 +51,21 @@ export function numberTicks(min: number, max: number, step: number): number[] {
   return out;
 }
 
-/** Quita el ruido de coma flotante (0.30000000000000004 → 0.3). */
+/**
+ * Quita el ruido de coma flotante (0.30000000000000004 → 0.3). Es relativo al propio número: un
+ * dato diminuto (3e-13) es un valor de verdad, no ruido.
+ */
 export function cleanFloat(v: number): number {
-  return Math.abs(v) < 1e-12 ? 0 : parseFloat(v.toPrecision(12));
+  return parseFloat(v.toPrecision(12));
 }
+
+/** Decimales que acepta Intl.NumberFormat en todos los navegadores. */
+export const MAX_DECIMALS = 20;
 
 /** Decimales necesarios para mostrar un paso sin perder precisión. */
 export function stepDecimals(step: number): number {
   if (!(step > 0) || step >= 1) return 0;
-  return Math.min(10, Math.ceil(-Math.log10(step) - 1e-9));
+  return Math.min(MAX_DECIMALS, Math.ceil(-Math.log10(step) - 1e-9));
 }
 
 // ---------------------------------------------------------------- Escala logarítmica

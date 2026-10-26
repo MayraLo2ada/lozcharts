@@ -3,7 +3,7 @@
  * Los objetos Intl son caros de crear, así que se guardan en caché.
  */
 import type { FormatSpec } from '../types';
-import { stepDecimals, type TimeUnit } from './ticks';
+import { MAX_DECIMALS, stepDecimals, type TimeUnit } from './ticks';
 
 const numCache = new Map<string, Intl.NumberFormat>();
 const dateCache = new Map<string, Intl.DateTimeFormat>();
@@ -17,11 +17,13 @@ function nf(locale: string, options: Intl.NumberFormatOptions): Intl.NumberForma
   const key = locale + JSON.stringify(opts);
   let f = numCache.get(key);
   if (!f) {
-    try {
-      f = new Intl.NumberFormat(locale, opts);
-    } catch {
-      f = new Intl.NumberFormat('es', opts);
-    }
+    f = safely(
+      () => new Intl.NumberFormat(locale, opts),
+      () => new Intl.NumberFormat('es', opts),
+      // Una moneda que no existe ('EURO', 'S/'): el número sin símbolo, antes que no dibujar nada.
+      () => new Intl.NumberFormat('es', { ...opts, style: 'decimal', currency: undefined, currencyDisplay: undefined }),
+      () => new Intl.NumberFormat('es'),
+    );
     numCache.set(key, f);
   }
   return f;
@@ -31,14 +33,41 @@ function df(locale: string, opts: Intl.DateTimeFormatOptions): Intl.DateTimeForm
   const key = locale + JSON.stringify(opts);
   let f = dateCache.get(key);
   if (!f) {
-    try {
-      f = new Intl.DateTimeFormat(locale, opts);
-    } catch {
-      f = new Intl.DateTimeFormat('es', opts);
-    }
+    // Un locale mal escrito ('es_ES') cae en español; unas opciones que Intl no acepta, en la fecha corta.
+    f = safely(
+      () => new Intl.DateTimeFormat(locale, opts),
+      () => new Intl.DateTimeFormat('es', opts),
+      () => new Intl.DateTimeFormat('es'),
+    );
     dateCache.set(key, f);
   }
   return f;
+}
+
+/** El primer formateador que se deja crear. Avisa una vez por cada caso que no se pudo usar tal cual. */
+function safely<T>(...tries: (() => T)[]): T {
+  let first: unknown;
+  for (const make of tries) {
+    try {
+      const f = make();
+      if (first !== undefined) warnFormat(first);
+      return f;
+    } catch (err) {
+      first ??= err;
+    }
+  }
+  throw first;
+}
+
+const warned = new Set<string>();
+
+function warnFormat(err: unknown): void {
+  const message = err instanceof Error ? err.message : String(err);
+  if (warned.has(message)) return;
+  warned.add(message);
+  console.warn(
+    `LozCharts: Intl no acepta el locale, la moneda o el formato que diste (${message}); uso uno parecido. Revisa locale ('es', 'en', 'pt-BR'), currency (código ISO como 'USD') y xAxis.format.`,
+  );
 }
 
 export interface NumberContext {
@@ -88,7 +117,7 @@ export function indexFormatter(locale: string): (v: number) => string {
 export function exactDecimals(v: number): number {
   const a = Math.abs(v);
   if (!(a > 0) || a >= 1) return 2;
-  return Math.min(10, Math.max(2, Math.ceil(-Math.log10(a)) + 1));
+  return Math.min(MAX_DECIMALS, Math.max(2, Math.ceil(-Math.log10(a)) + 1));
 }
 
 /** Formato compacto ("506 mil M"): para totales grandes donde el espacio es poco. */
