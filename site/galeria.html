@@ -246,6 +246,10 @@
           });
           bar.appendChild(b);
         });
+
+        // Un enlace a una ficha (galeria.html#mapas): los gráficos ya tienen su alto, se vuelve a ubicar.
+        var destino = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+        if (destino) destino.scrollIntoView();
       })();
     </script>
   </body>
