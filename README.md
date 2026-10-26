@@ -13,7 +13,35 @@ que son muchos gráficos pequeños con la misma escala (la lista completa está 
 descarga como imagen PNG o SVG y como hoja CSV, y componentes para React y para Angular, Vue o
 Svelte.
 
-## Instalar y compilar
+## Instalar
+
+En un proyecto con npm:
+
+```bash
+npm install lozcharts
+```
+
+```js
+import { LozChart } from 'lozcharts';
+import { Chart } from 'lozcharts/react'; // si usas React
+import 'lozcharts/maps/world'; // solo si haces mapas
+```
+
+Sin npm, con un `<script>` desde la red de distribución gratuita de npm, o bajando el archivo a
+tu proyecto:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/lozcharts@1/dist/lozcharts.umd.js"></script>
+<!-- Solo si haces mapas: -->
+<script src="https://cdn.jsdelivr.net/npm/lozcharts@1/dist/maps/world.umd.js"></script>
+```
+
+`@1` te da siempre la última versión 1.x, que nunca rompe lo que ya funciona. Si prefieres fijar
+una versión exacta, escribe por ejemplo `@1.1.0`.
+
+### Compilar desde el código
+
+Si quieres cambiar la librería o correr sus pruebas:
 
 ```bash
 npm install
@@ -23,20 +51,8 @@ npm run check   # formato, tipos y pruebas: lo mismo que corre la integración c
 ```
 
 Después de compilar, abre `demo/index.html` con doble clic y tienes la galería. No hace falta
-servidor.
-
-## Usarla en otro proyecto (antes de publicarla en npm)
-
-Mientras no esté en npm, la instalas desde la carpeta o desde GitHub:
-
-```bash
-npm install ../lozcharts                          # desde la carpeta, en la misma máquina
-npm install github:MayraLo2ada/lozcharts          # desde GitHub (con acceso al repositorio)
-```
-
-En los dos casos se compila sola al instalarse, con el script `prepare`. Si npm te pide aprobar
-scripts de instalación, corre `npm approve-scripts lozcharts`. De ahí en adelante la importas como
-cualquier paquete: `import { Chart } from 'lozcharts/react'`.
+servidor. Para probar tus cambios en otro proyecto de tu máquina, instálala desde la carpeta:
+`npm install ../lozcharts` (se compila sola al instalarse).
 
 ## Tres formas de usarla
 

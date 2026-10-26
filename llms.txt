@@ -20,7 +20,9 @@
 
 ## Instalar
 
-- `<script src="lozcharts.umd.js"></script>` → `window.LozChart`.
+- `npm install lozcharts`.
+- Sin npm: `<script src="https://cdn.jsdelivr.net/npm/lozcharts@1/dist/lozcharts.umd.js"></script>` → `window.LozChart`
+  (mapas: `https://cdn.jsdelivr.net/npm/lozcharts@1/dist/maps/world.umd.js`).
 - `import { LozChart } from 'lozcharts'` (ESM) o `require('lozcharts')` (CommonJS).
 - React: `import { Chart, Multiples } from 'lozcharts/react'`; las opciones van como props
   (`<Chart data={filas} xAxis={{ field: 'mes', type: 'time' }} series={[...]} />`); `ref` da la instancia.

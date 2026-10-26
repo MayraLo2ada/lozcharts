@@ -1,7 +1,7 @@
 {
   "name": "lozcharts",
-  "version": "1.0.0",
-  "description": "LozCharts: gráficos SVG interactivos, accesibles y sin dependencias, con zoom, mapas y componentes para React y web.",
+  "version": "1.1.0",
+  "description": "Gráficos para la web: 26 tipos accesibles (teclado, lector de pantalla, daltonismo), claro y oscuro, zoom, mapas y globo, sin dependencias. Para HTML, React, Angular, Vue, Svelte y Django + HTMX.",
   "type": "module",
   "main": "./dist/lozcharts.umd.cjs",
   "module": "./dist/lozcharts.js",
@@ -56,6 +56,8 @@
     "maps"
   ],
   "author": "Mayra Lozada",
+  "homepage": "https://mayralo2ada.github.io/lozcharts/",
+  "bugs": "https://github.com/MayraLo2ada/lozcharts/issues",
   "license": "MIT",
   "peerDependencies": {
     "react": ">=17"

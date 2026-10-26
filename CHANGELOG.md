@@ -1,6 +1,8 @@
 # Cambios
 
-## Sin publicar
+## 1.1.0 (25 de octubre de 2026)
+
+Primera versión en npm.
 
 - **Siete tipos nuevos:** cascada (`waterfall`), bala (`bullet`), sunburst, cuerdas (`chord`),
   red (`network`), línea de tiempo (`timeline`) y nube de palabras (`wordcloud`). Igual que los

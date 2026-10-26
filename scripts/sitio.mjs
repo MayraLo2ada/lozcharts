@@ -195,7 +195,7 @@ function pares(seccion) {
  * está aquí, la sección sigue en el grupo anterior (no se rompe nada, solo cambia el agrupado).
  */
 const GRUPOS = {
-  'instalar-y-compilar': 'Para empezar',
+  instalar: 'Para empezar',
   'tipos-de-serie': 'Tipos de gráfico',
   react: 'Con tu framework',
   'muchos-datos': 'Guías',
