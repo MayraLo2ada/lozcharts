@@ -119,8 +119,13 @@ function setup(ctx: DrawContext, legend: boolean): MapSetup | null {
   let toPolys: (f: GeoFeature) => [number, number][][][];
   let sphere: MapSetup['sphere'] = null;
   if (projection === 'orthographic') {
-    // El globo mira al centro de los datos (o a donde se pida): lo importante, al frente.
-    const g = globe(ctx.width, plotH, rotate ?? lookAt(framed.length ? framed : features));
+    // El globo mira al centro de los datos (o a donde se pida): lo importante, al frente. Con
+    // cualquier `fit`: encuadrar todo el mundo no cabe en una cara, y mirar al centro de todos los
+    // países dejaría los datos de espaldas.
+    const withData = features.filter((f) => used.has(all.indexOf(f)));
+    const points: [number, number][] = [];
+    for (let i = 0; i < ctx.n; i++) if (located(i)) points.push([lon[i], lat[i]]);
+    const g = globe(ctx.width, plotH, rotate ?? lookAt(withData.length || points.length ? withData : features, points));
     project = (lo, la) => {
       const [x, y, visible] = g.point(lo, la);
       return visible ? [x, y] : [NaN, NaN];
@@ -152,22 +157,31 @@ function setup(ctx: DrawContext, legend: boolean): MapSetup | null {
   return out;
 }
 
-/** [lon, lat] promedio de los contornos: hacia dónde mira el globo si no se dice. */
-function lookAt(list: readonly GeoFeature[]): [number, number] {
+/**
+ * [lon, lat] hacia donde mira el globo si no se dice: el promedio de los lugares, cada uno con el
+ * mismo peso (un país con una costa muy recortada no arrastra la vista hacia él), y de los puntos
+ * dados por latitud y longitud.
+ */
+export function lookAt(list: readonly GeoFeature[], points: readonly [number, number][] = []): [number, number] {
   let x = 0;
   let y = 0;
   let z = 0;
   // Promedio en 3D (sobre la esfera), no en grados: así no falla cerca del meridiano 180.
-  for (const f of list)
-    for (const poly of f.polygons)
-      for (const [lon, lat] of poly[0] ?? []) {
-        const l = (lon * Math.PI) / 180;
-        const p = (lat * Math.PI) / 180;
-        x += Math.cos(p) * Math.cos(l);
-        y += Math.cos(p) * Math.sin(l);
-        z += Math.sin(p);
-      }
-  if (!x && !y && !z) return [0, 0];
+  const add = (lon: number, lat: number, w: number) => {
+    const l = (lon * Math.PI) / 180;
+    const p = (lat * Math.PI) / 180;
+    x += w * Math.cos(p) * Math.cos(l);
+    y += w * Math.cos(p) * Math.sin(l);
+    z += w * Math.sin(p);
+  };
+  for (const f of list) {
+    let count = 0;
+    for (const poly of f.polygons) count += (poly[0] ?? []).length;
+    if (!count) continue;
+    for (const poly of f.polygons) for (const [lon, lat] of poly[0] ?? []) add(lon, lat, 1 / count);
+  }
+  for (const [lon, lat] of points) add(lon, lat, 1);
+  if (Math.hypot(x, y, z) < 1e-9) return [0, 0];
   return [(Math.atan2(y, x) * 180) / Math.PI, (Math.atan2(z, Math.hypot(x, y)) * 180) / Math.PI];
 }
 
