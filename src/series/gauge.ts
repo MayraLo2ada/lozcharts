@@ -27,7 +27,8 @@ const MIN_RADIUS = 24;
 /** Etiquetas de mínimo, máximo y meta: 12 px en texto secundario, a 6 px del arco. */
 const LABEL_SIZE = 12;
 const LABEL_GAP = 6;
-const NAME_SIZE = 13;
+/** El nombre bajo el número: 12 px, como "Total" en el donut y el sunburst. */
+const NAME_SIZE = 12;
 /** El valor central escala con el radio, entre estos límites. */
 const VALUE_MIN = 16;
 const VALUE_MAX = 48;
