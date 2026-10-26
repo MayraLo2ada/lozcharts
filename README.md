@@ -1,21 +1,22 @@
 # LozCharts
 
-LozCharts es una librería de gráficos para la web. Está escrita en TypeScript, dibuja en SVG (el
-formato de imagen que se ve nítido a cualquier tamaño) y no necesita ninguna otra librería. Cada
-gráfico que creas es un `LozChart`: le das tus datos y ya sale con tooltip (la cajita con el dato
-al pasar el puntero), leyenda, modo claro y oscuro, animación, manejo con teclado y una tabla de datos para lectores de
-pantalla. Todo eso que normalmente terminas programando aparte.
+**English** · [Español](https://github.com/MayraLo2ada/lozcharts/blob/main/README.es.md) · [Português](https://github.com/MayraLo2ada/lozcharts/blob/main/README.pt.md)
 
-Tiene 26 tipos. Están las líneas y las barras de siempre, pero también velas, mapa de calor,
-diagrama de flujos (sankey), cascada, línea de tiempo, nube de palabras, mapas y small multiples,
-que son muchos gráficos pequeños con la misma escala (la lista completa está en
-[Tipos de serie](#tipos-de-serie)). Trae zoom, anotaciones, etiquetas al final de cada línea,
-descarga como imagen PNG o SVG y como hoja CSV, y componentes para React y para Angular, Vue o
-Svelte.
+LozCharts is a chart library for the web. It's written in TypeScript, draws in SVG (the image
+format that stays sharp at any size), and doesn't need any other library. Every chart you create
+is a `LozChart`: you give it your data and it comes with a tooltip (the little box that shows the
+value when you hover), a legend, light and dark mode, animation, keyboard support, and a data
+table for screen readers. All the stuff you'd usually end up building on your own.
 
-## Instalar
+It has 26 types. You get the usual lines and bars, but also candlesticks, heatmaps, flow diagrams
+(sankey), waterfall, timeline, word cloud, maps, and small multiples, which are lots of small
+charts on the same scale (the full list is in [Series types](#series-types)). It comes with zoom,
+annotations, labels at the end of each line, downloads as a PNG or SVG image and as a CSV sheet,
+and components for React and for Angular, Vue, or Svelte.
 
-En un proyecto con npm:
+## Install
+
+In a project with npm:
 
 ```bash
 npm install lozcharts
@@ -23,196 +24,197 @@ npm install lozcharts
 
 ```js
 import { LozChart } from 'lozcharts';
-import { Chart } from 'lozcharts/react'; // si usas React
-import 'lozcharts/maps/world'; // solo si haces mapas
+import { Chart } from 'lozcharts/react'; // if you use React
+import 'lozcharts/maps/world'; // only if you make maps
 ```
 
-Sin npm, con un `<script>` desde la red de distribución gratuita de npm, o bajando el archivo a
-tu proyecto:
+Without npm, with a `<script>` from npm's free content delivery network, or by downloading the
+file into your project:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/lozcharts@1/dist/lozcharts.umd.js"></script>
-<!-- Solo si haces mapas: -->
+<!-- Only if you make maps: -->
 <script src="https://cdn.jsdelivr.net/npm/lozcharts@1/dist/maps/world.umd.js"></script>
 ```
 
-`@1` te da siempre la última versión 1.x, que nunca rompe lo que ya funciona. Si prefieres fijar
-una versión exacta, escribe por ejemplo `@1.1.0`.
+`@1` always gives you the latest 1.x version, which never breaks what already works. If you'd
+rather pin an exact version, write something like `@1.1.0`.
 
-## Tu primer gráfico
+## Your first chart
 
-Copia esto en un archivo `ventas.html` y ábrelo con doble clic. No necesitas instalar nada:
+Copy this into a file called `sales.html` and double-click it to open it. You don't need to install
+anything:
 
 ```html
 <!doctype html>
-<html lang="es">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Mi primer gráfico</title>
+    <title>My first chart</title>
   </head>
   <body>
-    <div id="grafico"></div>
+    <div id="chart"></div>
     <script src="https://cdn.jsdelivr.net/npm/lozcharts@1/dist/lozcharts.umd.js"></script>
     <script>
-      new LozChart('#grafico', {
-        title: 'Ventas por mes',
+      new LozChart('#chart', {
+        title: 'Sales by month',
         data: [
-          { mes: '2026-01', ventas: 42000 },
-          { mes: '2026-02', ventas: 45500 },
-          { mes: '2026-03', ventas: 51200 },
+          { month: '2026-01', sales: 42000 },
+          { month: '2026-02', sales: 45500 },
+          { month: '2026-03', sales: 51200 },
         ],
-        xAxis: { field: 'mes', type: 'time' },
+        xAxis: { field: 'month', type: 'time' },
         yAxis: { format: 'currency' },
-        series: [{ type: 'bar', field: 'ventas', name: 'Ventas' }],
+        series: [{ type: 'bar', field: 'sales', name: 'Sales' }],
       });
     </script>
   </body>
 </html>
 ```
 
-Eso es todo: los datos son una lista de filas, `xAxis.field` dice qué campo va en el eje X y cada
-serie dice su `type` y su `field`. El tooltip, el teclado, el modo oscuro y la tabla para lectores
-de pantalla ya vienen.
+That's it: the data is a list of rows, `xAxis.field` says which field goes on the X axis, and each
+series says its `type` and its `field`. The tooltip, the keyboard support, dark mode, and the table
+for screen readers are already there.
 
-## Tres formas de usarla
+## Three ways to use it
 
-**1. Con `<script>`.** No necesitas servidor ni compilar nada: pones el archivo junto a tu página y creas
-el gráfico.
+**1. With `<script>`.** You don't need a server or a build step: put the file next to your page and
+create the chart.
 
 ```html
-<div id="grafico"></div>
+<div id="chart"></div>
 <script src="lozcharts.umd.js"></script>
 <script>
-  new LozChart('#grafico', {/* opciones */});
+  new LozChart('#chart', {/* options */});
 </script>
 ```
 
-**2. Con `import` (Vite, webpack, Angular CLI) o `require` (Node, Jest).** Acuérdate de llamar a `destroy()`
-cuando desmontes el componente. En React no tienes que hacerlo a mano si usas los componentes de
-`lozcharts/react` (ver [React](#react)), y en Angular, Vue o Svelte tienes el elemento
-`<loz-chart>` (ver [`<loz-chart>`](#loz-chart-angular-vue-svelte-o-html-puro)).
+**2. With `import` (Vite, webpack, Angular CLI) or `require` (Node, Jest).** Remember to call
+`destroy()` when you unmount the component. In React you don't have to do it by hand if you use the
+components from `lozcharts/react` (see [React](#react)), and in Angular, Vue, or Svelte you have the
+`<loz-chart>` element (see [`<loz-chart>`](#loz-chart-angular-vue-svelte-or-plain-html)).
 
 ```js
-import { LozChart } from 'lozcharts'; // o: const { LozChart } = require('lozcharts');
-const chart = new LozChart(elemento, opciones);
-// al desmontar el componente:
+import { LozChart } from 'lozcharts'; // or: const { LozChart } = require('lozcharts');
+const chart = new LozChart(element, options);
+// when the component unmounts:
 chart.destroy();
 ```
 
-`LozChart` dibuja en la página, así que necesita un navegador (o un DOM de pruebas, como jsdom en
-Jest). En Node sin DOM puedes importarla, pero no crear gráficos.
+`LozChart` draws on the page, so it needs a browser (or a test DOM, like jsdom in Jest). In Node
+without a DOM you can import it, but you can't create charts.
 
-**3. Con Django + HTMX.** Pon las opciones en JSON en el atributo `data-lozchart`, o el selector de
-un `<script type="application/json">`. Luego vuelve a iniciar los gráficos cada vez que HTMX cambie
-un fragmento:
+**3. With Django + HTMX.** Put the options as JSON in the `data-lozchart` attribute, or the selector
+of a `<script type="application/json">`. Then start the charts again every time HTMX swaps a
+fragment:
 
 ```html
-<div data-lozchart="#opciones-ventas"></div>
-{{ opciones|json_script:"opciones-ventas" }}
+<div data-lozchart="#sales-options"></div>
+{{ options|json_script:"sales-options" }}
 <script>
   htmx.onLoad((el) => LozChart.initAll(el));
   document.body.addEventListener('htmx:beforeSwap', (e) => LozChart.destroyAll(e.detail.target));
 </script>
 ```
 
-Si el elemento ya tenía un gráfico, `initAll` lo reemplaza, y de paso limpia los que quedaron
-fuera de la página. En `examples/django` hay un ejemplo completo (vista, URL y plantillas), y en
-`examples/htmx/index.html` otro que abres sin Django.
+If the element already had a chart, `initAll` replaces it, and while it's at it, cleans up the ones
+left off the page. There's a full example in `examples/django` (view, URL, and templates), and
+another one in `examples/htmx/index.html` that you can open without Django.
 
-## Ejemplo completo
+## Full example
 
-Este gráfico tiene lo que más vas a usar: barras apiladas, una línea de meta, formato de moneda y
-la leyenda abajo. Los comentarios dicen qué otros valores acepta cada opción.
+This chart has what you'll use the most: stacked bars, a goal line, currency format, and the legend
+at the bottom. The comments tell you what other values each option accepts.
 
 ```js
-const chart = new LozChart('#grafico', {
-  title: 'Ventas por mes',
-  subtitle: 'Enero a diciembre 2026',
+const chart = new LozChart('#chart', {
+  title: 'Sales by month',
+  subtitle: 'January to December 2026',
   data: [
-    { mes: '2026-01', online: 42000, tienda: 31000, meta: 80000 },
-    { mes: '2026-02', online: 45500, tienda: 29800, meta: 82000 },
+    { month: '2026-01', online: 42000, store: 31000, goal: 80000 },
+    { month: '2026-02', online: 45500, store: 29800, goal: 82000 },
     // …
   ],
-  xAxis: { field: 'mes', type: 'time' }, // 'category' | 'time' | 'linear'
-  yAxis: { format: 'currency' }, // 'auto' | 'compact' | 'number' | 'percent' | 'currency' | función
+  xAxis: { field: 'month', type: 'time' }, // 'category' | 'time' | 'linear'
+  yAxis: { format: 'currency' }, // 'auto' | 'compact' | 'number' | 'percent' | 'currency' | function
   series: [
-    { type: 'bar', field: 'online', name: 'En línea', stack: true },
-    { type: 'bar', field: 'tienda', name: 'Tienda', stack: true },
-    { type: 'line', field: 'meta', name: 'Meta', smooth: true },
+    { type: 'bar', field: 'online', name: 'Online', stack: true },
+    { type: 'bar', field: 'store', name: 'In store', stack: true },
+    { type: 'line', field: 'goal', name: 'Goal', smooth: true },
   ],
   theme: 'auto', // 'light' | 'dark' | 'auto'
   height: 320,
   legend: { position: 'bottom' },
   tooltip: true,
   animate: true,
-  locale: 'es',
+  locale: 'en',
   currency: 'USD',
 });
 ```
 
 <!-- vivo: ejemplo -->
 
-## Tipos de serie
+## Series types
 
-| Nombre       | Tipo          | Para qué sirve                                   | Campos                                                           |
-| ------------ | ------------- | ------------------------------------------------ | ---------------------------------------------------------------- |
-| LozLine      | `line`        | Evolución de un valor                            | `field`; `smooth` para curva monótona                            |
-| LozBar       | `bar`         | Comparar cantidades; agrupadas o con `stack`     | `field`                                                          |
-| LozArea      | `area`        | Volumen acumulado; apilable                      | `field`; `smooth`                                                |
-| LozStep      | `step`        | Valores que cambian de golpe (tarifas, tasas)    | `field`; `step`: `'after'` (por defecto), `'before'`, `'middle'` |
-| LozRange     | `range`       | Banda entre un mínimo y un máximo                | `field` (superior) y `low` (inferior)                            |
-| LozScatter   | `scatter`     | Relación entre dos números                       | `field` (Y); X con `xAxis.type: 'linear'`                        |
-| LozBubble    | `bubble`      | Como dispersión, con un tercer valor como tamaño | `field`, `size`; `sizeName` para el tooltip                      |
-| LozCandle    | `candlestick` | Precios: apertura, máximo, mínimo y cierre       | `field` (cierre), `open`, `high`, `low`                          |
-| LozOHLC      | `ohlc`        | Lo mismo que las velas, en trazos                | `field` (cierre), `open`, `high`, `low`                          |
-| LozPie       | `pie`         | Partes de un todo (pocas categorías)             | `xAxis.field` (categoría), `field` (valor)                       |
-| LozDonut     | `donut`       | Como el pastel, con el total al centro           | igual que `pie`; `innerRadius` (0,6)                             |
-| LozGauge     | `gauge`       | Un indicador contra su rango y su meta           | `field`; `target`; rango con `yAxis.min` y `yAxis.max`           |
-| LozBullet    | `bullet`      | Indicadores contra su meta y sus rangos          | `xAxis.field` (indicador), `field`; `targetField`, `ranges`      |
-| LozRadar     | `radar`       | Perfiles en varias dimensiones                   | `xAxis.field` (criterio), `field` por serie                      |
-| LozFunnel    | `funnel`      | Pasos de un proceso y su conversión              | `xAxis.field` (paso), `field` (cantidad)                         |
-| LozWaterfall | `waterfall`   | Cómo se llega de un número a otro (puente)       | `field` (variación); `total` marca subtotales y totales          |
-| LozHeatmap   | `heatmap`     | Patrones en una rejilla (día × hora)             | `xAxis.field` (columna), `y` (fila), `field` (valor)             |
-| LozTreemap   | `treemap`     | Partes de un todo con muchas categorías          | `xAxis.field` (nombre), `field` (tamaño); `group` opcional       |
-| LozSunburst  | `sunburst`    | Jerarquía en anillos (región › país › ciudad)    | `field` (valor); `levels` con los campos de la ruta              |
-| LozSankey    | `sankey`      | Flujos entre etapas (de dónde a dónde)           | `xAxis.field` (origen), `to` (destino), `field` (cantidad)       |
-| LozChord     | `chord`       | Flujos con dirección entre nodos                 | `xAxis.field` (origen), `to` (destino), `field` (cantidad)       |
-| LozNetwork   | `network`     | Relaciones sin dirección (quién con quién)       | `xAxis.field`, `to`; `field` (peso) y `group` opcionales         |
-| LozTimeline  | `timeline`    | Tramos e hitos en el tiempo                      | `xAxis.field` (inicio), `end` (fin), `field` (nombre); `group`   |
-| LozWordcloud | `wordcloud`   | Palabras según su peso                           | `xAxis.field` (palabra), `field` (peso); `group` opcional        |
-| LozMap       | `choropleth`  | Un valor por país, coloreado                     | `xAxis.field` (país), `field`; ver [Mapas](#mapas)               |
-| LozMap       | `mapbubble`   | Cantidades sobre el mapa                         | `xAxis.field`, `field`; `lat` y `lon` opcionales                 |
-| LozMultiples | —             | Cuadrícula de gráficos pequeños                  | `LozChart.multiples(…)`; ver [Small multiples](#small-multiples) |
+| Name         | Type          | What it's for                                   | Fields                                                           |
+| ------------ | ------------- | ----------------------------------------------- | ---------------------------------------------------------------- |
+| LozLine      | `line`        | How a value changes over time                   | `field`; `smooth` for a monotone curve                           |
+| LozBar       | `bar`         | Comparing amounts; grouped or with `stack`      | `field`                                                          |
+| LozArea      | `area`        | Accumulated volume; stackable                   | `field`; `smooth`                                                |
+| LozStep      | `step`        | Values that jump (rates, fees)                  | `field`; `step`: `'after'` (default), `'before'`, `'middle'`     |
+| LozRange     | `range`       | A band between a minimum and a maximum          | `field` (upper) and `low` (lower)                                |
+| LozScatter   | `scatter`     | The relationship between two numbers            | `field` (Y); X with `xAxis.type: 'linear'`                       |
+| LozBubble    | `bubble`      | Like scatter, with a third value as the size    | `field`, `size`; `sizeName` for the tooltip                      |
+| LozCandle    | `candlestick` | Prices: open, high, low, and close              | `field` (close), `open`, `high`, `low`                           |
+| LozOHLC      | `ohlc`        | Same as candlesticks, drawn as strokes          | `field` (close), `open`, `high`, `low`                           |
+| LozPie       | `pie`         | Parts of a whole (few categories)               | `xAxis.field` (category), `field` (value)                        |
+| LozDonut     | `donut`       | Like the pie, with the total in the middle      | same as `pie`; `innerRadius` (0.6)                               |
+| LozGauge     | `gauge`       | One indicator against its range and its goal    | `field`; `target`; range with `yAxis.min` and `yAxis.max`        |
+| LozBullet    | `bullet`      | Indicators against their goal and their ranges  | `xAxis.field` (indicator), `field`; `targetField`, `ranges`      |
+| LozRadar     | `radar`       | Profiles across several dimensions              | `xAxis.field` (criterion), `field` per series                    |
+| LozFunnel    | `funnel`      | Steps in a process and their conversion         | `xAxis.field` (step), `field` (amount)                           |
+| LozWaterfall | `waterfall`   | How you get from one number to another (bridge) | `field` (change); `total` marks subtotals and totals             |
+| LozHeatmap   | `heatmap`     | Patterns in a grid (day × hour)                 | `xAxis.field` (column), `y` (row), `field` (value)               |
+| LozTreemap   | `treemap`     | Parts of a whole with lots of categories        | `xAxis.field` (name), `field` (size); optional `group`           |
+| LozSunburst  | `sunburst`    | A hierarchy in rings (region › country › city)  | `field` (value); `levels` with the path fields                   |
+| LozSankey    | `sankey`      | Flows between stages (from where to where)      | `xAxis.field` (source), `to` (target), `field` (amount)          |
+| LozChord     | `chord`       | Directed flows between nodes                    | `xAxis.field` (source), `to` (target), `field` (amount)          |
+| LozNetwork   | `network`     | Undirected relationships (who with whom)        | `xAxis.field`, `to`; optional `field` (weight) and `group`       |
+| LozTimeline  | `timeline`    | Spans and milestones over time                  | `xAxis.field` (start), `end` (end), `field` (name); `group`      |
+| LozWordcloud | `wordcloud`   | Words sized by their weight                     | `xAxis.field` (word), `field` (weight); optional `group`         |
+| LozMap       | `choropleth`  | One value per country, colored                  | `xAxis.field` (country), `field`; see [Maps](#maps)              |
+| LozMap       | `mapbubble`   | Amounts on the map                              | `xAxis.field`, `field`; optional `lat` and `lon`                 |
+| LozMultiples | —             | A grid of small charts                          | `LozChart.multiples(…)`; see [Small multiples](#small-multiples) |
 
-LozBar, LozLine y los demás son los nombres que uso en esta documentación y en la galería. En el
-código cada tipo va por su nombre corto: `type: 'bar'`.
+LozBar, LozLine, and the rest are the names I use in these docs and in the gallery. In code, each
+type goes by its short name: `type: 'bar'`.
 
-El pastel (`pie`), la dona (`donut`), el medidor (`gauge`) y el embudo muestran una sola serie. En
-el pastel y la dona, cada categoría lleva su
-color y su botón en la leyenda, con su porcentaje; si ocultas una, los porcentajes de las demás se
-recalculan. Con más de 8 categorías, las 7 primeras van en color y el resto se suma en "Otros", con
-el detalle en el tooltip y en la tabla.
+The pie (`pie`), the donut (`donut`), the gauge (`gauge`), and the funnel show a single series. In
+the pie and the donut, each category gets its own color and its own button in the legend, with its
+percentage; if you hide one, the other percentages are recalculated. With more than 8 categories,
+the first 7 get a color and the rest are added up into "Other", with the details in the tooltip and
+in the table.
 
-Mi consejo: si pasas de 5 categorías, cambia el pastel por barras horizontales ordenadas. Se leen
-mucho mejor.
+My advice: if you go over 5 categories, swap the pie for sorted horizontal bars. They're much
+easier to read.
 
-Las etiquetas se reparten para no encimarse. En pantallas angostas se omiten, porque la leyenda y
-el tooltip ya dicen lo mismo, y `labels: false` las apaga siempre. Si necesitas varios medidores
-o varios embudos, usa small multiples.
+Labels spread out so they don't overlap. On narrow screens they're left out, because the legend and
+the tooltip already say the same thing, and `labels: false` always turns them off. If you need
+several gauges or several funnels, use small multiples.
 
 ```js
-new LozChart('#categorias', {
-  data: [{ categoria: 'Electrónica', ventas: 184200 } /* … */],
-  xAxis: { field: 'categoria' },
+new LozChart('#categories', {
+  data: [{ category: 'Electronics', sales: 184200 } /* … */],
+  xAxis: { field: 'category' },
   yAxis: { format: 'currency' },
-  series: [{ type: 'donut', field: 'ventas', name: 'Ventas' }],
+  series: [{ type: 'donut', field: 'sales', name: 'Sales' }],
 });
 
-new LozChart('#meta', {
-  data: [{ mes: 'Octubre', avance: 0.78 }],
-  xAxis: { field: 'mes' },
+new LozChart('#goal', {
+  data: [{ month: 'October', progress: 0.78 }],
+  xAxis: { field: 'month' },
   yAxis: { format: 'percent', min: 0, max: 1 },
-  series: [{ type: 'gauge', field: 'avance', name: 'Avance', target: 0.85 }],
+  series: [{ type: 'gauge', field: 'progress', name: 'Progress', target: 0.85 }],
 });
 ```
 
@@ -220,107 +222,106 @@ new LozChart('#meta', {
 
 <!-- vivo: meta -->
 
-Para precios tienes velas (`candlestick`) y barras OHLC (`ohlc`, por sus siglas en inglés: open,
-high, low, close). Cada fila trae apertura, máximo, mínimo y cierre, y en la serie dices cómo se
-llama cada campo.
+For prices you have candlesticks (`candlestick`) and OHLC bars (`ohlc`: open, high, low, close).
+Each row has the open, high, low, and close, and in the series you say what each field is called.
 
-¿Barras con nombres largos? Pon `orientation: 'horizontal'`: el gráfico gira y las categorías pasan
-al eje vertical, donde caben enteras.
+Bars with long names? Set `orientation: 'horizontal'`: the chart turns and the categories move to the
+vertical axis, where they fit in full.
 
 ```js
-new LozChart('#precios', {
-  data: sesiones, // { fecha, apertura, maximo, minimo, cierre }
-  xAxis: { field: 'fecha', type: 'time' },
+new LozChart('#prices', {
+  data: sessions, // { date, open, high, low, close }
+  xAxis: { field: 'date', type: 'time' },
   yAxis: { format: 'currency' },
-  series: [{ type: 'candlestick', field: 'cierre', open: 'apertura', high: 'maximo', low: 'minimo', name: 'AURF' }],
+  series: [{ type: 'candlestick', field: 'close', open: 'open', high: 'high', low: 'low', name: 'AURF' }],
 });
 ```
 
-## Mapa de calor, treemap y sankey
+## Heatmap, treemap, and sankey
 
-Los tres esperan una fila de datos por cosa dibujada: una celda, un rectángulo o un flujo.
+All three expect one data row per thing drawn: a cell, a rectangle, or a flow.
 
 ```js
-// Mapa de calor: una fila de datos por celda.
-new LozChart('#visitas', {
-  data: visitas, // { hora: '09:00', dia: 'Lunes', visitas: 120 }
-  xAxis: { field: 'hora' },
-  series: [{ type: 'heatmap', field: 'visitas', name: 'Visitas', y: 'dia' }],
+// Heatmap: one data row per cell.
+new LozChart('#visits', {
+  data: visits, // { hour: '09:00', day: 'Monday', visits: 120 }
+  xAxis: { field: 'hour' },
+  series: [{ type: 'heatmap', field: 'visits', name: 'Visits', y: 'day' }],
 });
 
-// Treemap: el área de cada rectángulo es su valor; `group` los agrupa por color.
-new LozChart('#productos', {
-  data: ventas, // { producto: 'Laptops', categoria: 'Electrónica', ventas: 420000 }
-  xAxis: { field: 'producto' },
+// Treemap: each rectangle's area is its value; `group` groups them by color.
+new LozChart('#products', {
+  data: sales, // { product: 'Laptops', category: 'Electronics', sales: 420000 }
+  xAxis: { field: 'product' },
   yAxis: { format: 'currency' },
-  series: [{ type: 'treemap', field: 'ventas', name: 'Ventas', group: 'categoria' }],
+  series: [{ type: 'treemap', field: 'sales', name: 'Sales', group: 'category' }],
 });
 
-// Sankey: una fila por flujo, de `xAxis.field` a `to`.
-new LozChart('#recorrido', {
-  data: flujos, // { origen: 'Búsqueda', destino: 'Producto', sesiones: 4200 }
-  xAxis: { field: 'origen' },
-  series: [{ type: 'sankey', field: 'sesiones', name: 'Sesiones', to: 'destino' }],
+// Sankey: one row per flow, from `xAxis.field` to `to`.
+new LozChart('#journey', {
+  data: flows, // { source: 'Search', target: 'Product', sessions: 4200 }
+  xAxis: { field: 'source' },
+  series: [{ type: 'sankey', field: 'sessions', name: 'Sessions', to: 'target' }],
 });
 ```
 
 <!-- vivo: calor -->
 
-El **mapa de calor** usa un solo tono, de la superficie al color de la serie, mezclado en OKLab
-para que los pasos de claridad sean parejos. Si hay negativos, la escala pasa a ser divergente y
-simétrica alrededor del cero. La leyenda de color va arriba a la derecha, y con las flechas recorres
-la rejilla en las dos direcciones. Si una celda viene repetida, se dibuja la última y la tabla lo
-avisa.
+The **heatmap** uses a single hue, from the surface to the series color, mixed in OKLab so the
+steps in lightness are even. If there are negative values, the scale becomes diverging and
+symmetric around zero. The color legend goes at the top right, and you move through the grid in
+both directions with the arrow keys. If a cell shows up twice, the last one is drawn and the table
+points it out.
 
-En el **treemap** uso el algoritmo _squarified_, que deja los rectángulos lo más cuadrados posible
-porque así se comparan mejor. El texto de cada rectángulo toma el color de mayor contraste con su
-relleno. Con `group`, cada grupo lleva un color de la paleta y su título; si hay más de 8 grupos,
-van en gris.
+In the **treemap** I use the _squarified_ algorithm, which keeps the rectangles as square as
+possible because that makes them easier to compare. The text in each rectangle takes whichever
+color has the most contrast with its fill. With `group`, each group gets a color from the palette
+and its own title; if there are more than 8 groups, they're gray.
 
-El **sankey** arma las columnas con el camino más largo desde cada origen y ordena los nodos para
-que se crucen lo menos posible. Cada flujo lleva el color de su origen. Si tus datos tienen un
-ciclo, el flujo que lo cierra no se dibuja y te avisa en la consola. El tooltip dice qué parte del
-origen y del destino representa cada flujo.
+The **sankey** lays out the columns using the longest path from each source and orders the nodes so
+they cross as little as possible. Each flow takes the color of its source. If your data has a cycle,
+the flow that closes it isn't drawn and you get a warning in the console. The tooltip tells you
+what share of the source and of the target each flow represents.
 
-## Cascada, bala y línea de tiempo
+## Waterfall, bullet, and timeline
 
 ```js
-// Cascada: cada fila es una variación; las marcadas en `total` parten del cero.
-new LozChart('#resultado', {
-  title: 'De las ventas a la utilidad',
+// Waterfall: each row is a change; the rows marked in `total` start from zero.
+new LozChart('#result', {
+  title: 'From sales to profit',
   data: [
-    { paso: 'Ventas', monto: 1200 },
-    { paso: 'Costo de ventas', monto: -500 },
-    { paso: 'Utilidad bruta', total: true },
-    { paso: 'Gastos', monto: -300 },
-    { paso: 'Impuestos', monto: -135 },
-    { paso: 'Utilidad neta', total: true },
+    { step: 'Sales', amount: 1200 },
+    { step: 'Cost of sales', amount: -500 },
+    { step: 'Gross profit', total: true },
+    { step: 'Expenses', amount: -300 },
+    { step: 'Taxes', amount: -135 },
+    { step: 'Net profit', total: true },
   ],
-  xAxis: { field: 'paso' },
-  series: [{ type: 'waterfall', field: 'monto', name: 'Resultado', total: 'total' }],
+  xAxis: { field: 'step' },
+  series: [{ type: 'waterfall', field: 'amount', name: 'Result', total: 'total' }],
 });
 
-// Bala: una fila por indicador, con su meta y los rangos de calidad de fondo.
+// Bullet: one row per indicator, with its goal and the quality ranges in the background.
 new LozChart('#kpi', {
-  title: 'Ventas del trimestre por región',
+  title: 'Quarterly sales by region',
   data: [
-    { region: 'Norte', ventas: 512, meta: 480 },
-    { region: 'Sur', ventas: 297, meta: 420 },
+    { region: 'North', sales: 512, goal: 480 },
+    { region: 'South', sales: 297, goal: 420 },
   ],
   xAxis: { field: 'region' },
-  series: [{ type: 'bullet', field: 'ventas', name: 'Ventas', targetField: 'meta', ranges: [300, 450, 600] }],
+  series: [{ type: 'bullet', field: 'sales', name: 'Sales', targetField: 'goal', ranges: [300, 450, 600] }],
 });
 
-// Línea de tiempo: cada fila va de la X a `end`; sin fin es un hito.
+// Timeline: each row goes from the X to `end`; without an end it's a milestone.
 new LozChart('#plan', {
-  title: 'Lanzamiento 2026',
+  title: '2026 launch',
   data: [
-    { tarea: 'Investigación', inicio: '2026-01-12', fin: '2026-02-27', equipo: 'Producto' },
-    { tarea: 'App móvil', inicio: '2026-04-20', fin: '2026-08-28', equipo: 'Ingeniería' },
-    { tarea: 'Lanzamiento', inicio: '2026-09-15', equipo: 'Marketing' },
+    { task: 'Research', start: '2026-01-12', end: '2026-02-27', team: 'Product' },
+    { task: 'Mobile app', start: '2026-04-20', end: '2026-08-28', team: 'Engineering' },
+    { task: 'Launch', start: '2026-09-15', team: 'Marketing' },
   ],
-  xAxis: { field: 'inicio', type: 'time' },
-  series: [{ type: 'timeline', field: 'tarea', end: 'fin', group: 'equipo', name: 'Plan', today: true }],
+  xAxis: { field: 'start', type: 'time' },
+  series: [{ type: 'timeline', field: 'task', end: 'end', group: 'team', name: 'Plan', today: true }],
 });
 ```
 
@@ -330,88 +331,90 @@ new LozChart('#plan', {
 
 <!-- vivo: plan -->
 
-En la **cascada**, al eje van los acumulados. Por eso puede cruzar el cero sin problema, y una
-bajada grande no estira la escala. Las subidas van rellenas, las bajadas huecas y los totales en
-gris. La punta apunta hacia donde se movió el acumulado y la etiqueta lleva el signo, así que nunca
-dependes de distinguir el verde del rojo. Un total sin valor muestra el acumulado. Si le das un
-valor, manda ese; y si no cuadra, te avisa en la consola y el tooltip da la diferencia.
+In the **waterfall**, the axis shows the running totals. That's why it can cross zero without
+trouble, and a big drop doesn't stretch the scale. Increases are filled, decreases are hollow, and
+totals are gray. The tip points the way the running total moved and the label carries the sign, so
+you never depend on telling green from red. A total without a value shows the running total. If you
+give it a value, that one wins; and if it doesn't add up, you get a warning in the console and the
+tooltip shows the difference.
 
-La **bala** (el gráfico de metas) tiene una sola escala para todas las filas, porque los rangos valen para todas. Si tus
-indicadores tienen unidades distintas, haz un gráfico por indicador. Los rangos van en grises, más
-intensos cuanto peor, nunca en semáforo. El tooltip da la meta, la diferencia (con signo y en %) y
-el rango en que cae el valor. Va una serie por gráfico.
+The **bullet** (the goals chart) has a single scale for all the rows, because the ranges apply to
+all of them. If your indicators have different units, make one chart per indicator. The ranges are
+shades of gray, darker the worse they are, never traffic-light colors. The tooltip gives the goal,
+the difference (with its sign and in %), and the range the value falls in. One series per chart.
 
-En la **línea de tiempo**, el nombre de cada tramo sale de `label` o, si no lo das, de `field`. Con
-`group` tienes un carril por grupo, cada uno con su color. Sin grupos, los tramos que se solapan
-bajan a otra fila, y se usan las menos filas posibles. El eje va de horas a siglos según el rango,
-sin bajar de la precisión de tus datos. El tooltip da el rango y la duración ("4 meses y 8 días")
-en el idioma del gráfico (`locale`).
+In the **timeline**, each span's name comes from `label` or, if you don't set it, from `field`.
+With `group` you get one lane per group, each with its own color. Without groups, spans that overlap
+drop down to another row, using as few rows as possible. The axis goes from hours to centuries
+depending on the range, without going below the precision of your data. The tooltip gives the range
+and the duration ("4 months and 8 days") in the chart's language (`locale`).
 
-`today: true` marca el día de hoy con una línea vertical discontinua y su texto arriba. Si le pasas
-una fecha (`today: '2026-06-30'`), marca esa. Y si un tramo termina antes de empezar, lo invierte y
-te avisa en la consola.
+`today: true` marks today with a dashed vertical line and a label at the top. If you pass it a date
+(`today: '2026-06-30'`), it marks that one. And if a span ends before it starts, it flips it and
+warns you in the console.
 
-## Sunburst, cuerdas, red y nube de palabras
+## Sunburst, chord, network, and word cloud
 
 ```js
-// Sunburst: cada fila es una hoja con su ruta; los nodos interiores suman a sus hijos.
-new LozChart('#ventas', {
-  data: ventas, // { region: 'América', pais: 'México', ciudad: 'Monterrey', ventas: 182000 }
-  xAxis: { field: 'ciudad' },
-  series: [{ type: 'sunburst', field: 'ventas', name: 'Ventas', levels: ['region', 'pais', 'ciudad'] }],
+// Sunburst: each row is a leaf with its path; inner nodes add up their children.
+new LozChart('#sales', {
+  data: sales, // { region: 'Americas', country: 'Mexico', city: 'Monterrey', sales: 182000 }
+  xAxis: { field: 'city' },
+  series: [{ type: 'sunburst', field: 'sales', name: 'Sales', levels: ['region', 'country', 'city'] }],
 });
 
-// Cuerdas: una fila por flujo con dirección, de `xAxis.field` a `to`.
-new LozChart('#migracion', {
-  title: 'Mudanzas entre regiones',
-  data: mudanzas, // { origen: 'Capital', destino: 'Centro', personas: 182 }
-  xAxis: { field: 'origen' },
-  series: [{ type: 'chord', field: 'personas', name: 'Personas', to: 'destino' }],
+// Chord: one row per directed flow, from `xAxis.field` to `to`.
+new LozChart('#migration', {
+  title: 'Moves between regions',
+  data: moves, // { source: 'Capital', target: 'Central', people: 182 }
+  xAxis: { field: 'source' },
+  series: [{ type: 'chord', field: 'people', name: 'People', to: 'target' }],
 });
 
-// Red: una fila por vínculo; sin destino, solo declara el nodo.
-new LozChart('#equipo', {
-  title: 'Quién trabaja con quién',
-  data: mensajes, // { persona: 'Ana', con: 'Luis', mensajes: 8, area: 'Diseño' }
-  xAxis: { field: 'persona' },
-  series: [{ type: 'network', field: 'mensajes', name: 'Mensajes', to: 'con', group: 'area' }],
+// Network: one row per link; without a target, it only declares the node.
+new LozChart('#team', {
+  title: 'Who works with whom',
+  data: messages, // { person: 'Ana', with: 'Luis', messages: 8, area: 'Design' }
+  xAxis: { field: 'person' },
+  series: [{ type: 'network', field: 'messages', name: 'Messages', to: 'with', group: 'area' }],
 });
 
-// Nube de palabras: el área de cada palabra va con su peso.
-new LozChart('#nube', {
-  title: '¿Qué destacan los clientes?',
-  data: menciones, // { palabra: 'atención', menciones: 412, tema: 'Servicio' }
-  xAxis: { field: 'palabra' },
-  series: [{ type: 'wordcloud', field: 'menciones', name: 'Menciones', group: 'tema' }],
+// Word cloud: each word's area goes with its weight.
+new LozChart('#cloud', {
+  title: 'What do customers point out?',
+  data: mentions, // { word: 'support', mentions: 412, topic: 'Service' }
+  xAxis: { field: 'word' },
+  series: [{ type: 'wordcloud', field: 'mentions', name: 'Mentions', group: 'topic' }],
 });
 ```
 
-El **sunburst** (anillos por niveles) empieza arriba y avanza en el sentido del reloj, con los hermanos de mayor a menor.
-Cada rama de primer nivel lleva su color, y los anillos de afuera lo heredan en tonos más claros.
-Sin `levels` queda un solo anillo, como una dona. Al pasar el puntero se resalta la ruta hasta la
-raíz. Con el teclado, ← → recorren y ↑ ↓ suben o bajan de nivel.
+The **sunburst** (rings by level) starts at the top and goes clockwise, with siblings from largest
+to smallest. Each first-level branch gets its own color, and the outer rings inherit it in lighter
+shades. Without `levels` you get a single ring, like a donut. When you hover, the path up to the
+root is highlighted. With the keyboard, ← → move along and ↑ ↓ go up or down a level.
 
-En las **cuerdas**, cada nodo es un arco (lo que sale más lo que entra) y cada flujo es una cinta
-del color de su origen. El extremo de destino queda separado del arco, y así A → B no se confunde
-con B → A. Los arcos van en el orden de tus datos, así que ordénalos tú. Los bucles, de un nodo a sí
-mismo, no se dibujan.
+In the **chord** chart, each node is an arc (what goes out plus what comes in) and each flow is a
+ribbon in the color of its source. The target end sits apart from the arc, so A → B doesn't get
+mixed up with B → A. The arcs follow the order of your data, so sort them yourself. Loops, from a
+node to itself, aren't drawn.
 
-La **red** no tiene dirección: A → B y B → A suman al mismo vínculo. El acomodo es por fuerzas y
-determinista, o sea que los mismos datos dan siempre el mismo dibujo. El área de cada nodo va con su
-grado y el grosor de cada vínculo con su peso; sin `field`, cuenta vínculos. El teclado y el tooltip
-hablan de nodos y mencionan sus vecinos principales.
+The **network** has no direction: A → B and B → A add up to the same link. The layout is
+force-based and deterministic, which means the same data always gives you the same drawing. Each
+node's area goes with its degree and each link's thickness with its weight; without `field`, it
+counts links. The keyboard and the tooltip talk about nodes and mention their main neighbors.
 
-La **nube de palabras** pone todas las palabras horizontales, para que se lean. Las repetidas se
-suman. Lo que no cabe se omite empezando por las más livianas, con un aviso en la consola, y sigue
-en la tabla. El color de cada palabra se ajusta para llegar a 4,5:1 contra el fondo.
+The **word cloud** keeps every word horizontal, so they're easy to read. Repeated words are added
+up. Whatever doesn't fit is left out, starting with the lightest ones, with a warning in the
+console, and it's still in the table. Each word's color is adjusted to reach 4.5:1 against the
+background.
 
-En estos cuatro tipos, los valores cero, negativos o vacíos no se dibujan, pero la tabla de datos
-los lista igual. `labels: false` quita las etiquetas.
+In these four types, zero, negative, or empty values aren't drawn, but the data table still lists
+them. `labels: false` removes the labels.
 
-## Mapas
+## Maps
 
-Los contornos de los países pesan unos 110 KB, así que van en un archivo aparte. Solo lo cargas si
-vas a hacer mapas.
+The country outlines weigh about 110 KB, so they come in a separate file. You only load it if
+you're going to make maps.
 
 ```html
 <script src="lozcharts.umd.js"></script>
@@ -420,35 +423,35 @@ vas a hacer mapas.
 
 ```js
 import { LozChart } from 'lozcharts';
-import 'lozcharts/maps/world'; // registra el mapa del mundo como 'mundo'
+import 'lozcharts/maps/world'; // registers the world map as 'world'
 
-new LozChart('#usuarios', {
+new LozChart('#users', {
   data: [
-    { pais: 'COL', usuarios: 980000 },
-    { pais: 'México', usuarios: 1830000 },
-    { pais: 'Brazil', usuarios: 2650000 },
+    { country: 'COL', users: 980000 },
+    { country: 'Mexico', users: 1830000 },
+    { country: 'Brasil', users: 2650000 },
   ],
-  xAxis: { field: 'pais' },
-  series: [{ type: 'choropleth', field: 'usuarios', name: 'Usuarios', fit: 'data' }],
+  xAxis: { field: 'country' },
+  series: [{ type: 'choropleth', field: 'users', name: 'Users', fit: 'data' }],
 });
 ```
 
 <!-- vivo: usuarios -->
 
-- Cada país lo puedes escribir con su código ISO de 3 letras, con el numérico o con su nombre en
-  inglés o en español. No importan las mayúsculas ni los acentos. Si alguno no aparece, te avisa en
-  la consola.
-- `fit: 'data'` encuadra solo los países que tienen datos, para mostrar una región. Sin esa opción
-  ves el mundo entero, menos la Antártida.
-- La proyección por defecto (`projection`) es `'equalEarth'`, de áreas iguales: la honesta para
-  colorear países. `'mercator'` es la de los mapas web, que infla los países del norte.
-- `mapbubble` pone un círculo por fila, con el área proporcional al valor, en su `lat` y `lon` o en
-  el centro del país.
-- Para otro mapa, regístralo con `LozChart.registerMap('colombia', topojsonOGeojson)` y pon
-  `map: 'colombia'` en la serie. Sirve cualquier TopoJSON o GeoJSON de polígonos en longitud y
-  latitud.
-- Los contornos vienen de Natural Earth 1:110m (dominio público), empaquetados por world-atlas
-  (licencia ISC, en `maps/LICENSE`).
+- You can write each country with its 3-letter ISO code, its numeric code, or its name in English
+  or Spanish. Uppercase and accents don't matter. If one doesn't show up, you get a warning in the
+  console.
+- `fit: 'data'` frames only the countries that have data, to show a region. Without that option
+  you see the whole world, minus Antarctica.
+- The default projection (`projection`) is `'equalEarth'`, an equal-area one: the honest choice for
+  coloring countries. `'mercator'` is the one web maps use, and it inflates the northern countries.
+- `mapbubble` puts one circle per row, with its area proportional to the value, at its `lat` and
+  `lon` or at the center of the country.
+- For another map, register it with `LozChart.registerMap('colombia', topojsonOrGeojson)` and set
+  `map: 'colombia'` in the series. Any TopoJSON or GeoJSON of polygons in longitude and latitude
+  works.
+- The outlines come from Natural Earth 1:110m (public domain), packaged by world-atlas (ISC
+  license, in `maps/LICENSE`).
 
 ## React
 
@@ -456,79 +459,80 @@ new LozChart('#usuarios', {
 import { useMemo, useRef } from 'react';
 import { Chart } from 'lozcharts/react';
 
-function Ventas({ filas }) {
+function Sales({ rows }) {
   const chart = useRef(null);
-  const data = useMemo(() => filas, [filas]);
+  const data = useMemo(() => rows, [rows]);
   return (
     <>
       <Chart
         ref={chart}
-        title="Ventas"
+        title="Sales"
         data={data}
-        xAxis={{ field: 'mes', type: 'time' }}
-        series={[{ type: 'bar', field: 'ventas', name: 'Ventas' }]}
+        xAxis={{ field: 'month', type: 'time' }}
+        series={[{ type: 'bar', field: 'sales', name: 'Sales' }]}
         zoom
-        onZoom={(rango) => console.log(rango)}
+        onZoom={(range) => console.log(range)}
       />
-      <button onClick={() => chart.current?.download('png')}>Descargar</button>
+      <button onClick={() => chart.current?.download('png')}>Download</button>
     </>
   );
 }
 ```
 
-`Chart` recibe las opciones del gráfico como props, más `className`, `style` e `id` para el
-contenedor. `Multiples` hace lo mismo con small multiples.
+`Chart` takes the chart options as props, plus `className`, `style`, and `id` for the container.
+`Multiples` does the same for small multiples.
 
-Lo único que tienes que cuidar son los datos. Se comparan por referencia: si cambian, el gráfico
-anima desde lo que se está viendo. Usa `useMemo` para no crear un arreglo nuevo en cada render. Las
-demás opciones se comparan por contenido, así que escribirlas en línea no vuelve a dibujar nada si
-no cambiaron.
+The only thing you need to watch is the data. It's compared by reference: if it changes, the chart
+animates from what's on screen. Use `useMemo` so you don't create a new array on every render. The
+other options are compared by content, so writing them inline doesn't redraw anything if they
+didn't change.
 
-- `onHover`, `onZoom` y las demás funciones siempre llaman a su versión más reciente.
-- El `ref` te da la instancia de `LozChart` (o `LozMultiples`) con todos sus métodos.
-- Hay un ejemplo completo en `examples/react`: corre `npm run example:react` y abre
+- `onHover`, `onZoom`, and the other functions always call their latest version.
+- The `ref` gives you the `LozChart` (or `LozMultiples`) instance with all its methods.
+- There's a full example in `examples/react`: run `npm run example:react` and open
   `examples/react/index.html`.
 
-## `<loz-chart>`: Angular, Vue, Svelte o HTML puro
+## `<loz-chart>`: Angular, Vue, Svelte, or plain HTML
 
-`<loz-chart>` es un elemento HTML estándar (un Custom Element), así que funciona con cualquier
-framework, sin adaptador. Si cargas `<script src="lozcharts.umd.js">`, ya queda registrado; con
-módulos, importa `'lozcharts/element'`.
+`<loz-chart>` is a standard HTML element (a Custom Element), so it works with any framework, no
+adapter needed. If you load `<script src="lozcharts.umd.js">`, it's already registered; with
+modules, import `'lozcharts/element'`.
 
 ```html
 <loz-chart
-  options='{"data": [{"mes": "2026-01", "ventas": 42000}], "xAxis": {"field": "mes", "type": "time"},
-  "series": [{"type": "bar", "field": "ventas", "name": "Ventas"}]}'
+  options='{"data": [{"month": "2026-01", "sales": 42000}], "xAxis": {"field": "month", "type": "time"},
+  "series": [{"type": "bar", "field": "sales", "name": "Sales"}]}'
 ></loz-chart>
 ```
 
 ```ts
-// Angular (standalone): agrega CUSTOM_ELEMENTS_SCHEMA al componente.
+// Angular (standalone): add CUSTOM_ELEMENTS_SCHEMA to the component.
 import 'lozcharts/element';
 @Component({
-  selector: 'app-ventas',
+  selector: 'app-sales',
   standalone: true,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  template: `<loz-chart [options]="opciones" (lozzoom)="alHacerZoom($event)"></loz-chart>`,
+  template: `<loz-chart [options]="options" (lozzoom)="onZoom($event)"></loz-chart>`,
 })
-export class VentasComponent {
-  opciones = { data: [], xAxis: { field: 'mes', type: 'time' }, series: [{ type: 'line', field: 'ventas' }], zoom: true };
-  alHacerZoom(e: CustomEvent) {
-    console.log(e.detail); // [desde, hasta] o null
+export class SalesComponent {
+  options = { data: [], xAxis: { field: 'month', type: 'time' }, series: [{ type: 'line', field: 'sales' }], zoom: true };
+  onZoom(e: CustomEvent) {
+    console.log(e.detail); // [from, to] or null
   }
 }
 ```
 
-- Las opciones van en el atributo `options` (como JSON) o en la propiedad `options` (como objeto).
-  Si solo cambian los datos, el gráfico anima con `setData`; si cambia otra cosa, con `setOptions`.
-  Con `facet` crea small multiples.
-- Emite `lozhover`, `lozzoom` y `lozclick`. En `event.detail` viene la X activa, el tramo visible o
-  `{ x, index, series }` del dato pulsado. Con `facet` (small multiples) no emite eventos.
-- `elemento.chart` es la instancia, con todos sus métodos. Cuando quitas el elemento de la página,
-  el gráfico se destruye solo, así que dentro de fragmentos HTMX no necesitas `initAll`.
+- The options go in the `options` attribute (as JSON) or in the `options` property (as an object).
+  If only the data changes, the chart animates with `setData`; if anything else changes, with
+  `setOptions`. With `facet` it creates small multiples.
+- It emits `lozhover`, `lozzoom`, and `lozclick`. `event.detail` holds the active X, the visible
+  span, or `{ x, index, series }` for the clicked data point. With `facet` (small multiples) it
+  doesn't emit events.
+- `element.chart` is the instance, with all its methods. When you remove the element from the page,
+  the chart destroys itself, so inside HTMX fragments you don't need `initAll`.
 
-En Vue, dile al compilador que `loz-chart` es un elemento propio de la página y no un componente;
-si no, funciona igual pero te avisa en la consola con "Failed to resolve component":
+In Vue, tell the compiler that `loz-chart` is a native element of the page and not a component;
+otherwise it still works, but you get a "Failed to resolve component" warning in the console:
 
 ```js
 // vite.config.js
@@ -543,403 +547,406 @@ export default {
   import 'lozcharts/element';
 </script>
 <template>
-  <loz-chart :options="opciones" @lozclick="(e) => console.log(e.detail)"></loz-chart>
+  <loz-chart :options="options" @lozclick="(e) => console.log(e.detail)"></loz-chart>
 </template>
 ```
 
 ## TypeScript
 
-Los tipos vienen en el paquete y funcionan con cualquier `moduleResolution` (`bundler`, `node16`,
-`nodenext` o el antiguo `node`). Si escribes una opción que no existe o con un error de tipeo
-(`heigth`, `smoth`, `theme: 'oscuro'`), el editor te lo marca y te sugiere la buena.
+The types ship with the package and work with any `moduleResolution` (`bundler`, `node16`,
+`nodenext`, or the old `node`). If you write an option that doesn't exist or has a typo (`heigth`,
+`smoth`, `theme: 'drak'`), your editor flags it and suggests the right one.
 
 ```ts
 import { LozChart, type LozChartOptions, type SeriesOptions } from 'lozcharts';
 
-const series: SeriesOptions[] = [{ type: 'line', field: 'ventas', name: 'Ventas' }];
-const opciones: LozChartOptions = { data: filas, xAxis: { field: 'mes', type: 'time' }, series };
-const grafico: LozChart = new LozChart('#grafico', opciones);
+const series: SeriesOptions[] = [{ type: 'line', field: 'sales', name: 'Sales' }];
+const options: LozChartOptions = { data: rows, xAxis: { field: 'month', type: 'time' }, series };
+const chart: LozChart = new LozChart('#chart', options);
 ```
 
-Tus filas pueden tener su propio tipo, con `interface` o con `type`
-(`interface Venta { mes: string; ventas: number }`), y `type` de cada serie te sugiere los 26
-tipos mientras escribes.
+Your rows can have their own type, with `interface` or with `type`
+(`interface Sale { month: string; sales: number }`), and each series' `type` suggests the 26 types
+as you write.
 
-En un proyecto CommonJS (`require`) los tipos son los mismos y se importan igual que arriba.
+In a CommonJS project (`require`) the types are the same and you import them just like above.
 
-## LozCharts con IA
+## LozCharts with AI
 
-Si le pides gráficos a ChatGPT, Claude o Copilot, dile que use LozCharts y pásale el archivo
-[llms.txt](llms.txt). Es una sola página con todo lo que existe (tipos, opciones y métodos) y las
-reglas para escribir código que funcione. Con eso no se inventa opciones, y no tienes que pedirle
-zoom, leyenda, modo oscuro ni accesibilidad: ya vienen hechos. Si usas TypeScript, los tipos de
-`lozcharts` además te marcan cualquier opción que no exista.
+If you ask ChatGPT, Claude, or Copilot for charts, tell it to use LozCharts and give it the
+[llms.txt](llms.txt) file. It's a single page with everything that exists (types, options, and
+methods) and the rules for writing code that works. With that it doesn't make up options, and you
+don't have to ask for zoom, a legend, dark mode, or accessibility: they're already built in. If you
+use TypeScript, the `lozcharts` types also flag any option that doesn't exist.
 
-Algo así basta:
+Something like this is enough:
 
 ```text
-Usa LozCharts; todo lo que necesitas saber está en llms.txt (te lo adjunto).
-Quiero barras apiladas con las ventas por mes, en línea y en tienda, en dólares,
-y una línea con la meta mensual.
+Use LozCharts; everything you need to know is in llms.txt (attached).
+I want stacked bars with sales by month, online and in store, in dollars,
+and a line with the monthly goal.
 ```
 
-## Muchos datos
+## Lots of data
 
-Puedes darle 100 000 puntos a una línea. Líneas, áreas, escalones y rangos dibujan solo lo que se
-ve, y cuando hay más de dos datos por píxel se quedan con el primero, el mínimo, el máximo y el
-último de cada columna de píxeles. El trazo se ve igual, ningún pico se pierde y el gráfico se crea
-en unos 40 ms. Con `zoom` exploras series largas sin perder detalle.
+You can give a line 100,000 points. Lines, areas, steps, and ranges only draw what's visible, and
+when there are more than two data points per pixel they keep the first, the minimum, the maximum,
+and the last of each pixel column. The line looks the same, no peak gets lost, and the chart is
+created in about 40 ms. With `zoom` you can explore long series without losing detail.
 
-La tabla para lectores de pantalla muestra las primeras 500 filas y avisa que hay más. Para tener
-todos los datos, usa `download('csv')` o `toCSV()`.
+The table for screen readers shows the first 500 rows and says there are more. To get all the data,
+use `download('csv')` or `toCSV()`.
 
 <!-- vivo: muchos -->
 
 ## Small multiples
 
-Si tienes más de 4 o 5 series, no las metas en un solo gráfico: se enredan. Haz small multiples,
-que son muchos gráficos pequeños con la misma escala, uno por serie o uno por cada valor de un
-campo. También sirven para comparar la forma de varias categorías.
+If you have more than 4 or 5 series, don't cram them into one chart: they get tangled. Make small
+multiples, which are lots of small charts on the same scale, one per series or one per value of a
+field. They're also good for comparing the shape of several categories.
 
 ```js
-// Un panel por serie
-LozChart.multiples('#ciudades', {
-  title: 'Temperatura máxima media por mes',
+// One panel per series
+LozChart.multiples('#cities', {
+  title: 'Average high temperature by month',
   facet: 'series',
-  data: meses, // { mes, miami, madrid, bogota, … }
-  xAxis: { field: 'mes', type: 'time' },
-  series: ciudades.map((c) => ({ type: 'line', field: c.campo, name: c.nombre })),
-  height: 150, // alto de cada panel
+  data: months, // { month, miami, madrid, bogota, … }
+  xAxis: { field: 'month', type: 'time' },
+  series: cities.map((c) => ({ type: 'line', field: c.field, name: c.name })),
+  height: 150, // height of each panel
 });
 
-// Un panel por valor de un campo
-LozChart.multiples('#regiones', {
-  facet: { field: 'region', order: ['Norte', 'Centro', 'Sur'] },
-  data: ventas, // { mes, region, online, tienda }
-  xAxis: { field: 'mes', type: 'time' },
+// One panel per value of a field
+LozChart.multiples('#regions', {
+  facet: { field: 'region', order: ['North', 'Central', 'South'] },
+  data: sales, // { month, region, online, store }
+  xAxis: { field: 'month', type: 'time' },
   series: [
-    { type: 'area', field: 'online', name: 'En línea', stack: true },
-    { type: 'area', field: 'tienda', name: 'Tienda', stack: true },
+    { type: 'area', field: 'online', name: 'Online', stack: true },
+    { type: 'area', field: 'store', name: 'In store', stack: true },
   ],
 });
 ```
 
 <!-- vivo: ciudades -->
 
-Todos los paneles comparten el eje del valor (`sharedY: false` lo desactiva) y las mismas X. Si a
-un panel le falta un mes, ese mes queda como hueco. El área de datos mide lo mismo en todos, así que
-se comparan de un vistazo.
+All the panels share the value axis (`sharedY: false` turns that off) and the same X values. If a
+panel is missing a month, that month is left as a gap. The data area is the same size in all of
+them, so you can compare them at a glance.
 
-- Los números del eje salen solo en la primera columna, y las etiquetas X solo en el último panel
-  de cada columna. Se recalcula cuando cambia el ancho.
-- Si un panel tiene barras, todos usan escala de banda y los números del eje reservan el mismo
-  ancho: cada fecha cae en la misma vertical en todos los paneles.
-- El puntero sobre un panel marca el mismo dato en todos. Hay una sola leyenda (solo al facetar por
-  campo), y ocultar una serie la oculta en todos los paneles.
-- `columns` fija el número de columnas. Si no lo das, caben las que permita `minWidth` (240 px por
-  defecto).
-- Con `facet: 'series'`, `context: true` dibuja en cada panel las demás series en gris, detrás de
-  la suya.
-- Las `annotations` se dibujan en todos los paneles, por ejemplo una meta común.
-- Métodos: `setData`, `setOptions`, `setTheme`, `toggleSeries`, `toSVG`, `toCSV`, `download`,
-  `destroy` y `charts` (los gráficos de cada panel). En HTMX, `initAll` los crea si el JSON trae
+- The axis numbers only show in the first column, and the X labels only on the last panel of each
+  column. This is recalculated when the width changes.
+- If one panel has bars, they all use a band scale and the axis numbers reserve the same width:
+  each date lands on the same vertical line in every panel.
+- Hovering over one panel marks the same data point in all of them. There's a single legend (only
+  when you facet by field), and hiding a series hides it in every panel.
+- `columns` sets the number of columns. If you don't set it, you get as many as `minWidth` allows
+  (240 px by default).
+- With `facet: 'series'`, `context: true` draws the other series in gray in each panel, behind its
+  own.
+- `annotations` are drawn in every panel, for example a shared goal.
+- Methods: `setData`, `setOptions`, `setTheme`, `toggleSeries`, `toSVG`, `toCSV`, `download`,
+  `destroy`, and `charts` (the chart in each panel). In HTMX, `initAll` creates them if the JSON has
   `facet`.
 
-## Dos medidas con distintas unidades
+## Two measures with different units
 
-Con dos ejes Y, quien hace el gráfico decide dónde se cruzan las líneas. Basta mover un eje para
-que una medida "alcance" a la otra, y quien lo lee saca conclusiones que los datos no dicen. Por
-eso te propongo tres caminos, del que más recomiendo al que menos.
+With two Y axes, whoever makes the chart decides where the lines cross. Just move one axis and one
+measure "catches up" with the other, and whoever reads it draws conclusions the data doesn't
+support. That's why I suggest three options, from the one I recommend most to the one I recommend
+least.
 
-**Paneles alineados.** Es mi favorito. Cada medida va en su panel y con sus unidades. Comparten el
-eje X, las áreas de datos quedan alineadas al píxel y el puntero se mueve en los dos a la vez.
+**Aligned panels.** This is my favorite. Each measure gets its own panel with its own units. They
+share the X axis, the data areas line up to the pixel, and the pointer moves in both at once.
 
 ```js
-LozChart.multiples('#ventas-y-visitas', {
+LozChart.multiples('#sales-and-visits', {
   facet: 'series',
   columns: 1,
-  sharedY: false, // cada panel con su propio eje
-  data: meses,
-  xAxis: { field: 'mes', type: 'time' },
+  sharedY: false, // each panel with its own axis
+  data: months,
+  xAxis: { field: 'month', type: 'time' },
   series: [
-    { type: 'bar', field: 'ventas', name: 'Ventas', format: 'currency' },
-    { type: 'line', field: 'visitas', name: 'Visitas a la web', format: 'compact' },
+    { type: 'bar', field: 'sales', name: 'Sales', format: 'currency' },
+    { type: 'line', field: 'visits', name: 'Website visits', format: 'compact' },
   ],
 });
 ```
 
-**Índice base 100.** Úsalo cuando la pregunta es cuál creció más. LozCharts divide cada serie por
-su primer valor y la multiplica por 100; así las dos quedan en la misma unidad y comparten eje. El
-tooltip muestra el índice y también el valor original.
+**Base-100 index.** Use it when the question is which one grew more. LozCharts divides each series
+by its first value and multiplies it by 100; that way both end up in the same unit and share an
+axis. The tooltip shows the index and the original value too.
 
 ```js
-new LozChart('#crecimiento', {
-  data: meses,
-  xAxis: { field: 'mes', type: 'time' },
+new LozChart('#growth', {
+  data: months,
+  xAxis: { field: 'month', type: 'time' },
   yAxis: { index: true },
   series: [
-    { type: 'line', field: 'ventas', name: 'Ventas', format: 'currency' },
-    { type: 'line', field: 'visitas', name: 'Visitas a la web' },
+    { type: 'line', field: 'sales', name: 'Sales', format: 'currency' },
+    { type: 'line', field: 'visits', name: 'Website visits' },
   ],
 });
 ```
 
-**Doble eje, con salvaguardas.** Déjalo para cuando de verdad lo necesites, por ejemplo porque tu
-público ya lo espera. `axis: 'right'` lleva una serie al eje derecho y `yAxis2` configura ese eje.
-LozCharts se encarga de que los dos ejes empiecen en cero, de que el cero quede a la misma altura,
-de que las líneas de la rejilla coincidan (para eso elige el paso del eje derecho) y de que la
-leyenda diga "(eje derecho)". No funciona en modo índice ni en horizontal.
+**Dual axis, with safeguards.** Save it for when you really need it, for example because your
+audience already expects it. `axis: 'right'` moves a series to the right axis and `yAxis2` sets up
+that axis. LozCharts makes sure both axes start at zero, that zero sits at the same height, that the
+grid lines match (it picks the step of the right axis for that), and that the legend says "(right
+axis)". It doesn't work in index mode or in horizontal.
 
 ```js
-new LozChart('#ventas-y-visitas', {
-  data: meses,
-  xAxis: { field: 'mes', type: 'time' },
-  yAxis: { format: 'currency', title: 'Ventas' },
-  yAxis2: { format: 'compact', title: 'Visitas' },
+new LozChart('#sales-and-visits', {
+  data: months,
+  xAxis: { field: 'month', type: 'time' },
+  yAxis: { format: 'currency', title: 'Sales' },
+  yAxis2: { format: 'compact', title: 'Visits' },
   series: [
-    { type: 'bar', field: 'ventas', name: 'Ventas' },
-    { type: 'line', field: 'visitas', name: 'Visitas a la web', axis: 'right' },
+    { type: 'bar', field: 'sales', name: 'Sales' },
+    { type: 'line', field: 'visits', name: 'Website visits', axis: 'right' },
   ],
 });
 ```
 
-## Zoom, anotaciones y etiquetas directas
+## Zoom, annotations, and direct labels
 
 ```js
-new LozChart('#visitas', {
-  title: 'Visitas diarias',
-  data: dias, // { fecha, web, app }, un año
-  xAxis: { field: 'fecha', type: 'time' },
+new LozChart('#visits', {
+  title: 'Daily visits',
+  data: days, // { date, web, app }, one year
+  xAxis: { field: 'date', type: 'time' },
   series: [
     { type: 'line', field: 'web', name: 'Web' },
     { type: 'line', field: 'app', name: 'App' },
   ],
-  zoom: { range: ['2026-06-01', '2026-08-31'] }, // ventana inicial (opcional)
+  zoom: { range: ['2026-06-01', '2026-08-31'] }, // initial window (optional)
   endLabels: true,
   annotations: [
-    { y: 8000, label: 'Meta diaria' },
-    { x: ['2026-06-29', '2026-07-21'], label: 'Campaña de verano' },
+    { y: 8000, label: 'Daily goal' },
+    { x: ['2026-06-29', '2026-07-21'], label: 'Summer campaign' },
   ],
 });
 ```
 
 <!-- vivo: zoom -->
 
-El **zoom** (`zoom: true`) funciona en gráficos verticales con ejes X e Y (cartesianos). Arrastra sobre el gráfico
-para marcar un tramo y acercarlo. Ctrl + rueda, o pellizcar en el panel táctil, acerca y aleja bajo el
-puntero; Shift + rueda, o deslizar de lado, mueve la ventana, y doble clic vuelve a todo. En una
-pantalla táctil, con dos dedos pellizcas y mueves, y con uno sigues recorriendo los datos con el
-tooltip. La rueda sola sigue moviendo la página: el gráfico no te la secuestra. Al acercar,
-el eje del valor se ajusta a lo que se ve.
+**Zoom** (`zoom: true`) works on vertical charts with X and Y axes (cartesian). Drag over the chart
+to mark a span and zoom in on it. Ctrl + wheel, or pinching on the trackpad, zooms in and out under
+the pointer; Shift + wheel, or swiping sideways, moves the window, and double-click goes back to
+everything. On a touch screen, you pinch and pan with two fingers, and with one you keep moving
+through the data with the tooltip. The wheel on its own still scrolls the page: the chart doesn't
+hijack it. When you zoom in, the value axis adjusts to what's visible.
 
-Debajo aparece una barra con un mini gráfico de todos los datos. Puedes arrastrar la ventana o sus
-bordes, o moverla con el teclado. `zoom: { scrollbar: false }` quita la barra, y
-`zoom: { reset: false }` quita el botón "Ver todo", por si pones tu propio control. Con el foco en
-el gráfico, + y − acercan y alejan, 0 vuelve a todo, y si con las flechas llegas a un dato fuera de
-la ventana, la ventana lo sigue.
+Underneath there's a bar with a mini chart of all the data. You can drag the window or its edges, or
+move it with the keyboard. `zoom: { scrollbar: false }` removes the bar, and
+`zoom: { reset: false }` removes the "Show all" button, in case you add your own control. With focus
+on the chart, + and − zoom in and out, 0 goes back to everything, and if the arrow keys take you to a
+data point outside the window, the window follows it.
 
-Si tienes varios gráficos con el mismo eje, como precio arriba y volumen abajo, puedes mover el zoom
-de todos a la vez. `onZoom` recibe también la ventana exacta en fracciones del eje, y
-`setZoomWindow` la pone en otro gráfico sin redondear a un dato. Los dos tienen que compartir el eje
-X y la clase de escala: de barras los dos, o continua los dos.
+If you have several charts with the same axis, like price on top and volume below, you can move the
+zoom on all of them at once. `onZoom` also gets the exact window in fractions of the axis, and
+`setZoomWindow` sets it on another chart without rounding to a data point. Both have to share the X
+axis and the kind of scale: both with bars, or both continuous.
 
 ```js
-const precio = new LozChart('#precio', { ...opciones, zoom: true, onZoom: (rango, ventana) => volumen.setZoomWindow(ventana) });
-const volumen = new LozChart('#volumen', { ...otras, zoom: { scrollbar: false, reset: false } });
+const price = new LozChart('#price', { ...options, zoom: true, onZoom: (range, zoomWindow) => volume.setZoomWindow(zoomWindow) });
+const volume = new LozChart('#volume', { ...others, zoom: { scrollbar: false, reset: false } });
 ```
 
-Cada **anotación** (`annotations`) lleva `x` o `y`. Con un valor dibuja una línea de referencia, y
-con dos, una franja. `x` acepta categorías, fechas o números; `y` acepta números (con
-`axis: 'right'` para el eje derecho). El eje se amplía para que una meta siempre se vea. Las franjas
-van detrás de los datos y las líneas con sus textos, encima. Si dos textos chocarían, uno se corre.
+Each **annotation** (`annotations`) has an `x` or a `y`. With one value it draws a reference line,
+and with two, a band. `x` takes categories, dates, or numbers; `y` takes numbers (with
+`axis: 'right'` for the right axis). The axis grows so a goal is always visible. Bands go behind the
+data and lines with their text go on top. If two texts would collide, one moves over.
 
-Con **etiquetas al final** (`endLabels: true`), el nombre de cada línea, área o escalón va a la
-derecha, a la altura de su último dato visible; `{ value: true }` agrega el último valor. Las que
-chocan se reparten sin alejarse de su dato más de lo necesario, y con zoom siguen al último dato de
-la ventana.
+With **end labels** (`endLabels: true`), the name of each line, area, or step goes on the right, at
+the height of its last visible data point; `{ value: true }` adds the last value. The ones that
+collide spread out without moving further from their data point than they need to, and with zoom
+they follow the last data point in the window.
 
-El **énfasis** (`emphasis: 'Bogotá'` o una lista) deja las series nombradas en su color y encima, y
-las demás en gris como contexto. En small multiples por serie, `context: true` hace lo mismo en cada
-panel: su serie en color y las demás en gris detrás.
+**Emphasis** (`emphasis: 'Bogotá'` or a list) keeps the named series in their color and on top, and
+the rest in gray as context. In small multiples by series, `context: true` does the same in each
+panel: its series in color and the others in gray behind it.
 
-## Opciones
+## Options
 
-| Opción                       | Tipo                                        | Por defecto                  | Qué hace                                                                                                                  |
-| ---------------------------- | ------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `title`, `subtitle`          | texto                                       | —                            | Encabezado del gráfico (también va en la exportación).                                                                    |
-| `data`                       | arreglo de objetos                          | —                            | Una fila por punto.                                                                                                       |
-| `xAxis.field`                | texto                                       | —                            | Campo de la posición X.                                                                                                   |
-| `xAxis.type`                 | `'category'` `'time'` `'linear'`            | `'category'`                 | Fechas aceptan `Date`, milisegundos o texto (`'2026-03'` se lee en hora local).                                           |
-| `xAxis.format`               | formato u opciones de `Intl.DateTimeFormat` | automático                   | Etiquetas del eje X.                                                                                                      |
-| `xAxis.title`, `yAxis.title` | texto                                       | —                            | Títulos de los ejes.                                                                                                      |
-| `yAxis.format`               | ver abajo                                   | `'auto'`                     | Formato del eje Y y del tooltip.                                                                                          |
-| `yAxis.min`, `yAxis.max`     | número                                      | calculados                   | Límites fijos.                                                                                                            |
-| `yAxis2`                     | `{ format, title, min, max }`               | —                            | Eje derecho para las series con `axis: 'right'`.                                                                          |
-| `series[].axis`              | `'left'` `'right'`                          | `'left'`                     | Eje del valor de la serie.                                                                                                |
-| `yAxis.index`                | booleano                                    | `false`                      | Índice base 100: cada serie respecto de su primer valor.                                                                  |
-| `yAxis.width`                | px                                          | —                            | Ancho mínimo para los números del eje; alinea varios gráficos.                                                            |
-| `xAxis.labels`               | booleano                                    | `true`                       | `false` oculta las etiquetas del eje X.                                                                                   |
-| `xAxis.band`                 | booleano                                    | `false`                      | Fuerza la escala de banda (puntos al centro de su franja), para alinear con barras.                                       |
-| `xAxis.grid`                 | booleano                                    | con fechas o números, `true` | Líneas verticales de la rejilla en cada marca del eje X. Con categorías no van, salvo que las pidas.                      |
-| `yAxis.labels`               | booleano                                    | `true`                       | `false` oculta los números del eje (la rejilla queda).                                                                    |
-| `yAxis.zero`                 | booleano                                    | `false`                      | Fuerza el cero (barras y áreas ya lo incluyen).                                                                           |
-| `yAxis.type`                 | `'linear'` `'log'`                          | `'linear'`                   | Escala logarítmica: marcas en 1, 2 y 5 × 10ⁿ; solo cuentan los valores positivos y no hay cero.                           |
-| `yAxis.grid`                 | booleano                                    | `true`                       | `false` quita la rejilla del valor (la línea del cero queda).                                                             |
-| `series[].type`              | ver [Tipos de serie](#tipos-de-serie)       | —                            | Tipo registrado.                                                                                                          |
-| `series[].field`             | texto                                       | —                            | Campo numérico.                                                                                                           |
-| `series[].name`              | texto                                       | el campo                     | Nombre visible; debe ser único.                                                                                           |
-| `series[].stack`             | `true` o texto                              | —                            | Apila barras o áreas del mismo grupo. Positivos y negativos se apilan por separado.                                       |
-| `series[].smooth`            | booleano                                    | `false`                      | Curva monótona (línea y área).                                                                                            |
-| `series[].color`             | 1 a 8                                       | su posición                  | Lugar en la paleta.                                                                                                       |
-| `series[].visible`           | booleano                                    | `true`                       | Visible al inicio.                                                                                                        |
-| `series[].format`            | formato                                     | el del eje Y                 | Formato propio en el tooltip.                                                                                             |
-| `orientation`                | `'vertical'` `'horizontal'`                 | `'vertical'`                 | En horizontal, las categorías van en el eje vertical.                                                                     |
-| `theme`                      | `'light'` `'dark'` `'auto'`                 | `'auto'`                     | `auto` sigue al sistema y cambia en vivo.                                                                                 |
-| `palette`                    | arreglo de colores o `{ light, dark }`      | la de LozCharts              | Colores propios en orden (máximo 8). Ver [Paleta propia](#paleta-propia).                                                 |
-| `height`                     | px                                          | `320`                        | Alto del área del gráfico con sus ejes (un tipo de serie puede pedir otro; el dado aquí manda).                           |
-| `legend`                     | `false` o `{ position: 'top' \| 'bottom' }` | abajo                        | Solo aparece con 2 o más series.                                                                                          |
-| `tooltip`                    | booleano o `{ float }`                      | `true`                       | `false` apaga tooltip y puntero; `{ float: false }` quita solo el recuadro (queda todo lo demás).                         |
-| `animate`                    | booleano                                    | `true`                       | `false` dibuja sin animación.                                                                                             |
-| `locale`, `currency`         | texto                                       | `'es'`, `'USD'`              | Para `Intl`.                                                                                                              |
-| `background`                 | booleano                                    | `true`                       | Pinta la superficie del tema detrás del gráfico.                                                                          |
-| `onHover`                    | función                                     | —                            | Recibe la X del dato activo (o null al salir), su índice de fila (−1) y su serie. Con `highlight(x)` sincroniza gráficos. |
-| `selection`                  | arreglo de índices de fila                  | —                            | Datos seleccionados: se ven normal y los demás quedan atenuados. Ver `select()`.                                          |
-| `zoom`                       | booleano o `{ range, scrollbar, reset }`    | `false`                      | Zoom en el eje X con barra de desplazamiento. Ver [Zoom](#zoom-anotaciones-y-etiquetas-directas).                         |
-| `onZoom`                     | función                                     | —                            | Recibe el primer y el último dato visibles (o null al ver todo) y la ventana `{ start, end }`.                            |
-| `onClick`                    | función                                     | —                            | Clic, Enter o Espacio en un dato: recibe su X, su índice y la serie (o null si es de todas).                              |
-| `annotations`                | arreglo de `{ x \| y, label, axis }`        | —                            | Líneas de referencia (un valor) y franjas (dos valores).                                                                  |
-| `endLabels`                  | booleano o `{ value }`                      | `false`                      | Nombre (y valor) al final de cada línea, área o escalón.                                                                  |
-| `emphasis`                   | texto o arreglo                             | —                            | Series destacadas; las demás van en gris como contexto.                                                                   |
-| `ariaLabel`                  | texto                                       | automático                   | Descripción para lectores de pantalla.                                                                                    |
+| Option                       | Type                                         | Default                       | What it does                                                                                                                     |
+| ---------------------------- | -------------------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `title`, `subtitle`          | text                                         | —                             | The chart's heading (it's also included in the export).                                                                          |
+| `data`                       | array of objects                             | —                             | One row per point.                                                                                                               |
+| `xAxis.field`                | text                                         | —                             | Field for the X position.                                                                                                        |
+| `xAxis.type`                 | `'category'` `'time'` `'linear'`             | `'category'`                  | Dates accept `Date`, milliseconds, or text (`'2026-03'` is read in local time).                                                  |
+| `xAxis.format`               | format or `Intl.DateTimeFormat` options      | automatic                     | X axis labels.                                                                                                                   |
+| `xAxis.title`, `yAxis.title` | text                                         | —                             | Axis titles.                                                                                                                     |
+| `yAxis.format`               | see below                                    | `'auto'`                      | Format for the Y axis and the tooltip.                                                                                           |
+| `yAxis.min`, `yAxis.max`     | number                                       | calculated                    | Fixed limits.                                                                                                                    |
+| `yAxis2`                     | `{ format, title, min, max }`                | —                             | Right axis for the series with `axis: 'right'`.                                                                                  |
+| `series[].axis`              | `'left'` `'right'`                           | `'left'`                      | The series' value axis.                                                                                                          |
+| `yAxis.index`                | boolean                                      | `false`                       | Base-100 index: each series relative to its first value.                                                                         |
+| `yAxis.width`                | px                                           | —                             | Minimum width for the axis numbers; lines up several charts.                                                                     |
+| `xAxis.labels`               | boolean                                      | `true`                        | `false` hides the X axis labels.                                                                                                 |
+| `xAxis.band`                 | boolean                                      | `false`                       | Forces a band scale (points in the middle of their slot), to line up with bars.                                                  |
+| `xAxis.grid`                 | boolean                                      | with dates or numbers, `true` | Vertical grid lines at each X axis tick. With categories they're off unless you ask for them.                                    |
+| `yAxis.labels`               | boolean                                      | `true`                        | `false` hides the axis numbers (the grid stays).                                                                                 |
+| `yAxis.zero`                 | boolean                                      | `false`                       | Forces zero in (bars and areas already include it).                                                                              |
+| `yAxis.type`                 | `'linear'` `'log'`                           | `'linear'`                    | Log scale: ticks at 1, 2, and 5 × 10ⁿ; only positive values count and there's no zero.                                           |
+| `yAxis.grid`                 | boolean                                      | `true`                        | `false` removes the value grid (the zero line stays).                                                                            |
+| `series[].type`              | see [Series types](#series-types)            | —                             | A registered type.                                                                                                               |
+| `series[].field`             | text                                         | —                             | Numeric field.                                                                                                                   |
+| `series[].name`              | text                                         | the field                     | Visible name; must be unique.                                                                                                    |
+| `series[].stack`             | `true` or text                               | —                             | Stacks bars or areas in the same group. Positive and negative values stack separately.                                           |
+| `series[].smooth`            | boolean                                      | `false`                       | Monotone curve (line and area).                                                                                                  |
+| `series[].color`             | 1 to 8                                       | its position                  | Spot in the palette.                                                                                                             |
+| `series[].visible`           | boolean                                      | `true`                        | Visible at the start.                                                                                                            |
+| `series[].format`            | format                                       | the Y axis one                | Its own format in the tooltip.                                                                                                   |
+| `orientation`                | `'vertical'` `'horizontal'`                  | `'vertical'`                  | In horizontal, the categories go on the vertical axis.                                                                           |
+| `theme`                      | `'light'` `'dark'` `'auto'`                  | `'auto'`                      | `auto` follows the system and changes live.                                                                                      |
+| `palette`                    | array of colors or `{ light, dark }`         | the LozCharts one             | Your own colors, in order (8 at most). See [Custom palette](#custom-palette).                                                    |
+| `height`                     | px                                           | `320`                         | Height of the chart area with its axes (a series type can ask for a different one; the one you set here wins).                   |
+| `legend`                     | `false` or `{ position: 'top' \| 'bottom' }` | bottom                        | Only shows up with 2 or more series.                                                                                             |
+| `tooltip`                    | boolean or `{ float }`                       | `true`                        | `false` turns off the tooltip and the pointer; `{ float: false }` removes just the box (everything else stays).                  |
+| `animate`                    | boolean                                      | `true`                        | `false` draws without animation.                                                                                                 |
+| `locale`, `currency`         | text                                         | the page's `lang`, `'USD'`    | Language of the library's own text (`'es'`, `'en'`, `'pt-BR'`) and of numbers and dates with `Intl`.                             |
+| `background`                 | boolean                                      | `true`                        | Paints the theme's surface behind the chart.                                                                                     |
+| `onHover`                    | function                                     | —                             | Gets the X of the active data point (or null on leave), its row index (−1), and its series. With `highlight(x)` it syncs charts. |
+| `selection`                  | array of row indexes                         | —                             | Selected data: shown normally while the rest is dimmed. See `select()`.                                                          |
+| `zoom`                       | boolean or `{ range, scrollbar, reset }`     | `false`                       | Zoom on the X axis with a scrollbar. See [Zoom](#zoom-annotations-and-direct-labels).                                            |
+| `onZoom`                     | function                                     | —                             | Gets the first and last visible data points (or null when showing everything) and the window `{ start, end }`.                   |
+| `onClick`                    | function                                     | —                             | Click, Enter, or Space on a data point: gets its X, its index, and the series (or null if it's for all of them).                 |
+| `annotations`                | array of `{ x \| y, label, axis }`           | —                             | Reference lines (one value) and bands (two values).                                                                              |
+| `endLabels`                  | boolean or `{ value }`                       | `false`                       | Name (and value) at the end of each line, area, or step.                                                                         |
+| `emphasis`                   | text or array                                | —                             | Highlighted series; the rest go gray as context.                                                                                 |
+| `ariaLabel`                  | text                                         | automatic                     | Description for screen readers.                                                                                                  |
 
-Los formatos son `'auto'` (compacto desde mil: 0 / 1 mil / 2 mil), `'compact'`, `'number'`,
-`'percent'` (los datos van como fracción: `0.25` = 25 %), `'currency'` o una función
-`(v) => texto`. El formato cambia lo que ves en el eje; el tooltip siempre muestra el valor exacto.
+The formats are `'auto'` (compact from a thousand up: 0 / 1K / 2K), `'compact'`, `'number'`,
+`'percent'` (the data goes in as a fraction: `0.25` = 25%), `'currency'`, or a function
+`(v) => text`. The format changes what you see on the axis; the tooltip always shows the exact
+value.
 
-## Paleta propia
+## Custom palette
 
-LozCharts trae su propia paleta de 8 colores, validada para daltonismo y con tonos pensados para el
-modo oscuro. Si necesitas los colores de tu marca, pásalos en `palette`:
+LozCharts comes with its own palette of 8 colors, checked for color blindness and with shades made
+for dark mode. If you need your brand colors, pass them in `palette`:
 
 ```js
-new LozChart('#grafico', {
+new LozChart('#chart', {
   palette: {
     light: ['#0a7d4f', '#6b3fa0', '#d9480f'],
-    dark: ['#2fb37a', '#9b74d1', '#f0703a'], // opcional: si falta, se usa light
+    dark: ['#2fb37a', '#9b74d1', '#f0703a'], // optional: if it's missing, light is used
   },
   // …
 });
 ```
 
-- Un arreglo simple (`palette: ['#0a7d4f', …]`) vale para los dos modos.
-- Caben 8 colores como máximo, y ese número es también el de series que caben. Las que sobran se
-  agrupan en "Otros" si están apiladas juntas; si no, se descartan con un aviso. Nunca se repite un
-  color.
-- Antes de usarla, revisa tu paleta con un simulador de daltonismo y mide el contraste. Los colores
-  de una marca rara vez se pensaron para gráficos.
+- A plain array (`palette: ['#0a7d4f', …]`) works for both modes.
+- There's room for 8 colors at most, and that's also how many series fit. The extra ones are
+  grouped into "Other" if they're stacked together; if not, they're dropped with a warning. A color
+  is never repeated.
+- Before you use it, check your palette with a color blindness simulator and measure the contrast.
+  Brand colors were rarely designed with charts in mind.
 
-## Métodos
+## Methods
 
-| Método                                                    | Qué hace                                                                                         |
+| Method                                                    | What it does                                                                                     |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `setData(datos)`                                          | Cambia los datos y anima desde el estado actual (aunque haya una animación a medias).            |
-| `options`                                                 | Opciones vigentes, con los valores por defecto (solo lectura).                                   |
-| `setOptions({...}, animar?)`                              | Combina opciones nuevas con las actuales y redibuja.                                             |
-| `axisWidth`                                               | Ancho que necesitan hoy los números del eje Y (para alinear gráficos con `yAxis.width`).         |
-| `highlight(x)`                                            | Marca el dato con esa X (o varios, con una lista), sin tooltip; `null` limpia.                   |
-| `highlightIndex(i)`                                       | Como `highlight`, por índice de fila o lista de índices (una celda de un mapa de calor).         |
-| `select(índices)`, `selection`                            | Selecciona datos por índice (los demás se atenúan) y lo anuncia; `null` quita la selección.      |
-| `zoomTo(desde, hasta)`, `resetZoom()`                     | Acerca el eje X a un tramo (con barras, incluye las categorías de los extremos) o vuelve a todo. |
-| `zoomRange`                                               | Primer y último dato visibles con zoom, o null.                                                  |
-| `zoomWindow`, `setZoomWindow({ start, end } \| null)`     | La ventana exacta del zoom en fracciones del eje X, y fijarla (para sincronizar gráficos).       |
-| `redraw()`                                                | Vuelve a dibujar con el estado actual, sin animar (para tipos cuyo dibujo cambia por fuera).     |
-| `setTheme('dark')`                                        | Cambia el tema.                                                                                  |
-| `toggleSeries('En línea', visible?)`                      | Oculta o muestra una serie; las demás conservan su color.                                        |
-| `toSVG()`                                                 | SVG completo como texto, con título y leyenda.                                                   |
-| `toCSV()`                                                 | Los datos como CSV (números sin formato, fechas en ISO), para una hoja de cálculo.               |
-| `download('png' \| 'svg' \| 'csv', nombre?)`              | Descarga la imagen (PNG al doble de resolución) o los datos en CSV.                              |
-| `destroy()`                                               | Quita el gráfico y deja de escuchar sus eventos.                                                 |
-| `visibleSeries`                                           | Nombres de las series visibles (las que no ocultaste en la leyenda).                             |
-| `element`                                                 | El elemento de la página donde está el gráfico.                                                  |
-| `LozChart.multiples(elemento, opciones)`                  | Crea small multiples. Ver [Small multiples](#small-multiples).                                   |
-| `LozChart.getChart(elemento)`                             | El gráfico que ya está montado en ese elemento (o en ese selector), si hay uno.                  |
-| `LozChart.initAll(raíz)`, `destroyAll(raíz)`, `cleanup()` | Montaje automático para HTMX.                                                                    |
-| `LozChart.registerSeries(nombre, impl)`                   | Agrega un tipo de serie.                                                                         |
-| `LozChart.seriesTypes`                                    | Los nombres de los tipos de serie registrados.                                                   |
-| `LozChart.registerMap(nombre, topojsonOGeojson)`          | Agrega un mapa para `choropleth` y `mapbubble`.                                                  |
+| `setData(data)`                                           | Changes the data and animates from the current state (even mid-animation).                       |
+| `options`                                                 | The current options, with the defaults filled in (read-only).                                    |
+| `setOptions({...}, animate?)`                             | Merges new options with the current ones and redraws.                                            |
+| `axisWidth`                                               | The width the Y axis numbers need right now (to line up charts with `yAxis.width`).              |
+| `highlight(x)`                                            | Marks the data point with that X (or several, with a list), without a tooltip; `null` clears.    |
+| `highlightIndex(i)`                                       | Like `highlight`, by row index or list of indexes (a cell in a heatmap).                         |
+| `select(indexes)`, `selection`                            | Selects data by index (the rest is dimmed) and announces it; `null` clears the selection.        |
+| `zoomTo(from, to)`, `resetZoom()`                         | Zooms the X axis in on a span (with bars, it includes the categories at the ends) or shows all.  |
+| `zoomRange`                                               | The first and last data points visible with zoom, or null.                                       |
+| `zoomWindow`, `setZoomWindow({ start, end } \| null)`     | The exact zoom window in fractions of the X axis, and setting it (to sync charts).               |
+| `redraw()`                                                | Draws again with the current state, without animating (for types whose drawing changes outside). |
+| `setTheme('dark')`                                        | Changes the theme.                                                                               |
+| `toggleSeries('Online', visible?)`                        | Hides or shows a series; the others keep their color.                                            |
+| `toSVG()`                                                 | The full SVG as text, with title and legend.                                                     |
+| `toCSV()`                                                 | The data as CSV (unformatted numbers, ISO dates), for a spreadsheet.                             |
+| `download('png' \| 'svg' \| 'csv', name?)`                | Downloads the image (PNG at double resolution) or the data as CSV.                               |
+| `destroy()`                                               | Removes the chart and stops listening to its events.                                             |
+| `visibleSeries`                                           | Names of the visible series (the ones you didn't hide in the legend).                            |
+| `element`                                                 | The page element the chart lives in.                                                             |
+| `LozChart.multiples(element, options)`                    | Creates small multiples. See [Small multiples](#small-multiples).                                |
+| `LozChart.getChart(element)`                              | The chart already mounted on that element (or that selector), if there is one.                   |
+| `LozChart.initAll(root)`, `destroyAll(root)`, `cleanup()` | Automatic mounting for HTMX.                                                                     |
+| `LozChart.registerSeries(name, impl)`                     | Adds a series type.                                                                              |
+| `LozChart.seriesTypes`                                    | The names of the registered series types.                                                        |
+| `LozChart.registerMap(name, topojsonOrGeojson)`           | Adds a map for `choropleth` and `mapbubble`.                                                     |
 
-Los métodos que cambian algo devuelven el mismo gráfico, así que puedes encadenarlos:
-`chart.setTheme('dark').toggleSeries('Tienda', false)`.
+The methods that change something return the same chart, so you can chain them:
+`chart.setTheme('dark').toggleSeries('In store', false)`.
 
-### Cuando no hay datos
+### When there is no data
 
-El gráfico se queda vacío, sin letrero: el mensaje lo decides tú. Mientras no tiene datos, su
-elemento lleva el atributo `data-empty`, así que te basta una regla de CSS:
+The chart stays empty, with no message: you decide what it says. While it has no data, its element
+has the `data-empty` attribute, so all you need is one CSS rule:
 
 ```css
-#ventas[data-empty]::after {
-  content: 'Todavía no hay ventas este mes.';
+#sales[data-empty]::after {
+  content: 'No sales yet this month.';
   display: grid;
   place-items: center;
   position: absolute;
   inset: 0;
   color: #52514e;
 }
-#ventas {
+#sales {
   position: relative;
 }
 ```
 
-Si prefieres hacerlo desde el código, pregunta por `chart.element.hasAttribute('data-empty')`
-después de `setData`. Quien usa un lector de pantalla igual oye que el gráfico todavía no tiene
-datos.
+If you'd rather do it from code, check `chart.element.hasAttribute('data-empty')` after `setData`.
+People using a screen reader still hear that the chart doesn't have data yet.
 
-## Accesibilidad
+## Accessibility
 
-No tienes que activar nada de esto: viene en cada gráfico.
+You don't have to turn any of this on: it comes with every chart.
 
 <!-- vivo: teclado -->
 
-- El SVG tiene `role="img"` y una descripción (`aria-label`).
-- Con el foco en el gráfico, ← → (↑ ↓ en horizontal) recorren los datos, Inicio y Fin van a los
-  extremos y Escape cierra el tooltip. Cada movimiento se anuncia a los lectores de pantalla.
-- Cada gráfico lleva una tabla oculta con todos los datos. Con zoom también, porque el zoom cambia
-  lo que se ve, no los datos.
-- Con zoom, + − y 0 acercan, alejan y vuelven a todo. La barra de desplazamiento son tres controles
-  deslizantes (la ventana y sus dos bordes) que se mueven con las flechas, Re Pág y Av Pág, e
-  Inicio y Fin, y que anuncian el tramo visible. El botón "Ver todo" aparece al acercar.
-- Las anotaciones con texto se leen en la descripción del gráfico ("Referencias: Meta diaria, 8
-  mil").
-- La leyenda son botones con `aria-pressed`.
-- Respeta la preferencia del sistema de reducir el movimiento (`prefers-reduced-motion`).
+- The SVG has `role="img"` and a description (`aria-label`).
+- With focus on the chart, ← → (↑ ↓ in horizontal) move through the data, Home and End go to the
+  ends, and Escape closes the tooltip. Every move is announced to screen readers.
+- Every chart has a hidden table with all the data. With zoom too, because zoom changes what you
+  see, not the data.
+- With zoom, + − and 0 zoom in, zoom out, and go back to everything. The scrollbar is three sliders
+  (the window and its two edges) that move with the arrow keys, Page Up and Page Down, and Home and
+  End, and that announce the visible span. The "Show all" button shows up when you zoom in.
+- Annotations with text are read in the chart's description ("References: Daily goal, 8K").
+- The legend is made of buttons with `aria-pressed`.
+- It respects the system's reduced motion setting (`prefers-reduced-motion`).
 
-## Cómo funciona por dentro
+## How it works under the hood
 
-Si vas a tocar el núcleo, esto te ahorra leer el código de cero.
+If you're going to touch the core, this saves you from reading the code from scratch.
 
-- **Escalas** (`core/scales.ts`). Convierten datos en píxeles. La Y es lineal, una regla de tres.
-  La X es de **banda** si hay barras: el ancho se reparte en n franjas y cada serie usa el centro
-  `x.at(i)`. Si no hay barras es **continua** y cada punto se ubica según su fecha real.
-- **Marcas redondas del eje** (`core/ticks.ts`). El paso se redondea a 1, 2 o 5 × 10ⁿ y el dominio se
-  extiende hasta múltiplos de ese paso. Para fechas elige el intervalo de calendario más fino (hora,
-  día, mes, trimestre, año…) que deje espacio entre etiquetas.
-- **Curva monótona** (`core/shapes.ts`). Suaviza sin inventar picos: donde los datos cambian de
-  dirección la curva queda plana, y las tangentes se recortan para no pasarse.
-- **Animación** (`chart.ts`). Cada estado es un "cuadro" con el dominio Y y la base y la punta de
-  cada serie. Animar es interpolar entre el cuadro actual y el nuevo durante 600 ms, rápido al empezar y suave al llegar (ease-out). Si
-  llega otro cambio a mitad de camino, parte del cuadro que se ve en ese momento.
-- **Zoom** (`core/view.ts`). La ventana visible se guarda como fracciones del eje X, de 0 a 1. Así
-  vale igual para barras, fechas y números, y no depende del ancho. Las escalas reciben la ventana y
-  estiran el eje; lo que queda fuera cae fuera del área y el recorte lo esconde. Para el eje del
-  valor solo cuentan los datos de la ventana, y ese cambio se anima en 220 ms para seguir al gesto.
-- **Etiquetas sin choques** (`core/labels.ts`). Cada etiqueta quiere ir a la altura de su dato. Las
-  que chocan forman un grupo centrado en el promedio de lo que pedían, y los grupos que chocan se
-  juntan. Ninguna se aleja de su dato más de lo necesario.
+- **Scales** (`core/scales.ts`). They turn data into pixels. Y is linear, a simple rule of three. X
+  is a **band** scale if there are bars: the width is split into n slots and each series uses the
+  center `x.at(i)`. If there are no bars it's **continuous** and each point is placed by its real
+  date.
+- **Round axis ticks** (`core/ticks.ts`). The step is rounded to 1, 2, or 5 × 10ⁿ and the domain
+  is extended to multiples of that step. For dates it picks the finest calendar interval (hour,
+  day, month, quarter, year…) that leaves room between labels.
+- **Monotone curve** (`core/shapes.ts`). It smooths without making up peaks: where the data changes
+  direction the curve goes flat, and the tangents are trimmed so they don't overshoot.
+- **Animation** (`chart.ts`). Each state is a "frame" with the Y domain and the base and tip of each
+  series. Animating means interpolating between the current frame and the new one over 600 ms,
+  fast at the start and gentle at the end (ease-out). If another change comes in halfway, it starts
+  from the frame on screen at that moment.
+- **Zoom** (`core/view.ts`). The visible window is stored as fractions of the X axis, from 0 to 1.
+  That way it works the same for bars, dates, and numbers, and doesn't depend on the width. The
+  scales get the window and stretch the axis; whatever's outside falls outside the area and the
+  clipping hides it. For the value axis only the data in the window counts, and that change is
+  animated over 220 ms to keep up with the gesture.
+- **Labels without collisions** (`core/labels.ts`). Each label wants to sit at the height of its
+  data point. The ones that collide form a group centered on the average of what they asked for,
+  and groups that collide merge. None of them moves further from its data point than it needs to.
 
-## Crear un tipo de serie
+## Create a series type
 
 ```js
-LozChart.registerSeries('puntos', {
+LozChart.registerSeries('dots', {
   legendSymbol: 'dot',
   draw({ frame, color, x, y, n }) {
     let s = '';
@@ -951,87 +958,90 @@ LozChart.registerSeries('puntos', {
 });
 ```
 
-Un tipo puede pedir columnas extra con `columns: (o) => ({ low: o.low })`, y le llegan animadas en
-`frame.cols.low`. Si están en unidades del eje, nómbralas en `valueColumns` para que cuenten en el
-dominio y se encojan al ocultar la serie. `pointer: 'nearest'` cambia la guía que sigue al puntero (crosshair) por "el
-punto más cercano", y `tooltip(ps, i, format)` personaliza el texto del tooltip y de la tabla.
+A type can ask for extra columns with `columns: (o) => ({ low: o.low })`, and they arrive animated
+in `frame.cols.low`. If they're in axis units, list them in `valueColumns` so they count toward the
+domain and shrink when the series is hidden. `pointer: 'nearest'` swaps the guide that follows the
+pointer (crosshair) for "the nearest point", and `tooltip(ps, i, format)` customizes the text of the
+tooltip and the table.
 
-Las series dibujan siempre en un plano lógico, con el índice en X y el valor en Y. En horizontal, el
-núcleo lo refleja sobre su diagonal, así que un tipo nuevo funciona en las dos orientaciones sin
-cambios.
+Series always draw on a logical plane, with the index on X and the value on Y. In horizontal, the
+core mirrors it across its diagonal, so a new type works in both orientations with no changes.
 
-Además del plano cartesiano hay dos sistemas de coordenadas (`coords`):
+Besides the cartesian plane there are two coordinate systems (`coords`):
 
-- `'polar'`: el núcleo dibuja anillos, radios y etiquetas, y la serie ubica sus puntos con
-  `ctx.polar.point(i, valor)`. Así lo hace el radar.
-- `'free'`: sin ejes. La serie usa toda el área (`ctx.width`, `ctx.height`) y responde `hit` (qué
-  dato hay bajo el puntero) y `anchor` (dónde apoyar el tooltip con el teclado).
+- `'polar'`: the core draws the rings, spokes, and labels, and the series places its points with
+  `ctx.polar.point(i, value)`. That's how the radar does it.
+- `'free'`: no axes. The series uses the whole area (`ctx.width`, `ctx.height`) and answers `hit`
+  (which data point is under the pointer) and `anchor` (where to anchor the tooltip with the
+  keyboard).
 
-Con `legendBy: 'points'` la leyenda lista categorías, como en el pie: cada una con
-`ctx.pointColor(i)`, y las ocultas llegan en cero. `ctx.label(i)`, `ctx.format(v)`,
-`ctx.percent(v)` y `ctx.measure(texto)` te ayudan con las etiquetas, y `domainValues(opciones)` suma
-valores fijos al dominio (como la meta del gauge).
+With `legendBy: 'points'` the legend lists categories, like in the pie: each one with
+`ctx.pointColor(i)`, and the hidden ones come in as zero. `ctx.label(i)`, `ctx.format(v)`,
+`ctx.percent(v)`, and `ctx.measure(text)` help you with labels, and `domainValues(options)` adds
+fixed values to the domain (like the gauge's goal).
 
-El resto del contexto y del contrato:
+The rest of the context and the contract:
 
-- `ctx.purpose` dice para qué se dibuja: `'screen'` (en la página), `'export'` (`toSVG` y las
-  descargas) u `'overview'` (el mini gráfico de la barra del zoom, en gris y con la superficie
-  transparente; ahí sobran etiquetas y detalles).
-- `ctx.locale` y `ctx.currency` (también en el `format` del tooltip) son el idioma y la moneda del
-  gráfico, para escribir fechas y textos con `Intl`.
-- `ctx.siblings()` da los contextos de las series visibles del mismo tipo, para lo que varias series
-  lado a lado deciden juntas: dos cascadas llevan etiquetas las dos o ninguna.
-- `hit(ctx, px, py)` vale también en cartesiano, en px del plano lógico: el tipo dice qué dato hay
-  bajo el puntero (−1: ninguno). Si ninguna serie con `hit` encuentra uno, el puntero sigue como
-  siempre, salvo que todas las series visibles tengan `hit`.
-- `click(ctx, i, evento)` recibe el clic en el dato i, o Enter y Espacio con el dato activo. Se
-  llama a la serie bajo el puntero (con `hit`, o en `'free'`) o, si no se sabe cuál es, a cada serie
-  visible que lo tenga. Después se llama a la opción `onClick` del gráfico.
-- `preferredHeight(ps, ancho)` es el alto que pide la serie (ejes incluidos) cuando no le das
-  `height`. Con varias series, gana el mayor.
-- `derivedName`: con `derive`, cómo se llama el valor calculado (`'acumulado'`). `toCSV` lo usa si
-  el nombre de la serie coincide con un campo que también exporta.
-- Para la selección (la opción `selection` o `select()`), `ctx.isDimmed(i)` dice qué datos quedan
-  atenuados. Un tipo con `dimmable: true` los dibuja con `DIM_OPACITY` (0,25): `dimOpacity(ctx, i)`
-  da el atributo, `dimmed(ctx, i, markup)` envuelve un dato y `paintDimmed(ctx, (incluir) => …)`
-  dibuja en dos pasadas un trazo que junta muchos datos (todas las barras en un path). Sin
-  `dimmable`, el núcleo deja la serie como está y marca los seleccionados con `hover`.
-- `chart.redraw()` vuelve a dibujar sin animar. Sirve para un tipo cuyo dibujo cambió por fuera de
-  las opciones, como una imagen que terminó de prepararse.
+- `ctx.purpose` says what it's being drawn for: `'screen'` (on the page), `'export'` (`toSVG` and
+  downloads), or `'overview'` (the mini chart in the zoom bar, in gray with a transparent surface;
+  labels and details aren't needed there).
+- `ctx.locale` and `ctx.currency` (also in the tooltip's `format`) are the chart's language and
+  currency, for writing dates and text with `Intl`.
+- `ctx.siblings()` gives you the contexts of the visible series of the same type, for things that
+  several side-by-side series decide together: two waterfalls either both get labels or neither
+  does.
+- `hit(ctx, px, py)` also works in cartesian, in px of the logical plane: the type says which data
+  point is under the pointer (−1: none). If no series with `hit` finds one, the pointer works as
+  usual, unless every visible series has `hit`.
+- `click(ctx, i, event)` gets the click on data point i, or Enter and Space on the active data
+  point. It's called on the series under the pointer (with `hit`, or in `'free'`) or, if it's not
+  clear which one, on every visible series that has it. Then the chart's `onClick` option is
+  called.
+- `preferredHeight(ps, width)` is the height the series asks for (axes included) when you don't
+  set `height`. With several series, the tallest wins.
+- `derivedName`: with `derive`, what the calculated value is called (the waterfall uses
+  `'acumulado'`). `toCSV` uses it if the series name matches a field it also exports.
+- For selection (the `selection` option or `select()`), `ctx.isDimmed(i)` says which data is
+  dimmed. A type with `dimmable: true` draws it with `DIM_OPACITY` (0.25): `dimOpacity(ctx, i)`
+  gives the attribute, `dimmed(ctx, i, markup)` wraps a data point, and
+  `paintDimmed(ctx, (include) => …)` draws in two passes a stroke that joins lots of data points
+  (all the bars in one path). Without `dimmable`, the core leaves the series as it is and marks the
+  selected ones with `hover`.
+- `chart.redraw()` draws again without animating. It's for a type whose drawing changed outside
+  the options, like an image that just finished loading.
 
-El zoom funciona en gráficos cartesianos. Un tipo `'free'` con su propio eje de tiempo, como un
-Gantt, no lo recibe, porque la ventana, los gestos, la barra de desplazamiento y el teclado se
-apoyan en la escala del índice del núcleo. Ese tipo puede ofrecer su propio recorte de fechas con
-sus opciones y `redraw()`.
+Zoom works on cartesian charts. A `'free'` type with its own time axis, like a Gantt chart, doesn't
+get it, because the window, the gestures, the scrollbar, and the keyboard all rely on the core's
+index scale. That type can offer its own date cropping through its options and `redraw()`.
 
-**Piezas del núcleo para extensiones.** El paquete (y `window.LozChart` en la versión para
-`<script>`) exporta lo mismo con que se dibujan los tipos de la librería: colores (`parseColor`,
-`toHex`, `toOklab`, `fromOklab`, `mixOklab`, `luminance`, `contrast`, `textOn`, `inkFor`,
-`colorDomain`, `makeRamp`, `paint`, `paintColor`, `legendSpec`, `legendWidth`, `MAX_COLORS`),
-formatos (`valueFormatter`, `compactFormatter`, `axisFormatter`, `parseTime`, `timeTickLabel`,
-`timeFullLabel`), marcas de eje (`niceStep`, `niceDomain`, `numberTicks`, `logTicks`, `logDomain`,
-`chooseTimeInterval`, `timeTicks`, `detectTimeUnit`), escalas (`LinearScale`, `LogScale`,
-`BandScale`, `ContinuousScale`), formas (`linePath`, `areaPath`, `barPath`, `stepPath`,
-`polarPoint`, `r2`), la selección (`DIM_OPACITY`, `dimOpacity`, `dimmed`, `paintDimmed`) y `esc`,
-`attrs`, `textWidth`, `fitText`, `toCSV`, `slug` y `swatchOf`.
+**Core pieces for extensions.** The package (and `window.LozChart` in the `<script>` build) exports
+the same things the library's types are drawn with: colors (`parseColor`, `toHex`, `toOklab`,
+`fromOklab`, `mixOklab`, `luminance`, `contrast`, `textOn`, `inkFor`, `colorDomain`, `makeRamp`,
+`paint`, `paintColor`, `legendSpec`, `legendWidth`, `MAX_COLORS`), formats (`valueFormatter`,
+`compactFormatter`, `axisFormatter`, `parseTime`, `timeTickLabel`, `timeFullLabel`), axis ticks
+(`niceStep`, `niceDomain`, `numberTicks`, `logTicks`, `logDomain`, `chooseTimeInterval`,
+`timeTicks`, `detectTimeUnit`), scales (`LinearScale`, `LogScale`, `BandScale`, `ContinuousScale`),
+shapes (`linePath`, `areaPath`, `barPath`, `stepPath`, `polarPoint`, `r2`), selection
+(`DIM_OPACITY`, `dimOpacity`, `dimmed`, `paintDimmed`), and `esc`, `attrs`, `textWidth`, `fitText`,
+`toCSV`, `slug`, and `swatchOf`.
 
-## Compilar desde el código
+## Build from source
 
-Si quieres cambiar la librería o correr sus pruebas:
+If you want to change the library or run its tests:
 
 ```bash
 npm install
-npm run build   # dist/: lozcharts.js (ESM), lozcharts.umd.js (UMD), react.js, maps/ y types/
-npm test        # pruebas (node:test)
-npm run check   # formato, tipos y pruebas: lo mismo que corre la integración continua
+npm run build   # dist/: lozcharts.js (ESM), lozcharts.umd.js (UMD), react.js, maps/, and types/
+npm test        # tests (node:test)
+npm run check   # format, types, and tests: the same thing continuous integration runs
 ```
 
-Después de compilar, abre `demo/index.html` con doble clic y tienes la galería. No hace falta
-servidor. Para probar tus cambios en otro proyecto de tu máquina, instálala desde la carpeta:
-`npm install ../lozcharts`. Queda enlazada a la carpeta, así que después de cada cambio corre
-`npm run build` y recarga.
+After building, double-click `demo/index.html` and you have the gallery. You don't need a server.
+To try your changes in another project on your machine, install it from the folder:
+`npm install ../lozcharts`. It stays linked to the folder, so after each change run
+`npm run build` and reload.
 
-## Reglas de diseño
+## Design rules
 
-Las reglas fijas que siguen todos los tipos (nombres, paleta y medidas de cada marca) están en
+The fixed rules every type follows (names, palette, and the measurements of each mark) are in
 [DESIGN.md](DESIGN.md).

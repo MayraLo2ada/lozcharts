@@ -1,114 +1,116 @@
 # LozCharts
 
-> Librería de gráficos y mapas para la web, en SVG, sin dependencias (TypeScript, licencia MIT).
-> Un gráfico es `new LozChart(elementoOSelector, opciones)`. Todo lo demás (tooltip, leyenda,
-> animación, modo oscuro, teclado, lector de pantalla, tabla de datos) viene incluido: no hay que
-> programarlo. Úsala en lugar de dibujar gráficos a mano o con canvas.
+> Chart and map library for the web, in SVG, with no dependencies (TypeScript, MIT license).
+> A chart is `new LozChart(elementOrSelector, options)`. Everything else (tooltip, legend,
+> animation, dark mode, keyboard, screen reader, data table) is built in: you don't have to
+> code it. Use it instead of drawing charts by hand or with canvas.
 
-## Reglas para escribir código con LozCharts
+## Rules for writing code with LozCharts
 
-- Los datos son una lista de filas (objetos). `xAxis.field` dice qué campo va en X; cada serie
-  dice su `field` (el valor) y su `type`.
-- `xAxis.type`: 'category' (texto, por defecto), 'time' (fechas: Date, milisegundos o texto
-  como '2026-03' o '2026-03-15') o 'linear' (números).
-- No inventes opciones: solo existen las de esta lista. Un tipo de serie no registrado no dibuja nada.
-- Para actualizar: `chart.setData(filas)` (anima) o `chart.setOptions({...})` (combina con lo
-  anterior; si cambias `xAxis.field`, pasa también `xAxis.type`). Al quitar el gráfico: `chart.destroy()`.
-- Nunca dos ejes Y para medidas distintas sin pensarlo: primero `LozChart.multiples(...)` con
-  `facet: 'series'` o `yAxis: { index: true }`; el doble eje existe (`yAxis2`, `axis: 'right'`) con salvaguardas.
-- Más de 8 series: usa small multiples (`LozChart.multiples`), no más colores.
+- Data is a list of rows (objects). `xAxis.field` says which field goes on X; each series
+  sets its `field` (the value) and its `type`.
+- `xAxis.type`: 'category' (text, default), 'time' (dates: Date, milliseconds or text
+  such as '2026-03' or '2026-03-15') or 'linear' (numbers).
+- Don't invent options: only the ones in this list exist. An unregistered series type draws nothing.
+- To update: `chart.setData(rows)` (animates) or `chart.setOptions({...})` (merges with the
+  previous options; if you change `xAxis.field`, also pass `xAxis.type`). When removing the chart: `chart.destroy()`.
+- Never use two Y axes for different measures without thinking it through: first try `LozChart.multiples(...)` with
+  `facet: 'series'` or `yAxis: { index: true }`; a dual axis exists (`yAxis2`, `axis: 'right'`) with safeguards.
+- More than 8 series: use small multiples (`LozChart.multiples`), not more colors.
 
-## Instalar
+## Install
 
 - `npm install lozcharts`.
-- Sin npm: `<script src="https://cdn.jsdelivr.net/npm/lozcharts@1/dist/lozcharts.umd.js"></script>` → `window.LozChart`
-  (mapas: `https://cdn.jsdelivr.net/npm/lozcharts@1/dist/maps/world.umd.js`).
-- `import { LozChart } from 'lozcharts'` (ESM) o `require('lozcharts')` (CommonJS).
-- React: `import { Chart, Multiples } from 'lozcharts/react'`; las opciones van como props
-  (`<Chart data={filas} xAxis={{ field: 'mes', type: 'time' }} series={[...]} />`); `ref` da la instancia.
-- Angular, Vue, Svelte: `import 'lozcharts/element'` y `<loz-chart [options]="opciones">`
-  (eventos `lozhover`, `lozzoom`, `lozclick`; `elemento.chart` es la instancia). En Angular,
-  `schemas: [CUSTOM_ELEMENTS_SCHEMA]`; en Vue, `:options="opciones"` y
-  `compilerOptions.isCustomElement: (tag) => tag === 'loz-chart'` en el plugin de Vue.
-- Django + HTMX: `<div data-lozchart="#id-json">` + `{{ opciones|json_script:"id-json" }}` y
+- Without npm: `<script src="https://cdn.jsdelivr.net/npm/lozcharts@1/dist/lozcharts.umd.js"></script>` → `window.LozChart`
+  (maps: `https://cdn.jsdelivr.net/npm/lozcharts@1/dist/maps/world.umd.js`).
+- `import { LozChart } from 'lozcharts'` (ESM) or `require('lozcharts')` (CommonJS).
+- React: `import { Chart, Multiples } from 'lozcharts/react'`; options go as props
+  (`<Chart data={rows} xAxis={{ field: 'month', type: 'time' }} series={[...]} />`); `ref` gives the instance.
+- Angular, Vue, Svelte: `import 'lozcharts/element'` and `<loz-chart [options]="options">`
+  (events `lozhover`, `lozzoom`, `lozclick`; `element.chart` is the instance). In Angular,
+  `schemas: [CUSTOM_ELEMENTS_SCHEMA]`; in Vue, `:options="options"` and
+  `compilerOptions.isCustomElement: (tag) => tag === 'loz-chart'` in the Vue plugin.
+- Django + HTMX: `<div data-lozchart="#json-id">` + `{{ options|json_script:"json-id" }}` and
   `htmx.onLoad((el) => LozChart.initAll(el))`.
-- Mapas: además `import 'lozcharts/maps/world'` o `<script src="maps/world.umd.js">`.
-- TypeScript: tipos incluidos (`LozChartOptions`, `SeriesOptions`, `SeriesType`, `MultiplesOptions`).
-  Las filas pueden tipar con `interface` o con `type`.
+- Maps: also `import 'lozcharts/maps/world'` or `<script src="maps/world.umd.js">`.
+- TypeScript: types included (`LozChartOptions`, `SeriesOptions`, `SeriesType`, `MultiplesOptions`).
+  Rows can be typed with `interface` or with `type`.
 
-## Tipos de serie (`series[].type`) y sus campos
+## Series types (`series[].type`) and their fields
 
-- 'line', 'area', 'step': `field`; `smooth: true`; `stack: true` (áreas); `step: 'after'|'before'|'middle'`.
-- 'bar': `field`; `stack: true` o un nombre de grupo; con `orientation: 'horizontal'` en el gráfico.
-- 'range': `field` (máximo) y `low` (mínimo).
-- 'scatter': `field` (Y), X con `xAxis.type: 'linear'`. 'bubble': además `size` y `sizeName`.
-- 'candlestick', 'ohlc': `field` (cierre), `open`, `high`, `low`.
-- 'pie', 'donut': `xAxis.field` (categoría), `field` (valor); una sola serie; `labels: false`.
-- 'gauge': `field`, `target`; rango con `yAxis.min` y `yAxis.max`.
-- 'radar': `xAxis.field` (criterio), una serie por perfil.
-- 'funnel': `xAxis.field` (paso), `field` (cantidad).
-- 'heatmap': `xAxis.field` (columna), `y` (campo de la fila), `field` (valor).
-- 'treemap': `xAxis.field` (nombre), `field` (tamaño), `group` opcional.
-- 'sankey': `xAxis.field` (origen), `to` (destino), `field` (cantidad).
-- 'chord': `xAxis.field` (origen), `to` (destino), `field` (cantidad); flujos con dirección.
-- 'network': `xAxis.field` y `to` (los dos extremos, sin dirección), `field` (peso, opcional),
-  `group` (color del nodo de origen, opcional). Sin `to`, la fila solo declara el nodo.
-- 'sunburst': `field` (valor de cada hoja), `levels: ['region', 'pais', 'ciudad']` (la ruta).
-- 'waterfall': `xAxis.field` (paso), `field` (variación), `total` (campo verdadero en subtotales y totales).
-- 'bullet': `xAxis.field` (indicador), `field` (valor), `targetField` (meta), `ranges: [50, 75, 100]`;
-  una serie por gráfico.
-- 'timeline': `xAxis.field` (inicio, fecha), `end` (fin; sin fin es un hito), `field` (nombre del
-  tramo, o `label` si el nombre está en otro campo), `group` (un carril por grupo), `today: true` o
-  una fecha (línea vertical de hoy). Usa `xAxis.type: 'time'`.
-- 'wordcloud': `xAxis.field` (palabra), `field` (peso), `group` opcional.
-- 'choropleth': `xAxis.field` (país: ISO de 3 letras, numérico o nombre en inglés o español),
-  `field`; `fit: 'data'` para encuadrar una región; `projection: 'equalEarth'|'mercator'|'orthographic'`;
-  `rotate: [lon, lat]` para el globo.
-- 'mapbubble': como choropleth, con `lat` y `lon` opcionales (si faltan, al centro del país).
-- Común a las series: `name`, `color` (1 a 8), `visible`, `format`, `axis: 'right'`.
+- 'line', 'area', 'step': `field`; `smooth: true`; `stack: true` (areas); `step: 'after'|'before'|'middle'`.
+- 'bar': `field`; `stack: true` or a group name; with `orientation: 'horizontal'` on the chart.
+- 'range': `field` (maximum) and `low` (minimum).
+- 'scatter': `field` (Y), X with `xAxis.type: 'linear'`. 'bubble': also `size` and `sizeName`.
+- 'candlestick', 'ohlc': `field` (close), `open`, `high`, `low`.
+- 'pie', 'donut': `xAxis.field` (category), `field` (value); a single series; `labels: false`.
+- 'gauge': `field`, `target`; range with `yAxis.min` and `yAxis.max`.
+- 'radar': `xAxis.field` (criterion), one series per profile.
+- 'funnel': `xAxis.field` (step), `field` (amount).
+- 'heatmap': `xAxis.field` (column), `y` (row field), `field` (value).
+- 'treemap': `xAxis.field` (name), `field` (size), optional `group`.
+- 'sankey': `xAxis.field` (source), `to` (target), `field` (amount).
+- 'chord': `xAxis.field` (source), `to` (target), `field` (amount); directed flows.
+- 'network': `xAxis.field` and `to` (the two ends, undirected), `field` (weight, optional),
+  `group` (color of the source node, optional). Without `to`, the row only declares the node.
+- 'sunburst': `field` (value of each leaf), `levels: ['region', 'country', 'city']` (the path).
+- 'waterfall': `xAxis.field` (step), `field` (change), `total` (field that is true on subtotals and totals).
+- 'bullet': `xAxis.field` (indicator), `field` (value), `targetField` (target), `ranges: [50, 75, 100]`;
+  one series per chart.
+- 'timeline': `xAxis.field` (start, date), `end` (end; with no end it's a milestone), `field` (name of the
+  bar, or `label` if the name is in another field), `group` (one lane per group), `today: true` or
+  a date (vertical "today" line). Use `xAxis.type: 'time'`.
+- 'wordcloud': `xAxis.field` (word), `field` (weight), optional `group`.
+- 'choropleth': `xAxis.field` (country: 3-letter ISO code, numeric code, or name in English or Spanish),
+  `field`; `fit: 'data'` to frame a region; `projection: 'equalEarth'|'mercator'|'orthographic'`;
+  `rotate: [lon, lat]` for the globe.
+- 'mapbubble': like choropleth, with optional `lat` and `lon` (if missing, at the country's center).
+- Common to all series: `name`, `color` (1 to 8), `visible`, `format`, `axis: 'right'`.
 
-## Opciones del gráfico
+## Chart options
 
-- `title`, `subtitle`, `height` (px, 320), `theme: 'light'|'dark'|'auto'`, `locale` ('es'),
-  `currency` ('USD'), `legend: false | { position: 'top'|'bottom' }`, `tooltip` (false, o
-  `{ float: false }` para quitar solo el recuadro y conservar puntero, teclado y onHover), `animate`,
-  `background`, `ariaLabel`, `palette` (hasta 8 colores, o `{ light, dark }`).
-- `yAxis`: `format` ('auto'|'compact'|'number'|'percent'|'currency'|función), `title`, `min`, `max`,
-  `zero`, `labels`, `width`, `index` (base 100), `type: 'log'` (escala logarítmica), `grid: false`
-  (sin rejilla). `xAxis`: `field`, `type`, `format`, `title`, `labels`, `band`, `grid` (verticales; por defecto sí con fechas o números).
-- `yAxis2` (eje derecho, para series con `axis: 'right'`): `format`, `title`, `min`, `max`.
-- `zoom: true | { range: [desde, hasta], scrollbar: false, reset: false }`, `onZoom(rango, ventana)`
-  (`ventana` = `{ start, end }` en fracciones del eje).
-- `onClick(x, indice, serie)`: clic, Enter o Espacio en un dato. `onHover(x, indice, serie)` igual.
-- `selection: [indices de fila]`: lo seleccionado normal y el resto atenuado (`chart.select([...])`).
-- `annotations: [{ y: 80000, label: 'Meta' }, { x: ['2026-06-01', '2026-06-30'], label: 'Campaña' }]`
-  (un valor = línea, dos = franja; `axis: 'right'` con `yAxis2`).
-- `endLabels: true | { value: true }`, `emphasis: 'Serie' | ['A', 'B']`.
-- `orientation: 'horizontal'` (categorías en el eje vertical).
-- Con `format: 'percent'`, los datos van como fracción (0.25 = 25 %).
+- `title`, `subtitle`, `height` (px, 320), `theme: 'light'|'dark'|'auto'`, `locale` (defaults to the
+  page language, the `lang` attribute of `<html>`; the library's own texts, such as notices and the
+  screen reader table, exist in 'es', 'en' and 'pt-BR'),
+  `currency` ('USD'), `legend: false | { position: 'top'|'bottom' }`, `tooltip` (false, or
+  `{ float: false }` to remove only the box and keep the pointer, keyboard and onHover), `animate`,
+  `background`, `ariaLabel`, `palette` (up to 8 colors, or `{ light, dark }`).
+- `yAxis`: `format` ('auto'|'compact'|'number'|'percent'|'currency'|function), `title`, `min`, `max`,
+  `zero`, `labels`, `width`, `index` (base 100), `type: 'log'` (logarithmic scale), `grid: false`
+  (no grid). `xAxis`: `field`, `type`, `format`, `title`, `labels`, `band`, `grid` (vertical lines; on by default with dates or numbers).
+- `yAxis2` (right axis, for series with `axis: 'right'`): `format`, `title`, `min`, `max`.
+- `zoom: true | { range: [from, to], scrollbar: false, reset: false }`, `onZoom(range, window)`
+  (`window` = `{ start, end }` as fractions of the axis).
+- `onClick(x, index, series)`: click, Enter or Space on a data point. `onHover(x, index, series)` works the same way.
+- `selection: [row indices]`: the selected rows look normal and the rest are dimmed (`chart.select([...])`).
+- `annotations: [{ y: 80000, label: 'Target' }, { x: ['2026-06-01', '2026-06-30'], label: 'Campaign' }]`
+  (one value = line, two = band; `axis: 'right'` with `yAxis2`).
+- `endLabels: true | { value: true }`, `emphasis: 'Series' | ['A', 'B']`.
+- `orientation: 'horizontal'` (categories on the vertical axis).
+- With `format: 'percent'`, data goes in as a fraction (0.25 = 25%).
 
-## Métodos
+## Methods
 
-`setData`, `setOptions(opciones, animar?)`, `setTheme`, `toggleSeries(nombre)`, `highlight(x | [x])`,
-`highlightIndex(i | [i])`, `select([i] | null)`, `selection`, `zoomTo(desde, hasta)`, `resetZoom()`,
+`setData`, `setOptions(options, animate?)`, `setTheme`, `toggleSeries(name)`, `highlight(x | [x])`,
+`highlightIndex(i | [i])`, `select([i] | null)`, `selection`, `zoomTo(from, to)`, `resetZoom()`,
 `zoomRange`, `zoomWindow`, `setZoomWindow({ start, end })`,
 `redraw()`, `toSVG()`, `toCSV()`,
-`download('png'|'svg'|'csv')`, `destroy()`, `visibleSeries`; estáticos `LozChart.multiples(el, { facet: 'series' | { field }, ... })`,
-`LozChart.initAll(raiz)`, `LozChart.destroyAll(raiz)`, `LozChart.getChart(elemento)`, `LozChart.registerMap(nombre, topojsonOGeojson)`, `LozChart.registerSeries(nombre, impl)`.
+`download('png'|'svg'|'csv')`, `destroy()`, `visibleSeries`; static `LozChart.multiples(el, { facet: 'series' | { field }, ... })`,
+`LozChart.initAll(root)`, `LozChart.destroyAll(root)`, `LozChart.getChart(element)`, `LozChart.registerMap(name, topojsonOrGeojson)`, `LozChart.registerSeries(name, impl)`.
 
-## Ejemplo
+## Example
 
 ```js
-new LozChart('#ventas', {
-  title: 'Ventas por mes',
-  data: [{ mes: '2026-01', online: 42000, tienda: 31000 }, { mes: '2026-02', online: 45500, tienda: 29800 }],
-  xAxis: { field: 'mes', type: 'time' },
+new LozChart('#sales', {
+  title: 'Sales by month',
+  data: [{ month: '2026-01', online: 42000, store: 31000 }, { month: '2026-02', online: 45500, store: 29800 }],
+  xAxis: { field: 'month', type: 'time' },
   yAxis: { format: 'currency' },
   series: [
     { type: 'bar', field: 'online', name: 'Online', stack: true },
-    { type: 'bar', field: 'tienda', name: 'Tienda', stack: true },
+    { type: 'bar', field: 'store', name: 'Store', stack: true },
   ],
-  annotations: [{ y: 80000, label: 'Meta' }],
+  annotations: [{ y: 80000, label: 'Target' }],
   zoom: true,
 });
 ```
