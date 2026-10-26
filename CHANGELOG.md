@@ -48,6 +48,32 @@ Primera versión en npm.
   `node`, también en `lozcharts/react`, `lozcharts/element` y `lozcharts/maps/world`. `require`
   tiene sus propios tipos. `lozcharts/react` y `lozcharts/element` se pueden cargar con `require`
   en las versiones de Node que lo permiten, y el paquete expone `lozcharts/package.json`.
+- **TypeScript:** `data` acepta filas tipadas con `interface` (`DataRow`), y `type` de cada serie
+  sugiere los 26 tipos de la librería (`SeriesType`).
+- **Avisos que te dicen qué pasó:** cuando un campo no aparece en ninguna fila, cuando hay filas sin
+  fecha o número válido en la X o que no son objetos, cuando dos series se llaman igual y cuando un
+  pie o un donut trae valores negativos. Sin opciones o sin `xAxis.field`, un error que dice qué
+  falta. Una moneda o un idioma que el navegador no conoce ya no impiden dibujar.
+- **Corregido, de lo más importante a lo menos:**
+  - Con más de unas 65 000 filas, dispersión, burbujas, mapas, pie, mapa de calor, red, sankey,
+    cuerdas, embudo y línea de tiempo ya no fallan en Safari.
+  - Burbujas: todas las series comparten la escala del tamaño (antes no se podían comparar).
+  - Globo: por defecto mira a los lugares con datos.
+  - CSV: la X numérica sale como número, las fechas en la hora local (antes, en UTC, el día podía
+    correrse) y `download()` no repite la extensión.
+  - Velas y OHLC: la variación es correcta con aperturas negativas.
+  - Barras agrupadas: un grupo ya no invade a la categoría vecina cuando hay muchas.
+  - Barras horizontales: el eje se vuelve a redondear al cambiar el ancho.
+  - Small multiples: el área de datos mide lo mismo en todos los paneles, y la cuadrícula llena el
+    ancho.
+  - Bala, mapa de calor, embudo y mapa de burbujas: valores, nombres largos y burbujas del borde ya
+    no se enciman ni se cortan.
+  - Un dato que no se dibuja dice "No aparece" y por qué, igual en todos los tipos; los porcentajes
+    ínfimos o casi totales se escriben "<0,1 %" y ">99,9 %".
+  - El número central del medidor, la dona y los anillos cuenta sin decimales que no existen.
+  - React y `<loz-chart>`: quitar `yAxis` quita también su mínimo, su máximo y su formato.
+  - El lector de pantalla dice cuando no hay datos y cuando todos los valores son iguales.
+  - Números diminutos (como 1e-13) ya no dejan el eje en cero.
 
 ## 1.0.0 (25 de octubre de 2026)
 
