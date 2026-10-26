@@ -149,6 +149,128 @@ test('onZoom recibe también la ventana exacta, y setZoomWindow la fija sin redo
   assert.deepEqual(quieto.zoomWindow, { start: 0, end: 1 });
 });
 
+/** Los controles deslizantes del gráfico; con `vertical`, solo los del zoom en Y. */
+const sliders = (c: LozChart, vertical = false) =>
+  root(c)
+    .querySelectorAll('div')
+    .filter((d) => d.getAttribute('role') === 'slider' && (d.getAttribute('aria-orientation') === 'vertical') === vertical);
+/** Números del eje Y en el SVG exportado (los que van alineados a la derecha, a la izquierda del área). */
+const yLabels = (c: LozChart) =>
+  [...c.toSVG().matchAll(/<text x="-10" y="[\d.]+"[^>]*text-anchor="end"[^>]*>([^<]+)<\/text>/g)].map((m) =>
+    Number(m[1].replace(/\s/g, '').replace(',', '.')),
+  );
+
+test('deslizante delgado por defecto; la barra con mini gráfico con scrollbar: "mini"', () => {
+  const thin = chart({ zoom: true });
+  assert.ok(root(thin).querySelector('.lc-thin'));
+  assert.equal(root(thin).querySelector('.lc-scroll-mini'), null);
+  assert.equal(sliders(thin).length, 3);
+  const mini = chart({ zoom: { scrollbar: 'mini' } });
+  assert.ok(root(mini).querySelector('.lc-scroll-mini'));
+  assert.equal(root(mini).querySelector('.lc-thin'), null);
+  // Cambiar la forma con setOptions rehace el deslizante; false lo quita.
+  thin.setOptions({ zoom: { scrollbar: 'mini' } }, false);
+  assert.ok(root(thin).querySelector('.lc-scroll-mini'));
+  thin.setOptions({ zoom: { scrollbar: false } }, false);
+  assert.equal(root(thin).querySelector('.lc-scroll'), null);
+});
+
+test('zoom en Y: la ventana recorta el eje con marcas redondas y llega a onZoom', () => {
+  const calls: { start: number; end: number }[] = [];
+  const c = chart({ zoom: { y: true }, onZoom: (_r, _w, y) => calls.push(y) });
+  assert.equal(sliders(c, true).length, 3, 'deslizante vertical con sus tres controles');
+  const all = yLabels(c);
+  c.setZoomWindow(c.zoomWindow, { start: 0.5, end: 1 });
+  assert.deepEqual(c.zoomYWindow, { start: 0.5, end: 1 });
+  assert.deepEqual(calls[calls.length - 1], { start: 0.5, end: 1 });
+  const top = yLabels(c);
+  const mid = (all[0] + all[all.length - 1]) / 2;
+  assert.ok(top.length >= 2 && Math.min(...top) >= Math.min(mid, all[all.length - 1]), `marcas: ${top}`);
+  assert.ok(Math.max(...top) <= Math.max(...all));
+  // Marcas redondas: todas múltiplos del mismo paso.
+  const step = top[1] - top[0];
+  assert.ok(top.every((v) => Math.abs(v / step - Math.round(v / step)) < 1e-6));
+  // El recorte de las series es exacto también arriba y abajo.
+  assert.match(c.toSVG(), /<clipPath id="lc-export-clip-\d+"><rect x="-6" y="0"/);
+  // Sin el segundo argumento, la ventana Y queda como está.
+  c.setZoomWindow({ start: 0.2, end: 0.6 });
+  assert.deepEqual(c.zoomYWindow, { start: 0.5, end: 1 });
+});
+
+test('zoom en Y: doble clic, la tecla 0 y resetZoom vuelven a todo en los dos ejes', () => {
+  const c = chart({ zoom: { y: true }, title: 'Ventas' });
+  const full = { start: 0, end: 1 };
+  const zoomIn = () => c.setZoomWindow({ start: 0.2, end: 0.6 }, { start: 0.3, end: 0.7 });
+  zoomIn();
+  c.resetZoom();
+  assert.deepEqual([c.zoomWindow, c.zoomYWindow], [full, full]);
+  zoomIn();
+  key(c, '0');
+  assert.deepEqual([c.zoomWindow, c.zoomYWindow], [full, full]);
+  zoomIn();
+  overlay(c).dispatchEvent(event('dblclick'));
+  assert.deepEqual([c.zoomWindow, c.zoomYWindow], [full, full]);
+  zoomIn();
+  root(c).querySelector('.lc-zoom-reset')!.dispatchEvent(event('click'));
+  assert.deepEqual([c.zoomWindow, c.zoomYWindow], [full, full]);
+});
+
+test('deslizante vertical: el teclado mueve sus bordes y su ventana, arriba es más', () => {
+  const c = chart({ zoom: { y: true }, locale: 'en' });
+  const [win, start, end] = sliders(c, true);
+  assert.deepEqual(
+    [win, start, end].map((s) => s.getAttribute('aria-label')),
+    ['Visible values', 'Lowest visible value', 'Highest visible value'],
+  );
+  // Flecha abajo sobre el borde de arriba: baja un centésimo.
+  end.dispatchEvent(event('keydown', { key: 'ArrowDown' }));
+  assert.ok(Math.abs(c.zoomYWindow.end - 0.99) < 1e-9);
+  // Re Pág sobre el borde de abajo lo sube un décimo: en vertical, Re Pág va hacia arriba.
+  start.dispatchEvent(event('keydown', { key: 'PageUp' }));
+  assert.ok(Math.abs(c.zoomYWindow.start - 0.1) < 1e-9);
+  // Los bordes se juntan hasta el mínimo, y Re Pág sobre la ventana la sube.
+  start.dispatchEvent(event('keydown', { key: 'End' }));
+  end.dispatchEvent(event('keydown', { key: 'Home' }));
+  const { start: a, end: b } = c.zoomYWindow;
+  assert.ok(b - a < 0.05, 'se juntó hasta el mínimo');
+  win.dispatchEvent(event('keydown', { key: 'PageUp' }));
+  assert.ok(c.zoomYWindow.start > a);
+  assert.match(win.getAttribute('aria-valuetext')!, /^Values from .+ to .+$/);
+  c.setOptions({ locale: 'pt-BR' }, false);
+  assert.equal(win.getAttribute('aria-label'), 'Valores visíveis');
+});
+
+test('zoom: { x: false, y: true }: solo el eje Y, sin deslizante en X', () => {
+  const c = chart({ zoom: { x: false, y: true } });
+  assert.equal(sliders(c).length, 0);
+  assert.equal(sliders(c, true).length, 3);
+  c.zoomTo('mar', 'jun');
+  assert.equal(c.zoomRange, null);
+  c.setZoomWindow({ start: 0.2, end: 0.4 }, { start: 0.25, end: 0.75 });
+  assert.deepEqual(c.zoomWindow, { start: 0, end: 1 });
+  assert.deepEqual(c.zoomYWindow, { start: 0.25, end: 0.75 });
+  // + y − acercan el eje Y alrededor de su centro.
+  key(c, '+');
+  assert.ok(c.zoomYWindow.end - c.zoomYWindow.start < 0.5);
+});
+
+test('zoom en Y se ignora sin eje Y numérico vertical: horizontal y pie', () => {
+  const horizontal = chart({ zoom: { y: true }, orientation: 'horizontal' });
+  const pie = new LozChart(host(), {
+    data,
+    xAxis: { field: 'mes' },
+    series: [{ type: 'pie', field: 'ventas' }],
+    zoom: { y: true },
+    animate: false,
+  });
+  for (const c of [horizontal, pie]) {
+    assert.equal(sliders(c, true).length, 0);
+    c.setZoomWindow(null, { start: 0.2, end: 0.4 });
+    assert.deepEqual(c.zoomYWindow, { start: 0, end: 1 });
+    assert.doesNotThrow(() => c.resetZoom());
+  }
+});
+
 // ------------------------------------------------------------ Ejes
 
 /** Líneas horizontales de la rejilla en el SVG exportado, por color. */
@@ -220,7 +342,7 @@ test('DrawContext: purpose, locale y currency en vivo, al exportar y en el mini 
     data,
     xAxis: { field: 'mes' },
     series: [{ type: 'prueba-contexto', field: 'ventas' }],
-    zoom: true,
+    zoom: { scrollbar: 'mini' },
     locale: 'en',
     currency: 'EUR',
     animate: false,

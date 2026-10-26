@@ -141,16 +141,34 @@ const CSS = `
 .lc-zoom-reset:hover{background:var(--lc-grid)}
 .lc-zoom-reset:focus-visible{outline:2px solid var(--lc-focus);outline-offset:1px}
 .lc-zoom-reset.lc-off{visibility:hidden}
-.lc-scroll{position:relative;height:36px;margin-top:10px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
+.lc-scroll{position:relative;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
+.lc-scroll-win{position:absolute;cursor:grab}
+.lc-dragging .lc-scroll-win{cursor:grabbing}
+.lc-scroll-grip{position:absolute;background:var(--lc-surface)}
+.lc-scroll-grip::before{content:"";position:absolute}
+.lc-scroll-win:focus-visible,.lc-scroll-grip:focus-visible{outline:2px solid var(--lc-focus);outline-offset:1px}
+.lc-mini{height:36px;margin-top:10px}
 .lc-scroll-mini{position:absolute;inset:0;border-radius:4px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--lc-grid)}
 .lc-scroll-mini svg{display:block}
 .lc-scroll-shade{position:absolute;top:0;bottom:0;background:var(--lc-surface);opacity:.72;pointer-events:none}
-.lc-scroll-win{position:absolute;top:0;bottom:0;min-width:12px;border:1px solid var(--lc-text-muted);border-radius:4px;cursor:grab}
-.lc-dragging .lc-scroll-win{cursor:grabbing}
-.lc-scroll-grip{position:absolute;top:50%;width:10px;height:22px;margin:-11px 0 0 -5px;border:1px solid var(--lc-text-muted);border-radius:3px;background:var(--lc-surface);cursor:ew-resize}
-.lc-scroll-grip::before{content:"";position:absolute;inset:-8px -8px}
-.lc-scroll-grip::after{content:"";position:absolute;left:3px;right:3px;top:6px;bottom:6px;border-left:1px solid var(--lc-text-muted);border-right:1px solid var(--lc-text-muted)}
-.lc-scroll-win:focus-visible,.lc-scroll-grip:focus-visible{outline:2px solid var(--lc-focus);outline-offset:1px}
+.lc-mini .lc-scroll-win{top:0;bottom:0;min-width:12px;border:1px solid var(--lc-text-muted);border-radius:4px}
+.lc-mini .lc-scroll-grip{top:50%;width:10px;height:22px;margin:-11px 0 0 -5px;border:1px solid var(--lc-text-muted);border-radius:3px;cursor:ew-resize}
+.lc-mini .lc-scroll-grip::before{inset:-8px}
+.lc-mini .lc-scroll-grip::after{content:"";position:absolute;left:3px;right:3px;top:6px;bottom:6px;border-left:1px solid var(--lc-text-muted);border-right:1px solid var(--lc-text-muted)}
+.lc-thin{height:22px;margin-top:4px}
+.lc-thin.lc-vertical{position:absolute;left:0;width:22px;margin:0}
+.lc-scroll-track,.lc-thin .lc-scroll-win::after{content:"";position:absolute;top:50%;left:0;right:0;height:2px;margin-top:-1px;border-radius:1px;background:var(--lc-zero)}
+.lc-thin .lc-scroll-win{top:0;bottom:0}
+.lc-thin .lc-scroll-win::after{height:3px;margin-top:-1.5px;border-radius:2px;background:var(--lc-text-muted)}
+.lc-thin .lc-scroll-grip{top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;box-sizing:border-box;border:1.5px solid var(--lc-text);border-radius:50%;box-shadow:0 1px 2px rgb(0 0 0/.18);cursor:ew-resize}
+.lc-thin .lc-scroll-grip::before{inset:-5px;border-radius:50%}
+.lc-thin .lc-scroll-grip:focus-visible{outline-offset:2px}
+.lc-vertical .lc-scroll-track,.lc-vertical .lc-scroll-win::after{top:0;bottom:0;left:50%;right:auto;width:2px;height:auto;margin:0 0 0 -1px}
+.lc-vertical .lc-scroll-win{top:auto;left:0;right:0}
+.lc-vertical .lc-scroll-win::after{width:3px;margin-left:-1.5px}
+.lc-vertical .lc-scroll-grip{top:auto;left:50%;margin:0 0 -7px -7px;cursor:ns-resize}
+@media (pointer:coarse){.lc-thin .lc-scroll-grip::before{inset:-15px}}
+
 @media (prefers-reduced-motion:reduce){.lc-tooltip,.lc-legend-btn{transition:none}}
 `;
 

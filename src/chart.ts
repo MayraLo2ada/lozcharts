@@ -11,7 +11,16 @@
  * se refleja sobre su diagonal; la rejilla, los ejes y el tooltip sí conocen la orientación.
  * La lógica de datos vive en core/ y es pura; esta clase maneja estado, DOM y eventos.
  */
-import type { FormatSpec, LozChartOptions, LozChartUpdate, MultiplesOptions, ThemeName, XValue, ZoomWindow } from './types';
+import type {
+  FormatSpec,
+  LozChartOptions,
+  LozChartUpdate,
+  MultiplesOptions,
+  ThemeName,
+  XValue,
+  ZoomOptions,
+  ZoomWindow,
+} from './types';
 import type { LozMultiples } from './multiples';
 import {
   swatchOf,
@@ -26,11 +35,24 @@ import {
 } from './core/series';
 import { injectStyles, LIGHT, MAX_COLORS, resolveTheme, themeVars, type Theme } from './core/theme';
 import { BandScale, ContinuousScale, LinearScale, LogScale, type XScale } from './core/scales';
-import { clampView, FULL_VIEW, isFull, minSpan, panView, visibleIndices, zoomView, type View } from './core/view';
-import { logTicks, niceDomain, niceStep, numberTicks } from './core/ticks';
+import {
+  clampView,
+  FULL_VIEW,
+  isFull,
+  MIN_Y_SPAN,
+  minSpan,
+  panView,
+  valueAt,
+  valueTicks,
+  visibleIndices,
+  windowDomain,
+  zoomView,
+  type View,
+} from './core/view';
+import { niceDomain, niceStep, numberTicks } from './core/ticks';
 import { axisFormatter, indexFormatter, parseTime, valueFormatter, type NumberContext } from './core/format';
 import { prepare, toNumber, type Prepared } from './core/prepare';
-import { buildFrame, collapse, interpolate, withExits, type Frame } from './core/frame';
+import { buildFrame, collapse, interpolate, withExits, type AxisDomain, type Frame } from './core/frame';
 import { fitText, indexLabels, xLabel, xTicks, type XLabelContext } from './core/axis';
 import { attrs, esc, html, prefersReducedMotion, resolveElement, svg, textWidth } from './core/dom';
 import { polarPoint } from './core/shapes';
@@ -40,8 +62,8 @@ import { destroyDetached, destroyWithin, mount, mountedOn, unmount } from './cor
 import { annotationValues, renderAnnotations } from './core/annotations';
 import { registerMap, type MapSource } from './core/geo';
 import { spreadLabels } from './core/labels';
-import { ZoomGestures } from './zoom';
-import { Scrollbar, SCROLLBAR_HEIGHT } from './scrollbar';
+import { ZoomGestures, type SelectionBox } from './zoom';
+import { Scrollbar, SCROLLBAR_HEIGHT, THIN_SIZE, type ScrollbarKind } from './scrollbar';
 import {
   defaultLocale,
   localized,
@@ -82,6 +104,8 @@ const EXPORT_PAD = 16;
 const MAX_TABLE_ROWS = 500;
 /** Duración de la animación del eje del valor al cambiar el zoom: corta, para seguir al gesto. */
 const ZOOM_DURATION = 220;
+/** Lugar del deslizante del zoom en Y a la izquierda de los números del eje (con su respiro). */
+const Y_SCROLLBAR_SPACE = THIN_SIZE + 6;
 /** Etiquetas al final de las líneas: espacio entre el área y la marca, largo de la marca y su texto. */
 const END_GAP = 8;
 const END_MARK = 10;
@@ -265,6 +289,8 @@ export class LozChart {
   private fullTarget: Frame | null = null;
   /** Ventana visible del eje X (ver core/view.ts). */
   private view: View = FULL_VIEW;
+  /** Con zoom en Y: la ventana del eje Y, en fracciones del dominio de todos los datos. */
+  private yView: View = FULL_VIEW;
   /** `zoom.range` aún sin aplicar: al crear el gráfico o al cambiar `zoom` (aunque falten datos). */
   private rangePending = true;
   /** Si el zoom estaba disponible en la última actualización (cambia con los datos). */
@@ -324,7 +350,10 @@ export class LozChart {
   private readonly tableEl: HTMLTableElement;
   private readonly liveEl: HTMLDivElement;
   private readonly resetBtn: HTMLButtonElement;
-  private readonly scrollbar: Scrollbar;
+  /** Deslizante del eje X: se rehace si `zoom.scrollbar` cambia de forma. */
+  private scrollbar: Scrollbar;
+  /** Deslizante vertical del zoom en Y. */
+  private readonly yScrollbar: Scrollbar;
   private readonly gestures: ZoomGestures;
   private readonly resizeObserver: ResizeObserver | null;
   private readonly colorScheme: MediaQueryList | null;
@@ -374,16 +403,25 @@ export class LozChart {
     // Al volver a todo el botón se esconde: el foco pasa al gráfico en vez de perderse.
     this.resetBtn.addEventListener('click', () => {
       this.svgEl.focus();
-      this.applyView(FULL_VIEW, true);
+      this.applyZoom(FULL_VIEW, FULL_VIEW, true);
     });
-    this.scrollbar = new Scrollbar({
-      view: () => this.view,
-      setView: (v, announce) => this.applyView(v, announce),
-      minSpan: () => this.minSpan(),
-      unit: () => 1 / Math.max(1, this.prepared.n - (this.prepared.band ? 0 : 1)),
-      label: (f, edge) => this.labelAtFraction(f, edge),
-      messages: () => this.t,
-    });
+    this.scrollbar = this.xScrollbar('thin');
+    this.yScrollbar = new Scrollbar(
+      {
+        view: () => this.yView,
+        setView: (v, announce) => this.applyZoom(this.view, v, announce),
+        minSpan: () => MIN_Y_SPAN,
+        // Las flechas mueven un centésimo del dominio (con Shift, un décimo, como en X).
+        unit: () => 0.01,
+        label: (f) => this.valueAtFraction(f),
+        texts: () => {
+          const t = this.t.scrollbar;
+          return { window: t.yWindow, start: t.yStart, end: t.yEnd, range: t.yRange };
+        },
+      },
+      'thin',
+      true,
+    );
     this.plotEl.append(this.svgEl, this.tooltipEl);
     this.tableEl = html('table');
     const tableBox = html('div', { class: 'lc-sr-only' });
@@ -394,16 +432,22 @@ export class LozChart {
 
     this.gestures = new ZoomGestures(this.overlay, {
       enabled: () => this.zoomable,
+      yEnabled: () => this.zoomY,
       view: () => this.view,
+      yView: () => this.yView,
       minSpan: () => this.minSpan(),
+      yMinSpan: () => MIN_Y_SPAN,
       plotBox: () => {
         const L = this.layout;
-        return { left: this.svgEl.getBoundingClientRect().left + (L?.left ?? 0), width: L?.plotW ?? 0 };
+        const box = this.svgEl.getBoundingClientRect();
+        return { left: box.left + (L?.left ?? 0), top: box.top + (L?.top ?? 0), width: L?.plotW ?? 0, height: L?.plotH ?? 0 };
       },
-      setView: (v) => this.applyView(v, false),
-      selection: (from: number | null, to?: number) => this.drawSelection(from, to),
+      setView: (x, y) => this.applyZoom(x ?? this.view, y ?? this.yView, false),
+      selection: (box) => this.drawSelection(box),
       clearHover: () => this.clearActive(),
     });
+    this.gestures.watchAxis(this.svgEl);
+    this.gestures.watchAxis(this.yScrollbar.el);
     this.bindEvents();
 
     this.colorScheme = typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: dark)') : null;
@@ -454,6 +498,7 @@ export class LozChart {
     // frameworks mandan todas las opciones en cada cambio, y eso no debe perder la ventana actual.
     if ('zoom' in options && JSON.stringify(options.zoom) !== JSON.stringify(prev.zoom)) {
       this.view = FULL_VIEW;
+      this.yView = FULL_VIEW;
       this.rangePending = true;
     }
     this.rebuild(animate);
@@ -613,9 +658,9 @@ export class LozChart {
     return this;
   }
 
-  /** Vuelve a mostrar todos los datos. */
+  /** Vuelve a mostrar todos los datos, en los dos ejes. */
   resetZoom(): this {
-    if (!isFull(this.view)) this.applyView(FULL_VIEW, false);
+    this.applyZoom(FULL_VIEW, FULL_VIEW, false);
     return this;
   }
 
@@ -633,13 +678,24 @@ export class LozChart {
   }
 
   /**
+   * Ventana del zoom en Y, en fracciones del dominio de todos los datos, desde abajo:
+   * `{ start: 0, end: 1 }` si se ve todo (o sin `zoom: { y: true }`).
+   */
+  get zoomYWindow(): ZoomWindow {
+    return { start: this.yView.start, end: this.yView.end };
+  }
+
+  /**
    * Fija la ventana del zoom en fracciones del eje X, sin redondear a un dato: con la ventana que
    * da onZoom, otro gráfico con el mismo eje muestra exactamente el mismo tramo. null vuelve a todo.
-   * Necesita la opción `zoom`; la ventana no queda más angosta que el mínimo del zoom.
+   * Con zoom en Y, `yWindow` fija también la de ese eje (sin darla, queda como está).
+   * Necesita la opción `zoom`; las ventanas no quedan más angostas que el mínimo del zoom.
    */
-  setZoomWindow(window: ZoomWindow | null): this {
-    if (!this.zoomable) return this;
-    this.applyView(window ? clampView(window.start, window.end, this.minSpan()) : FULL_VIEW, false);
+  setZoomWindow(window: ZoomWindow | null, yWindow?: ZoomWindow | null): this {
+    const x = !this.zoomable ? this.view : window ? clampView(window.start, window.end, this.minSpan()) : FULL_VIEW;
+    const y =
+      !this.zoomY || yWindow === undefined ? this.yView : yWindow ? clampView(yWindow.start, yWindow.end, MIN_Y_SPAN) : FULL_VIEW;
+    this.applyZoom(x, y, false);
     return this;
   }
 
@@ -711,7 +767,8 @@ export class LozChart {
 
   /**
    * Cuadro destino con la ventana actual: con zoom, el eje del valor se ajusta a los datos que
-   * se ven. Sin zoom es el cuadro de todos los datos.
+   * se ven. Sin zoom es el cuadro de todos los datos. Con zoom en Y, el eje del valor es la
+   * ventana Y sobre el dominio de todos los datos: ahí manda el deslizante, no lo que se ve en X.
    */
   private retarget(full: boolean): void {
     const ya = this.opts.yAxis;
@@ -733,13 +790,44 @@ export class LozChart {
         { min: ya2?.min, max: ya2?.max, include: annotationValues(notes, 'right') },
         this.hiddenIdx,
       );
-    const zoomed = this.zoomable && !isFull(this.view);
+    const zoomed = this.zoomable && !this.zoomY && !isFull(this.view);
     this.targetTicks = this.valueTickCount();
-    // El cuadro de todos los datos (para el mini gráfico) cambia con los datos, no con la ventana.
-    if (full || !this.fullTarget) this.fullTarget = this.zoomable ? build() : null;
+    // El cuadro de todos los datos (para el mini gráfico y el zoom en Y) cambia con los datos, no
+    // con la ventana.
+    if (full || !this.fullTarget) this.fullTarget = this.zoomable || this.zoomY ? build() : null;
     // Para el eje del valor cuentan también los vecinos de la ventana: la línea que sale por el
     // borde va hacia ellos y no debe salirse por arriba o por abajo.
-    this.target = zoomed ? build(this.visibleRange(true) ?? undefined) : (this.fullTarget ?? build());
+    const target = zoomed ? build(this.visibleRange(true) ?? undefined) : (this.fullTarget ?? build());
+    this.target = this.zoomY && !isFull(this.yView) ? this.yWindowed(target) : target;
+  }
+
+  /**
+   * El cuadro con el eje del valor recortado a la ventana Y. Las series quedan igual (las barras
+   * siguen apoyadas en su base, aunque no se vea): lo que sale del área lo recorta el clipPath.
+   * El eje derecho toma la misma ventana, con sus propias marcas redondas.
+   */
+  private yWindowed(frame: Frame): Frame {
+    const ticks = this.valueTickCount();
+    const left = windowDomain(frame, this.yView, ticks);
+    const right = frame.right && windowDomain(frame.right, this.yView, ticks);
+    return { ...frame, ...left, right };
+  }
+
+  /** Dominio del eje Y sin zoom en Y (el de todos los datos), sobre el que se mide su ventana. */
+  private get yDomain(): AxisDomain | null {
+    return this.fullTarget ?? null;
+  }
+
+  /** Texto del valor en una fracción del dominio Y (para el deslizante vertical). */
+  private valueAtFraction(f: number): string {
+    const d = this.yDomain;
+    if (!d) return '';
+    // Con la precisión de las marcas de la ventana: más cerca, más decimales.
+    const span = Math.abs(valueAt(d, this.yView.end) - valueAt(d, this.yView.start));
+    const spec = this.opts.yAxis?.index ? 'number' : this.opts.yAxis?.format;
+    const v = valueAt(d, Math.max(0, Math.min(1, f)));
+    const step = niceStep(span, 20);
+    return axisFormatter(spec, this.numberContext(), step, Math.max(Math.abs(d.d0), Math.abs(d.d1)))(v);
   }
 
   /**
@@ -747,13 +835,14 @@ export class LozChart {
    * cambia; la ventana se ajusta a la cantidad de datos, y `zoom.range` se aplica en cuanto se pueda.
    */
   private syncZoom(): void {
-    const on = this.zoomable;
+    const on = this.zoomAny;
     if (on !== this.zoomWas) {
       this.zoomWas = on;
       this.renderHeader();
       this.root.classList.toggle('lc-zoomable', on);
     }
-    if (!on) {
+    if (!this.zoomY) this.yView = FULL_VIEW;
+    if (!this.zoomable) {
       this.view = FULL_VIEW;
       return;
     }
@@ -762,15 +851,65 @@ export class LozChart {
       this.rangePending = false;
       this.initialZoom();
       // La ventana inicial también se avisa: quien escucha onZoom muestra el tramo desde el principio.
-      if (!isFull(this.view)) this.opts.onZoom?.(this.zoomRange, this.zoomWindow);
+      if (!isFull(this.view)) this.opts.onZoom?.(this.zoomRange, this.zoomWindow, this.zoomYWindow);
     }
   }
 
   // ------------------------------------------------------------ Zoom
 
-  /** El zoom funciona en gráficos cartesianos verticales con al menos 3 datos. */
+  /** Opciones del zoom como objeto (`zoom: true` es `{}`). */
+  private get zoomOptions(): ZoomOptions {
+    const z = this.opts.zoom;
+    return typeof z === 'object' && z ? z : {};
+  }
+
+  /** El zoom en X funciona en gráficos cartesianos verticales con al menos 3 datos. */
   private get zoomable(): boolean {
-    return !!this.opts.zoom && this.coords === 'cartesian' && !this.horizontal && this.prepared.n > 2;
+    return (
+      !!this.opts.zoom && this.zoomOptions.x !== false && this.coords === 'cartesian' && !this.horizontal && this.prepared.n > 2
+    );
+  }
+
+  /**
+   * El zoom en Y, si se pide: también en cartesianos verticales, que tienen el eje Y numérico
+   * (lineal o logarítmico). En los demás se ignora.
+   */
+  private get zoomY(): boolean {
+    return (
+      !!this.opts.zoom && this.zoomOptions.y === true && this.coords === 'cartesian' && !this.horizontal && this.prepared.n > 0
+    );
+  }
+
+  /** ¿Hay algún zoom (en X o en Y)? Decide el botón, los gestos y las teclas. */
+  private get zoomAny(): boolean {
+    return this.zoomable || this.zoomY;
+  }
+
+  /** ¿Se ve menos que todo en algún eje? */
+  private get zoomed(): boolean {
+    return (this.zoomable && !isFull(this.view)) || (this.zoomY && !isFull(this.yView));
+  }
+
+  /** Forma del deslizante del eje X, o null sin él. */
+  private get scrollbarKind(): ScrollbarKind | null {
+    const s = this.zoomOptions.scrollbar;
+    return s === false ? null : s === 'mini' ? 'mini' : 'thin';
+  }
+
+  /** Un deslizante para el eje X, de la forma pedida. */
+  private xScrollbar(kind: ScrollbarKind): Scrollbar {
+    const t = () => this.t.scrollbar;
+    return new Scrollbar(
+      {
+        view: () => this.view,
+        setView: (v, announce) => this.applyView(v, announce),
+        minSpan: () => this.minSpan(),
+        unit: () => 1 / Math.max(1, this.prepared.n - (this.prepared.band ? 0 : 1)),
+        label: (f, edge) => this.labelAtFraction(f, edge),
+        texts: () => ({ window: t().window, start: t().start, end: t().end, range: t().range }),
+      },
+      kind,
+    );
   }
 
   private minSpan(): number {
@@ -820,30 +959,50 @@ export class LozChart {
     if (a !== null && b !== null) this.view = clampView(a, b, this.minSpan());
   }
 
-  /**
-   * Cambia la ventana: el eje X cambia al instante (sigue al gesto) y el del valor se acomoda a
-   * lo visible con una animación corta.
-   */
+  /** Cambia la ventana del eje X (la del Y queda como está). */
   private applyView(v: View, announce: boolean): void {
-    const next = isFull(v) ? FULL_VIEW : v;
-    if (Math.abs(next.start - this.view.start) < 1e-9 && Math.abs(next.end - this.view.end) < 1e-9) return;
-    this.view = next;
+    this.applyZoom(v, this.yView, announce);
+  }
+
+  /**
+   * Cambia las ventanas: los ejes con zoom cambian al instante (siguen al gesto) y el del valor,
+   * si se ajusta a lo visible, se acomoda con una animación corta.
+   */
+  private applyZoom(x: View, y: View, announce: boolean): void {
+    const same = (a: View, b: View) => Math.abs(a.start - b.start) < 1e-9 && Math.abs(a.end - b.end) < 1e-9;
+    const nextX = this.zoomable && !isFull(x) ? x : FULL_VIEW;
+    const nextY = this.zoomY && !isFull(y) ? y : FULL_VIEW;
+    const yChanged = !same(nextY, this.yView);
+    if (same(nextX, this.view) && !yChanged) return;
+    this.view = nextX;
+    this.yView = nextY;
     this.retarget(false);
-    this.transition(this.opts.animate, ZOOM_DURATION);
-    // La barra se actualiza ya (no en el próximo cuadro): sus controles anuncian el valor nuevo.
-    if (this.scrollbar.el.isConnected) this.scrollbar.sync(next);
+    // Lo que mueve el eje Y lo pide el usuario y sigue al gesto: sin animación.
+    this.transition(this.opts.animate && !yChanged, ZOOM_DURATION);
+    // Los deslizantes se actualizan ya (no en el próximo cuadro): sus controles anuncian el valor nuevo.
+    if (this.scrollbar.el.isConnected) this.scrollbar.sync(nextX);
+    if (this.yScrollbar.el.isConnected) this.yScrollbar.sync(nextY);
     const range = this.zoomRange;
     // Con el ratón o un gesto no se anuncia cada paso; tampoco queda un aviso viejo que ya no vale.
     this.liveEl.textContent = !announce
       ? ''
       : range
-        ? this.t.chart.zoomedTo(this.labelAtFraction(next.start, 'start'), this.labelAtFraction(next.end, 'end'))
-        : this.t.chart.zoomedAll;
-    this.opts.onZoom?.(range, this.zoomWindow);
+        ? this.t.chart.zoomedTo(this.labelAtFraction(nextX.start, 'start'), this.labelAtFraction(nextX.end, 'end'))
+        : !this.zoomed
+          ? this.t.chart.zoomedAll
+          : this.t.scrollbar.yRange(this.valueAtFraction(nextY.start), this.valueAtFraction(nextY.end));
+    this.opts.onZoom?.(range, this.zoomWindow, this.zoomYWindow);
   }
 
-  /** Acerca o aleja con el teclado alrededor del dato activo (o del centro). */
+  /**
+   * Acerca o aleja con el teclado alrededor del dato activo (o del centro). Con zoom solo en Y,
+   * acerca el eje Y alrededor de su centro.
+   */
   private zoomByKey(factor: number): void {
+    if (!this.zoomable) {
+      this.applyZoom(this.view, zoomView(this.yView, 0.5, factor, MIN_Y_SPAN), true);
+      return;
+    }
     const L = this.layout;
     const focus = this.active >= 0 && L ? Math.max(0, Math.min(1, L.x.at(this.active) / L.plotW)) : 0.5;
     this.applyView(zoomView(this.view, focus, factor, this.minSpan()), true);
@@ -862,10 +1021,10 @@ export class LozChart {
     if (shift) this.applyView(panView(this.view, shift * span), false);
   }
 
-  /** Muestra (o quita) el tramo que se marca al arrastrar. */
-  private drawSelection(from: number | null, to?: number): void {
+  /** Muestra (o quita) el tramo que se marca al arrastrar (con zoom en Y, un rectángulo). */
+  private drawSelection(box: SelectionBox | null): void {
     const L = this.layout;
-    if (from === null || to === undefined || !L) {
+    if (!box || !L) {
       this.selRect.setAttribute('visibility', 'hidden');
       this.selLabel.setAttribute('visibility', 'hidden');
       return;
@@ -873,25 +1032,39 @@ export class LozChart {
     // Con el color de foco, para no confundirla con una franja de las anotaciones, y con el tramo
     // en texto: se sabe a dónde se va a acercar antes de soltar.
     const color = this.theme.palette[0];
-    const x0 = Math.min(from, to);
-    const x1 = Math.max(from, to);
+    const { x0, x1, y0, y1 } = box;
     attrsOn(this.selRect, {
       x: x0,
+      y: y0,
       width: x1 - x0,
-      height: L.plotH,
+      height: y1 - y0,
       fill: color,
       'fill-opacity': 0.1,
       stroke: color,
       'stroke-opacity': 0.6,
       visibility: 'visible',
     });
-    const a = xLabel(this.prepared, L.x.indexAt(x0), true, this.xContext());
-    const b = xLabel(this.prepared, L.x.indexAt(x1), true, this.xContext());
-    const text = a === b ? a : `${a} – ${b}`;
+    // El texto dice el tramo de X; si solo se marcan valores (todo el ancho), el de los valores.
+    let text: string;
+    if (this.zoomable && (x0 > 0 || x1 < L.plotW || (y0 <= 0 && y1 >= L.plotH))) {
+      const a = xLabel(this.prepared, L.x.indexAt(x0), true, this.xContext());
+      const b = xLabel(this.prepared, L.x.indexAt(x1), true, this.xContext());
+      text = a === b ? a : `${a} – ${b}`;
+    } else {
+      const span = this.yView.end - this.yView.start;
+      const at = (py: number) => this.valueAtFraction(this.yView.start + (1 - py / L.plotH) * span);
+      text = `${at(y1)} – ${at(y0)}`;
+    }
     const w = textWidth(text, L.font);
     const mid = Math.max(w / 2 + 2, Math.min(L.plotW - w / 2 - 2, (x0 + x1) / 2));
     this.selLabel.textContent = text;
-    attrsOn(this.selLabel, { x: mid.toFixed(1), y: 6, fill: this.theme.text, stroke: this.theme.surface, visibility: 'visible' });
+    attrsOn(this.selLabel, {
+      x: mid.toFixed(1),
+      y: (y0 + 6).toFixed(1),
+      fill: this.theme.text,
+      stroke: this.theme.surface,
+      visibility: 'visible',
+    });
   }
 
   /** Índices válidos de la opción selection (los que existen en los datos), o null si no hay. */
@@ -963,8 +1136,7 @@ export class LozChart {
 
   /** ¿Se muestra "Ver todo" al acercar? */
   private get resetOn(): boolean {
-    const z = this.opts.zoom;
-    return this.zoomable && !(typeof z === 'object' && z.reset === false);
+    return this.zoomAny && this.zoomOptions.reset !== false;
   }
 
   /** ¿Alguien escucha los clics: la opción onClick o un tipo de serie visible? */
@@ -1040,7 +1212,8 @@ export class LozChart {
     return L;
   }
 
-  private computeLayout(width: number): Layout | null {
+  /** `controls`: con el lugar de los controles en pantalla (el deslizante vertical); al exportar, no. */
+  private computeLayout(width: number, controls = true): Layout | null {
     if (!width) return null;
     if (this.coords !== 'cartesian') return this.radialLayout(width);
     const { opts: o, prepared: p, target: t, horizontal } = this;
@@ -1077,7 +1250,7 @@ export class LozChart {
     // En un eje logarítmico, las marcas son 1, 2 y 5 × 10ⁿ (ver logTicks) y el paso es la menor.
     const count = horizontal ? this.valueTickCount(width - left) : this.valueTickCount();
     const step = t.log ? t.step : horizontal ? niceStep(t.d1 - t.d0, count) : t.step;
-    const valueTicks = t.log ? logTicks(t.d0, t.d1, count) : numberTicks(t.d0, t.d1, step);
+    const ticks = valueTicks({ d0: t.d0, d1: t.d1, step, log: t.log }, count);
     const spec = o.yAxis?.index ? 'number' : o.yAxis?.format;
     const valueFormat = axisFormatter(spec, this.numberContext(), step, Math.max(Math.abs(t.d0), Math.abs(t.d1)));
     if (!valueLabels) {
@@ -1085,12 +1258,14 @@ export class LozChart {
       if (!horizontal) left = 4;
     } else if (horizontal) {
       // La última etiqueta del valor va centrada en el borde: que no se salga.
-      right = Math.ceil(measure(valueFormat(valueTicks[valueTicks.length - 1] ?? 0)) / 2) + 2;
+      right = Math.ceil(measure(valueFormat(ticks[ticks.length - 1] ?? 0)) / 2) + 2;
     } else {
-      const natural = Math.ceil(maxOf(valueTicks.length, (k) => measure(valueFormat(valueTicks[k])))) + 10;
+      const natural = Math.ceil(maxOf(ticks.length, (k) => measure(valueFormat(ticks[k])))) + 10;
       labelWidth = natural;
       left = Math.max(natural, o.yAxis?.width ?? 0);
     }
+    // El deslizante del zoom en Y va a la izquierda de los números, con su propio lugar.
+    if (controls && this.yScrollbarOn) left += Y_SCROLLBAR_SPACE;
     // Eje derecho: sus números a la derecha, en los mismos renglones que los del izquierdo.
     const r = t.right;
     const rightTicks = r ? numberTicks(r.d0, r.d1, r.step) : [];
@@ -1127,7 +1302,7 @@ export class LozChart {
       indexLen,
       valueLen,
       x: this.indexScale(indexLen),
-      valueTicks,
+      valueTicks: ticks,
       valueFormat,
       rightTicks,
       rightFormat,
@@ -1230,11 +1405,11 @@ export class LozChart {
     else this.gData.removeAttribute('transform');
     // Con zoom, el recorte es exacto en el eje X: lo que sale de la ventana no invade los ejes.
     // Un mapa (sin ejes) también: lo que queda fuera del encuadre no se asoma por los costados.
-    const zoomed = this.zoomable && !isFull(this.view);
-    const exact = zoomed || this.coords === 'free';
-    this.clipRect.setAttribute('x', String(exact ? 0 : -CLIP_PAD));
-    this.clipRect.setAttribute('width', String(L.indexLen + (exact ? 0 : 2 * CLIP_PAD)));
-    this.clipRect.setAttribute('height', String(L.valueLen + 2 * CLIP_PAD));
+    // Con zoom en Y, también arriba y abajo, y ahí recorta además las marcas del dato activo.
+    const clip = this.clipBox(L);
+    attrsOn(this.clipRect, clip);
+    if (this.yClipped) this.gHover.setAttribute('clip-path', this.gSeries.getAttribute('clip-path')!);
+    else this.gHover.removeAttribute('clip-path');
     this.overlay.setAttribute('width', String(L.plotW));
     this.overlay.setAttribute('height', String(L.plotH));
     this.overlay.style.touchAction = L.horizontal ? 'pan-x' : this.coords === 'cartesian' ? 'pan-y' : 'pan-x pan-y';
@@ -1248,26 +1423,63 @@ export class LozChart {
       this.drawHover(frame, L);
       this.positionTooltip();
     }
-    this.drawZoomControls(L, zoomed);
+    this.drawZoomControls(L);
   }
 
-  /** Botón "Ver todo" y barra de desplazamiento con su mini gráfico. */
-  private drawZoomControls(L: Layout, zoomed: boolean): void {
+  /** ¿El eje Y se recorta exacto? Con zoom en Y y una ventana menor que todo. */
+  private get yClipped(): boolean {
+    return this.zoomY && !isFull(this.yView);
+  }
+
+  /** Recorte de las series: exacto en cada eje con zoom (y en los tipos sin ejes), con margen si no. */
+  private clipBox(L: Layout): { x: number; y: number; width: number; height: number } {
+    const xExact = (this.zoomable && !isFull(this.view)) || this.coords === 'free';
+    const yExact = this.yClipped;
+    return {
+      x: xExact ? 0 : -CLIP_PAD,
+      y: yExact ? 0 : -CLIP_PAD,
+      width: L.indexLen + (xExact ? 0 : 2 * CLIP_PAD),
+      height: L.valueLen + (yExact ? 0 : 2 * CLIP_PAD),
+    };
+  }
+
+  /** ¿Va el deslizante vertical? Con zoom en Y y sin `scrollbar: false`. */
+  private get yScrollbarOn(): boolean {
+    return this.zoomY && this.scrollbarKind !== null;
+  }
+
+  /** Botón "Ver todo" y los deslizantes (el del eje X, con su mini gráfico en la forma 'mini'). */
+  private drawZoomControls(L: Layout): void {
+    const zoomed = this.zoomed;
     this.resetBtn.classList.toggle('lc-off', !zoomed);
     this.resetBtn.tabIndex = zoomed && this.resetOn ? 0 : -1;
-    const z = this.opts.zoom;
-    const show = this.zoomable && !(typeof z === 'object' && z.scrollbar === false);
-    if (!show) {
+    if (this.yScrollbarOn) {
+      if (!this.yScrollbar.el.isConnected) this.plotEl.appendChild(this.yScrollbar.el);
+      this.yScrollbar.place(L.top, L.plotH);
+      this.yScrollbar.sync(this.yView);
+    } else {
+      this.yScrollbar.el.remove();
+    }
+    const kind = this.zoomable ? this.scrollbarKind : null;
+    if (!kind) {
       this.scrollbar.el.remove();
       this.miniKey = null;
       return;
     }
+    if (this.scrollbar.kind !== kind) {
+      this.scrollbar.el.remove();
+      this.scrollbar = this.xScrollbar(kind);
+      this.miniKey = null;
+    }
     if (!this.scrollbar.el.isConnected) this.svgEl.after(this.scrollbar.el);
-    const full = this.fullTarget ?? this.target;
-    const k = this.miniKey;
-    if (!k || k.target !== full || k.width !== this.width || k.theme !== this.theme) {
-      this.miniKey = { target: full, width: this.width, theme: this.theme };
-      this.scrollbar.render(L.left, L.plotW, this.miniChart(full, L));
+    this.scrollbar.place(L.left, L.plotW);
+    if (kind === 'mini') {
+      const full = this.fullTarget ?? this.target;
+      const k = this.miniKey;
+      if (!k || k.target !== full || k.width !== this.width || k.theme !== this.theme) {
+        this.miniKey = { target: full, width: this.width, theme: this.theme };
+        this.scrollbar.overview(this.miniChart(full, L));
+      }
     }
     this.scrollbar.sync(this.view);
   }
@@ -1363,7 +1575,10 @@ export class LozChart {
     }
     const topTitle = L.horizontal ? this.opts.xAxis.title : this.opts.yAxis?.title;
     const bottomTitle = L.horizontal ? this.opts.yAxis?.title : this.opts.xAxis.title;
-    if (topTitle) axes += label(-L.left, -16, topTitle, { 'dominant-baseline': 'central' });
+    // En pantalla, con el deslizante del zoom en Y, el título empieza donde empiezan los números.
+    const titleX = -L.left + (purpose === 'screen' && this.yScrollbarOn ? Y_SCROLLBAR_SPACE : 0);
+    if (topTitle) axes += label(titleX, -16, topTitle, { 'dominant-baseline': 'central' });
+
     const rightTitle = frame.right && this.opts.yAxis2?.title;
     if (rightTitle)
       axes += label(L.width - L.left - 4, -16, rightTitle, { 'text-anchor': 'end', 'dominant-baseline': 'central' });
@@ -1900,7 +2115,7 @@ export class LozChart {
           : t.seriesAndItems(t.count(series.length, t.series), t.count(n, items));
     // Sin ejes valen las cuatro flechas; con ejes, las del eje del índice.
     const keys = p.coords !== 'cartesian' ? t.arrows : this.horizontal ? t.arrowsUpDown : t.arrowsLeftRight;
-    const zoom = this.zoomable ? t.zoomKeys : '';
+    const zoom = this.zoomAny ? t.zoomKeys : '';
     const selection = this.selectedIdx ? ` ${this.selectionText()}.` : '';
     return (
       t.withCount(title + what, count) +
@@ -2006,12 +2221,12 @@ export class LozChart {
         this.fireClick(this.active, own, e);
         return;
       }
-      if (this.zoomable && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (this.zoomAny && !e.ctrlKey && !e.metaKey && !e.altKey) {
         const factor = e.key === '+' || e.key === '=' ? 1.5 : e.key === '-' || e.key === '_' ? 1 / 1.5 : 0;
         if (factor || e.key === '0') {
           e.preventDefault();
           if (factor) this.zoomByKey(factor);
-          else this.applyView(FULL_VIEW, true);
+          else this.applyZoom(FULL_VIEW, FULL_VIEW, true);
           return;
         }
       }
@@ -2400,7 +2615,8 @@ export class LozChart {
   private exportSVG(pad = EXPORT_PAD): { markup: string; width: number; height: number } {
     const th = this.theme;
     const width = this.width ? this.width + 2 * pad : 640;
-    const L = this.computeLayout(width - 2 * pad)!;
+    const L = this.computeLayout(width - 2 * pad, false)!;
+
     const parts = this.renderParts(this.target, L, 'export');
     const family = L.font.slice(L.font.indexOf(' ') + 1);
     const text = (x: number, y: number, s: string, a: Record<string, string | number>) =>
@@ -2429,9 +2645,9 @@ export class LozChart {
 
     const height = Math.ceil(y + pad);
     // El mismo recorte de la vista en vivo: con zoom, lo que queda fuera de la ventana no se exporta.
-    const zoomed = this.zoomable && !isFull(this.view);
     const clipId = `lc-export-clip-${++uid}`;
-    const clip = `<clipPath id="${clipId}"><rect${attrs({ x: zoomed ? 0 : -CLIP_PAD, y: -CLIP_PAD, width: L.indexLen + (zoomed ? 0 : 2 * CLIP_PAD), height: L.valueLen + 2 * CLIP_PAD })}/></clipPath>`;
+    const clip = `<clipPath id="${clipId}"><rect${attrs(this.clipBox(L))}/></clipPath>`;
+
     const series = `<g clip-path="url(#${clipId})">${parts.series}</g>`;
     const data = clip + (L.horizontal ? `<g transform="${SWAP_AXES}">${series}</g>` : series);
     const markup =

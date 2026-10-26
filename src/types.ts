@@ -35,12 +35,23 @@ export interface Annotation {
   axis?: 'left' | 'right';
 }
 
-/** Zoom en el eje X (solo gráficos cartesianos verticales). */
+/** Zoom en el eje X y, si se pide, en el Y (solo gráficos cartesianos verticales). */
 export interface ZoomOptions {
   /** Ventana inicial: desde y hasta, en valores de X. Por defecto, todos los datos. */
   range?: [XValue, XValue];
-  /** Barra con un mini gráfico de todos los datos para mover la ventana. Por defecto true. */
-  scrollbar?: boolean;
+  /** Zoom en el eje X. Por defecto true; con false y `y: true`, el zoom es solo en Y. */
+  x?: boolean;
+  /**
+   * Zoom en el eje Y, con su deslizante a la izquierda del eje. Por defecto false. Su ventana es
+   * una fracción del dominio de todos los datos: con zoom en Y, el eje ya no se ajusta solo a lo
+   * que se ve en X (el deslizante manda).
+   */
+  y?: boolean;
+  /**
+   * Deslizante para mover la ventana: true (por defecto) es una línea fina con una perilla en cada
+   * extremo; 'mini', una barra con un mini gráfico de todos los datos (solo en X); false, ninguno.
+   */
+  scrollbar?: boolean | 'mini';
   /**
    * Botón "Ver todo" junto al título al acercar. Por defecto true. Sin él se vuelve a todo con
    * doble clic, con la tecla 0 o con resetZoom().
@@ -52,6 +63,7 @@ export interface ZoomOptions {
  * Ventana del zoom como fracciones del eje X completo: { start: 0.25, end: 0.5 } es el segundo
  * cuarto. Es exacta (no se redondea a un dato) y no depende del ancho: sirve para que varios
  * gráficos con el mismo eje muestren exactamente el mismo tramo (ver setZoomWindow).
+ * En el eje Y es una fracción del dominio de todos los datos, contada desde abajo.
  */
 export interface ZoomWindow {
   start: number;
@@ -301,13 +313,15 @@ export interface LozChartOptions {
    * Zoom en el eje X: arrastrar para acercar, Ctrl + rueda o pellizcar para acercar o alejar,
    * deslizar con dos dedos (o Shift + rueda) para moverse y doble clic para ver todo. El eje del
    * valor se ajusta a lo visible. Con el teclado: + y − acercan y alejan, 0 vuelve a todo.
+   * Con `{ y: true }`, también en el eje Y (ver ZoomOptions).
    */
   zoom?: boolean | ZoomOptions;
   /**
    * Se llama al cambiar el zoom con el primer y el último dato visibles (en valores de X), o null
-   * si se ve todo, y con la ventana exacta en fracciones del eje (`{ start: 0, end: 1 }` al ver todo).
+   * si se ve todo, con la ventana exacta en fracciones del eje (`{ start: 0, end: 1 }` al ver todo)
+   * y con la del eje Y (la misma forma, desde abajo; `{ start: 0, end: 1 }` sin zoom en Y).
    */
-  onZoom?: (range: [string | number, string | number] | null, window: ZoomWindow) => void;
+  onZoom?: (range: [string | number, string | number] | null, window: ZoomWindow, yWindow: ZoomWindow) => void;
   /**
    * Se llama cuando el puntero o el teclado activan un dato, con su X (texto de la categoría,
    * o número: fecha en ms o valor), y con null al salir. Junto con highlight() sincroniza gráficos.

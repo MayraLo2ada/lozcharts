@@ -97,13 +97,19 @@ export interface Messages {
     /** Encabezado de una fecha semanal ("Semana del 2 de marzo de 2026"), con la fecha ya escrita. */
     weekOf: (date: string) => string;
   };
-  /** Barra de desplazamiento del zoom. */
+  /** Deslizantes del zoom: el del eje X y, con zoom en Y, el vertical. */
   scrollbar: {
     window: string;
     start: string;
     end: string;
     /** Lo que dice la ventana: "De marzo a junio". */
     range: (from: string, to: string) => string;
+    /** El deslizante vertical: el tramo de valores que se ve, su borde de abajo y el de arriba. */
+    yWindow: string;
+    yStart: string;
+    yEnd: string;
+    /** Lo que dice su ventana: "Valores de 20 a 80". */
+    yRange: (from: string, to: string) => string;
   };
   /** Palabras que comparten varios tipos de serie (tooltip, leyendas, tabla). */
   data: {
@@ -286,6 +292,10 @@ const es: Messages = {
     start: 'Inicio del tramo visible',
     end: 'Fin del tramo visible',
     range: (from, to) => `De ${from} a ${to}`,
+    yWindow: 'Valores visibles',
+    yStart: 'Valor más bajo visible',
+    yEnd: 'Valor más alto visible',
+    yRange: (from, to) => `Valores de ${from} a ${to}`,
   },
   data: {
     noData: 'Sin dato',
@@ -526,6 +536,10 @@ const en: Messages = {
     start: 'Start of the visible range',
     end: 'End of the visible range',
     range: (from, to) => `${from} to ${to}`,
+    yWindow: 'Visible values',
+    yStart: 'Lowest visible value',
+    yEnd: 'Highest visible value',
+    yRange: (from, to) => `Values from ${from} to ${to}`,
   },
   data: {
     noData: 'No data',
@@ -765,6 +779,10 @@ const pt: Messages = {
     start: 'Início do trecho visível',
     end: 'Fim do trecho visível',
     range: (from, to) => `De ${from} a ${to}`,
+    yWindow: 'Valores visíveis',
+    yStart: 'Menor valor visível',
+    yEnd: 'Maior valor visível',
+    yRange: (from, to) => `Valores de ${from} a ${to}`,
   },
   data: {
     noData: 'Sem dado',

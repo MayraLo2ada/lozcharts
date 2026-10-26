@@ -113,8 +113,8 @@ export class LozChartElement extends Base {
         user.onHover?.(x, index, series);
         this.dispatchEvent(new CustomEvent('lozhover', { detail: x, bubbles: true }));
       },
-      onZoom: (range, window) => {
-        user.onZoom?.(range, window);
+      onZoom: (range, window, yWindow) => {
+        user.onZoom?.(range, window, yWindow);
         this.dispatchEvent(new CustomEvent('lozzoom', { detail: range, bubbles: true }));
       },
       onClick: (x, index, series) => {
