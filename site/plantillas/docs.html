@@ -1,21 +1,20 @@
 <!doctype html>
-<html lang="es">
+<html lang="{{lang}}">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <title>Documentación · LozCharts</title>
-    <meta
-      name="description"
-      content="Cómo instalar y usar LozCharts: opciones, tipos de gráfico, React, Angular, HTMX y mapas, con ejemplos que puedes copiar."
-    />
+    <script src="{{raiz}}assets/idioma.js"></script>
+    {{alternos}}
+    <link rel="icon" href="{{raiz}}favicon.svg" type="image/svg+xml" />
+    <title>{{titulo}}</title>
+    <meta name="description" content="{{descripcion}}" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/site.css" />
+    <link rel="stylesheet" href="{{raiz}}assets/site.css" />
     <style>
       /*
        * Documentación. Los estilos compartidos viven en assets/site.css; aquí solo va lo propio.
@@ -313,6 +312,11 @@
           padding-inline: 16px;
         }
       }
+      /* El código dentro de una frase también puede partirse: una llamada larga como
+         chart.setTheme('dark').toggleSeries(…) no debe ensanchar la página en el teléfono. */
+      .txt code {
+        overflow-wrap: anywhere;
+      }
       /* Nada se esconde: las líneas largas bajan a la siguiente en vez de cortarse. */
       .bloque .code {
         border: 0;
@@ -484,21 +488,21 @@
     </style>
   </head>
   <body class="docs-pagina">
-    <a class="sr-only" href="#contenido">Saltar al contenido</a>
+    <a class="sr-only" href="#contenido">{{saltar}}</a>
     <header class="top">
       <div class="wrap">
-        <a class="wordmark" href="./" aria-label="LozCharts, inicio"
+        <a class="wordmark" href="{{p:inicio}}" aria-label="{{inicio_aria}}"
           ><svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
             <rect x="4" y="16" width="6" height="12" rx="2" />
             <rect x="13" y="9" width="6" height="19" rx="2" />
             <rect x="22" y="4" width="6" height="24" rx="2" /></svg
           >LozCharts</a
         >
-        <nav class="nav" aria-label="Principal">
-          <a href="galeria.html">Galería</a>
-          <a href="docs.html" aria-current="page">Documentación</a>
+        <nav class="nav" aria-label="{{nav_aria}}">
+          <a href="{{p:galeria}}">{{nav_galeria}}</a>
+          <a href="{{p:docs}}" aria-current="page">{{nav_docs_barra}}</a>
           <a class="github" href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
-          <button type="button" class="theme-btn" aria-label="Cambiar a modo oscuro">
+          <button type="button" class="theme-btn" aria-label="{{tema_oscuro}}">
             <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
               <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />
             </svg>
@@ -507,47 +511,46 @@
               <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
             </svg>
           </button>
+          {{selector}}
         </nav>
       </div>
     </header>
 
     <div class="docs wrap">
       <nav class="indice" aria-labelledby="indice-titulo">
-        <h2 class="indice-titulo" id="indice-titulo">En esta página</h2>
+        <h2 class="indice-titulo" id="indice-titulo">{{en_esta_pagina}}</h2>
         <ol>
           <!--INDICE-->
         </ol>
       </nav>
       <main id="contenido">
         <label class="ir"
-          ><span class="sr-only">Ir a la sección</span
+          ><span class="sr-only">{{ir_seccion}}</span
           ><select id="ir"></select
         ></label>
         <div class="cabeza">
-          <h1>Documentación</h1>
+          <h1>{{h1}}</h1>
           <!--INTRO-->
           <nav class="atajos" aria-labelledby="atajos-titulo">
-            <h2 id="atajos-titulo">Lo que más se consulta</h2>
+            <h2 id="atajos-titulo">{{atajos}}</h2>
             <ul>
               <li>
-                <a href="#tres-formas-de-usarla"
-                  ><strong>Tres formas de usarla</strong><span>Con &lt;script&gt;, con import o con HTMX</span></a
-                >
+                <a href="#{{ancla_formas}}"><strong>{{atajo_formas}}</strong><span>{{atajo_formas_sub}}</span></a>
               </li>
               <li>
-                <a href="#tipos-de-serie"><strong>Tipos de serie</strong><span>Los 26 tipos y los campos de cada uno</span></a>
+                <a href="#{{ancla_tipos}}"><strong>{{atajo_tipos}}</strong><span>{{atajo_tipos_sub}}</span></a>
               </li>
               <li>
-                <a href="#opciones"><strong>Opciones</strong><span>Todo lo que acepta un gráfico</span></a>
+                <a href="#{{ancla_opciones}}"><strong>{{atajo_opciones}}</strong><span>{{atajo_opciones_sub}}</span></a>
               </li>
               <li>
-                <a href="#métodos"><strong>Métodos</strong><span>setData, zoomTo, download y los demás</span></a>
+                <a href="#{{ancla_metodos}}"><strong>{{atajo_metodos}}</strong><span>{{atajo_metodos_sub}}</span></a>
               </li>
               <li>
-                <a href="#react"><strong>React</strong><span>El componente Chart y sus props</span></a>
+                <a href="#{{ancla_react}}"><strong>React</strong><span>{{atajo_react_sub}}</span></a>
               </li>
               <li>
-                <a href="#lozcharts-con-ia"><strong>LozCharts con IA</strong><span>El archivo para tu asistente</span></a>
+                <a href="#{{ancla_ia}}"><strong>{{atajo_ia}}</strong><span>{{atajo_ia_sub}}</span></a>
               </li>
             </ul>
           </nav>
@@ -558,19 +561,20 @@
 
     <footer class="foot">
       <div class="wrap">
-        <span>LozCharts · por Mayra Lozada</span>
-        <nav aria-label="Pie">
-          <a href="./">Inicio</a>
-          <a href="galeria.html">Galería</a>
+        <span>{{pie_firma}}</span>
+        <nav aria-label="{{pie_aria}}">
+          <a href="{{p:inicio}}">{{nav_inicio}}</a>
+          <a href="{{p:galeria}}">{{nav_galeria}}</a>
           <a href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
         </nav>
+        {{idiomas_pie}}
       </div>
     </footer>
     <p class="sr-only" id="aviso" aria-live="polite"></p>
 
-    <script src="lib/lozcharts.umd.js"></script>
-    <script src="lib/maps/world.umd.js"></script>
-    <script src="assets/site.js"></script>
+    <script src="{{raiz}}lib/lozcharts.umd.js"></script>
+    <script src="{{raiz}}lib/maps/world.umd.js"></script>
+    <script src="{{raiz}}assets/site.js"></script>
     <script>
       (function () {
         // Índice: marca la sección que estás leyendo; en el celular, un selector para saltar.
@@ -648,23 +652,35 @@
           var boton = b.querySelector('.copiar');
           var codigo = b.querySelector('pre');
           boton.hidden = false;
-          boton.setAttribute('aria-label', 'Copiar el código (' + b.querySelector('.bloque-barra span').textContent + ')');
+          var lenguaje = b.querySelector('.bloque-barra span').textContent;
+          boton.setAttribute(
+            'aria-label',
+            tx({
+              es: 'Copiar el código (' + lenguaje + ')',
+              en: 'Copy the code (' + lenguaje + ')',
+              pt: 'Copiar o código (' + lenguaje + ')',
+            }),
+          );
           var reloj;
           boton.addEventListener('click', function () {
             copiar(codigo.textContent).then(
               function () {
-                boton.textContent = 'Copiado';
+                boton.textContent = tx({ es: 'Copiado', en: 'Copied', pt: 'Copiado' });
                 boton.setAttribute('data-hecho', '');
-                aviso.textContent = 'Código copiado.';
+                aviso.textContent = tx({ es: 'Código copiado.', en: 'Code copied.', pt: 'Código copiado.' });
                 clearTimeout(reloj);
                 reloj = setTimeout(function () {
-                  boton.textContent = 'Copiar';
+                  boton.textContent = tx({ es: 'Copiar', en: 'Copy', pt: 'Copiar' });
                   boton.removeAttribute('data-hecho');
                   aviso.textContent = '';
                 }, 1800);
               },
               function () {
-                aviso.textContent = 'No se pudo copiar. Selecciona el código y copia con el teclado.';
+                aviso.textContent = tx({
+                  es: 'No se pudo copiar. Selecciona el código y copia con el teclado.',
+                  en: "Couldn't copy it. Select the code and copy it with your keyboard.",
+                  pt: 'Não deu para copiar. Selecione o código e copie pelo teclado.',
+                });
               },
             );
           });
@@ -678,7 +694,14 @@
             if (desborda) {
               t.tabIndex = 0;
               t.setAttribute('role', 'region');
-              t.setAttribute('aria-label', 'Tabla (se desplaza de lado)');
+              t.setAttribute(
+                'aria-label',
+                tx({
+                  es: 'Tabla (se desplaza de lado)',
+                  en: 'Table (scrolls sideways)',
+                  pt: 'Tabela (rola para o lado)',
+                }),
+              );
             } else {
               t.removeAttribute('tabindex');
               t.removeAttribute('role');
@@ -716,188 +739,463 @@
         var iso = function (d) {
           return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         };
+        /** Un número con el formato del idioma de la página (100,000 · 100.000). */
+        var numero = function (n) {
+          return new Intl.NumberFormat(LOCALE).format(n);
+        };
         var nuevo = function (el, o) {
           // Sin superficie propia: el gráfico toma el fondo de su recuadro, en claro y en oscuro.
           o.background = false;
+          // Los textos de la librería y los formatos de números y fechas, en el idioma de la página.
+          o.locale = LOCALE;
           return window.siteChart(new LozChart(el, o));
         };
 
+        // Cada gráfico vivo muestra lo mismo que el código que tiene al lado en el README de su
+        // idioma: los mismos campos, títulos, series y datos (en portugués, el ejemplo completo va en
+        // reales). Por eso las opciones van completas en cada idioma, no solo los textos.
         var VIVOS = {
           ejemplo: {
-            nota: 'El ejemplo de arriba con los doce meses. Pasa el puntero por las barras.',
+            nota: tx({
+              es: 'El ejemplo de arriba con los doce meses. Pasa el puntero por las barras.',
+              en: 'The example above with all twelve months. Hover over the bars.',
+              pt: 'O exemplo acima com os doze meses. Passe o mouse pelas barras.',
+            }),
             crear: function (el) {
+              var t = tx({
+                es: {
+                  title: 'Ventas por mes',
+                  subtitle: 'Enero a diciembre 2026',
+                  campos: ['mes', 'online', 'tienda', 'meta'],
+                  nombres: ['En línea', 'Tienda', 'Meta'],
+                  moneda: 'USD',
+                },
+                en: {
+                  title: 'Sales by month',
+                  subtitle: 'January to December 2026',
+                  campos: ['month', 'online', 'store', 'goal'],
+                  nombres: ['Online', 'In store', 'Goal'],
+                  moneda: 'USD',
+                },
+                pt: {
+                  title: 'Vendas por mês',
+                  subtitle: 'Janeiro a dezembro de 2026',
+                  campos: ['mes', 'online', 'loja', 'meta'],
+                  nombres: ['Online', 'Loja', 'Meta'],
+                  moneda: 'BRL',
+                },
+              });
+              var c = t.campos;
               var online = [42000, 45500, 47200, 49800, 51000, 53900, 52600, 55100, 58300, 60200, 64800, 71500];
               var tienda = [31000, 29800, 30500, 31200, 30100, 32400, 33800, 32900, 31700, 33100, 36200, 41800];
               var meta = [80000, 82000, 82000, 84000, 84000, 86000, 86000, 88000, 88000, 90000, 95000, 105000];
               nuevo(el, {
-                title: 'Ventas por mes',
-                subtitle: 'Enero a diciembre 2026',
+                title: t.title,
+                subtitle: t.subtitle,
                 data: meses(online).map(function (m, i) {
-                  return { mes: m, online: online[i], tienda: tienda[i], meta: meta[i] };
+                  var fila = {};
+                  fila[c[0]] = m;
+                  fila[c[1]] = online[i];
+                  fila[c[2]] = tienda[i];
+                  fila[c[3]] = meta[i];
+                  return fila;
                 }),
-                xAxis: { field: 'mes', type: 'time' },
+                xAxis: { field: c[0], type: 'time' },
                 yAxis: { format: 'currency' },
                 series: [
-                  { type: 'bar', field: 'online', name: 'En línea', stack: true },
-                  { type: 'bar', field: 'tienda', name: 'Tienda', stack: true },
-                  { type: 'line', field: 'meta', name: 'Meta', smooth: true },
+                  { type: 'bar', field: c[1], name: t.nombres[0], stack: true },
+                  { type: 'bar', field: c[2], name: t.nombres[1], stack: true },
+                  { type: 'line', field: c[3], name: t.nombres[2], smooth: true },
                 ],
                 height: 320,
                 legend: { position: 'bottom' },
-                locale: 'es',
-                currency: 'USD',
+                currency: t.moneda,
               });
             },
           },
           categorias: {
-            nota: 'La dona de arriba con cinco categorías. Toca una en la leyenda para ocultarla.',
+            nota: tx({
+              es: 'La dona de arriba con cinco categorías. Toca una en la leyenda para ocultarla.',
+              en: 'The donut above with five categories. Tap one in the legend to hide it.',
+              pt: 'A rosca acima com cinco categorias. Toque em uma na legenda para escondê-la.',
+            }),
             crear: function (el) {
+              var ventas = [184200, 126400, 98300, 61700, 38900];
+              var t = tx({
+                es: {
+                  campos: ['categoria', 'ventas'],
+                  nombre: 'Ventas',
+                  categorias: ['Electrónica', 'Hogar', 'Moda', 'Deportes', 'Juguetes'],
+                },
+                en: {
+                  campos: ['category', 'sales'],
+                  nombre: 'Sales',
+                  categorias: ['Electronics', 'Home', 'Fashion', 'Sports', 'Toys'],
+                },
+                pt: {
+                  campos: ['categoria', 'vendas'],
+                  nombre: 'Vendas',
+                  categorias: ['Eletrônicos', 'Casa', 'Moda', 'Esportes', 'Brinquedos'],
+                },
+              });
               nuevo(el, {
-                data: [
-                  { categoria: 'Electrónica', ventas: 184200 },
-                  { categoria: 'Hogar', ventas: 126400 },
-                  { categoria: 'Moda', ventas: 98300 },
-                  { categoria: 'Deportes', ventas: 61700 },
-                  { categoria: 'Juguetes', ventas: 38900 },
-                ],
-                xAxis: { field: 'categoria' },
+                data: t.categorias.map(function (cat, i) {
+                  var fila = {};
+                  fila[t.campos[0]] = cat;
+                  fila[t.campos[1]] = ventas[i];
+                  return fila;
+                }),
+                xAxis: { field: t.campos[0] },
                 yAxis: { format: 'currency' },
-                series: [{ type: 'donut', field: 'ventas', name: 'Ventas' }],
+                series: [{ type: 'donut', field: t.campos[1], name: t.nombre }],
               });
             },
           },
           meta: {
-            nota: 'El medidor (gauge): 78 % de avance contra una meta de 85 %.',
+            nota: tx({
+              es: 'El medidor (gauge): 78 % de avance contra una meta de 85 %.',
+              en: 'The gauge: 78% progress against an 85% goal.',
+              pt: 'O medidor (gauge): 78% de progresso contra uma meta de 85%.',
+            }),
             crear: function (el) {
-              nuevo(el, {
-                data: [{ mes: 'Octubre', avance: 0.78 }],
-                xAxis: { field: 'mes' },
-                yAxis: { format: 'percent', min: 0, max: 1 },
-                series: [{ type: 'gauge', field: 'avance', name: 'Avance', target: 0.85 }],
-              });
+              nuevo(
+                el,
+                tx({
+                  es: {
+                    data: [{ mes: 'Octubre', avance: 0.78 }],
+                    xAxis: { field: 'mes' },
+                    yAxis: { format: 'percent', min: 0, max: 1 },
+                    series: [{ type: 'gauge', field: 'avance', name: 'Avance', target: 0.85 }],
+                  },
+                  en: {
+                    data: [{ month: 'October', progress: 0.78 }],
+                    xAxis: { field: 'month' },
+                    yAxis: { format: 'percent', min: 0, max: 1 },
+                    series: [{ type: 'gauge', field: 'progress', name: 'Progress', target: 0.85 }],
+                  },
+                  pt: {
+                    data: [{ mes: 'Outubro', progresso: 0.78 }],
+                    xAxis: { field: 'mes' },
+                    yAxis: { format: 'percent', min: 0, max: 1 },
+                    series: [{ type: 'gauge', field: 'progresso', name: 'Progresso', target: 0.85 }],
+                  },
+                }),
+              );
             },
           },
           calor: {
-            nota: 'Visitas por día y hora, con datos inventados. Con el foco en el gráfico, las flechas recorren la rejilla.',
+            nota: tx({
+              es: 'Visitas por día y hora, con datos inventados. Con el foco en el gráfico, las flechas recorren la rejilla.',
+              en: 'Visits by day and hour, with made-up data. With the chart focused, the arrow keys move around the grid.',
+              pt: 'Visitas por dia e hora, com dados inventados. Com o foco no gráfico, as setas percorrem a grade.',
+            }),
             crear: function (el) {
-              var dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+              var t = tx({
+                es: {
+                  campos: ['hora', 'dia', 'visitas'],
+                  nombre: 'Visitas',
+                  dias: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+                },
+                en: {
+                  campos: ['hour', 'day', 'visits'],
+                  nombre: 'Visits',
+                  dias: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                },
+                pt: {
+                  campos: ['hora', 'dia', 'visitas'],
+                  nombre: 'Visitas',
+                  dias: ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'],
+                },
+              });
+              var c = t.campos;
               var r = azar(7);
               var data = [];
-              dias.forEach(function (dia, d) {
+              t.dias.forEach(function (dia, d) {
                 for (var h = 8; h <= 20; h++) {
                   var base = d < 5 ? 90 + 70 * Math.sin(((h - 8) / 12) * Math.PI) : 40 + 30 * Math.sin(((h - 10) / 10) * Math.PI);
-                  data.push({
-                    hora: (h < 10 ? '0' : '') + h + ':00',
-                    dia: dia,
-                    visitas: Math.max(5, Math.round(base + r() * 30)),
-                  });
+                  var fila = {};
+                  fila[c[0]] = (h < 10 ? '0' : '') + h + ':00';
+                  fila[c[1]] = dia;
+                  fila[c[2]] = Math.max(5, Math.round(base + r() * 30));
+                  data.push(fila);
                 }
               });
               nuevo(el, {
                 data: data,
-                xAxis: { field: 'hora' },
-                series: [{ type: 'heatmap', field: 'visitas', name: 'Visitas', y: 'dia' }],
+                xAxis: { field: c[0] },
+                series: [{ type: 'heatmap', field: c[2], name: t.nombre, y: c[1] }],
               });
             },
           },
           resultado: {
-            nota: 'La cascada del código, tal cual.',
+            nota: tx({
+              es: 'La cascada del código, tal cual.',
+              en: 'The waterfall from the code, as is.',
+              pt: 'A cascata do código, do jeito que está.',
+            }),
             crear: function (el) {
-              nuevo(el, {
-                title: 'De las ventas a la utilidad',
-                data: [
-                  { paso: 'Ventas', monto: 1200 },
-                  { paso: 'Costo de ventas', monto: -500 },
-                  { paso: 'Utilidad bruta', total: true },
-                  { paso: 'Gastos', monto: -300 },
-                  { paso: 'Impuestos', monto: -135 },
-                  { paso: 'Utilidad neta', total: true },
-                ],
-                xAxis: { field: 'paso' },
-                series: [{ type: 'waterfall', field: 'monto', name: 'Resultado', total: 'total' }],
-              });
+              nuevo(
+                el,
+                tx({
+                  es: {
+                    title: 'De las ventas a la utilidad',
+                    data: [
+                      { paso: 'Ventas', monto: 1200 },
+                      { paso: 'Costo de ventas', monto: -500 },
+                      { paso: 'Utilidad bruta', total: true },
+                      { paso: 'Gastos', monto: -300 },
+                      { paso: 'Impuestos', monto: -135 },
+                      { paso: 'Utilidad neta', total: true },
+                    ],
+                    xAxis: { field: 'paso' },
+                    series: [{ type: 'waterfall', field: 'monto', name: 'Resultado', total: 'total' }],
+                  },
+                  en: {
+                    title: 'From sales to profit',
+                    data: [
+                      { step: 'Sales', amount: 1200 },
+                      { step: 'Cost of sales', amount: -500 },
+                      { step: 'Gross profit', total: true },
+                      { step: 'Expenses', amount: -300 },
+                      { step: 'Taxes', amount: -135 },
+                      { step: 'Net profit', total: true },
+                    ],
+                    xAxis: { field: 'step' },
+                    series: [{ type: 'waterfall', field: 'amount', name: 'Result', total: 'total' }],
+                  },
+                  pt: {
+                    title: 'Das vendas ao lucro',
+                    data: [
+                      { etapa: 'Vendas', valor: 1200 },
+                      { etapa: 'Custo das vendas', valor: -500 },
+                      { etapa: 'Lucro bruto', total: true },
+                      { etapa: 'Despesas', valor: -300 },
+                      { etapa: 'Impostos', valor: -135 },
+                      { etapa: 'Lucro líquido', total: true },
+                    ],
+                    xAxis: { field: 'etapa' },
+                    series: [{ type: 'waterfall', field: 'valor', name: 'Resultado', total: 'total' }],
+                  },
+                }),
+              );
             },
           },
           kpi: {
-            nota: 'El gráfico de metas (bala) del código: el Sur va lejos de su meta.',
+            nota: tx({
+              es: 'El gráfico de metas (bala) del código: el Sur va lejos de su meta.',
+              en: 'The bullet chart from the code: the South is far from its goal.',
+              pt: 'O gráfico de metas (bullet) do código: o Sul está longe da meta.',
+            }),
             crear: function (el) {
-              nuevo(el, {
-                title: 'Ventas del trimestre por región',
-                data: [
-                  { region: 'Norte', ventas: 512, meta: 480 },
-                  { region: 'Sur', ventas: 297, meta: 420 },
-                ],
-                xAxis: { field: 'region' },
-                series: [{ type: 'bullet', field: 'ventas', name: 'Ventas', targetField: 'meta', ranges: [300, 450, 600] }],
-              });
+              nuevo(
+                el,
+                tx({
+                  es: {
+                    title: 'Ventas del trimestre por región',
+                    data: [
+                      { region: 'Norte', ventas: 512, meta: 480 },
+                      { region: 'Sur', ventas: 297, meta: 420 },
+                    ],
+                    xAxis: { field: 'region' },
+                    series: [{ type: 'bullet', field: 'ventas', name: 'Ventas', targetField: 'meta', ranges: [300, 450, 600] }],
+                  },
+                  en: {
+                    title: 'Quarterly sales by region',
+                    data: [
+                      { region: 'North', sales: 512, goal: 480 },
+                      { region: 'South', sales: 297, goal: 420 },
+                    ],
+                    xAxis: { field: 'region' },
+                    series: [{ type: 'bullet', field: 'sales', name: 'Sales', targetField: 'goal', ranges: [300, 450, 600] }],
+                  },
+                  pt: {
+                    title: 'Vendas do trimestre por região',
+                    data: [
+                      { regiao: 'Norte', vendas: 512, meta: 480 },
+                      { regiao: 'Sul', vendas: 297, meta: 420 },
+                    ],
+                    xAxis: { field: 'regiao' },
+                    series: [{ type: 'bullet', field: 'vendas', name: 'Vendas', targetField: 'meta', ranges: [300, 450, 600] }],
+                  },
+                }),
+              );
             },
           },
           plan: {
-            nota: 'La línea de tiempo del código, con la línea de hoy.',
+            nota: tx({
+              es: 'La línea de tiempo del código, con la línea de hoy.',
+              en: 'The timeline from the code, with a line for today.',
+              pt: 'A linha do tempo do código, com a linha de hoje.',
+            }),
             crear: function (el) {
-              nuevo(el, {
-                title: 'Lanzamiento 2026',
-                data: [
-                  { tarea: 'Investigación', inicio: '2026-01-12', fin: '2026-02-27', equipo: 'Producto' },
-                  { tarea: 'App móvil', inicio: '2026-04-20', fin: '2026-08-28', equipo: 'Ingeniería' },
-                  { tarea: 'Lanzamiento', inicio: '2026-09-15', equipo: 'Marketing' },
-                ],
-                xAxis: { field: 'inicio', type: 'time' },
-                series: [{ type: 'timeline', field: 'tarea', end: 'fin', group: 'equipo', name: 'Plan', today: true }],
-              });
+              nuevo(
+                el,
+                tx({
+                  es: {
+                    title: 'Lanzamiento 2026',
+                    data: [
+                      { tarea: 'Investigación', inicio: '2026-01-12', fin: '2026-02-27', equipo: 'Producto' },
+                      { tarea: 'App móvil', inicio: '2026-04-20', fin: '2026-08-28', equipo: 'Ingeniería' },
+                      { tarea: 'Lanzamiento', inicio: '2026-09-15', equipo: 'Marketing' },
+                    ],
+                    xAxis: { field: 'inicio', type: 'time' },
+                    series: [{ type: 'timeline', field: 'tarea', end: 'fin', group: 'equipo', name: 'Plan', today: true }],
+                  },
+                  en: {
+                    title: '2026 launch',
+                    data: [
+                      { task: 'Research', start: '2026-01-12', end: '2026-02-27', team: 'Product' },
+                      { task: 'Mobile app', start: '2026-04-20', end: '2026-08-28', team: 'Engineering' },
+                      { task: 'Launch', start: '2026-09-15', team: 'Marketing' },
+                    ],
+                    xAxis: { field: 'start', type: 'time' },
+                    series: [{ type: 'timeline', field: 'task', end: 'end', group: 'team', name: 'Plan', today: true }],
+                  },
+                  pt: {
+                    title: 'Lançamento 2026',
+                    data: [
+                      { tarefa: 'Pesquisa', inicio: '2026-01-12', fim: '2026-02-27', equipe: 'Produto' },
+                      { tarefa: 'App para celular', inicio: '2026-04-20', fim: '2026-08-28', equipe: 'Engenharia' },
+                      { tarefa: 'Lançamento', inicio: '2026-09-15', equipe: 'Marketing' },
+                    ],
+                    xAxis: { field: 'inicio', type: 'time' },
+                    series: [{ type: 'timeline', field: 'tarefa', end: 'fim', group: 'equipe', name: 'Plano', today: true }],
+                  },
+                }),
+              );
             },
           },
           usuarios: {
-            nota: 'El mapa del código: tres países, cada uno escrito de una forma distinta.',
+            nota: tx({
+              es: 'El mapa del código: tres países, cada uno escrito de una forma distinta.',
+              en: 'The map from the code: three countries, each one written a different way.',
+              pt: 'O mapa do código: três países, cada um escrito de um jeito diferente.',
+            }),
             crear: function (el) {
-              nuevo(el, {
-                data: [
-                  { pais: 'COL', usuarios: 980000 },
-                  { pais: 'México', usuarios: 1830000 },
-                  { pais: 'Brazil', usuarios: 2650000 },
-                ],
-                xAxis: { field: 'pais' },
-                series: [{ type: 'choropleth', field: 'usuarios', name: 'Usuarios', fit: 'data' }],
-              });
+              nuevo(
+                el,
+                tx({
+                  es: {
+                    data: [
+                      { pais: 'COL', usuarios: 980000 },
+                      { pais: 'México', usuarios: 1830000 },
+                      { pais: 'Brazil', usuarios: 2650000 },
+                    ],
+                    xAxis: { field: 'pais' },
+                    series: [{ type: 'choropleth', field: 'usuarios', name: 'Usuarios', fit: 'data' }],
+                  },
+                  en: {
+                    data: [
+                      { country: 'COL', users: 980000 },
+                      { country: 'Mexico', users: 1830000 },
+                      { country: 'Brasil', users: 2650000 },
+                    ],
+                    xAxis: { field: 'country' },
+                    series: [{ type: 'choropleth', field: 'users', name: 'Users', fit: 'data' }],
+                  },
+                  pt: {
+                    data: [
+                      { pais: 'COL', usuarios: 980000 },
+                      { pais: 'México', usuarios: 1830000 },
+                      { pais: 'Brazil', usuarios: 2650000 },
+                    ],
+                    xAxis: { field: 'pais' },
+                    series: [{ type: 'choropleth', field: 'usuarios', name: 'Usuários', fit: 'data' }],
+                  },
+                }),
+              );
             },
           },
           muchos: {
-            nota: '100 000 puntos en una línea.',
+            nota: tx({
+              es: numero(100000) + ' puntos en una línea.',
+              en: numero(100000) + ' points on one line.',
+              pt: numero(100000) + ' pontos em uma linha.',
+            }),
             crear: function (el, nota) {
+              var t = tx({ es: ['valor', 'Valor'], en: ['value', 'Value'], pt: ['valor', 'Valor'] });
               var r = azar(42);
               var data = new Array(100000);
               var v = 500;
               for (var i = 0; i < data.length; i++) {
                 v += (r() - 0.5) * 6;
-                data[i] = { i: i, valor: Math.round(v * 10) / 10 };
+                data[i] = { i: i };
+                data[i][t[0]] = Math.round(v * 10) / 10;
               }
               var t0 = performance.now();
               nuevo(el, {
                 data: data,
                 xAxis: { field: 'i', type: 'linear' },
                 yAxis: { format: 'number' },
-                series: [{ type: 'line', field: 'valor', name: 'Valor' }],
+                series: [{ type: 'line', field: t[0], name: t[1] }],
                 zoom: true,
                 animate: false,
               });
-              var ms = Math.round(performance.now() - t0);
-              nota.textContent =
-                '100 000 puntos en una línea. Tu navegador lo creó en ' + ms + ' ms. Arrastra sobre él para acercar.';
+              var ms = numero(Math.round(performance.now() - t0));
+              var n = numero(data.length);
+              nota.textContent = tx({
+                es: n + ' puntos en una línea. Tu navegador lo creó en ' + ms + ' ms. Arrastra sobre él para acercar.',
+                en: n + ' points on one line. Your browser drew it in ' + ms + ' ms. Drag over it to zoom in.',
+                pt: n + ' pontos em uma linha. Seu navegador desenhou em ' + ms + ' ms. Arraste sobre ele para dar zoom.',
+              });
             },
           },
           ciudades: {
-            nota: 'Seis ciudades, un panel cada una, todas con la misma escala. Valores aproximados.',
+            nota: tx({
+              es: 'Seis ciudades, un panel cada una, todas con la misma escala. Valores aproximados.',
+              en: 'Six cities, one panel each, all on the same scale. Approximate values.',
+              pt: 'Seis cidades, um painel para cada uma, todas na mesma escala. Valores aproximados.',
+            }),
             crear: function (el) {
-              var c = [
-                ['miami', 'Miami', [24, 25, 26, 28, 30, 32, 32, 32, 31, 29, 27, 25]],
-                ['madrid', 'Madrid', [10, 12, 16, 18, 22, 28, 32, 31, 26, 19, 13, 10]],
-                ['bogota', 'Bogotá', [19, 20, 19, 19, 19, 18, 18, 18, 19, 19, 19, 19]],
-                ['cdmx', 'Ciudad de México', [22, 24, 26, 27, 27, 25, 24, 24, 23, 23, 23, 22]],
-                ['santiago', 'Santiago', [30, 30, 28, 23, 18, 15, 15, 17, 19, 23, 26, 29]],
-                ['bsas', 'Buenos Aires', [30, 29, 26, 23, 19, 16, 15, 17, 19, 22, 25, 28]],
-              ];
+              var miami = [24, 25, 26, 28, 30, 32, 32, 32, 31, 29, 27, 25];
+              var madrid = [10, 12, 16, 18, 22, 28, 32, 31, 26, 19, 13, 10];
+              var bogota = [19, 20, 19, 19, 19, 18, 18, 18, 19, 19, 19, 19];
+              var cdmx = [22, 24, 26, 27, 27, 25, 24, 24, 23, 23, 23, 22];
+              var santiago = [30, 30, 28, 23, 18, 15, 15, 17, 19, 23, 26, 29];
+              var bsas = [30, 29, 26, 23, 19, 16, 15, 17, 19, 22, 25, 28];
+              // En portugués el README nombra otras ciudades (miami, lisboa, salvador…).
+              var t = tx({
+                es: {
+                  title: 'Temperatura máxima media por mes',
+                  mes: 'mes',
+                  c: [
+                    ['miami', 'Miami', miami],
+                    ['madrid', 'Madrid', madrid],
+                    ['bogota', 'Bogotá', bogota],
+                    ['cdmx', 'Ciudad de México', cdmx],
+                    ['santiago', 'Santiago', santiago],
+                    ['bsas', 'Buenos Aires', bsas],
+                  ],
+                },
+                en: {
+                  title: 'Average high temperature by month',
+                  mes: 'month',
+                  c: [
+                    ['miami', 'Miami', miami],
+                    ['madrid', 'Madrid', madrid],
+                    ['bogota', 'Bogotá', bogota],
+                    ['cdmx', 'Mexico City', cdmx],
+                    ['santiago', 'Santiago', santiago],
+                    ['bsas', 'Buenos Aires', bsas],
+                  ],
+                },
+                pt: {
+                  title: 'Temperatura máxima média por mês',
+                  mes: 'mes',
+                  c: [
+                    ['miami', 'Miami', miami],
+                    ['lisboa', 'Lisboa', [15, 16, 19, 20, 22, 26, 28, 28, 27, 23, 18, 15]],
+                    ['salvador', 'Salvador', [30, 30, 30, 29, 28, 27, 26, 26, 27, 28, 29, 29]],
+                    ['saopaulo', 'São Paulo', [28, 28, 27, 25, 23, 22, 22, 24, 24, 25, 26, 27]],
+                    ['curitiba', 'Curitiba', [26, 26, 25, 23, 20, 19, 19, 21, 21, 22, 24, 25]],
+                    ['bsas', 'Buenos Aires', bsas],
+                  ],
+                },
+              });
+              var c = t.c;
               var data = meses(c[0][2]).map(function (m, i) {
-                var fila = { mes: m };
+                var fila = {};
+                fila[t.mes] = m;
                 c.forEach(function (x) {
                   fila[x[0]] = x[2][i];
                 });
@@ -905,13 +1203,13 @@
               });
               window.siteChart(
                 LozChart.multiples(el, {
-                  title: 'Temperatura máxima media por mes',
+                  title: t.title,
                   facet: 'series',
                   data: data,
-                  xAxis: { field: 'mes', type: 'time' },
+                  xAxis: { field: t.mes, type: 'time' },
                   yAxis: {
                     format: function (v) {
-                      return v + ' °C';
+                      return numero(v) + ' °C';
                     },
                   },
                   series: c.map(function (x) {
@@ -920,27 +1218,37 @@
                   height: 150,
                   minWidth: 200,
                   background: false,
+                  locale: LOCALE,
                 }),
               );
             },
           },
           zoom: {
-            nota: 'Un año de visitas inventadas. Arrastra sobre el gráfico, mueve la barra de abajo o usa + y −.',
+            nota: tx({
+              es: 'Un año de visitas inventadas. Arrastra sobre el gráfico, mueve la barra de abajo o usa + y −.',
+              en: 'A year of made-up visits. Drag over the chart, move the bar below it, or use + and −.',
+              pt: 'Um ano de visitas inventadas. Arraste sobre o gráfico, mova a barra de baixo ou use + e −.',
+            }),
             crear: function (el) {
+              var t = tx({
+                es: { title: 'Visitas diarias', fecha: 'fecha', meta: 'Meta diaria', campana: 'Campaña de verano' },
+                en: { title: 'Daily visits', fecha: 'date', meta: 'Daily goal', campana: 'Summer campaign' },
+                pt: { title: 'Visitas diárias', fecha: 'dia', meta: 'Meta diária', campana: 'Campanha de férias' },
+              });
               var r = azar(3);
               var data = dias2026().map(function (d, i) {
                 var campana = d >= new Date(2026, 5, 29) && d <= new Date(2026, 6, 21) ? 1400 : 0;
                 var finde = d.getDay() === 0 || d.getDay() === 6 ? -900 : 0;
-                return {
-                  fecha: iso(d),
-                  web: Math.round(6200 + 900 * Math.sin(i / 58) + campana + finde + r() * 700),
-                  app: Math.round(3400 + i * 6 + campana * 0.6 + finde * 0.4 + r() * 500),
-                };
+                var fila = {};
+                fila[t.fecha] = iso(d);
+                fila.web = Math.round(6200 + 900 * Math.sin(i / 58) + campana + finde + r() * 700);
+                fila.app = Math.round(3400 + i * 6 + campana * 0.6 + finde * 0.4 + r() * 500);
+                return fila;
               });
               nuevo(el, {
-                title: 'Visitas diarias',
+                title: t.title,
                 data: data,
-                xAxis: { field: 'fecha', type: 'time' },
+                xAxis: { field: t.fecha, type: 'time' },
                 series: [
                   { type: 'line', field: 'web', name: 'Web' },
                   { type: 'line', field: 'app', name: 'App' },
@@ -948,27 +1256,51 @@
                 zoom: { range: ['2026-06-01', '2026-08-31'] },
                 endLabels: true,
                 annotations: [
-                  { y: 8000, label: 'Meta diaria' },
-                  { x: ['2026-06-29', '2026-07-21'], label: 'Campaña de verano' },
+                  { y: 8000, label: t.meta },
+                  { x: ['2026-06-29', '2026-07-21'], label: t.campana },
                 ],
               });
             },
           },
           teclado: {
-            nota: 'Haz clic en el gráfico (o llega con Tab) y recórrelo con las flechas. Escape cierra la cajita del dato (el tooltip).',
+            nota: tx({
+              es: 'Haz clic en el gráfico (o llega con Tab) y recórrelo con las flechas. Escape cierra la cajita del dato (el tooltip).',
+              en: 'Click the chart (or reach it with Tab) and move through it with the arrow keys. Escape closes the tooltip.',
+              pt: 'Clique no gráfico (ou chegue nele com Tab) e percorra com as setas. Esc fecha o tooltip.',
+            }),
             crear: function (el) {
+              var consultas = [860, 540, 420, 310, 190];
+              var t = tx({
+                es: {
+                  title: 'Consultas por canal',
+                  campos: ['canal', 'consultas'],
+                  nombre: 'Consultas',
+                  canales: ['Chat', 'Redes', 'Correo', 'Teléfono', 'Tienda'],
+                },
+                en: {
+                  title: 'Questions by channel',
+                  campos: ['channel', 'questions'],
+                  nombre: 'Questions',
+                  canales: ['Chat', 'Social media', 'Email', 'Phone', 'Store'],
+                },
+                pt: {
+                  title: 'Atendimentos por canal',
+                  campos: ['canal', 'atendimentos'],
+                  nombre: 'Atendimentos',
+                  canales: ['Chat', 'Redes sociais', 'E-mail', 'Telefone', 'Loja'],
+                },
+              });
               nuevo(el, {
-                title: 'Consultas por canal',
-                data: [
-                  { canal: 'Chat', consultas: 860 },
-                  { canal: 'Redes', consultas: 540 },
-                  { canal: 'Correo', consultas: 420 },
-                  { canal: 'Teléfono', consultas: 310 },
-                  { canal: 'Tienda', consultas: 190 },
-                ],
-                xAxis: { field: 'canal' },
+                title: t.title,
+                data: t.canales.map(function (canal, i) {
+                  var fila = {};
+                  fila[t.campos[0]] = canal;
+                  fila[t.campos[1]] = consultas[i];
+                  return fila;
+                }),
+                xAxis: { field: t.campos[0] },
                 orientation: 'horizontal',
-                series: [{ type: 'bar', field: 'consultas', name: 'Consultas' }],
+                series: [{ type: 'bar', field: t.campos[1], name: t.nombre }],
                 height: 240,
               });
             },
@@ -983,7 +1315,10 @@
             fig.remove();
             return;
           }
-          fig.innerHTML = '<figcaption><b>En vivo</b><span></span></figcaption><div class="vivo-grafico"></div>';
+          fig.innerHTML =
+            '<figcaption><b>' +
+            tx({ es: 'En vivo', en: 'Live', pt: 'Ao vivo' }) +
+            '</b><span></span></figcaption><div class="vivo-grafico"></div>';
           var nota = fig.querySelector('figcaption span');
           nota.textContent = v.nota;
           pendientes.push({ fig: fig, v: v, nota: nota });

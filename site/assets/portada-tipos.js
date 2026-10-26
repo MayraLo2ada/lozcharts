@@ -19,15 +19,19 @@
   };
   var MESES = [];
   for (var m = 1; m <= 12; m++) MESES.push('2026-' + String(m).padStart(2, '0'));
+  // El campo del mes lo nombra la tabla para lectores de pantalla: va en el idioma de la página.
+  var MES = tx({ es: 'mes', en: 'month', pt: 'mes' });
   var temperaturas = MESES.map(function (mes, i) {
     var base = 14 + 4 * Math.sin(((i - 2) / 12) * 2 * Math.PI);
-    return {
-      mes: mes,
+    var fila = {};
+    fila[MES] = mes;
+    return Object.assign(fila, {
       max: Math.round((base + 6 + azar() * 2) * 10) / 10,
       min: Math.round((base - 5 - azar() * 2) * 10) / 10,
       media: Math.round(base * 10) / 10,
-    };
+    });
   });
+  var grados = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 1 });
   var estudio = [];
   for (var k = 0; k < 40; k++) {
     var h = Math.round((1 + azar() * 11) * 10) / 10;
@@ -43,22 +47,31 @@
   var PROPIOS = {
     rango: {
       data: temperaturas,
-      xAxis: { field: 'mes', type: 'time' },
+      xAxis: { field: MES, type: 'time' },
       yAxis: {
         format: function (v) {
-          return v + ' °C';
+          return grados.format(v) + ' °C';
         },
       },
       series: [
-        { type: 'range', field: 'max', low: 'min', name: 'Mínima y máxima' },
-        { type: 'line', field: 'media', name: 'Media', smooth: true },
+        {
+          type: 'range',
+          field: 'max',
+          low: 'min',
+          name: tx({ es: 'Mínima y máxima', en: 'Low and high', pt: 'Mínima e máxima' }),
+        },
+        { type: 'line', field: 'media', name: tx({ es: 'Media', en: 'Average', pt: 'Média' }), smooth: true },
       ],
     },
     dispersion: {
       data: estudio,
-      xAxis: { field: 'horas', type: 'linear', title: 'Horas por semana' },
-      yAxis: { title: 'Nota' },
-      series: [{ type: 'scatter', field: 'nota', name: 'Estudiantes' }],
+      xAxis: {
+        field: 'horas',
+        type: 'linear',
+        title: tx({ es: 'Horas por semana', en: 'Hours per week', pt: 'Horas por semana' }),
+      },
+      yAxis: { title: tx({ es: 'Nota', en: 'Grade', pt: 'Nota' }) },
+      series: [{ type: 'scatter', field: 'nota', name: tx({ es: 'Estudiantes', en: 'Students', pt: 'Estudantes' }) }],
     },
   };
   function fuente(clave) {
@@ -76,71 +89,301 @@
   // que en 6 columnas (tableta) ocupa la fila entera para no dejar un hueco.
   var GRUPOS = [
     {
-      pregunta: '¿Cómo cambió?',
-      bajada: 'Lo que pasa con el tiempo: meses, precios, un plan.',
+      pregunta: tx({ es: '¿Cómo cambió?', en: 'How did it change?', pt: 'Como mudou?' }),
+      bajada: tx({
+        es: 'Lo que pasa con el tiempo: meses, precios, un plan.',
+        en: 'What happens over time: months, prices, a plan.',
+        pt: 'O que acontece com o tempo: meses, preços, um plano.',
+      }),
       tipos: [
-        ['Líneas', 'line', 'Cómo cambia algo con el tiempo', 'usuarios', 'c-grande'],
-        ['Área', 'area', 'El volumen y de qué está hecho', 'dispositivos', ''],
-        ['Escalones', 'step', 'Lo que cambia de golpe: tarifas, tasas', 'tasa', ''],
-        ['Rangos', 'range', 'Entre un mínimo y un máximo', '*rango', ''],
-        ['Velas', 'candlestick', 'Apertura, máximo, mínimo y cierre', 'precios', ''],
-        ['Barras de precio', 'ohlc', 'Lo mismo que las velas, en trazos', '*ohlc', 't-ancha'],
-        ['Línea de tiempo', 'timeline', 'Tramos e hitos de un plan', 'lanzamiento', 'c-ancha'],
+        [
+          tx({ es: 'Líneas', en: 'Lines', pt: 'Linhas' }),
+          'line',
+          tx({ es: 'Cómo cambia algo con el tiempo', en: 'How something changes over time', pt: 'Como algo muda com o tempo' }),
+          'usuarios',
+          'c-grande',
+        ],
+        [
+          tx({ es: 'Área', en: 'Area', pt: 'Área' }),
+          'area',
+          tx({
+            es: 'El volumen y de qué está hecho',
+            en: 'The volume and what it’s made of',
+            pt: 'O volume e do que ele é feito',
+          }),
+          'dispositivos',
+          '',
+        ],
+        [
+          tx({ es: 'Escalones', en: 'Steps', pt: 'Degraus' }),
+          'step',
+          tx({
+            es: 'Lo que cambia de golpe: tarifas, tasas',
+            en: 'What changes all at once: fees, rates',
+            pt: 'O que muda de uma vez: tarifas, taxas',
+          }),
+          'tasa',
+          '',
+        ],
+        [
+          tx({ es: 'Rangos', en: 'Ranges', pt: 'Faixas' }),
+          'range',
+          tx({ es: 'Entre un mínimo y un máximo', en: 'Between a low and a high', pt: 'Entre um mínimo e um máximo' }),
+          '*rango',
+          '',
+        ],
+        [
+          tx({ es: 'Velas', en: 'Candlesticks', pt: 'Candles' }),
+          'candlestick',
+          tx({
+            es: 'Apertura, máximo, mínimo y cierre',
+            en: 'Open, high, low, and close',
+            pt: 'Abertura, máxima, mínima e fechamento',
+          }),
+          'precios',
+          '',
+        ],
+        [
+          tx({ es: 'Barras de precio', en: 'OHLC bars', pt: 'Barras OHLC' }),
+          'ohlc',
+          tx({
+            es: 'Lo mismo que las velas, en trazos',
+            en: 'Same as candlesticks, drawn as ticks',
+            pt: 'O mesmo que os candles, em traços',
+          }),
+          '*ohlc',
+          't-ancha',
+        ],
+        [
+          tx({ es: 'Línea de tiempo', en: 'Timeline', pt: 'Linha do tempo' }),
+          'timeline',
+          tx({ es: 'Tramos e hitos de un plan', en: 'The phases and milestones of a plan', pt: 'Etapas e marcos de um plano' }),
+          'lanzamiento',
+          'c-ancha',
+        ],
       ],
     },
     {
-      pregunta: '¿Cuál es más?',
-      bajada: 'Comparar cantidades y medirlas contra una meta.',
+      pregunta: tx({ es: '¿Cuál es más?', en: 'Which is bigger?', pt: 'Qual é maior?' }),
+      bajada: tx({
+        es: 'Comparar cantidades y medirlas contra una meta.',
+        en: 'Compare amounts and measure them against a goal.',
+        pt: 'Comparar quantidades e medir contra uma meta.',
+      }),
       tipos: [
-        ['Barras', 'bar', 'Comparar cantidades, solas o apiladas', 'paginas', 'c-grande'],
-        ['Radar', 'radar', 'Perfiles comparados en varios aspectos', 'modelos', 'c-alta'],
-        ['Medidor', 'gauge', 'Un número contra su meta', 'meta', ''],
-        ['Metas', 'bullet', 'Varios números contra su meta', 'metas', 'c-ancha'],
-        ['Nube de palabras', 'wordcloud', 'Lo que más se repite', 'opiniones', 'c-ancha'],
+        [
+          tx({ es: 'Barras', en: 'Bars', pt: 'Barras' }),
+          'bar',
+          tx({
+            es: 'Comparar cantidades, solas o apiladas',
+            en: 'Compare amounts, side by side or stacked',
+            pt: 'Comparar quantidades, lado a lado ou empilhadas',
+          }),
+          'paginas',
+          'c-grande',
+        ],
+        [
+          'Radar',
+          'radar',
+          tx({
+            es: 'Perfiles comparados en varios aspectos',
+            en: 'Profiles compared on several traits',
+            pt: 'Perfis comparados em vários aspectos',
+          }),
+          'modelos',
+          'c-alta',
+        ],
+        [
+          tx({ es: 'Medidor', en: 'Gauge', pt: 'Medidor' }),
+          'gauge',
+          tx({ es: 'Un número contra su meta', en: 'One number against its goal', pt: 'Um número contra a meta' }),
+          'meta',
+          '',
+        ],
+        [
+          tx({ es: 'Metas', en: 'Bullet chart', pt: 'Metas' }),
+          'bullet',
+          tx({
+            es: 'Varios números contra su meta',
+            en: 'Several numbers against their goals',
+            pt: 'Vários números contra as metas',
+          }),
+          'metas',
+          'c-ancha',
+        ],
+        [
+          tx({ es: 'Nube de palabras', en: 'Word cloud', pt: 'Nuvem de palavras' }),
+          'wordcloud',
+          tx({ es: 'Lo que más se repite', en: 'What comes up the most', pt: 'O que mais se repete' }),
+          'opiniones',
+          'c-ancha',
+        ],
       ],
     },
     {
-      pregunta: '¿De qué está hecho?',
-      bajada: 'Las partes de un todo y cómo suman.',
+      pregunta: tx({ es: '¿De qué está hecho?', en: 'What is it made of?', pt: 'Do que é feito?' }),
+      bajada: tx({
+        es: 'Las partes de un todo y cómo suman.',
+        en: 'The parts of a whole and how they add up.',
+        pt: 'As partes de um todo e como elas somam.',
+      }),
       tipos: [
-        ['Anillos', 'sunburst', 'Niveles dentro de niveles', 'mercados', 'c-alta'],
-        ['Rectángulos', 'treemap', 'Muchas partes de un todo', 'productos', 'c-grande'],
-        ['Dona', 'donut', 'Pocas partes, con el total al centro', 'categorias', ''],
-        ['Cascada', 'waterfall', 'De las ventas a la utilidad', 'resultado', 'c-larga'],
-        ['Pastel', 'pie', 'Partes de un todo, si son pocas', '*pie', 'c-media t-ancha'],
+        [
+          tx({ es: 'Anillos', en: 'Sunburst', pt: 'Anéis' }),
+          'sunburst',
+          tx({ es: 'Niveles dentro de niveles', en: 'Levels inside levels', pt: 'Níveis dentro de níveis' }),
+          'mercados',
+          'c-alta',
+        ],
+        [
+          tx({ es: 'Rectángulos', en: 'Treemap', pt: 'Retângulos' }),
+          'treemap',
+          tx({ es: 'Muchas partes de un todo', en: 'Many parts of a whole', pt: 'Muitas partes de um todo' }),
+          'productos',
+          'c-grande',
+        ],
+        [
+          tx({ es: 'Dona', en: 'Donut', pt: 'Rosca' }),
+          'donut',
+          tx({
+            es: 'Pocas partes, con el total al centro',
+            en: 'A few parts, with the total in the middle',
+            pt: 'Poucas partes, com o total no centro',
+          }),
+          'categorias',
+          '',
+        ],
+        [
+          tx({ es: 'Cascada', en: 'Waterfall', pt: 'Cascata' }),
+          'waterfall',
+          tx({ es: 'De las ventas a la utilidad', en: 'From sales to profit', pt: 'Das vendas ao lucro' }),
+          'resultado',
+          'c-larga',
+        ],
+        [
+          tx({ es: 'Pastel', en: 'Pie', pt: 'Pizza' }),
+          'pie',
+          tx({
+            es: 'Partes de un todo, si son pocas',
+            en: 'Parts of a whole, when there are few',
+            pt: 'Partes de um todo, se forem poucas',
+          }),
+          '*pie',
+          'c-media t-ancha',
+        ],
       ],
     },
     {
-      pregunta: '¿Qué tiene que ver con qué?',
-      bajada: 'Si dos cosas se mueven juntas, o quién trabaja con quién.',
+      pregunta: tx({ es: '¿Qué tiene que ver con qué?', en: 'What goes with what?', pt: 'O que tem a ver com o quê?' }),
+      bajada: tx({
+        es: 'Si dos cosas se mueven juntas, o quién trabaja con quién.',
+        en: 'Whether two things move together, or who works with whom.',
+        pt: 'Se duas coisas andam juntas, ou quem trabalha com quem.',
+      }),
       tipos: [
-        ['Mapa de calor', 'heatmap', 'Patrones de día y hora', 'visitas-hora', 'c-total'],
-        ['Dispersión', 'scatter', 'Si dos números se mueven juntos', '*dispersion', 'c-media'],
-        ['Burbujas', 'bubble', 'Dispersión con un tercer valor', 'tiendas', 'c-media'],
-        ['Red', 'network', 'Quién se relaciona con quién', 'equipo', 'c-media t-ancha'],
+        [
+          tx({ es: 'Mapa de calor', en: 'Heatmap', pt: 'Mapa de calor' }),
+          'heatmap',
+          tx({ es: 'Patrones de día y hora', en: 'Patterns by day and hour', pt: 'Padrões por dia e hora' }),
+          'visitas-hora',
+          'c-total',
+        ],
+        [
+          tx({ es: 'Dispersión', en: 'Scatter', pt: 'Dispersão' }),
+          'scatter',
+          tx({
+            es: 'Si dos números se mueven juntos',
+            en: 'Whether two numbers move together',
+            pt: 'Se dois números andam juntos',
+          }),
+          '*dispersion',
+          'c-media',
+        ],
+        [
+          tx({ es: 'Burbujas', en: 'Bubbles', pt: 'Bolhas' }),
+          'bubble',
+          tx({ es: 'Dispersión con un tercer valor', en: 'Scatter with a third value', pt: 'Dispersão com um terceiro valor' }),
+          'tiendas',
+          'c-media',
+        ],
+        [
+          tx({ es: 'Red', en: 'Network', pt: 'Rede' }),
+          'network',
+          tx({ es: 'Quién se relaciona con quién', en: 'Who’s connected to whom', pt: 'Quem se relaciona com quem' }),
+          'equipo',
+          'c-media t-ancha',
+        ],
       ],
     },
     {
-      pregunta: '¿Por dónde pasa?',
-      bajada: 'De dónde viene, a dónde va y cuántos llegan.',
+      pregunta: tx({ es: '¿Por dónde pasa?', en: 'Which way does it go?', pt: 'Por onde passa?' }),
+      bajada: tx({
+        es: 'De dónde viene, a dónde va y cuántos llegan.',
+        en: 'Where it comes from, where it goes, and how many make it.',
+        pt: 'De onde vem, para onde vai e quantos chegam.',
+      }),
       tipos: [
-        ['Flujos', 'sankey', 'De dónde vienen y a dónde van', 'recorrido', 'c-grande'],
-        ['Cuerdas', 'chord', 'Flujos de ida y vuelta', 'mudanzas', 'c-alta'],
-        ['Embudo', 'funnel', 'Cuántos llegan a cada paso', 'embudo', ''],
+        [
+          tx({ es: 'Flujos', en: 'Sankey', pt: 'Fluxos' }),
+          'sankey',
+          tx({
+            es: 'De dónde vienen y a dónde van',
+            en: 'Where they come from and where they go',
+            pt: 'De onde vêm e para onde vão',
+          }),
+          'recorrido',
+          'c-grande',
+        ],
+        [
+          tx({ es: 'Cuerdas', en: 'Chord diagram', pt: 'Cordas' }),
+          'chord',
+          tx({ es: 'Flujos de ida y vuelta', en: 'Flows that go both ways', pt: 'Fluxos de ida e volta' }),
+          'mudanzas',
+          'c-alta',
+        ],
+        [
+          tx({ es: 'Embudo', en: 'Funnel', pt: 'Funil' }),
+          'funnel',
+          tx({ es: 'Cuántos llegan a cada paso', en: 'How many reach each step', pt: 'Quantos chegam a cada etapa' }),
+          'embudo',
+          '',
+        ],
       ],
     },
     {
-      pregunta: '¿Dónde pasa?',
-      bajada: 'Un valor por país o cantidades sobre el mapa.',
+      pregunta: tx({ es: '¿Dónde pasa?', en: 'Where does it happen?', pt: 'Onde acontece?' }),
+      bajada: tx({
+        es: 'Un valor por país o cantidades sobre el mapa.',
+        en: 'One value per country, or amounts on the map.',
+        pt: 'Um valor por país ou quantidades no mapa.',
+      }),
       cabeza: 'c-alta',
       tipos: [
-        ['Mapa por colores', 'choropleth', 'Un valor por país', 'paises', 'c-grande'],
-        ['Mapa de burbujas', 'mapbubble', 'Cantidades sobre el mapa', 'tiendas-mapa', 'c-alta t-ancha'],
+        [
+          tx({ es: 'Mapa por colores', en: 'Filled map', pt: 'Mapa por cores' }),
+          'choropleth',
+          tx({ es: 'Un valor por país', en: 'One value per country', pt: 'Um valor por país' }),
+          'paises',
+          'c-grande',
+        ],
+        [
+          tx({ es: 'Mapa de burbujas', en: 'Bubble map', pt: 'Mapa de bolhas' }),
+          'mapbubble',
+          tx({ es: 'Cantidades sobre el mapa', en: 'Amounts on the map', pt: 'Quantidades no mapa' }),
+          'tiendas-mapa',
+          'c-alta t-ancha',
+        ],
       ],
     },
   ];
 
-  var NUMEROS = ['cero', 'un', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete'];
+  // Para el lector de pantalla: "tres tipos.", "three types.", "três tipos." (los grupos tienen de 2 a 7).
+  var CUANTOS = tx({
+    es: ['cero', 'un', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete'],
+    en: ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven'],
+    pt: ['zero', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete'],
+  });
+  var TIPOS_PALABRA = tx({ es: ' tipos. ', en: ' types. ', pt: ' tipos. ' });
   var bento = document.getElementById('bento');
   var fichas = [];
 
@@ -158,8 +401,9 @@
       '</h3><div><span class="cuantos" aria-hidden="true">' +
       g.tipos.length +
       '</span><p><span class="sr-only">' +
-      NUMEROS[g.tipos.length] +
-      ' tipos. </span>' +
+      CUANTOS[g.tipos.length] +
+      TIPOS_PALABRA +
+      '</span>' +
       g.bajada +
       '</p></div>';
     ul.appendChild(cabeza);
@@ -193,6 +437,7 @@
     delete o.zoom;
     delete o.annotations;
     o.theme = 'dark';
+    o.locale = LOCALE;
     o.background = false;
     o.legend = false;
     o.animate = animar;

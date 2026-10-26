@@ -19,104 +19,117 @@
   }
 
   // Cada juego de datos es una jerarquía (grupo › elemento) con un valor por mes y un reparto
-  // final (para el sankey). De ahí salen las seis vistas: son los mismos números.
+  // final (para el sankey). De ahí salen las seis vistas: son los mismos números. Los nombres de
+  // los campos también van en el idioma de la página: son los que se ven en el código.
   var JUEGOS = [
     {
       id: 'panaderia',
-      boton: 'Una panadería',
-      rotulo: 'Ventas del semestre',
+      boton: tx({ es: 'Una panadería', en: 'A bakery', pt: 'Uma padaria' }),
+      rotulo: tx({ es: 'Ventas del semestre', en: 'Six-month sales', pt: 'Vendas do semestre' }),
       formato: 'currency',
       meses: ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06'],
       temporada: [0.92, 0.86, 0.97, 1.08, 1.12, 1.02],
-      campos: { grupo: 'categoria', item: 'producto', valor: 'ventas' },
-      nombreValor: 'Ventas',
+      campos: tx({
+        es: { grupo: 'categoria', item: 'producto', valor: 'ventas' },
+        en: { grupo: 'category', item: 'product', valor: 'sales' },
+        pt: { grupo: 'categoria', item: 'produto', valor: 'vendas' },
+      }),
+      nombreValor: tx({ es: 'Ventas', en: 'Sales', pt: 'Vendas' }),
       grupos: [
         [
-          'Panes',
+          tx({ es: 'Panes', en: 'Bread', pt: 'Pães' }),
           [
-            ['Pan francés', 2400],
-            ['Integral', 980],
+            [tx({ es: 'Pan francés', en: 'Baguette', pt: 'Pão francês' }), 2400],
+            [tx({ es: 'Integral', en: 'Whole wheat', pt: 'Integral' }), 980],
             ['Croissant', 1350],
           ],
         ],
         [
-          'Pasteles',
+          tx({ es: 'Pasteles', en: 'Cakes', pt: 'Bolos' }),
           [
-            ['Tres leches', 1620],
-            ['Torta de chocolate', 1180],
+            [tx({ es: 'Tres leches', en: 'Tres leches', pt: 'Três leites' }), 1620],
+            [tx({ es: 'Torta de chocolate', en: 'Chocolate cake', pt: 'Bolo de chocolate' }), 1180],
           ],
         ],
         [
-          'Bebidas',
+          tx({ es: 'Bebidas', en: 'Drinks', pt: 'Bebidas' }),
           [
-            ['Café', 1900],
-            ['Chocolate caliente', 640],
+            [tx({ es: 'Café', en: 'Coffee', pt: 'Café' }), 1900],
+            [tx({ es: 'Chocolate caliente', en: 'Hot chocolate', pt: 'Chocolate quente' }), 640],
           ],
         ],
       ],
       destinos: [
-        ['En el mostrador', 0.68],
-        ['A domicilio', 0.32],
+        [tx({ es: 'En el mostrador', en: 'At the counter', pt: 'No balcão' }), 0.68],
+        [tx({ es: 'A domicilio', en: 'Delivery', pt: 'Delivery' }), 0.32],
       ],
     },
     {
       id: 'web',
-      boton: 'Un sitio web',
-      rotulo: 'Visitas del semestre',
+      boton: tx({ es: 'Un sitio web', en: 'A website', pt: 'Um site' }),
+      rotulo: tx({ es: 'Visitas del semestre', en: 'Six-month visits', pt: 'Visitas do semestre' }),
       formato: 'compact',
       meses: ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06'],
       temporada: [0.8, 0.88, 1, 1.06, 1.18, 1.3],
-      campos: { grupo: 'fuente', item: 'pagina', valor: 'visitas' },
-      nombreValor: 'Visitas',
+      campos: tx({
+        es: { grupo: 'fuente', item: 'pagina', valor: 'visitas' },
+        en: { grupo: 'channel', item: 'page', valor: 'visits' },
+        pt: { grupo: 'canal', item: 'pagina', valor: 'visitas' },
+      }),
+      nombreValor: tx({ es: 'Visitas', en: 'Visits', pt: 'Visitas' }),
       grupos: [
         [
-          'Buscadores',
+          tx({ es: 'Buscadores', en: 'Search', pt: 'Buscadores' }),
           [
             ['Blog', 5200],
-            ['Guías', 3100],
+            [tx({ es: 'Guías', en: 'Guides', pt: 'Guias' }), 3100],
           ],
         ],
         [
-          'Redes sociales',
+          tx({ es: 'Redes sociales', en: 'Social media', pt: 'Redes sociais' }),
           [
-            ['Videos', 4300],
-            ['Fotos', 1900],
-            ['Historias', 1200],
+            [tx({ es: 'Videos', en: 'Videos', pt: 'Vídeos' }), 4300],
+            [tx({ es: 'Fotos', en: 'Photos', pt: 'Fotos' }), 1900],
+            [tx({ es: 'Historias', en: 'Stories', pt: 'Stories' }), 1200],
           ],
         ],
         [
-          'Directo',
+          tx({ es: 'Directo', en: 'Direct', pt: 'Direto' }),
           [
-            ['Inicio', 2600],
-            ['Tienda', 1750],
+            [tx({ es: 'Inicio', en: 'Home', pt: 'Início' }), 2600],
+            [tx({ es: 'Tienda', en: 'Shop', pt: 'Loja' }), 1750],
           ],
         ],
       ],
       destinos: [
-        ['Siguieron leyendo', 0.52],
-        ['Se fueron', 0.4],
-        ['Compraron', 0.08],
+        [tx({ es: 'Siguieron leyendo', en: 'Kept reading', pt: 'Continuaram lendo' }), 0.52],
+        [tx({ es: 'Se fueron', en: 'Left', pt: 'Saíram' }), 0.4],
+        [tx({ es: 'Compraron', en: 'Bought', pt: 'Compraram' }), 0.08],
       ],
     },
     {
       id: 'goles',
-      boton: 'Un equipo de fútbol',
-      rotulo: 'Goles de la temporada',
+      boton: tx({ es: 'Un equipo de fútbol', en: 'A soccer team', pt: 'Um time de futebol' }),
+      rotulo: tx({ es: 'Goles de la temporada', en: 'Goals this season', pt: 'Gols da temporada' }),
       formato: 'number',
       meses: ['2025-08', '2025-09', '2025-10', '2025-11', '2025-12', '2026-01'],
       temporada: [0.9, 1.1, 1, 1.2, 0.7, 1.1],
-      campos: { grupo: 'linea', item: 'jugador', valor: 'goles' },
-      nombreValor: 'Goles',
+      campos: tx({
+        es: { grupo: 'linea', item: 'jugador', valor: 'goles' },
+        en: { grupo: 'position', item: 'player', valor: 'goals' },
+        pt: { grupo: 'setor', item: 'jogador', valor: 'gols' },
+      }),
+      nombreValor: tx({ es: 'Goles', en: 'Goals', pt: 'Gols' }),
       grupos: [
         [
-          'Delanteros',
+          tx({ es: 'Delanteros', en: 'Forwards', pt: 'Atacantes' }),
           [
             ['Ramírez', 4.2],
             ['Toledo', 2.6],
           ],
         ],
         [
-          'Mediocampo',
+          tx({ es: 'Mediocampo', en: 'Midfield', pt: 'Meio-campo' }),
           [
             ['Quispe', 1.6],
             ['Ávalos', 1.2],
@@ -124,7 +137,7 @@
           ],
         ],
         [
-          'Defensa',
+          tx({ es: 'Defensa', en: 'Defense', pt: 'Defesa' }),
           [
             ['Rivas', 0.7],
             ['Cárdenas', 0.5],
@@ -132,9 +145,9 @@
         ],
       ],
       destinos: [
-        ['Con el pie', 0.62],
-        ['De cabeza', 0.24],
-        ['De penal', 0.14],
+        [tx({ es: 'Con el pie', en: 'Kicks', pt: 'Chutes' }), 0.62],
+        [tx({ es: 'De cabeza', en: 'Headers', pt: 'De cabeça' }), 0.24],
+        [tx({ es: 'De penal', en: 'Penalties', pt: 'De pênalti' }), 0.14],
       ],
     },
   ];
@@ -173,13 +186,23 @@
   // ------------------------------------------------------------ Las seis vistas
 
   var TIPOS = [
-    { id: 'bar', nombre: 'Barras' },
-    { id: 'line', nombre: 'Líneas' },
-    { id: 'area', nombre: 'Área' },
-    { id: 'donut', nombre: 'Dona' },
-    { id: 'sankey', nombre: 'Flujos' },
-    { id: 'treemap', nombre: 'Rectángulos' },
+    { id: 'bar', nombre: tx({ es: 'Barras', en: 'Bars', pt: 'Barras' }) },
+    { id: 'line', nombre: tx({ es: 'Líneas', en: 'Lines', pt: 'Linhas' }) },
+    { id: 'area', nombre: tx({ es: 'Área', en: 'Area', pt: 'Área' }) },
+    { id: 'donut', nombre: tx({ es: 'Dona', en: 'Donut', pt: 'Rosca' }) },
+    { id: 'sankey', nombre: tx({ es: 'Flujos', en: 'Sankey', pt: 'Fluxos' }) },
+    { id: 'treemap', nombre: tx({ es: 'Rectángulos', en: 'Treemap', pt: 'Retângulos' }) },
   ];
+
+  // Nombres de campos y del código que se muestra, en el idioma de la página.
+  var MES = tx({ es: 'mes', en: 'month', pt: 'mes' });
+  var DE = tx({ es: 'origen', en: 'source', pt: 'origem' });
+  var A = tx({ es: 'destino', en: 'target', pt: 'destino' });
+  var NOMBRES = tx({
+    es: { opciones: 'opciones', componente: 'Grafico', id: 'grafico', plantilla: 'plantilla.html' },
+    en: { opciones: 'options', componente: 'MyChart', id: 'chart', plantilla: 'template.html' },
+    pt: { opciones: 'opcoes', componente: 'Grafico', id: 'grafico', plantilla: 'template.html' },
+  });
 
   /** Opciones completas de LozCharts para un juego, sus números y un tipo. */
   function opciones(juego, items, tipo) {
@@ -190,7 +213,8 @@
     });
     if (tipo === 'bar' || tipo === 'line' || tipo === 'area') {
       o.data = juego.meses.map(function (mes, i) {
-        var fila = { mes: mes };
+        var fila = {};
+        fila[MES] = mes;
         porGrupo.forEach(function (g) {
           fila[g] = suma(
             items
@@ -204,7 +228,7 @@
         });
         return fila;
       });
-      o.xAxis = { field: 'mes', type: 'time' };
+      o.xAxis = { field: MES, type: 'time' };
       o.yAxis = { format: juego.formato };
       o.series = porGrupo.map(function (g) {
         var s = { type: tipo, field: g, name: g };
@@ -241,25 +265,29 @@
     } else {
       var flujos = [];
       items.forEach(function (it) {
-        flujos.push({ origen: it.grupo, destino: it.nombre, valor: suma(it.serie) });
+        flujos.push({ de: it.grupo, a: it.nombre, valor: suma(it.serie) });
       });
       items.forEach(function (it) {
         var total = suma(it.serie);
         juego.destinos.forEach(function (d, k) {
           var v = Math.round(total * it.reparto[k]);
-          if (v > 0) flujos.push({ origen: it.nombre, destino: d[0], valor: v });
+          if (v > 0) flujos.push({ de: it.nombre, a: d[0], valor: v });
         });
       });
       o.data = flujos.map(function (f) {
-        var fila = { origen: f.origen, destino: f.destino };
+        var fila = {};
+        fila[DE] = f.de;
+        fila[A] = f.a;
         fila[c.valor] = f.valor;
         return fila;
       });
-      o.xAxis = { field: 'origen' };
+      o.xAxis = { field: DE };
       o.yAxis = { format: juego.formato };
-      o.series = [{ type: 'sankey', field: c.valor, name: juego.nombreValor, to: 'destino' }];
+      o.series = [{ type: 'sankey', field: c.valor, name: juego.nombreValor, to: A }];
     }
     o.theme = estado.claro ? 'light' : 'dark';
+    // El español es el idioma por defecto de la librería: en los otros, el código copiado lo pide.
+    if (LOCALE !== 'es') o.locale = LOCALE;
     return o;
   }
 
@@ -327,7 +355,8 @@
     if (!completo && n > 4) {
       var pad = '  '.repeat(sangria + 2);
       texto = texto.replace(/(data: \[[\s\S]*?\n)(\s*)\]/, function (_, a, b) {
-        return a + pad + '// … ' + (n - 4) + ' filas más\n' + b + ']';
+        var mas = tx({ es: '% filas más', en: '% more rows', pt: 'mais % linhas' }).replace('%', n - 4);
+        return a + pad + '// … ' + mas + '\n' + b + ']';
       });
     }
     return texto;
@@ -343,35 +372,40 @@
       .replace(/\/\/ /g, '# ');
   }
   function codigo(o) {
+    var N = NOMBRES;
     if (estado.modo === 'react') {
       return [
         "import { Chart } from 'lozcharts/react';",
         '',
-        'const opciones = ' + cuerpo(o, 0) + ';',
+        'const ' + N.opciones + ' = ' + cuerpo(o, 0) + ';',
         '',
-        'export function Grafico() {',
-        '  return <Chart {...opciones} />;',
+        'export function ' + N.componente + '() {',
+        '  return <Chart {...' + N.opciones + '} />;',
         '}',
       ].join('\n');
     }
     if (estado.modo === 'django') {
       return [
-        '<!-- plantilla.html -->',
-        '<div data-lozchart="#opciones"></div>',
-        '{{ opciones|json_script:"opciones" }}',
+        '<!-- ' + N.plantilla + ' -->',
+        '<div data-lozchart="#' + N.opciones + '"></div>',
+        '{{ ' + N.opciones + '|json_script:"' + N.opciones + '" }}',
         '<script>',
         '  htmx.onLoad((el) => LozChart.initAll(el));',
         '</script>',
         '',
-        '# views.py: el mismo diccionario, en Python',
-        'opciones = ' + python(cuerpo(o, 0)),
+        tx({
+          es: '# views.py: el mismo diccionario, en Python',
+          en: '# views.py: the same dictionary, in Python',
+          pt: '# views.py: o mesmo dicionário, em Python',
+        }),
+        N.opciones + ' = ' + python(cuerpo(o, 0)),
       ].join('\n');
     }
     return [
-      '<div id="grafico"></div>',
+      '<div id="' + N.id + '"></div>',
       '<script src="lozcharts.umd.js"></script>',
       '<script>',
-      "new LozChart('#grafico', " + cuerpo(o, 0) + ');',
+      "new LozChart('#" + N.id + "', " + cuerpo(o, 0) + ');',
       '</script>',
     ].join('\n');
   }
@@ -429,8 +463,8 @@
   function formatoTotal(v) {
     var j = JUEGOS[estado.juego];
     if (j.formato === 'currency')
-      return new Intl.NumberFormat('es', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
-    return new Intl.NumberFormat('es').format(Math.round(v));
+      return new Intl.NumberFormat(LOCALE, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
+    return new Intl.NumberFormat(LOCALE).format(Math.round(v));
   }
   function contarTotal(meta) {
     cancelAnimationFrame(totalRaf);
@@ -625,11 +659,15 @@
     var todo = codigo(opcionesActuales);
     completo = false;
     var listo = function () {
-      copiar.textContent = 'Copiado';
-      aviso.textContent = 'Código copiado, con todas las filas.';
+      copiar.textContent = tx({ es: 'Copiado', en: 'Copied', pt: 'Copiado' });
+      aviso.textContent = tx({
+        es: 'Código copiado, con todas las filas.',
+        en: 'Code copied, with every row.',
+        pt: 'Código copiado, com todas as linhas.',
+      });
       clearTimeout(esperaCopia);
       esperaCopia = setTimeout(function () {
-        copiar.textContent = 'Copiar';
+        copiar.textContent = tx({ es: 'Copiar', en: 'Copy', pt: 'Copiar' });
         aviso.textContent = '';
       }, 1800);
     };
@@ -640,7 +678,11 @@
       var s = getSelection();
       s.removeAllRanges();
       s.addRange(r);
-      aviso.textContent = 'Código seleccionado. Cópialo con Ctrl o Comando + C.';
+      aviso.textContent = tx({
+        es: 'Código seleccionado. Cópialo con Ctrl o Comando + C.',
+        en: 'Code selected. Copy it with Ctrl or Command + C.',
+        pt: 'Código selecionado. Copie com Ctrl ou Command + C.',
+      });
     };
     if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(todo).then(listo, aMano);
     else aMano();
@@ -668,6 +710,7 @@
       Object.assign({}, o, {
         data: desdeCero ? ceros : reales,
         background: false,
+        locale: LOCALE,
         legend: { position: 'bottom' },
         height: alto(),
         animate: false,

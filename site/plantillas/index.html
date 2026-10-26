@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="{{lang}}" data-theme="dark" data-mode="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="{{raiz}}assets/idioma.js"></script>
+    <title>{{titulo}}</title>
+    <meta name="description" content="{{descripcion}}" />
+    <meta name="author" content="Mayra Lozada" />
+    <meta name="theme-color" content="#050505" />
+    <meta name="color-scheme" content="dark" />
+    {{alternos}}
+    <link rel="icon" href="{{raiz}}favicon.svg" type="image/svg+xml" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="{{og_locale}}" />
+    <meta property="og:site_name" content="LozCharts" />
+    <meta property="og:url" content="{{url}}" />
+    <meta property="og:title" content="{{og_titulo}}" />
+    <meta property="og:description" content="{{og_descripcion}}" />
+    <meta property="og:image" content="https://mayralo2ada.github.io/lozcharts/assets/og-portada.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="{{og_imagen_alt}}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{{og_titulo}}" />
+    <meta name="twitter:description" content="{{tw_descripcion}}" />
+    <meta name="twitter:image" content="https://mayralo2ada.github.io/lozcharts/assets/og-portada.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": ["SoftwareApplication", "SoftwareSourceCode"],
+        "name": "LozCharts",
+        "description": "{{ld_descripcion}}",
+        "url": "{{url}}",
+        "codeRepository": "https://github.com/MayraLo2ada/lozcharts",
+        "programmingLanguage": ["TypeScript", "JavaScript"],
+        "runtimePlatform": "{{ld_plataforma}}",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "{{ld_so}}",
+        "license": "https://opensource.org/licenses/MIT",
+        "isAccessibleForFree": true,
+        "inLanguage": "{{lang}}",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "author": { "@type": "Person", "name": "Mayra Lozada" }
+      }
+    </script>
+
+    <script>
+      // Antes de pintar: hay JS, y si el sistema pide menos movimiento (o la URL trae ?reducido,
+      // para probarlo) todo aparece directo, sin letras que se arman ni gráficos que se dibujan.
+      (function (d) {
+        d.classList.add('js');
+        var q = /[?&]reducido\b/.test(location.search);
+        if (q || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) d.classList.add('quieto');
+      })(document.documentElement);
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Geist:wght@400..700&family=Geist+Mono:wght@400;600&display=swap"
+    />
+    <link rel="stylesheet" href="{{raiz}}assets/site.css" />
+    <link rel="stylesheet" href="{{raiz}}assets/portada.css" />
+  </head>
+  <body>
+    <a class="saltar" href="#contenido">{{saltar}}</a>
+
+    <header class="top">
+      <div class="wrap">
+        <a class="wordmark" href="{{p:inicio}}" aria-label="{{inicio_aria}}">
+          <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+            <rect x="4" y="16" width="6" height="12" rx="2" />
+            <rect x="13" y="9" width="6" height="19" rx="2" />
+            <rect x="22" y="4" width="6" height="24" rx="2" />
+          </svg>
+          LozCharts
+        </a>
+        <nav class="nav" aria-label="{{nav_aria}}">
+          <a href="{{p:galeria}}">{{nav_galeria}}</a>
+          <a href="{{p:docs}}">{{nav_docs_barra}}</a>
+          <a class="github" href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+          {{selector}}
+        </nav>
+      </div>
+    </header>
+
+    <main id="contenido">
+      <!-- ============================================================ Portada -->
+      <section class="portada wrap" aria-labelledby="titular">
+        <h1 class="grito armar portada-titular" id="titular" data-arma>
+          <span class="fit"><span>{{portada_l1}}</span></span>
+          <span class="fit violeta"><span>{{portada_l2}}</span></span>
+        </h1>
+
+        <figure class="figura" id="figura">
+          <div class="lectura" aria-hidden="true">
+            <small id="lectura-mes">{{lectura_mes}}</small>
+            <strong id="lectura-valor">{{lectura_valor}}</strong>
+            <em id="lectura-meta">{{lectura_meta}}</em>
+          </div>
+          <div class="grafico" id="g-portada"></div>
+          <div class="cortina" aria-hidden="true"></div>
+          <div class="lapiz" aria-hidden="true"></div>
+          <figcaption class="sr-only">{{figura_desc}}</figcaption>
+        </figure>
+
+        <div class="pie-portada">
+          <p>{{pie_portada}}</p>
+          <ul class="sellos" aria-label="{{resumen_aria}}">
+            <li>{{sello_gratis}}</li>
+            <li>MIT</li>
+            <li><span data-cuenta="79">79</span> KB</li>
+          </ul>
+          <div class="acciones">
+            <a class="boton boton-lima" href="{{p:docs}}#{{ancla_instalar}}">
+              {{usala_gratis}} <span class="flecha" aria-hidden="true">→</span>
+            </a>
+            <a class="boton boton-borde" href="#pro">{{ver_pro}}</a>
+            <a class="enlace-caso" href="{{p:caso}}">{{mira_caso}} <span aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ Laboratorio -->
+      <section class="cartel" id="laboratorio" aria-labelledby="t-lab">
+        <div class="wrap">
+          <p class="etiqueta"><span>02</span><span>{{et_pruebala}}</span></p>
+          <div class="lab-cabeza">
+            <h2 class="grito armar" id="t-lab" data-arma>
+              <span class="fit"><span>{{lab_l1}}</span></span>
+              <span class="fit rosa"><span>{{lab_l2}}</span></span>
+            </h2>
+            <p class="texto">{{lab_texto}}</p>
+          </div>
+
+          <div class="lab" id="lab">
+            <div class="escenario" id="escenario">
+              <div class="tipos-lab" role="tablist" aria-label="{{tipo_grafico_aria}}" id="tipos-lab"></div>
+              <div class="escenario-cabeza">
+                <div class="datos" role="radiogroup" aria-label="{{datos_aria}}" id="datos"></div>
+                <div class="escenario-acciones">
+                  <button class="boton boton-chico" type="button" id="barajar">{{otros_numeros}}</button>
+                  <button class="boton boton-chico" type="button" id="luz" aria-pressed="false">{{modo_claro}}</button>
+                </div>
+              </div>
+              <div class="total">
+                <span class="total-rotulo" id="total-rotulo">{{total_rotulo}}</span>
+                <output class="total-num" id="total" aria-live="off">0</output>
+              </div>
+              <div class="lab-grafico" id="lab-grafico" role="tabpanel" aria-labelledby="tipo-bar"></div>
+            </div>
+
+            <div class="codigo" id="codigo">
+              <div class="codigo-barra">
+                <div class="codigo-pestanas" role="tablist" aria-label="{{forma_usarlo_aria}}">
+                  <button role="tab" type="button" aria-selected="true" data-modo="js" id="tab-js" aria-controls="codigo-pre">
+                    HTML + JS
+                  </button>
+                  <button
+                    role="tab"
+                    type="button"
+                    aria-selected="false"
+                    data-modo="react"
+                    id="tab-react"
+                    aria-controls="codigo-pre"
+                    tabindex="-1"
+                  >
+                    React
+                  </button>
+                  <button
+                    role="tab"
+                    type="button"
+                    aria-selected="false"
+                    data-modo="django"
+                    id="tab-django"
+                    aria-controls="codigo-pre"
+                    tabindex="-1"
+                  >
+                    Django + HTMX
+                  </button>
+                </div>
+                <button class="copiar" type="button" id="copiar">{{copiar}}</button>
+              </div>
+              <pre
+                class="codigo-pre"
+                id="codigo-pre"
+                role="tabpanel"
+                aria-labelledby="tab-js"
+                tabindex="0"
+              ><code id="codigo-txt"></code></pre>
+              <p class="codigo-pie">
+                {{codigo_pie}}
+                <span class="sr-only" id="copiado" role="status"></span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ Los 26 tipos -->
+      <section class="cartel" id="tipos" aria-labelledby="t-tipos">
+        <div class="wrap">
+          <p class="etiqueta"><span>03</span><span>{{et_tipos}}</span></p>
+          <div class="tipos-cabeza">
+            <h2 class="grito armar" id="t-tipos" data-arma>
+              <span class="fit"><span>{{tipos_l1}}</span></span>
+              <span class="fit rosa"><span>{{tipos_l2}}</span></span>
+            </h2>
+            <p class="texto">{{tipos_texto}}</p>
+          </div>
+          <div class="bento" id="bento"></div>
+          <p class="tipos-cola">
+            <a class="boton boton-borde" href="{{p:galeria}}">{{ver_galeria}}</a>
+          </p>
+        </div>
+      </section>
+
+      <!-- ============================================================ Accesible -->
+      <section class="cartel" id="accesible" aria-labelledby="t-acc">
+        <div class="wrap">
+          <p class="etiqueta"><span>04</span><span>{{et_accesible}}</span></p>
+          <h2 class="grito armar" id="t-acc" data-arma>
+            <span class="fit"><span>{{acc_l1}}</span></span>
+            <span class="fit rosa"><span>{{acc_l2}}</span></span>
+          </h2>
+
+          <div class="acc-rejilla">
+            <div>
+              <div class="marco" id="marco-acc"><div class="acc-grafico" id="g-acc"></div></div>
+              <button type="button" class="boton boton-borde interruptor" id="dalt" aria-pressed="false">
+                {{ver_daltonismo}}
+              </button>
+            </div>
+            <div>
+              <p class="voz-quien">{{voz_quien}}</p>
+              <p class="voz" id="voz" aria-hidden="true">{{voz_inicial}}</p>
+              <p class="texto">{{acc_texto}}</p>
+              <ul class="lista-corta">
+                <li>{{acc_1}}</li>
+                <li>{{acc_2}}</li>
+                <li>{{acc_3}}</li>
+                <li>{{acc_4}}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ Liviana -->
+      <section class="cartel" id="liviana" aria-labelledby="t-kb">
+        <div class="wrap kb-rejilla">
+          <div>
+            <p class="etiqueta"><span>05</span><span>{{et_liviana}}</span></p>
+            <h2 class="grito armar" id="t-kb" data-arma>
+              <span class="fit"><span>{{kb_l1}}</span></span>
+              <span class="fit violeta"><span>{{kb_l2}}</span></span>
+            </h2>
+          </div>
+          <div class="kb-lado">
+            <p class="texto">{{kb_texto}}</p>
+            <p class="texto">{{kb_trae}} <a href="{{raiz}}llms.txt">llms.txt</a>{{kb_llms}}</p>
+            <p class="donde-rotulo">{{donde_rotulo}}</p>
+            <p class="grito donde-lista">
+              <span>React. Angular.</span>
+              <span class="violeta">Vue. Svelte.</span>
+              <span class="rosa">Django + HTMX.</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ Un caso real -->
+      <section class="cartel caso" id="caso" aria-labelledby="t-caso">
+        <div class="wrap caso-rejilla">
+          <div>
+            <p class="etiqueta"><span>06</span><span>{{nav_caso}}</span></p>
+            <h2 class="grito armar" id="t-caso" data-arma>
+              <span class="fit"><span>{{caso_l1}}</span></span>
+              <span class="fit rosa acento"><span>{{caso_l2}}</span></span>
+            </h2>
+          </div>
+          <div class="caso-lado">
+            <p class="texto">{{caso_texto}}</p>
+            <a class="boton boton-borde" href="{{p:caso}}">{{mira_caso}} <span class="flecha" aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ Gratis / Pro -->
+      <section id="gratis" aria-labelledby="t-modelo">
+        <div class="cartel cartel-modelo">
+          <div class="wrap">
+            <p class="etiqueta"><span>07</span><span>{{et_modelo}}</span></p>
+            <h2 class="grito armar" id="t-modelo" data-arma>
+              <span class="fit"><span>{{modelo_l1}}</span></span>
+              <span class="fit rosa acento"><span>{{modelo_l2}}</span></span>
+            </h2>
+          </div>
+        </div>
+
+        <div class="enfrentados">
+          <article class="gratis" aria-labelledby="t-gratis">
+            <h3 class="grito" id="t-gratis">{{gratis_titulo}}</h3>
+            <p class="bajada">{{gratis_bajada}}</p>
+            <ul class="incluye">
+              <li>{{gratis_1}}</li>
+              <li>{{gratis_2}}</li>
+              <li>{{gratis_3}}</li>
+              <li>{{gratis_4}}</li>
+              <li>{{gratis_5}}</li>
+              <li>{{gratis_6}}</li>
+              <li>{{gratis_7}}</li>
+              <li>{{gratis_8}}</li>
+            </ul>
+            <div class="cola">
+              <a class="boton boton-lima" href="{{p:docs}}#{{ancla_instalar}}">
+                {{usala_gratis}} <span class="flecha" aria-hidden="true">→</span>
+              </a>
+              <p class="nota">{{gratis_nota}}</p>
+            </div>
+          </article>
+
+          <article class="pro" id="pro" aria-labelledby="t-pro">
+            <h3 class="grito" id="t-pro">Pro.</h3>
+            <p class="bajada">{{pro_bajada}}</p>
+            <ul class="incluye">
+              <li>{{pro_1}}</li>
+              <li>{{pro_2}}</li>
+              <li>{{pro_3}}</li>
+              <li>{{pro_4}}</li>
+              <li>{{pro_5}}</li>
+              <li>{{pro_6}}</li>
+              <li>{{pro_7}}</li>
+              <li>{{pro_8}}</li>
+            </ul>
+            <div class="cola">
+              <!-- PRECIO DE PRO: se cambia en scripts/textos/inicio.mjs (clave precio_pro), en los tres idiomas; es el
+                   único lugar de la página donde aparece. -->
+              <p class="precio" id="precio-pro">{{precio_pro}}</p>
+              <!-- ENLACE DE LICENCIA: reemplaza href="#pro" por el enlace real de compra o de contacto. -->
+              <a class="boton boton-negro" href="#pro">{{pide_licencia}} <span class="flecha" aria-hidden="true">→</span></a>
+              <p class="nota">{{pro_nota}}</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============================================================ Dudas -->
+      <section class="dudas wrap" aria-labelledby="t-dudas">
+        <h2 class="grito armar" id="t-dudas" data-arma>{{dudas_titulo}}</h2>
+        <div>
+          <a class="humano" href="https://github.com/MayraLo2ada/lozcharts/issues">{{dudas_enlace}}</a>
+          <p class="texto">{{dudas_quien}}</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap">
+        <span>{{pie_texto}}</span>
+        <nav aria-label="{{pie_aria}}">
+          <a href="{{p:galeria}}">{{nav_galeria}}</a>
+          <a href="{{p:docs}}">{{nav_docs}}</a>
+          <a href="{{p:caso}}">{{nav_caso}}</a>
+          <a href="{{raiz}}llms.txt">llms.txt</a>
+          <a href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+        </nav>
+        {{idiomas_pie}}
+      </div>
+    </footer>
+
+    <!-- Filtro para simular deuteranopia (Machado et al. 2009). -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true" focusable="false">
+      <filter id="deuteranopia" color-interpolation-filters="linearRGB">
+        <feColorMatrix
+          type="matrix"
+          values="0.367322 0.860646 -0.227968 0 0  0.280085 0.672501 0.047413 0 0  -0.011820 0.042940 0.968881 0 0  0 0 0 1 0"
+        />
+      </filter>
+    </svg>
+
+    <!-- El mapa del mundo (41 KB) no se baja hasta que un mapa del bento se acerca a la pantalla.
+         Con type="text/plain" el navegador no lo carga; portada-tipos.js toma su src, con la
+         versión que le pone npm run site, cuando lo necesita. -->
+    <script type="text/plain" id="mapa-mundo" src="{{raiz}}lib/maps/world.umd.js"></script>
+    <script defer src="{{raiz}}lib/lozcharts.umd.js"></script>
+    <script defer src="{{raiz}}assets/ejemplos.js"></script>
+    <script defer src="{{raiz}}assets/portada.js"></script>
+    <script defer src="{{raiz}}assets/portada-lab.js"></script>
+    <script defer src="{{raiz}}assets/portada-tipos.js"></script>
+  </body>
+</html>

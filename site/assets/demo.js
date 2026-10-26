@@ -13,7 +13,16 @@
   // Las funciones (formatos propios) no pasan por JSON: se recuperan.
   if (ej.opciones.yAxis && typeof ej.opciones.yAxis.format === 'function') o.yAxis.format = ej.opciones.yAxis.format;
 
-  document.title = o.title + ' · Galería de LozCharts';
+  // El id del elemento y el nombre de los datos en el código que se muestra, en el idioma de la
+  // página (la plantilla dice "cambia las filas de datos" con el mismo nombre).
+  var ID = window.ID_GRAFICO || 'grafico';
+  var DATOS = tx({ es: 'datos', en: 'data', pt: 'dados' });
+
+  document.title = tx({
+    es: o.title + ' · Galería de LozCharts',
+    en: o.title + ' · LozCharts gallery',
+    pt: o.title + ' · Galeria do LozCharts',
+  });
   byId('clase').textContent = ej.clase;
   byId('titulo').textContent = o.title;
   byId('sub').textContent = o.subtitle || '';
@@ -29,14 +38,22 @@
     });
   var c1 = document.createElement('code');
   c1.textContent = ej.tipo;
-  tecnico.append('En la librería este gráfico es ', c1, ', con ');
+  // La frase con sus piezas en cada idioma; la lista de tipos se une con la «y» de cada uno.
+  var frase = tx({
+    es: { antes: 'En la librería este gráfico es ', con: ', con ', y: ' y ', panel: ' en cada panel.' },
+    en: { antes: 'In the library this chart is ', con: ', with ', y: ' and ', panel: ' in each panel.' },
+    pt: { antes: 'Na biblioteca este gráfico é ', con: ', com ', y: ' e ', panel: ' em cada painel.' },
+  });
+  tecnico.append(frase.antes, c1, frase.con);
   tiposSerie.forEach(function (t, i) {
     var c = document.createElement('code');
     c.textContent = "type: '" + t + "'";
-    if (i) tecnico.append(i === tiposSerie.length - 1 ? ' y ' : ', ');
+    // En inglés, con tres o más, va la coma antes de "and" (a, b, and c).
+    var y = IDIOMA === 'en' && tiposSerie.length > 2 ? ',' + frase.y : frase.y;
+    if (i) tecnico.append(i === tiposSerie.length - 1 ? y : ', ');
     tecnico.append(c);
   });
-  tecnico.append(ej.multiples ? ' en cada panel.' : '.');
+  tecnico.append(ej.multiples ? frase.panel : '.');
 
   // ------------------------------------------------------------ Ajustes
 
@@ -62,14 +79,14 @@
   if (todos(['bar', 'line', 'area', 'step'])) {
     estado.tipo = tipos[0];
     controles.push({
-      label: 'Tipo de gráfico',
+      label: tx({ es: 'Tipo de gráfico', en: 'Chart type', pt: 'Tipo de gráfico' }),
       kind: 'select',
       key: 'tipo',
       options: [
-        ['bar', 'Barras'],
-        ['line', 'Líneas'],
-        ['area', 'Áreas'],
-        ['step', 'Escalones'],
+        ['bar', tx({ es: 'Barras', en: 'Bars', pt: 'Barras' })],
+        ['line', tx({ es: 'Líneas', en: 'Lines', pt: 'Linhas' })],
+        ['area', tx({ es: 'Áreas', en: 'Areas', pt: 'Áreas' })],
+        ['step', tx({ es: 'Escalones', en: 'Steps', pt: 'Degraus' })],
       ],
     });
     estado.apilar = o.series.some(function (s) {
@@ -78,40 +95,62 @@
     var principales = o.series.filter(function (s) {
       return s.type === tipos[0];
     }).length;
-    if (principales > 1) controles.push({ label: 'Apilar una sobre otra', kind: 'toggle', key: 'apilar' });
+    if (principales > 1)
+      controles.push({
+        label: tx({ es: 'Apilar una sobre otra', en: 'Stack them on top of each other', pt: 'Empilhar uma sobre a outra' }),
+        kind: 'toggle',
+        key: 'apilar',
+      });
     estado.suave = o.series.some(function (s) {
       return s.smooth;
     });
-    controles.push({ label: 'Curvas suaves', kind: 'toggle', key: 'suave' });
+    controles.push({
+      label: tx({ es: 'Curvas suaves', en: 'Smooth curves', pt: 'Curvas suaves' }),
+      kind: 'toggle',
+      key: 'suave',
+    });
   }
   if (todos(['bar']) && !ej.multiples) {
     estado.horizontal = o.orientation === 'horizontal';
-    controles.push({ label: 'Horizontal', kind: 'toggle', key: 'horizontal' });
+    controles.push({ label: tx({ es: 'Horizontal', en: 'Horizontal', pt: 'Horizontal' }), kind: 'toggle', key: 'horizontal' });
   }
   if (todos(['donut', 'pie'])) {
     estado.dona = tipos[0] === 'donut';
-    controles.push({ label: 'Con hueco al centro', kind: 'toggle', key: 'dona' });
+    controles.push({
+      label: tx({ es: 'Con hueco al centro', en: 'Hole in the middle', pt: 'Com furo no meio' }),
+      kind: 'toggle',
+      key: 'dona',
+    });
   }
   // El globo gira con el puntero y los botones: cambiarle la proyección lo dejaría sin sus arcos.
   if (todos(['choropleth', 'mapbubble']) && !ej.globo) {
     estado.proyeccion = o.series[0].projection || 'equalEarth';
     controles.push({
-      label: 'Forma del mapa',
+      label: tx({ es: 'Forma del mapa', en: 'Map shape', pt: 'Formato do mapa' }),
       kind: 'select',
       key: 'proyeccion',
       options: [
-        ['equalEarth', 'Áreas reales (Equal Earth)'],
-        ['mercator', 'Plano clásico (Mercator)'],
-        ['orthographic', 'Globo'],
+        ['equalEarth', tx({ es: 'Áreas reales (Equal Earth)', en: 'True areas (Equal Earth)', pt: 'Áreas reais (Equal Earth)' })],
+        ['mercator', tx({ es: 'Plano clásico (Mercator)', en: 'Classic flat map (Mercator)', pt: 'Plano clássico (Mercator)' })],
+        ['orthographic', tx({ es: 'Globo', en: 'Globe', pt: 'Globo' })],
       ],
     });
   }
   if (esCartesiano && !ej.multiples) {
     estado.zoom = !!o.zoom;
-    controles.push({ label: 'Zoom', kind: 'toggle', key: 'zoom' });
+    controles.push({ label: tx({ es: 'Zoom', en: 'Zoom', pt: 'Zoom' }), kind: 'toggle', key: 'zoom' });
   }
-  if (o.series.length > 1 && !ej.multiples) controles.push({ label: 'Leyenda', kind: 'toggle', key: 'leyenda' });
-  if (!ej.multiples) controles.push({ label: 'Alto', kind: 'range', key: 'altura', min: 220, max: 900, step: 20 });
+  if (o.series.length > 1 && !ej.multiples)
+    controles.push({ label: tx({ es: 'Leyenda', en: 'Legend', pt: 'Legenda' }), kind: 'toggle', key: 'leyenda' });
+  if (!ej.multiples)
+    controles.push({
+      label: tx({ es: 'Alto', en: 'Height', pt: 'Altura' }),
+      kind: 'range',
+      key: 'altura',
+      min: 220,
+      max: 900,
+      step: 20,
+    });
 
   /** Las opciones que salen de los ajustes: siempre todas las claves, así quitar algo también se ve. */
   function opciones() {
@@ -189,7 +228,7 @@
     if (chart) chart.destroy();
     // El título ya está arriba de la página: el del gráfico se oculta con CSS (.lienzo), pero
     // sigue en su nombre accesible y en el código.
-    var op = Object.assign({ background: false }, opciones());
+    var op = Object.assign({ background: false, locale: LOCALE }, opciones());
     chart = siteChart(ej.multiples ? LozChart.multiples('#grafico', op) : new LozChart('#grafico', op));
     globo = ej.globo ? girarGlobo(chart, byId('grafico'), ej) : null;
   }
@@ -197,7 +236,7 @@
     if (!chart) return mostrarCodigo();
     // Pasar de cartesiano a mapa u otra forma: se recrea; si no, cambia animando.
     if (ej.multiples) crear();
-    else chart.setOptions(Object.assign({ background: false }, opciones()), animar);
+    else chart.setOptions(Object.assign({ background: false, locale: LOCALE }, opciones()), animar);
     // El globo conserva hacia dónde lo dejaste.
     if (globo) globo.redibujar();
     mostrarCodigo();
@@ -214,7 +253,11 @@
         crear();
       },
       function () {
-        byId('grafico').textContent = 'No se pudo cargar el mapa. Revisa la conexión y vuelve a cargar la página.';
+        byId('grafico').textContent = tx({
+          es: 'No se pudo cargar el mapa. Revisa la conexión y vuelve a cargar la página.',
+          en: "Couldn't load the map. Check your connection and reload the page.",
+          pt: 'Não deu para carregar o mapa. Confira a conexão e recarregue a página.',
+        });
       },
     );
   }
@@ -225,13 +268,24 @@
     c2.textContent = 'rotate';
     var c3 = document.createElement('code');
     c3.textContent = 'setOptions';
-    nota.append(
-      'El código dibuja el globo. Los arcos y el giro con el puntero los pone esta página: para girarlo desde tu código, cambia ',
-      c2,
-      ' con ',
-      c3,
-      '.',
-    );
+    var t = tx({
+      es: [
+        'El código dibuja el globo. Los arcos y el giro con el puntero los pone esta página: para girarlo desde tu código, cambia ',
+        ' con ',
+        '.',
+      ],
+      en: [
+        'The code draws the globe. The arcs and turning it with the pointer come from this page: to turn it from your own code, change ',
+        ' with ',
+        '.',
+      ],
+      pt: [
+        'O código desenha o globo. Os arcos e o giro com o ponteiro vêm desta página: para girar pelo seu código, mude ',
+        ' com ',
+        '.',
+      ],
+    });
+    nota.append(t[0], c2, t[1], c3, t[2]);
     byId('nombre-tecnico').after(nota);
   }
   byId('repetir').addEventListener('click', crear);
@@ -300,8 +354,10 @@
   /** Los datos: completos para descargar; en pantalla, las primeras filas y cuántas faltan. */
   function datos(completo) {
     var d = o.data;
-    if (completo || d.length <= 4) return 'const datos = ' + js(d, 0) + ';';
-    return 'const datos = ' + js(d.slice(0, 3), 0).replace(/\n\]$/, '\n  // … ' + (d.length - 3) + ' filas más\n]') + ';';
+    if (completo || d.length <= 4) return 'const ' + DATOS + ' = ' + js(d, 0) + ';';
+    var faltan = d.length - 3;
+    var comentario = tx({ es: faltan + ' filas más', en: faltan + ' more rows', pt: 'mais ' + faltan + ' linhas' });
+    return 'const ' + DATOS + ' = ' + js(d.slice(0, 3), 0).replace(/\n\]$/, '\n  // … ' + comentario + '\n]') + ';';
   }
   function sinDatos() {
     var r = opciones();
@@ -311,8 +367,9 @@
   function codigoJS(completo) {
     var fn = ej.multiples ? 'LozChart.multiples' : 'new LozChart';
     var r = sinDatos();
-    var cuerpo = js(r, 0).replace(/^\{/, '{\n  data: datos,');
-    return datos(completo) + '\n\n' + fn + "('#grafico', " + cuerpo + ');';
+    // En inglés la variable se llama igual que la opción: queda { data, … }.
+    var cuerpo = js(r, 0).replace(/^\{/, '{\n  ' + (DATOS === 'data' ? 'data' : 'data: ' + DATOS) + ',');
+    return datos(completo) + '\n\n' + fn + "('#" + ID + "', " + cuerpo + ');';
   }
   function codigoReact() {
     var comp = ej.multiples ? 'Multiples' : 'Chart';
@@ -332,9 +389,13 @@
       comp +
       " } from 'lozcharts/react';\n\n" +
       datos(false) +
-      '\n\nexport function Grafico() {\n  return (\n    <' +
+      '\n\nexport function ' +
+      tx({ es: 'Grafico', en: 'MyChart', pt: 'Grafico' }) +
+      '() {\n  return (\n    <' +
       comp +
-      '\n      data={datos}\n' +
+      '\n      data={' +
+      DATOS +
+      '}\n' +
       props.join('\n') +
       '\n    />\n  );\n}'
     );
@@ -345,10 +406,14 @@
       ? '<script>\n' + libreria + '\n</script>'
       : '<script src="lozcharts.umd.js"></script>' + (mapa ? '\n<script src="maps/world.umd.js"></script>' : '');
     return (
-      '<!doctype html>\n<html lang="es">\n<head>\n  <meta charset="utf-8">\n  <title>' +
+      '<!doctype html>\n<html lang="' +
+      (document.documentElement.lang || 'es') +
+      '">\n<head>\n  <meta charset="utf-8">\n  <title>' +
       o.title +
       '</title>\n</head>\n<body>\n' +
-      '  <div id="grafico" style="max-width: 900px; margin: 40px auto;"></div>\n\n' +
+      '  <div id="' +
+      ID +
+      '" style="max-width: 900px; margin: 40px auto;"></div>\n\n' +
       scripts +
       '\n<script>\n' +
       codigoJS(completo) +
@@ -382,10 +447,16 @@
     if (navigator.clipboard) {
       navigator.clipboard.writeText(full).then(
         function () {
-          avisar('Código copiado');
+          avisar(tx({ es: 'Código copiado', en: 'Code copied', pt: 'Código copiado' }));
         },
         function () {
-          avisar('No se pudo copiar: selecciónalo a mano');
+          avisar(
+            tx({
+              es: 'No se pudo copiar: selecciónalo a mano',
+              en: "Couldn't copy it: select it by hand",
+              pt: 'Não deu para copiar: selecione à mão',
+            }),
+          );
         },
       );
     }
@@ -393,14 +464,19 @@
   byId('descargar').addEventListener('click', function () {
     // Un archivo que funciona solo, con doble clic: la librería y los datos van adentro.
     var mapa = /choropleth|mapbubble/.test(JSON.stringify(o.series));
+    // Las rutas salen de las etiquetas de la página: en es/ y pt/ la librería está una carpeta arriba.
+    var src = function (sel, otra) {
+      var s = document.querySelector(sel);
+      return (s && s.getAttribute('src')) || otra;
+    };
     var libs = [
-      fetch('lib/lozcharts.umd.js').then(function (r) {
+      fetch(src('script[src*="lozcharts.umd.js"]', 'lib/lozcharts.umd.js')).then(function (r) {
         return r.text();
       }),
     ];
     if (mapa)
       libs.push(
-        fetch('lib/maps/world.umd.js').then(function (r) {
+        fetch(src('script[data-mapa]', 'lib/maps/world.umd.js')).then(function (r) {
           return r.text();
         }),
       );
@@ -416,7 +492,9 @@
       document.body.appendChild(a);
       a.click();
       a.remove();
-      avisar('Listo: ábrelo con doble clic');
+      avisar(
+        tx({ es: 'Listo: ábrelo con doble clic', en: 'Done: double-click it to open it', pt: 'Pronto: abra com dois cliques' }),
+      );
     });
   });
 

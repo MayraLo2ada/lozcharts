@@ -4,6 +4,10 @@
   document.documentElement.classList.add('js');
 
   var H = window.HISTORIA;
+  var tx = window.tx;
+  // Los pesos colombianos se escriben como en cada idioma: en español con el formato de Colombia
+  // ('es-CO', "$ 5.154.800"), en inglés "COP 5,154,800" y en portugués "COP 5.154.800".
+  var LOC = window.IDIOMA === 'es' ? 'es-CO' : window.LOCALE;
   var quieto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var celular = window.matchMedia('(max-width: 860px)');
 
@@ -35,7 +39,7 @@
   var base = {
     theme: 'light',
     background: false,
-    locale: 'es-CO',
+    locale: LOC,
     currency: 'COP',
     animate: !quieto,
     legend: false,
@@ -48,29 +52,35 @@
       data: H.diario,
       xAxis: { field: 'fecha', type: 'time' },
       yAxis: { format: 'currency' },
-      series: [{ type: 'line', field: 'ventas', name: 'Ventas del día' }],
+      series: [{ type: 'line', field: 'ventas', name: tx({ es: 'Ventas del día', en: 'Sales that day', pt: 'Vendas do dia' }) }],
       zoom: true,
-      ariaLabel:
-        'Ventas de cada día de 2025 en la tienda de doña Carmen. El día más alto fue el 24 de diciembre, con 5.154.800 pesos.',
+      ariaLabel: tx({
+        es: 'Ventas de cada día de 2025 en la tienda de doña Carmen. El día más alto fue el 24 de diciembre, con 5.154.800 pesos.',
+        en: 'Daily sales in 2025 at Doña Carmen’s store. The best day was December 24, with 5,154,800 pesos.',
+        pt: 'Vendas de cada dia de 2025 no mercadinho de dona Carmen. O dia mais forte foi 24 de dezembro, com 5.154.800 pesos.',
+      }),
     },
     mensual: {
       data: H.mensual,
       xAxis: { field: 'mes' },
       yAxis: { format: 'currency' },
-      series: [{ type: 'bar', field: 'ventas', name: 'Ventas del mes' }],
-      ariaLabel:
-        'Ventas por mes en 2025. Diciembre fue el mejor mes, con 62,4 millones de pesos; febrero el más bajo, con 34,3 millones.',
+      series: [{ type: 'bar', field: 'ventas', name: tx({ es: 'Ventas del mes', en: 'Sales that month', pt: 'Vendas do mês' }) }],
+      ariaLabel: tx({
+        es: 'Ventas por mes en 2025. Diciembre fue el mejor mes, con 62,4 millones de pesos; febrero el más bajo, con 34,3 millones.',
+        en: 'Monthly sales in 2025. December was the best month, with 62.4 million pesos; February was the lowest, with 34.3 million.',
+        pt: 'Vendas por mês em 2025. Dezembro foi o melhor mês, com 62,4 milhões de pesos; fevereiro, o mais fraco, com 34,3 milhões.',
+      }),
     },
     canasta: {
       data: H.canasta,
       xAxis: { field: 'producto' },
       yAxis: { format: 'currency' },
-      series: [{ type: 'treemap', field: 'ventas', name: 'Ventas', group: 'grupo' }],
+      series: [{ type: 'treemap', field: 'ventas', name: tx({ es: 'Ventas', en: 'Sales', pt: 'Vendas' }), group: 'grupo' }],
     },
     horas: {
       data: H.horas,
       xAxis: { field: 'hora' },
-      series: [{ type: 'heatmap', field: 'clientes', name: 'Clientes', y: 'dia' }],
+      series: [{ type: 'heatmap', field: 'clientes', name: tx({ es: 'Clientes', en: 'Customers', pt: 'Clientes' }), y: 'dia' }],
     },
     lejos: {
       data: H.lejos,
@@ -79,7 +89,7 @@
         {
           type: 'mapbubble',
           field: 'pedidos',
-          name: 'Pedidos',
+          name: tx({ es: 'Pedidos', en: 'Orders', pt: 'Pedidos' }),
           lat: 'lat',
           lon: 'lon',
           projection: 'orthographic',
@@ -91,7 +101,9 @@
       data: H.cierre,
       xAxis: { field: 'paso' },
       yAxis: { format: 'currency' },
-      series: [{ type: 'waterfall', field: 'monto', name: 'Resultado', total: 'total' }],
+      series: [
+        { type: 'waterfall', field: 'monto', name: tx({ es: 'Resultado', en: 'Result', pt: 'Resultado' }), total: 'total' },
+      ],
     },
   };
 
@@ -153,7 +165,7 @@
       data: H.mensual,
       xAxis: { field: 'mes' },
       yAxis: { format: 'compact' },
-      series: [{ type: 'bar', field: 'ventas', name: 'Ventas del mes' }],
+      series: [{ type: 'bar', field: 'ventas', name: tx({ es: 'Ventas del mes', en: 'Sales that month', pt: 'Vendas do mês' }) }],
       height: 200,
       tooltip: true,
     }),
@@ -222,7 +234,7 @@
   }
 
   // ---------- Abril: lo que oye don Julio ----------
-  var pesos = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 });
+  var pesos = new Intl.NumberFormat(LOC, { maximumFractionDigits: 0 });
   var oidoTexto = document.getElementById('oido-texto');
   var oidoBoton = document.getElementById('oido-boton');
   var oidoPausa = document.getElementById('oido-pausa');
@@ -231,15 +243,16 @@
     hablando = false,
     pausado = false;
 
-  function frase(i) {
+  // Lo que dice el lector de pantalla en cada mes; la voz lo lee sin la posición ("1 de 12").
+  function frase(i, conPosicion) {
     var m = H.mensual[i];
-    return (
-      m.nombre.charAt(0).toUpperCase() + m.nombre.slice(1) + ', ' + pesos.format(m.ventas) + ' pesos. ' + (i + 1) + ' de 12.'
-    );
+    var texto = m.nombre.charAt(0).toUpperCase() + m.nombre.slice(1) + ', ' + pesos.format(m.ventas) + ' pesos.';
+    if (!conPosicion) return texto;
+    return texto + ' ' + tx({ es: i + 1 + ' de 12.', en: i + 1 + ' of 12.', pt: i + 1 + ' de 12.' });
   }
   function marcarMes(i) {
     mesActual = i;
-    oidoTexto.textContent = frase(i);
+    oidoTexto.textContent = frase(i, true);
     graficos.mensual && graficos.mensual.g.highlightIndex(i);
   }
   // El recorrido automático muestra cómo se oye el gráfico; se puede pausar y no corre con
@@ -256,7 +269,9 @@
     oidoPausa.addEventListener('click', function () {
       pausado = !pausado;
       oidoPausa.setAttribute('aria-pressed', String(pausado));
-      oidoPausa.textContent = pausado ? 'Seguir el recorrido' : 'Pausar el recorrido';
+      oidoPausa.textContent = pausado
+        ? tx({ es: 'Seguir el recorrido', en: 'Resume the walkthrough', pt: 'Continuar o percurso' })
+        : tx({ es: 'Pausar el recorrido', en: 'Pause the walkthrough', pt: 'Pausar o percurso' });
       if (pausado) pararRecorrido();
       else empezarRecorrido();
     });
@@ -273,7 +288,7 @@
       hablando = false;
       speechSynthesis.cancel();
       oidoBoton.setAttribute('aria-pressed', 'false');
-      etiqueta.textContent = 'Escúchalo en voz alta';
+      etiqueta.textContent = tx({ es: 'Escúchalo en voz alta', en: 'Hear it out loud', pt: 'Ouça em voz alta' });
     };
     var decir = function (i) {
       if (!hablando || i >= 12) {
@@ -281,8 +296,8 @@
         return;
       }
       marcarMes(i);
-      var u = new SpeechSynthesisUtterance(frase(i).replace(/\s\d+ de 12\.$/, ''));
-      u.lang = 'es-CO';
+      var u = new SpeechSynthesisUtterance(frase(i));
+      u.lang = tx({ es: 'es-CO', en: 'en-US', pt: 'pt-BR' });
       u.rate = 1.05;
       u.onend = function () {
         decir(i + 1);
@@ -300,7 +315,7 @@
       pararRecorrido();
       hablando = true;
       oidoBoton.setAttribute('aria-pressed', 'true');
-      etiqueta.textContent = 'Detener';
+      etiqueta.textContent = tx({ es: 'Detener', en: 'Stop', pt: 'Parar' });
       speechSynthesis.cancel();
       decir(0);
     });
@@ -318,7 +333,14 @@
     diciembre: function () {
       var d = graficos.diario && graficos.diario.g;
       if (!d) return;
-      d.setOptions({ annotations: [{ x: '2025-12-24', label: '24 dic: $5,15 M' }] }, !quieto);
+      d.setOptions(
+        {
+          annotations: [
+            { x: '2025-12-24', label: tx({ es: '24 dic: $5,15 M', en: 'Dec 24: COP 5.15M', pt: '24 dez: COP 5,15 mi' }) },
+          ],
+        },
+        !quieto,
+      );
       d.zoomTo('2025-11-24', '2025-12-31');
     },
     mensual: function () {

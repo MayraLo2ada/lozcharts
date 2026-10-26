@@ -1230,6 +1230,13 @@ code {
 .dudas .grito {
   font-size: clamp(80px, 16vw, 500px);
 }
+/* "Questions?" y "Dúvidas?" son más largas que "¿Dudas?": la letra baja en proporción. */
+:lang(en) .dudas .grito {
+  font-size: clamp(56px, 11vw, 350px);
+}
+:lang(pt) .dudas .grito {
+  font-size: clamp(70px, 14vw, 440px);
+}
 .dudas a.humano {
   font-stretch: 75%;
   font-weight: 800;
@@ -1329,6 +1336,10 @@ code {
   }
   .lectura {
     left: 56px;
+  }
+  /* En portugués el eje dice "US$ 150 mil", más ancho: la lectura se corre para no pisarlo. */
+  .lectura:lang(pt) {
+    left: 84px;
   }
   .lectura strong {
     font-size: 40px;

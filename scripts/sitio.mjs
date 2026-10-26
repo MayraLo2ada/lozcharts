@@ -1,12 +1,17 @@
 // Arma el sitio en site/. Uso: npm run site (compila antes).
 //
 // 1. Copia la librería compilada a site/lib.
-// 2. Genera site/docs.html desde el README con la plantilla site/docs.template.html, así la
-//    documentación nunca queda desactualizada.
-// 3. Pone versiones en las URLs de los recursos propios de cada página (ver `versionar`).
+// 2. Genera cada página en los tres idiomas desde su plantilla (site/plantillas/) y sus textos
+//    (scripts/textos/): inglés en la raíz, español en site/es/ y portugués en site/pt/. La
+//    documentación de cada idioma sale de su README, así nunca queda desactualizada.
+// 3. Deja páginas puente en las rutas viejas en español (galeria.html → es/galeria.html).
+// 4. Pone versiones en las URLs de los recursos propios de cada página (ver `versionar`).
+//
+// Las páginas generadas no van en git (.gitignore): lo que se edita son las plantillas y los textos.
 import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, normalize, relative } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const SITIO = 'site';
 
@@ -42,14 +47,21 @@ function inline(text) {
     .replace(/\u0000(\d+)\u0000/g, (_, n) => `<code>${esc(codigos[n])}</code>`);
 }
 
-const LENGUAJES = { bash: 'Terminal', html: 'HTML', js: 'JavaScript', jsx: 'React (JSX)', ts: 'TypeScript', text: 'Texto' };
+const LENGUAJES = { bash: 'Terminal', html: 'HTML', js: 'JavaScript', jsx: 'React (JSX)', ts: 'TypeScript' };
+/** Lo poco que escribe el script mismo en la documentación, en cada idioma. */
+const PALABRAS = {
+  es: { text: 'Texto', codigo: 'Código', copiar: 'Copiar' },
+  en: { text: 'Text', codigo: 'Code', copiar: 'Copy' },
+  pt: { text: 'Texto', codigo: 'Código', copiar: 'Copiar' },
+};
 
 /** Un bloque de código con su barra: el lenguaje y el botón de copiar (lo activa la plantilla). */
-function bloque(lang, body) {
-  const nombre = LENGUAJES[lang] || lang || 'Código';
+function bloque(lang, body, idioma = 'es') {
+  const p = PALABRAS[idioma];
+  const nombre = LENGUAJES[lang] || (lang === 'text' ? p.text : lang) || p.codigo;
   return (
     `<div class="bloque"><div class="bloque-barra"><span>${esc(nombre)}</span>` +
-    `<button type="button" class="copiar" hidden>Copiar</button></div>` +
+    `<button type="button" class="copiar" hidden>${p.copiar}</button></div>` +
     `<pre class="code"><code>${esc(body.join('\n'))}</code></pre></div>`
   );
 }
@@ -60,8 +72,10 @@ function bloque(lang, body) {
  * Un comentario `<!-- vivo: nombre -->` en su propia línea es un gráfico vivo que dibuja la
  * plantilla; en GitHub no se ve.
  */
-export function bloques(md) {
-  const lines = md.split('\n');
+export function bloques(md, idioma = 'es') {
+  // La línea de idiomas de arriba del README (English · Español · Português) es para GitHub y npm;
+  // en el sitio el selector de idioma está en la barra.
+  const lines = md.split('\n').filter((l) => !/^\S*(English|Español|Português)\S* · .*(README|Español|Português)/.test(l));
   const out = [];
   let i = 0;
   while (i < lines.length) {
@@ -71,7 +85,7 @@ export function bloques(md) {
       const body = [];
       for (i++; i < lines.length && !lines[i].startsWith('```'); i++) body.push(lines[i]);
       i++;
-      out.push({ col: 'ej', html: bloque(lang, body) });
+      out.push({ col: 'ej', html: bloque(lang, body, idioma) });
       continue;
     }
     const vivo = /^<!--\s*vivo:\s*([\w-]+)\s*-->\s*$/.exec(line);
@@ -191,31 +205,43 @@ function pares(seccion) {
 }
 
 /**
- * Grupos del índice: la sección con la que empieza cada uno. Si un título cambia y su ancla ya no
- * está aquí, la sección sigue en el grupo anterior (no se rompe nada, solo cambia el agrupado).
+ * Grupos del índice: la sección con la que empieza cada uno, por su ancla en el README en español.
+ * Los README de los tres idiomas tienen las mismas secciones en el mismo orden, así que en inglés
+ * y portugués el grupo empieza en la sección del mismo número. Si un título cambia y su ancla ya
+ * no está aquí, la sección sigue en el grupo anterior (no se rompe nada, solo cambia el agrupado).
  */
 const GRUPOS = {
-  instalar: 'Para empezar',
-  'tipos-de-serie': 'Tipos de gráfico',
-  react: 'Con tu framework',
-  'muchos-datos': 'Guías',
-  opciones: 'Referencia',
-  'cómo-funciona-por-dentro': 'Por dentro',
+  instalar: { es: 'Para empezar', en: 'Getting started', pt: 'Primeiros passos' },
+  'tipos-de-serie': { es: 'Tipos de gráfico', en: 'Chart types', pt: 'Tipos de gráfico' },
+  react: { es: 'Con tu framework', en: 'With your framework', pt: 'Com o seu framework' },
+  'muchos-datos': { es: 'Guías', en: 'Guides', pt: 'Guias' },
+  opciones: { es: 'Referencia', en: 'Reference', pt: 'Referência' },
+  'cómo-funciona-por-dentro': { es: 'Por dentro', en: 'Under the hood', pt: 'Por dentro' },
 };
 
-/** El README completo: la introducción, las secciones en pares y el índice agrupado. */
-export function documentacion(md) {
-  const secciones = [];
+/** Las secciones `##` de un README: la introducción (sin título) y las demás. */
+function secciones(md, idioma) {
+  const lista = [];
   let actual = { h: null, cuerpo: [] };
-  for (const b of bloques(md)) {
+  for (const b of bloques(md, idioma)) {
     if (b.col === 'h2') {
-      secciones.push(actual);
+      lista.push(actual);
       actual = { h: b, cuerpo: [] };
-    } else if (/^h\d$/.test(b.col)) actual.cuerpo.push({ col: 'txt', html: `<${b.col} id="${b.id}">${b.html}</${b.col}>` });
+    } else if (/^h\d$/.test(b.col))
+      actual.cuerpo.push({ col: 'txt', id: b.id, html: `<${b.col} id="${b.id}">${b.html}</${b.col}>` });
     else actual.cuerpo.push(b);
   }
-  secciones.push(actual);
-  const [intro, ...resto] = secciones;
+  lista.push(actual);
+  return lista;
+}
+
+/**
+ * El README completo: la introducción, las secciones en pares y el índice agrupado. `inicios` dice
+ * en qué número de sección empieza cada grupo del índice (sale del README en español).
+ */
+export function documentacion(md, idioma = 'es', inicios = null) {
+  const [intro, ...resto] = secciones(md, idioma);
+  if (!inicios) inicios = gruposPorNumero(resto);
   const introHtml = `<div class="intro">${intro.cuerpo.map((b) => b.html).join('\n')}</div>`;
   const html = resto
     .map(
@@ -224,28 +250,215 @@ export function documentacion(md) {
     .join('\n');
   let indice = '';
   let abierto = false;
-  for (const s of resto) {
-    if (GRUPOS[s.h.id]) {
+  resto.forEach((s, k) => {
+    if (inicios.has(k)) {
       if (abierto) indice += '</ol></li>\n';
-      indice += `<li class="grupo"><span class="grupo-titulo">${GRUPOS[s.h.id]}</span><ol>\n`;
+      indice += `<li class="grupo"><span class="grupo-titulo">${inicios.get(k)[idioma]}</span><ol>\n`;
       abierto = true;
     }
     indice += `<li><a href="#${s.h.id}">${s.h.html}</a></li>\n`;
-  }
+  });
   if (abierto) indice += '</ol></li>';
-  return { intro: introHtml, html, indice, secciones: resto.length };
+  // Las anclas de todos los títulos, en orden: el selector de idioma lleva a la misma sección.
+  const anclas = resto.flatMap((s) => [s.h.id, ...s.cuerpo.filter((b) => b.id).map((b) => b.id)]);
+  return { intro: introHtml, html, indice, secciones: resto.length, anclas };
 }
 
-const readme = readFileSync('README.md', 'utf8');
-const { intro, html, indice, secciones } = documentacion(readme);
-const template = readFileSync('site/docs.template.html', 'utf8');
-writeFileSync(
-  'site/docs.html',
-  template
-    .replace('<!--INDICE-->', () => indice)
-    .replace('<!--INTRO-->', () => intro)
-    .replace('<!--CONTENIDO-->', () => html),
-);
+/** Número de sección → títulos del grupo que empieza ahí (ver GRUPOS). */
+function gruposPorNumero(resto) {
+  const inicios = new Map();
+  resto.forEach((s, k) => {
+    if (GRUPOS[s.h.id]) inicios.set(k, GRUPOS[s.h.id]);
+  });
+  return inicios;
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Idiomas
+ * ------------------------------------------------------------------------------------------------
+ * Cada página tiene una plantilla en site/plantillas/ con marcas {{…}} y sus textos en
+ * scripts/textos/<página>.mjs (más los comunes en scripts/textos/comun.mjs), cada texto con sus
+ * tres idiomas juntos: { es: '…', en: '…', pt: '…' }. Así, al cambiar una frase se ven las tres.
+ *
+ * Marcas de las plantillas:
+ *   {{clave}}        un texto de los diccionarios (puede llevar HTML)
+ *   {{p:pagina}}     el enlace a otra página del mismo idioma (galeria, docs, caso, demo, inicio)
+ *   {{raiz}}         la ruta a la raíz del sitio ('' en inglés, '../' en las carpetas)
+ *   {{lang}}         el idioma de la página (en, es, pt-BR): va en <html lang> y la librería lo
+ *                    toma como su `locale`
+ *   {{og_locale}}    el idioma para Open Graph (en_US, es_LA, pt_BR)
+ *   {{url}}          la dirección completa de esta página
+ *   {{alternos}}     canonical y hreflang de la página
+ *   {{selector}}     el selector de idioma de la barra
+ *   {{idiomas_pie}}  los tres idiomas como enlaces, para el pie
+ * Una marca sin texto detiene el armado: mejor un error que una página con {{algo}} a la vista.
+ */
+export const BASE = 'https://mayralo2ada.github.io/lozcharts/';
+export const IDIOMAS = {
+  en: { lang: 'en', carpeta: '', og: 'en_US', nombre: 'English', corto: 'EN', readme: 'README.md', etiqueta: 'Language' },
+  es: { lang: 'es', carpeta: 'es/', og: 'es_LA', nombre: 'Español', corto: 'ES', readme: 'README.es.md', etiqueta: 'Idioma' },
+  pt: {
+    lang: 'pt-BR',
+    carpeta: 'pt/',
+    og: 'pt_BR',
+    nombre: 'Português',
+    corto: 'PT',
+    readme: 'README.pt.md',
+    etiqueta: 'Idioma',
+  },
+};
+/** Las páginas: su plantilla y su nombre de archivo en cada idioma. */
+export const PAGINAS = {
+  inicio: { plantilla: 'index.html', en: 'index.html', es: 'index.html', pt: 'index.html' },
+  galeria: { plantilla: 'galeria.html', en: 'gallery.html', es: 'galeria.html', pt: 'galeria.html' },
+  demo: { plantilla: 'demo.html', en: 'demo.html', es: 'demo.html', pt: 'demo.html' },
+  caso: { plantilla: 'caso-real.html', en: 'case-study.html', es: 'caso-real.html', pt: 'caso-real.html' },
+  docs: { plantilla: 'docs.html', en: 'docs.html', es: 'docs.html', pt: 'docs.html' },
+};
+/**
+ * Rutas viejas, de cuando el sitio era solo en español: quedan como puente a la página en español.
+ * index.html, docs.html y demo.html no hacen falta: hoy son las páginas en inglés (una ancla vieja
+ * de docs.html, como #instalar, la lleva assets/idioma.js a es/docs.html).
+ */
+const PUENTES = { 'galeria.html': 'galeria', 'caso-real.html': 'caso' };
+
+/** Enlace de una página a otra del mismo idioma (las dos viven en la misma carpeta). */
+const enlace = (idioma, pagina) => (pagina === 'inicio' ? './' : PAGINAS[pagina][idioma]);
+/** Dirección completa de una página. */
+const direccion = (idioma, pagina) => BASE + IDIOMAS[idioma].carpeta + (pagina === 'inicio' ? '' : PAGINAS[pagina][idioma]);
+/** Enlace desde una página en `desde` a la misma página en `hacia`. */
+const enlaceIdioma = (desde, hacia, pagina) =>
+  (IDIOMAS[desde].carpeta ? '../' : '') + IDIOMAS[hacia].carpeta + (pagina === 'inicio' ? '' : PAGINAS[pagina][hacia]) || './';
+
+const escAttr = (s) => esc(s).replace(/"/g, '&quot;');
+
+/** Lee un diccionario de textos y revisa que cada texto traiga los tres idiomas. */
+async function diccionario(nombre) {
+  const archivo = join('scripts/textos', nombre + '.mjs');
+  if (!existsSync(archivo)) return {};
+  const textos = (await import(pathToFileURL(archivo).href)).default;
+  for (const [clave, t] of Object.entries(textos))
+    for (const idioma of Object.keys(IDIOMAS))
+      if (typeof t?.[idioma] !== 'string') throw new Error(`${archivo}: a "${clave}" le falta el texto en "${idioma}"`);
+  return textos;
+}
+
+/** El selector de idioma de la barra: un desplegable que funciona sin JavaScript. */
+function selector(idioma, pagina, anclas) {
+  const yo = IDIOMAS[idioma];
+  const items = Object.entries(IDIOMAS)
+    .map(([id, i]) => {
+      const actual = id === idioma ? ' aria-current="true"' : '';
+      const datos = anclas ? ` data-anclas="${anclas[id].join(' ')}"` : '';
+      return `<li><a href="${enlaceIdioma(idioma, id, pagina)}" hreflang="${i.lang}" lang="${i.lang}"${actual}${datos}><span>${i.corto}</span>${i.nombre}</a></li>`;
+    })
+    .join('');
+  return (
+    `<details class="idioma"><summary aria-label="${yo.etiqueta}: ${yo.nombre}" title="${yo.etiqueta}">` +
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3z"/></svg>` +
+    `<span>${yo.corto}</span></summary><ul>${items}</ul></details>`
+  );
+}
+
+/** Arma una página en un idioma: reemplaza las marcas de la plantilla. */
+function armar(plantilla, idioma, pagina, textos, extra = {}) {
+  const yo = IDIOMAS[idioma];
+  const alternos = [
+    `<link rel="canonical" href="${direccion(idioma, pagina)}" />`,
+    ...Object.entries(IDIOMAS).map(([id, i]) => `<link rel="alternate" hreflang="${i.lang}" href="${direccion(id, pagina)}" />`),
+    `<link rel="alternate" hreflang="x-default" href="${direccion('en', pagina)}" />`,
+  ].join('\n    ');
+  const pie = Object.entries(IDIOMAS)
+    .map(([id, i]) =>
+      id === idioma
+        ? `<a aria-current="true" lang="${i.lang}">${i.nombre}</a>`
+        : `<a href="${enlaceIdioma(idioma, id, pagina)}" hreflang="${i.lang}" lang="${i.lang}">${i.nombre}</a>`,
+    )
+    .join(' ');
+  const fijas = {
+    raiz: yo.carpeta ? '../' : '',
+    lang: yo.lang,
+    og_locale: yo.og,
+    url: direccion(idioma, pagina),
+    alternos,
+    selector: selector(idioma, pagina, extra.anclas),
+    idiomas_pie: `<span class="idiomas-pie">${pie}</span>`,
+  };
+  return plantilla.replace(/\{\{([\w:.-]+)\}\}/g, (todo, clave) => {
+    if (clave.startsWith('p:')) {
+      const p = clave.slice(2);
+      if (!PAGINAS[p]) throw new Error(`site/plantillas/${PAGINAS[pagina].plantilla}: no conozco la página "${p}"`);
+      return enlace(idioma, p);
+    }
+    if (clave in fijas) return fijas[clave];
+    if (clave in textos) return textos[clave][idioma];
+    throw new Error(`site/plantillas/${PAGINAS[pagina].plantilla}: falta el texto {{${clave}}}`);
+  });
+}
+
+/** Página puente de una ruta vieja: lleva a la nueva, con su ?búsqueda y su #ancla. */
+function puente(destino) {
+  return `<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex" />
+    <title>LozCharts</title>
+    <link rel="canonical" href="${BASE}${destino}" />
+    <meta http-equiv="refresh" content="0; url=${destino}" />
+    <script>
+      location.replace('${destino}' + location.search + location.hash);
+    </script>
+  </head>
+  <body>
+    <p>Esta página se mudó a <a href="${destino}">${destino}</a>.</p>
+  </body>
+</html>
+`;
+}
+
+const comun = await diccionario('comun');
+const readmes = Object.fromEntries(Object.keys(IDIOMAS).map((id) => [id, readFileSync(IDIOMAS[id].readme, 'utf8')]));
+// Los grupos del índice salen del README en español; los demás los toman por número de sección.
+const inicios = gruposPorNumero(secciones(readmes.es, 'es').slice(1));
+const docs = Object.fromEntries(Object.keys(IDIOMAS).map((id) => [id, documentacion(readmes[id], id, inicios)]));
+const cuantas = new Set(Object.values(docs).map((d) => d.anclas.length));
+if (cuantas.size > 1)
+  console.warn(
+    'Ojo: los README no tienen los mismos títulos (' +
+      Object.entries(docs)
+        .map(([id, d]) => `${id}: ${d.anclas.length}`)
+        .join(', ') +
+      '). El selector de idioma de la documentación puede llevar a otra sección.',
+  );
+const anclas = Object.fromEntries(Object.entries(docs).map(([id, d]) => [id, d.anclas]));
+
+// `node scripts/sitio.mjs galeria docs` arma solo esas páginas (para probar una mientras otra
+// está a medio traducir); sin nombres, todas.
+const solo = process.argv.slice(2);
+const generadas = [];
+for (const [pagina, p] of Object.entries(PAGINAS)) {
+  if (solo.length && !solo.includes(pagina)) continue;
+  const plantilla = readFileSync(join(SITIO, 'plantillas', p.plantilla), 'utf8');
+  const textos = { ...comun, ...(await diccionario(pagina)) };
+  for (const idioma of Object.keys(IDIOMAS)) {
+    let html = armar(plantilla, idioma, pagina, textos, pagina === 'docs' ? { anclas } : {});
+    if (pagina === 'docs') {
+      const d = docs[idioma];
+      html = html
+        .replace('<!--INDICE-->', () => d.indice)
+        .replace('<!--INTRO-->', () => d.intro)
+        .replace('<!--CONTENIDO-->', () => d.html);
+    }
+    const archivo = join(SITIO, IDIOMAS[idioma].carpeta, p[idioma]);
+    mkdirSync(dirname(archivo), { recursive: true });
+    writeFileSync(archivo, html);
+    generadas.push(archivo);
+  }
+}
+for (const [viejo, pagina] of Object.entries(PUENTES)) {
+  writeFileSync(join(SITIO, viejo), puente(IDIOMAS.es.carpeta + PAGINAS[pagina].es));
+}
 
 /*
  * Versiones contra la caché del navegador
@@ -261,8 +474,9 @@ writeFileSync(
  * cambia, la URL es la misma y la caché sigue sirviendo.
  *
  * Cómo lo hace, sin depender de cómo esté escrita cada página:
- * - Recorre las páginas .html de site/ (no las subcarpetas: propuestas/ son borradores). La
- *   plantilla de la documentación no se toca; docs.html se versiona después de generarse.
+ * - Recorre las páginas que acaba de generar, en los tres idiomas (no las plantillas ni
+ *   propuestas/, que son borradores). Las de es/ y pt/ apuntan a ../assets/…: la ruta se resuelve
+ *   desde la carpeta de cada página.
  * - Busca etiquetas HTML de verdad (`<script`, `<link`, `<img`, `<source`…) con `src` o `href`.
  *   El código de ejemplo que muestra una página va escapado (`&lt;script`), así que no se toca.
  *   Los enlaces `<a>` tampoco: llevan a otra página o a un archivo para bajar, no a un recurso
@@ -271,9 +485,8 @@ writeFileSync(
  *   una página .html. Las URLs con http(s):, //, /, # o mailto: quedan como están.
  * - Quita la versión anterior (`?v=…`) antes de poner la nueva: correrlo dos veces da lo mismo, y
  *   una página que alguien editó a mano, con versión o sin ella, queda bien al volver a armar.
- * - Solo escribe la página si algo cambió. index.html, galeria.html y demo.html están en git: la
- *   versión nueva aparece en el diff cuando cambia su recurso, y si dos ramas chocan en esa línea
- *   basta con quedarse con cualquiera de las dos y volver a correr `npm run site`.
+ * - Las páginas generadas no van en git, así que las versiones tampoco: no hay choques entre ramas
+ *   por una línea de versión. GitHub Pages arma el sitio con `npm run site` en cada push.
  *
  * Lo que no cubre: las URLs que arma un script mientras corre (un fetch dentro de un .js).
  */
@@ -302,14 +515,14 @@ export function versionar(pagina, carpeta, raiz = SITIO) {
   );
 }
 
-let paginas = 0;
-for (const nombre of readdirSync(SITIO)) {
-  if (!nombre.endsWith('.html') || nombre.endsWith('.template.html')) continue;
-  const archivo = join(SITIO, nombre);
+// Se versionan las páginas generadas (no las plantillas ni propuestas/, que son borradores).
+for (const archivo of generadas) {
   const antes = readFileSync(archivo, 'utf8');
   const despues = versionar(antes, dirname(archivo));
   if (despues !== antes) writeFileSync(archivo, despues);
-  paginas++;
 }
 
-console.log(`Sitio listo: ${secciones} secciones en la documentación y versiones en ${paginas} páginas.`);
+console.log(
+  `Sitio listo: ${generadas.length} páginas en ${Object.keys(IDIOMAS).length} idiomas, con versiones; ` +
+    `documentación de ${docs.es.secciones} secciones.`,
+);

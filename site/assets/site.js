@@ -1,5 +1,11 @@
-/* Sitio de LozCharts: tema, resaltado de código y pestañas. Sin dependencias. */
+/* Sitio de LozCharts: tema, resaltado de código y pestañas. Sin más dependencia que assets/idioma.js. */
 (function () {
+  // tx() viene de assets/idioma.js; si una página no lo carga, queda el español.
+  var tx =
+    window.tx ||
+    function (o) {
+      return o && o.es !== undefined ? o.es : o;
+    };
   var KEY = 'lozcharts-tema';
   var charts = (window.siteCharts = window.siteCharts || []);
 
@@ -23,7 +29,12 @@
     else document.documentElement.setAttribute('data-theme', t);
     document.documentElement.setAttribute('data-mode', mode);
     document.querySelectorAll('.theme-btn').forEach(function (b) {
-      b.setAttribute('aria-label', mode === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+      b.setAttribute(
+        'aria-label',
+        mode === 'dark'
+          ? tx({ es: 'Cambiar a modo claro', en: 'Switch to light mode', pt: 'Mudar para o modo claro' })
+          : tx({ es: 'Cambiar a modo oscuro', en: 'Switch to dark mode', pt: 'Mudar para o modo escuro' }),
+      );
     });
     charts.forEach(function (c) {
       c.setTheme(mode);
@@ -79,7 +90,15 @@
         };
         s.onerror = function () {
           mapa = null;
-          fallo(new Error('No se pudo cargar el mapa del mundo'));
+          fallo(
+            new Error(
+              tx({
+                es: 'No se pudo cargar el mapa del mundo',
+                en: "Couldn't load the world map",
+                pt: 'Não deu para carregar o mapa do mundo',
+              }),
+            ),
+          );
         };
         document.head.appendChild(s);
       });

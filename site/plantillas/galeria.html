@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="{{lang}}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="{{raiz}}assets/idioma.js"></script>
+    {{alternos}}
+    <link rel="icon" href="{{raiz}}favicon.svg" type="image/svg+xml" />
+    <title>{{titulo}}</title>
+    <meta name="description" content="{{descripcion}}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{raiz}}assets/site.css" />
+  </head>
+  <body>
+    <a class="sr-only" href="#contenido">{{saltar}}</a>
+    <header class="top">
+      <div class="wrap">
+        <a class="wordmark" href="{{p:inicio}}" aria-label="{{inicio_aria}}"
+          ><svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+            <rect x="4" y="16" width="6" height="12" rx="2" />
+            <rect x="13" y="9" width="6" height="19" rx="2" />
+            <rect x="22" y="4" width="6" height="24" rx="2" /></svg
+          >LozCharts</a
+        >
+        <nav class="nav" aria-label="{{nav_aria}}">
+          <a href="{{p:galeria}}" aria-current="page">{{nav_galeria}}</a>
+          <a href="{{p:docs}}">{{nav_docs_barra}}</a>
+          <a class="github" href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+          <button type="button" class="theme-btn" aria-label="{{tema_oscuro}}">
+            <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />
+            </svg>
+            <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+            </svg>
+          </button>
+          {{selector}}
+        </nav>
+      </div>
+    </header>
+
+    <main id="contenido">
+      <header class="wrap gal-cabeza">
+        <h1>{{h1}}</h1>
+        <p class="gal-intro">{{intro}}</p>
+      </header>
+      <div class="gal-filtros">
+        <div class="wrap">
+          <div class="tabs" role="group" aria-label="{{filtrar_aria}}" id="familias"></div>
+          <label class="gal-buscar"
+            ><span class="sr-only">{{buscar_etiqueta}}</span
+            ><input type="search" id="buscar" placeholder="{{buscar_placeholder}}" autocomplete="off"
+          /></label>
+        </div>
+      </div>
+      <div class="wrap">
+        <p class="gal-vacio" id="vacio" role="status" hidden></p>
+        <div class="gal-rejilla" id="cards"></div>
+      </div>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap">
+        <span>{{pie_firma}}</span>
+        <nav aria-label="{{pie_aria}}">
+          <a href="{{p:inicio}}">{{nav_inicio}}</a>
+          <a href="{{p:docs}}">{{nav_docs}}</a>
+          <a href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+        </nav>
+        {{idiomas_pie}}
+      </div>
+    </footer>
+
+    <script src="{{raiz}}lib/lozcharts.umd.js"></script>
+    <!-- El mapa del mundo (unos 110 KB) se pide con siteMapa() cuando una ficha de mapa se acerca a la pantalla. -->
+    <script type="text/x-diferido" data-mapa src="{{raiz}}lib/maps/world.umd.js"></script>
+    <script src="{{raiz}}assets/site.js"></script>
+    <script src="{{raiz}}assets/ejemplos.js"></script>
+    <script>
+      (function () {
+        var cards = document.getElementById('cards');
+        // El filtro que muestra todas las familias (los nombres de las familias vienen de ejemplos.js).
+        var TODOS = tx({ es: 'Todos', en: 'All', pt: 'Todos' });
+        var familias = [TODOS];
+        var cuenta = {};
+        cuenta[TODOS] = EJEMPLOS.length;
+        var graficos = [];
+
+        /** Alto de los gráficos: proporcional al ancho de una columna de la rejilla. */
+        function altoBase() {
+          var cols = getComputedStyle(cards).gridTemplateColumns.split(' ').length;
+          var gap = parseFloat(getComputedStyle(cards).columnGap) || 0;
+          var col = (cards.clientWidth - gap * (cols - 1)) / cols;
+          return Math.round(Math.min(560, Math.max(250, col * 0.64)));
+        }
+        // Small multiples a lo ancho de la rejilla: todos los paneles en una fila si caben.
+        function paneles() {
+          var w = cards.clientWidth;
+          return { height: Math.round(altoBase() * 0.6), columns: w >= 1000 ? 6 : w >= 560 ? 3 : 2 };
+        }
+        // Tipos que calculan su propio alto (una fila por tarea o por indicador) o que no lo usan.
+        var altoPropio = function (ej) {
+          return ej.multiples || ej.tipo === 'LozTimeline' || ej.tipo === 'LozBullet';
+        };
+        // El globo ocupa la fila entera con su texto al lado: es más alto que los demás.
+        function altoGlobo(lienzo) {
+          var w = lienzo.clientWidth || cards.clientWidth;
+          return Math.round(Math.min(900, Math.max(340, w * (w < 700 ? 1.05 : 0.72))));
+        }
+        function extraDe(g) {
+          if (g.ej.globo) return { height: altoGlobo(g.lienzo) };
+          return g.ej.multiples ? paneles() : altoPropio(g.ej) ? {} : { height: altoBase() };
+        }
+        function crear(g) {
+          if (g.chart) return;
+          g.chart = crearEjemplo(g.ej, g.lienzo, Object.assign({ locale: LOCALE }, extraDe(g)));
+          g.lienzo.style.minHeight = '';
+          if (g.ej.globo) g.globo = girarGlobo(g.chart, g.lienzo, g.ej);
+          reubicar();
+        }
+
+        // Los mapas (y el globo) se dibujan cuando su ficha se acerca a la pantalla. El primero
+        // que llega pide el mapa del mundo; mientras tanto la ficha guarda su alto, sin saltos.
+        var porDibujar = new IntersectionObserver(
+          function (es) {
+            es.forEach(function (e) {
+              if (!e.isIntersecting) return;
+              porDibujar.unobserve(e.target);
+              var g = graficos.find(function (x) {
+                return x.card === e.target;
+              });
+              siteMapa().then(
+                function () {
+                  crear(g);
+                },
+                function () {
+                  g.lienzo.textContent = tx({
+                    es: 'No se pudo cargar el mapa. Revisa la conexión y vuelve a cargar la página.',
+                    en: "Couldn't load the map. Check your connection and reload the page.",
+                    pt: 'Não deu para carregar o mapa. Confira a conexão e recarregue a página.',
+                  });
+                },
+              );
+            });
+          },
+          { rootMargin: '400px 0px' },
+        );
+
+        EJEMPLOS.forEach(function (ej) {
+          if (familias.indexOf(ej.familia) < 0) familias.push(ej.familia);
+          cuenta[ej.familia] = (cuenta[ej.familia] || 0) + 1;
+          var card = document.createElement('article');
+          card.className =
+            'ficha' +
+            (ej.tamano ? ' ficha-' + (ej.tamano === 'ancho' ? 'ancha' : 'grande') : '') +
+            (ej.globo ? ' ficha-globo' : '');
+          card.id = ej.id;
+          card.dataset.familia = ej.familia;
+          card.dataset.buscar = [
+            ej.opciones.title,
+            ej.opciones.subtitle,
+            ej.clase,
+            ej.tipo,
+            ej.familia,
+            ej.opciones.series
+              .map(function (x) {
+                return x.type;
+              })
+              .join(' '),
+          ].join(' ');
+          card.setAttribute('aria-labelledby', 't-' + ej.id);
+
+          var h = document.createElement('h2');
+          h.className = 'ficha-titulo';
+          h.id = 't-' + ej.id;
+          var enlace = document.createElement('a');
+          enlace.href = 'demo.html?id=' + ej.id;
+          enlace.textContent = ej.opciones.title;
+          h.appendChild(enlace);
+          var sub = document.createElement('p');
+          sub.className = 'ficha-sub';
+          sub.textContent = ej.opciones.subtitle || '';
+
+          var lienzo = document.createElement('div');
+          lienzo.className = 'lienzo';
+
+          var pie = document.createElement('div');
+          pie.className = 'ficha-pie';
+          var clase = document.createElement('span');
+          clase.className = 'ficha-clase';
+          clase.textContent = ej.clase;
+          var acciones = document.createElement('div');
+          acciones.className = 'ficha-acciones';
+          var ver = document.createElement('button');
+          ver.type = 'button';
+          ver.setAttribute('aria-expanded', 'false');
+          ver.innerHTML = tx({
+            es: 'Código<span class="sr-only"> de este gráfico</span>',
+            en: 'Code<span class="sr-only"> for this chart</span>',
+            pt: 'Código<span class="sr-only"> deste gráfico</span>',
+          });
+          var abrir = document.createElement('a');
+          abrir.href = 'demo.html?id=' + ej.id;
+          abrir.innerHTML =
+            tx({ es: 'Abrir y ajustar', en: 'Open and tweak', pt: 'Abrir e ajustar' }) +
+            '<span aria-hidden="true">&nbsp;→</span>';
+          acciones.append(ver, abrir);
+          pie.append(clase, acciones);
+
+          var pre = document.createElement('pre');
+          pre.className = 'code';
+          pre.hidden = true;
+          pre.id = 'codigo-' + ej.id;
+          ver.setAttribute('aria-controls', pre.id);
+          var code = document.createElement('code');
+          pre.appendChild(code);
+
+          card.append(h);
+          if (sub.textContent) card.append(sub);
+          if (ej.globo) card.append(rutasGlobo(ej));
+          card.append(lienzo, pie, pre);
+          cards.appendChild(card);
+          var g = { ej: ej, card: card, lienzo: lienzo, chart: null };
+          graficos.push(g);
+          if (esMapa(ej)) {
+            lienzo.style.minHeight = (extraDe(g).height || altoBase()) + 'px';
+            porDibujar.observe(card);
+          } else crear(g);
+
+          ver.addEventListener('click', function () {
+            if (!code.innerHTML) code.innerHTML = siteHighlight(codigoEjemplo(ej));
+            pre.hidden = !pre.hidden;
+            ver.setAttribute('aria-expanded', String(!pre.hidden));
+            card.classList.toggle('con-codigo', !pre.hidden);
+          });
+        });
+
+        // Al cambiar el ancho (o las columnas), los gráficos acompañan con su alto.
+        var ultimo = altoBase();
+        var espera;
+        addEventListener('resize', function () {
+          clearTimeout(espera);
+          espera = setTimeout(function () {
+            var alto = altoBase();
+            graficos.forEach(function (g) {
+              if (g.ej.globo) {
+                var h = altoGlobo(g.lienzo);
+                if (g.chart) g.chart.setOptions({ height: h }, false);
+                else g.lienzo.style.minHeight = h + 'px';
+              }
+            });
+            if (Math.abs(alto - ultimo) < 12) return;
+            ultimo = alto;
+            graficos.forEach(function (g) {
+              if (g.ej.globo) return;
+              if (!g.chart) {
+                if (!altoPropio(g.ej)) g.lienzo.style.minHeight = alto + 'px';
+              } else if (g.ej.multiples) g.chart.setOptions(paneles());
+              else if (!altoPropio(g.ej)) g.chart.setOptions({ height: alto }, false);
+            });
+          }, 200);
+        });
+
+        var familia = TODOS;
+        // Busca en el título, el nombre del tipo y la familia (en el idioma de la página), sin
+        // importar acentos ni mayúsculas.
+        var plano = function (t) {
+          return t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+        };
+        // Los nombres de la galería ya vienen en el idioma de la página; solo faltan los otros
+        // nombres de la dona.
+        var SINONIMOS = tx({
+          es: { torta: 'donut', pastel: 'donut', pie: 'donut', dona: 'donut' },
+          en: { pie: 'donut', doughnut: 'donut', ring: 'donut' },
+          pt: { pizza: 'donut', torta: 'donut', rosca: 'donut', pie: 'donut' },
+        });
+        var vacio = document.getElementById('vacio');
+        function filtrar() {
+          var crudo = document.getElementById('buscar').value.trim();
+          var q = plano(crudo);
+          var visibles = 0;
+          cards.querySelectorAll('.ficha').forEach(function (c) {
+            var texto = plano(c.dataset.buscar);
+            var palabra = Object.keys(SINONIMOS).find(function (k) {
+              return q && q.indexOf(k) === 0;
+            });
+            var coincide = !q || texto.indexOf(q) >= 0 || (palabra && texto.indexOf(SINONIMOS[palabra]) >= 0);
+            c.hidden = !coincide || (familia !== TODOS && c.dataset.familia !== familia);
+            if (!c.hidden) visibles++;
+          });
+          vacio.hidden = visibles > 0;
+          // La frase completa en cada idioma: con la familia elegida o sin ella.
+          var enFamilia = familia !== TODOS;
+          vacio.textContent = visibles
+            ? ''
+            : tx({
+                es:
+                  'No hay ningún gráfico que se llame “' +
+                  crudo +
+                  '”' +
+                  (enFamilia ? ' en ' + familia : '') +
+                  '. Prueba con “línea”, “mapa” o “torta”.',
+                en:
+                  'There’s no chart called “' +
+                  crudo +
+                  '”' +
+                  (enFamilia ? ' in ' + familia : '') +
+                  '. Try “line”, “map”, or “pie”.',
+                pt:
+                  'Nenhum gráfico se chama “' +
+                  crudo +
+                  '”' +
+                  (enFamilia ? ' em ' + familia : '') +
+                  '. Tente “linha”, “mapa” ou “pizza”.',
+              });
+        }
+        document.getElementById('buscar').addEventListener('input', filtrar);
+        var bar = document.getElementById('familias');
+        familias.forEach(function (f, i) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.setAttribute('aria-pressed', String(i === 0));
+          var n = document.createElement('span');
+          n.className = 'n';
+          n.textContent = cuenta[f];
+          b.append(f, ' ', n);
+          b.addEventListener('click', function () {
+            bar.querySelectorAll('button').forEach(function (o) {
+              o.setAttribute('aria-pressed', String(o === b));
+            });
+            familia = f;
+            filtrar();
+          });
+          bar.appendChild(b);
+        });
+
+        // Un enlace a una ficha (galeria.html#paises): con los gráficos y la letra ya cargados, se vuelve a ubicar.
+        // Los mapas llegan después y pueden cambiar un poco de alto: hasta que la persona mueva la
+        // página, cada mapa nuevo vuelve a ubicar la ficha.
+        var destino = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+        if (destino) {
+          addEventListener('load', reubicar);
+          ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(function (t) {
+            addEventListener(
+              t,
+              function () {
+                destino = null;
+              },
+              { once: true, passive: true },
+            );
+          });
+        }
+        function reubicar() {
+          if (!destino) return;
+          requestAnimationFrame(function () {
+            if (destino) destino.scrollIntoView();
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>

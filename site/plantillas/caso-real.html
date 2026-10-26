@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="{{lang}}" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="{{raiz}}assets/idioma.js"></script>
+    {{alternos}}
+    <link rel="icon" href="{{raiz}}favicon.svg" type="image/svg+xml" />
+    <title>{{titulo}}</title>
+    <meta name="description" content="{{descripcion}}" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="LozCharts" />
+    <meta property="og:locale" content="{{og_locale}}" />
+    <meta property="og:title" content="{{og_titulo}}" />
+    <meta property="og:description" content="{{og_descripcion}}" />
+    <meta property="og:url" content="{{url}}" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..900,0..100,0..1;1,9..144,300..900,0..100,0..1&family=Geist:wght@300..800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{raiz}}assets/site.css" />
+    <link rel="stylesheet" href="{{raiz}}assets/caso-real.css" />
+  </head>
+  <body class="caso">
+    <a class="saltar" href="#historia">{{saltar_historia}}</a>
+    <header class="top">
+      <div class="wrap">
+        <a class="wordmark" href="{{p:inicio}}" aria-label="{{inicio_aria}}"
+          ><svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+            <rect x="4" y="16" width="6" height="12" rx="2" />
+            <rect x="13" y="9" width="6" height="19" rx="2" />
+            <rect x="22" y="4" width="6" height="24" rx="2" /></svg
+          >LozCharts</a
+        >
+        <nav class="nav" aria-label="{{nav_aria}}">
+          <a class="solo-ancho" href="{{p:inicio}}">{{nav_inicio}}</a>
+          <a href="{{p:galeria}}">{{nav_galeria}}</a>
+          <a href="{{p:docs}}">{{nav_docs_barra}}</a>
+          <a class="github" href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+          {{selector}}
+        </nav>
+      </div>
+      <div class="progreso" aria-hidden="true"><span></span></div>
+    </header>
+
+    <main id="contenido">
+      <!-- Portada del caso -->
+      <section class="portada" aria-labelledby="titular">
+        <div class="ancho portada__rejilla">
+          <div class="portada__texto">
+            <p class="volanta"><span>{{volanta}}</span> <span>{{lugar}}</span></p>
+            <h1 id="titular" class="titular">
+              <span class="linea"><span>{{titular_1}}</span></span>
+              <span class="linea"><span>{{titular_2}}</span></span>
+              <span class="linea linea--giro"><span>{{titular_3}}</span></span>
+              <span class="linea linea--giro"><span>{{titular_4}}</span></span>
+            </h1>
+            <div class="portada__pie">
+              <div>
+                <p class="entrada">{{entrada}}</p>
+                <p class="aclaracion">{{aclaracion}}</p>
+              </div>
+              <div class="acciones">
+                <a class="boton boton--lleno" href="#historia">{{empezar}} <span aria-hidden="true">↓</span></a>
+                <a class="boton boton--borde" href="{{p:inicio}}">{{volver}}</a>
+              </div>
+            </div>
+          </div>
+
+          <figure class="planilla" aria-labelledby="planilla-pie">
+            <div class="planilla__hoja">
+              <p class="planilla__archivo">{{planilla_archivo}}</p>
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">{{planilla_fecha}}</th>
+                    <th scope="col">{{planilla_que}}</th>
+                    <th scope="col">{{planilla_valor}}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="--i: 0">
+                    <td>{{f1}}</td>
+                    <td>{{q1}}</td>
+                    <td>{{v1}}</td>
+                  </tr>
+                  <tr style="--i: 1">
+                    <td>{{f2}}</td>
+                    <td>{{q2}}</td>
+                    <td>{{v2}}</td>
+                  </tr>
+                  <tr style="--i: 2">
+                    <td>{{f3}}</td>
+                    <td>{{q3}}</td>
+                    <td>{{v3}}</td>
+                  </tr>
+                  <tr style="--i: 3">
+                    <td>{{f4}}</td>
+                    <td><mark>???</mark></td>
+                    <td>{{v4}}</td>
+                  </tr>
+                  <tr style="--i: 4">
+                    <td>{{f5}}</td>
+                    <td>{{q5}}</td>
+                    <td>{{v5}}</td>
+                  </tr>
+                  <tr style="--i: 5">
+                    <td>{{f6}}</td>
+                    <td>{{q6}}</td>
+                    <td>{{v6}}</td>
+                  </tr>
+                  <tr style="--i: 6">
+                    <td>{{f7}}</td>
+                    <td>{{q7}}</td>
+                    <td>{{v7}}</td>
+                  </tr>
+                  <tr style="--i: 7">
+                    <td>{{f8}}</td>
+                    <td>{{q8}}</td>
+                    <td><mark>{{v8}}</mark></td>
+                  </tr>
+                  <tr style="--i: 8">
+                    <td>…</td>
+                    <td>…</td>
+                    <td>…</td>
+                  </tr>
+                </tbody>
+              </table>
+              <p class="planilla__nota" aria-hidden="true">{{planilla_nota}}</p>
+              <p class="planilla__cuenta">{{planilla_cuenta}}</p>
+            </div>
+            <figcaption id="planilla-pie">{{planilla_pie}}</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- La historia: texto a un lado, gráfico fijo al otro -->
+      <section id="historia" class="relato" aria-labelledby="historia-titulo">
+        <h2 id="historia-titulo" class="sr-only">{{historia_titulo}}</h2>
+        <div class="ancho relato__rejilla">
+          <div class="escenario" role="region" aria-label="{{escenario_aria}}">
+            <div class="escenario__cabeza">
+              <p class="escenario__mes" aria-hidden="true"><span id="mes-grande">{{mes_1}}</span></p>
+              <div>
+                <p class="escenario__titulo" id="escenario-titulo">{{t_diario}}</p>
+                <p class="escenario__sub" id="escenario-sub">{{s_diario}}</p>
+              </div>
+            </div>
+            <div class="escenario__lienzo" id="lienzo">
+              <div class="capa activa" data-capa="diario"><div id="g-diario" class="grafico"></div></div>
+              <div class="capa" data-capa="mensual"><div id="g-mensual" class="grafico"></div></div>
+              <div class="capa" data-capa="canasta"><div id="g-canasta" class="grafico"></div></div>
+              <div class="capa" data-capa="horas"><div id="g-horas" class="grafico"></div></div>
+              <div class="capa" data-capa="lejos"><div id="g-lejos" class="grafico"></div></div>
+              <div class="capa" data-capa="cierre"><div id="g-cierre" class="grafico"></div></div>
+              <div class="capa" data-capa="informe">
+                <article class="informe" aria-label="{{informe_aria}}">
+                  <header class="informe__cabeza">
+                    <p class="informe__marca">Tienda Doña Carmen <span>{{informe_anio}}</span></p>
+                    <p class="informe__sello">PDF · Pro</p>
+                  </header>
+                  <div class="informe__kpis">
+                    <p><span>{{kpi_vendido}}</span><strong>{{kpi_vendido_valor}}</strong></p>
+                    <p><span>{{kpi_queda}}</span><strong>{{kpi_queda_valor}}</strong></p>
+                    <p><span>{{kpi_dia}}</span><strong>{{kpi_dia_valor}}</strong></p>
+                  </div>
+                  <div id="g-informe" class="informe__grafico"></div>
+                  <div class="informe__narrador">
+                    <p class="informe__quien">{{narrador}}</p>
+                    <p>{{narrador_texto}}</p>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </div>
+
+          <ol class="pasos">
+            <li
+              class="paso"
+              data-paso="diario"
+              data-capa="diario"
+              data-mes="{{mes_1}}"
+              data-titulo="{{t_diario}}"
+              data-sub="{{s_diario}}"
+            >
+              <div class="paso__tarjeta">
+                <p class="paso__mes">{{mes_1}}</p>
+                <h3 class="paso__titulo">{{c1_titulo}}</h3>
+                <p>{{c1_texto}}</p>
+                <p class="paso__tipo">{{c1_tipo}}</p>
+              </div>
+            </li>
+
+            <li
+              class="paso"
+              data-paso="mensual"
+              data-capa="mensual"
+              data-mes="{{mes_2}}"
+              data-titulo="{{t_mensual}}"
+              data-sub="{{s_mensual}}"
+            >
+              <div class="paso__tarjeta">
+                <p class="paso__mes">{{mes_2}}</p>
+                <h3 class="paso__titulo">{{c2_titulo}}</h3>
+                <p class="cifra">
+                  <span class="cifra__num" data-contar="506" data-prefijo="{{cifra_prefijo}}">{{c2_cifra}}</span>
+                  <span class="cifra__txt">{{c2_cifra_txt}}</span>
+                </p>
+                <p>{{c2_texto}}</p>
+                <p class="paso__tipo">{{c2_tipo}}</p>
+              </div>
+            </li>
+
+            <li
+              class="paso"
+              data-paso="diciembre"
+              data-capa="diario"
+              data-mes="{{mes_3}}"
+              data-titulo="{{t_diciembre}}"
+              data-sub="{{s_diciembre}}"
+            >
+              <div class="paso__tarjeta">
+                <p class="paso__mes">{{mes_3}}</p>
+                <h3 class="paso__titulo">{{c3_titulo}}</h3>
+                <p>{{c3_texto}}</p>
+                <p>{{c3_texto_2}}</p>
+                <p class="paso__tipo">{{c3_tipo}}</p>
+              </div>
+            </li>
+
+            <li
+              class="paso"
+              data-paso="escuchar"
+              data-capa="mensual"
+              data-mes="{{mes_4}}"
+              data-titulo="{{t_mensual}}"
+              data-sub="{{s_escuchar}}"
+            >
+              <div class="paso__tarjeta">
+                <p class="paso__mes">{{mes_4}}</p>
+                <h3 class="paso__titulo">{{c4_titulo}}</h3>
+                <p>{{c4_texto}}</p>
+                <div class="oido">
+                  <p class="oido__que" aria-hidden="true">{{oido_que}}</p>
+                  <p class="oido__texto" id="oido-texto" aria-hidden="true">{{oido_texto}}</p>
+                  <div class="oido__botones">
+                    <button class="boton boton--chico" type="button" id="oido-boton" hidden>
+                      <span class="oido__icono" aria-hidden="true"></span><span class="oido__etiqueta">{{oido_escuchar}}</span>
+                    </button>
+                    <button class="boton boton--chico boton--suave" type="button" id="oido-pausa" aria-pressed="false" hidden>
+                      {{oido_pausar}}
+                    </button>
+                  </div>
+                </div>
+                <p class="paso__tipo">{{c4_tipo}}</p>
+              </div>
+            </li>
+
+            <li
+              class="paso"
+              data-paso="canasta"
+              data-capa="canasta"
+              data-mes="{{mes_5}}"
+              data-titulo="{{t_canasta}}"
+              data-sub="{{s_canasta}}"
+            >
+              <div class="paso__tarjeta">
+                <p class="paso__mes">{{mes_5}}</p>
+                <h3 class="paso__titulo">{{c5_titulo}}</h3>
+                <p>{{c5_texto}}</p>
+                <p class="paso__tipo">{{c5_tipo}}</p>
+              </div>
+            </li>
+
+            <li
+              class="paso"
+              data-paso="horas"
+              data-capa="horas"
+              data-mes="{{mes_6}}"
+              data-titulo="{{t_horas}}"
+              data-sub="{{s_horas}}"
+            >
+              <div class="paso__tarjeta">
+                <p class="paso__mes">{{mes_6}}</p>
+                <h3 class="paso__titulo">{{c6_titulo}}</h3>
+                <p>{{c6_texto}}</p>
+                <p class="paso__tipo">{{c6_tipo}}</p>
+              </div>
+            </li>
+
+            <li
+              class="paso"
+              data-paso="lejos"
+              data-capa="lejos"
+              data-mes="{{mes_7}}"
+              data-titulo="{{t_lejos}}"
+              data-sub="{{s_lejos}}"
+            >
+              <div class="paso__tarjeta">
+                <p class="paso__mes">{{mes_7}}</p>
+                <h3 class="paso__titulo">{{c7_titulo}}</h3>
+                <p>{{c7_texto}}</p>
+                <p class="paso__tipo">{{c7_tipo}}</p>
+              </div>
+            </li>
+
+            <li
+              class="paso"
+              data-paso="cierre"
+              data-capa="cierre"
+              data-mes="{{mes_8}}"
+              data-titulo="{{t_cierre}}"
+              data-sub="{{s_cierre}}"
+            >
+              <div class="paso__tarjeta">
+                <p class="paso__mes">{{mes_8}}</p>
+                <h3 class="paso__titulo">{{c8_titulo}}</h3>
+                <p class="cifra">
+                  <span class="cifra__num" data-contar="59" data-prefijo="{{cifra_prefijo}}">{{c8_cifra}}</span>
+                  <span class="cifra__txt">{{c8_cifra_txt}}</span>
+                </p>
+                <p>{{c8_texto}}</p>
+                <p class="paso__tipo">{{c8_tipo}}</p>
+              </div>
+            </li>
+
+            <li
+              class="paso paso--pro"
+              data-paso="informe"
+              data-capa="informe"
+              data-mes="{{mes_9}}"
+              data-titulo="{{t_informe}}"
+              data-sub="{{s_informe}}"
+            >
+              <div class="paso__tarjeta">
+                <p class="paso__mes">{{mes_9}}</p>
+                <h3 class="paso__titulo">{{c9_titulo}}</h3>
+                <p>{{c9_texto}}</p>
+                <p class="paso__tipo paso__tipo--pro">LozCharts Pro</p>
+              </div>
+            </li>
+          </ol>
+        </div>
+        <p class="ancho relato__fin">{{relato_fin}}</p>
+      </section>
+
+      <!-- Cierre: lleva a la portada, donde están Gratis y Pro -->
+      <section class="cierre" aria-labelledby="cierre-titulo">
+        <div class="ancho cierre__rejilla">
+          <h2 id="cierre-titulo" class="cierre__titulo">
+            <span>{{cierre_1}}</span>
+            <span class="cierre__giro">{{cierre_2}}</span>
+          </h2>
+          <div class="cierre__texto">
+            <p>{{cierre_texto}}</p>
+            <div class="cierre__acciones">
+              <a class="boton boton--rosa" href="{{p:inicio}}#pro">{{comparar}}</a>
+              <a class="boton boton--borde-claro" href="{{p:docs}}#{{ancla_instalar}}">{{usala_gratis}}</a>
+            </div>
+            <p class="cierre__humano">{{dudas}}</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap">
+        <span>{{pie_firma}}. {{pie_inventados}}</span>
+        <nav aria-label="{{pie_aria}}">
+          <a href="{{p:inicio}}">{{nav_inicio}}</a>
+          <a href="{{p:galeria}}">{{nav_galeria}}</a>
+          <a href="{{p:docs}}">{{nav_docs}}</a>
+          <a href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+        </nav>
+        {{idiomas_pie}}
+      </div>
+    </footer>
+
+    <script src="{{raiz}}lib/lozcharts.umd.js"></script>
+    <!-- El mapa del mundo (unos 110 KB) no se baja al abrir: caso-real.js lo pide cuando la historia se acerca. -->
+    <script type="text/x-diferido" data-mapa src="{{raiz}}lib/maps/world.umd.js"></script>
+    <script src="{{raiz}}assets/caso-real-datos.js"></script>
+    <script src="{{raiz}}assets/caso-real.js"></script>
+  </body>
+</html>

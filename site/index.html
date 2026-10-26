@@ -1,41 +1,34 @@
 <!doctype html>
-<html lang="es" data-theme="dark" data-mode="dark">
+<html lang="en" data-theme="dark" data-mode="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>LozCharts · Gráficos para la web, gratis y accesibles</title>
-    <meta
-      name="description"
-      content="LozCharts es una librería de gráficos para la web: 26 tipos que se leen con teclado y lector de pantalla, en claro y oscuro, con zoom, y se guardan como imagen o como hoja de datos. Gratis, con licencia MIT, sin nada más que instalar y en 79 KB."
-    />
-    <link rel="canonical" href="https://mayralo2ada.github.io/lozcharts/" />
+    <script src="assets/idioma.js?v=159001e7ad"></script>
+    <title>LozCharts · Free, accessible charts for the web</title>
+    <meta name="description" content="LozCharts is a charting library for the web: 26 chart types you can read with a keyboard and a screen reader, in light and dark mode, with zoom, and you can save them as an image or a spreadsheet. Free, MIT licensed, nothing else to install, and 79 KB." />
     <meta name="author" content="Mayra Lozada" />
     <meta name="theme-color" content="#050505" />
     <meta name="color-scheme" content="dark" />
+    <link rel="canonical" href="https://mayralo2ada.github.io/lozcharts/" />
+    <link rel="alternate" hreflang="en" href="https://mayralo2ada.github.io/lozcharts/" />
+    <link rel="alternate" hreflang="es" href="https://mayralo2ada.github.io/lozcharts/es/" />
+    <link rel="alternate" hreflang="pt-BR" href="https://mayralo2ada.github.io/lozcharts/pt/" />
+    <link rel="alternate" hreflang="x-default" href="https://mayralo2ada.github.io/lozcharts/" />
     <link rel="icon" href="favicon.svg?v=f390c87ac3" type="image/svg+xml" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:locale" content="es_LA" />
+    <meta property="og:locale" content="en_US" />
     <meta property="og:site_name" content="LozCharts" />
     <meta property="og:url" content="https://mayralo2ada.github.io/lozcharts/" />
-    <meta property="og:title" content="LozCharts · Tus números, en grande." />
-    <meta
-      property="og:description"
-      content="26 tipos de gráfico para la web, accesibles, sin nada más que instalar y en 79 KB. Gratis para todos, también para empresas."
-    />
+    <meta property="og:title" content="LozCharts · Your numbers, loud and clear." />
+    <meta property="og:description" content="26 accessible chart types for the web, nothing else to install, 79 KB. Free for everyone, companies included." />
     <meta property="og:image" content="https://mayralo2ada.github.io/lozcharts/assets/og-portada.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta
-      property="og:image:alt"
-      content="Portada de LozCharts: el titular «Tus números, en grande.» y las ventas de una tienda en barras violeta y rosa, con diciembre en 143 mil dólares."
-    />
+    <meta property="og:image:alt" content="LozCharts cover, in Spanish: the headline “Tus números, en grande.” (your numbers, loud and clear) and a store’s sales in purple and pink bars, with December at $143K." />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="LozCharts · Tus números, en grande." />
-    <meta
-      name="twitter:description"
-      content="26 tipos de gráfico para la web, accesibles, sin nada más que instalar y en 79 KB. Gratis, con licencia MIT."
-    />
+    <meta name="twitter:title" content="LozCharts · Your numbers, loud and clear." />
+    <meta name="twitter:description" content="26 accessible chart types for the web, nothing else to install, 79 KB. Free and MIT licensed." />
     <meta name="twitter:image" content="https://mayralo2ada.github.io/lozcharts/assets/og-portada.png" />
 
     <script type="application/ld+json">
@@ -43,16 +36,16 @@
         "@context": "https://schema.org",
         "@type": ["SoftwareApplication", "SoftwareSourceCode"],
         "name": "LozCharts",
-        "description": "Librería de gráficos para la web: 26 tipos accesibles con teclado, lector de pantalla y colores para daltonismo, modo claro y oscuro, zoom, y se guardan como imagen o como hoja de datos. Sin nada más que instalar y en 79 KB comprimida.",
+        "description": "Charting library for the web: 26 chart types that work with a keyboard, a screen reader, and colorblind-safe colors, with light and dark mode and zoom, and you can save them as an image or a spreadsheet. Nothing else to install, 79 KB compressed.",
         "url": "https://mayralo2ada.github.io/lozcharts/",
         "codeRepository": "https://github.com/MayraLo2ada/lozcharts",
         "programmingLanguage": ["TypeScript", "JavaScript"],
-        "runtimePlatform": "Navegador web",
+        "runtimePlatform": "Web browser",
         "applicationCategory": "DeveloperApplication",
-        "operatingSystem": "Cualquiera con un navegador moderno",
+        "operatingSystem": "Any with a modern web browser",
         "license": "https://opensource.org/licenses/MIT",
         "isAccessibleForFree": true,
-        "inLanguage": "es",
+        "inLanguage": "en",
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
         "author": { "@type": "Person", "name": "Mayra Lozada" }
       }
@@ -73,15 +66,15 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Geist:wght@400..700&family=Geist+Mono:wght@400;600&display=swap"
     />
-    <link rel="stylesheet" href="assets/site.css?v=7a8cf8cab4" />
-    <link rel="stylesheet" href="assets/portada.css?v=8f6f14885c" />
+    <link rel="stylesheet" href="assets/site.css?v=8f3150bdeb" />
+    <link rel="stylesheet" href="assets/portada.css?v=eab51dac5c" />
   </head>
   <body>
-    <a class="saltar" href="#contenido">Saltar al contenido</a>
+    <a class="saltar" href="#contenido">Skip to content</a>
 
     <header class="top">
       <div class="wrap">
-        <a class="wordmark" href="./" aria-label="LozCharts, inicio">
+        <a class="wordmark" href="./" aria-label="LozCharts, home">
           <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
             <rect x="4" y="16" width="6" height="12" rx="2" />
             <rect x="13" y="9" width="6" height="19" rx="2" />
@@ -89,10 +82,11 @@
           </svg>
           LozCharts
         </a>
-        <nav class="nav" aria-label="Principal">
-          <a href="galeria.html">Galería</a>
-          <a href="docs.html">Documentación</a>
+        <nav class="nav" aria-label="Main">
+          <a href="gallery.html">Gallery</a>
+          <a href="docs.html">Docs</a>
           <a class="github" href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
+          <details class="idioma"><summary aria-label="Language: English" title="Language"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3z"/></svg><span>EN</span></summary><ul><li><a href="./" hreflang="en" lang="en" aria-current="true"><span>EN</span>English</a></li><li><a href="es/" hreflang="es" lang="es"><span>ES</span>Español</a></li><li><a href="pt/" hreflang="pt-BR" lang="pt-BR"><span>PT</span>Português</a></li></ul></details>
         </nav>
       </div>
     </header>
@@ -101,42 +95,35 @@
       <!-- ============================================================ Portada -->
       <section class="portada wrap" aria-labelledby="titular">
         <h1 class="grito armar portada-titular" id="titular" data-arma>
-          <span class="fit"><span>Tus números,</span></span>
-          <span class="fit violeta"><span>en grande.</span></span>
+          <span class="fit"><span>Your numbers,</span></span>
+          <span class="fit violeta"><span>loud and clear.</span></span>
         </h1>
 
         <figure class="figura" id="figura">
           <div class="lectura" aria-hidden="true">
-            <small id="lectura-mes">Diciembre · ventas</small>
-            <strong id="lectura-valor">$143 mil</strong>
-            <em id="lectura-meta">23 mil sobre la meta</em>
+            <small id="lectura-mes">December · sales</small>
+            <strong id="lectura-valor">$143K</strong>
+            <em id="lectura-meta">$23K over goal</em>
           </div>
           <div class="grafico" id="g-portada"></div>
           <div class="cortina" aria-hidden="true"></div>
           <div class="lapiz" aria-hidden="true"></div>
-          <figcaption class="sr-only">
-            Ventas de una tienda en 2026, en línea y en el local, contra su meta. En diciembre vendió 143 mil dólares, 23 mil
-            sobre la meta.
-          </figcaption>
+          <figcaption class="sr-only">A store’s sales in 2026, online and in store, against its goal. In December it sold $143,000, $23,000 over goal.</figcaption>
         </figure>
 
         <div class="pie-portada">
-          <p>
-            <b>LozCharts</b> es mi librería de gráficos para la web. 26 tipos, de la línea de toda la vida al diagrama de flujos,
-            que se leen con teclado y con lector de pantalla. Pasa el puntero por las barras y busca el mes en que esta tienda
-            pasó su meta.
-          </p>
-          <ul class="sellos" aria-label="En resumen">
-            <li>Gratis</li>
+          <p><b>LozCharts</b> is my charting library for the web. 26 chart types, from the good old line chart to the flow diagram, and you can read every one with a keyboard and a screen reader. Move your pointer over the bars and find the month this store beat its goal.</p>
+          <ul class="sellos" aria-label="At a glance">
+            <li>Free</li>
             <li>MIT</li>
             <li><span data-cuenta="79">79</span> KB</li>
           </ul>
           <div class="acciones">
-            <a class="boton boton-lima" href="docs.html#instalar">
-              Úsala gratis <span class="flecha" aria-hidden="true">→</span>
+            <a class="boton boton-lima" href="docs.html#install">
+              Use it for free <span class="flecha" aria-hidden="true">→</span>
             </a>
-            <a class="boton boton-borde" href="#pro">Ver Pro</a>
-            <a class="enlace-caso" href="caso-real.html">Mira un caso real <span aria-hidden="true">→</span></a>
+            <a class="boton boton-borde" href="#pro">See Pro</a>
+            <a class="enlace-caso" href="case-study.html">See a real case <span aria-hidden="true">→</span></a>
           </div>
         </div>
       </section>
@@ -144,30 +131,27 @@
       <!-- ============================================================ Laboratorio -->
       <section class="cartel" id="laboratorio" aria-labelledby="t-lab">
         <div class="wrap">
-          <p class="etiqueta"><span>02</span><span>Pruébala</span></p>
+          <p class="etiqueta"><span>02</span><span>Try it</span></p>
           <div class="lab-cabeza">
             <h2 class="grito armar" id="t-lab" data-arma>
-              <span class="fit"><span>Juega con</span></span>
-              <span class="fit rosa"><span>tus datos.</span></span>
+              <span class="fit"><span>Play with</span></span>
+              <span class="fit rosa"><span>your data.</span></span>
             </h2>
-            <p class="texto">
-              Toca un tipo, cambia los datos, prende la luz. Al lado está el código que dibuja el gráfico, y lo que acaba de
-              cambiar se enciende. Cópialo y llévatelo a tu página.
-            </p>
+            <p class="texto">Pick a type, change the data, turn on the lights. Next to it is the code that draws the chart, and whatever just changed lights up. Copy it and take it to your page.</p>
           </div>
 
           <div class="lab" id="lab">
             <div class="escenario" id="escenario">
-              <div class="tipos-lab" role="tablist" aria-label="Tipo de gráfico" id="tipos-lab"></div>
+              <div class="tipos-lab" role="tablist" aria-label="Chart type" id="tipos-lab"></div>
               <div class="escenario-cabeza">
-                <div class="datos" role="radiogroup" aria-label="Datos de ejemplo" id="datos"></div>
+                <div class="datos" role="radiogroup" aria-label="Sample data" id="datos"></div>
                 <div class="escenario-acciones">
-                  <button class="boton boton-chico" type="button" id="barajar">Otros números</button>
-                  <button class="boton boton-chico" type="button" id="luz" aria-pressed="false">Modo claro</button>
+                  <button class="boton boton-chico" type="button" id="barajar">New numbers</button>
+                  <button class="boton boton-chico" type="button" id="luz" aria-pressed="false">Light mode</button>
                 </div>
               </div>
               <div class="total">
-                <span class="total-rotulo" id="total-rotulo">Ventas del semestre</span>
+                <span class="total-rotulo" id="total-rotulo">Six-month sales</span>
                 <output class="total-num" id="total" aria-live="off">0</output>
               </div>
               <div class="lab-grafico" id="lab-grafico" role="tabpanel" aria-labelledby="tipo-bar"></div>
@@ -175,7 +159,7 @@
 
             <div class="codigo" id="codigo">
               <div class="codigo-barra">
-                <div class="codigo-pestanas" role="tablist" aria-label="Forma de usarlo">
+                <div class="codigo-pestanas" role="tablist" aria-label="How to use it">
                   <button role="tab" type="button" aria-selected="true" data-modo="js" id="tab-js" aria-controls="codigo-pre">
                     HTML + JS
                   </button>
@@ -202,7 +186,7 @@
                     Django + HTMX
                   </button>
                 </div>
-                <button class="copiar" type="button" id="copiar">Copiar</button>
+                <button class="copiar" type="button" id="copiar">Copy</button>
               </div>
               <pre
                 class="codigo-pre"
@@ -212,7 +196,7 @@
                 tabindex="0"
               ><code id="codigo-txt"></code></pre>
               <p class="codigo-pie">
-                Lo que se enciende acaba de cambiar. Al copiar van todas las filas, no solo las cuatro que se ven.
+                Whatever lights up just changed. When you copy, you get every row, not just the four on screen.
                 <span class="sr-only" id="copiado" role="status"></span>
               </p>
             </div>
@@ -223,20 +207,17 @@
       <!-- ============================================================ Los 26 tipos -->
       <section class="cartel" id="tipos" aria-labelledby="t-tipos">
         <div class="wrap">
-          <p class="etiqueta"><span>03</span><span>Los 26 tipos</span></p>
+          <p class="etiqueta"><span>03</span><span>All 26 types</span></p>
           <div class="tipos-cabeza">
             <h2 class="grito armar" id="t-tipos" data-arma>
-              <span class="fit"><span>26 formas de</span></span>
-              <span class="fit rosa"><span>contar lo mismo.</span></span>
+              <span class="fit"><span>26 ways to</span></span>
+              <span class="fit rosa"><span>tell one story.</span></span>
             </h2>
-            <p class="texto">
-              Elige por la pregunta que quieres contestar, no por el nombre del gráfico. Pasa el puntero por uno y se vuelve a
-              dibujar. Ninguno es una imagen: son los mismos que vas a poner en tu página, con su cajita de datos y su teclado.
-            </p>
+            <p class="texto">Choose by the question you want to answer, not by the name of the chart. Hover over one and it draws itself again. None of them is a picture: they’re the same charts you’ll put on your page, with their tooltip and keyboard support.</p>
           </div>
           <div class="bento" id="bento"></div>
           <p class="tipos-cola">
-            <a class="boton boton-borde" href="galeria.html">Ver la galería con el código de cada uno</a>
+            <a class="boton boton-borde" href="gallery.html">See the gallery, with the code for each one</a>
           </p>
         </div>
       </section>
@@ -244,31 +225,28 @@
       <!-- ============================================================ Accesible -->
       <section class="cartel" id="accesible" aria-labelledby="t-acc">
         <div class="wrap">
-          <p class="etiqueta"><span>04</span><span>Accesible</span></p>
+          <p class="etiqueta"><span>04</span><span>Accessible</span></p>
           <h2 class="grito armar" id="t-acc" data-arma>
-            <span class="fit"><span>Se entiende</span></span>
-            <span class="fit rosa"><span>sin verlo.</span></span>
+            <span class="fit"><span>Makes sense</span></span>
+            <span class="fit rosa"><span>without seeing it.</span></span>
           </h2>
 
           <div class="acc-rejilla">
             <div>
               <div class="marco" id="marco-acc"><div class="acc-grafico" id="g-acc"></div></div>
               <button type="button" class="boton boton-borde interruptor" id="dalt" aria-pressed="false">
-                Verlo con daltonismo
+                See it with color blindness
               </button>
             </div>
             <div>
-              <p class="voz-quien">Lo que oye un lector de pantalla</p>
-              <p class="voz" id="voz" aria-hidden="true">Usuarios activos por ciudad, en miles.</p>
-              <p class="texto">
-                Haz clic en el gráfico y muévete con las flechas. Arriba va, palabra por palabra, lo que escucha quien usa lector
-                de pantalla.
-              </p>
+              <p class="voz-quien">What you hear on a screen reader</p>
+              <p class="voz" id="voz" aria-hidden="true">Active users by city, in thousands.</p>
+              <p class="texto">Click the chart and move around with the arrow keys. Up above, word for word, is what someone using a screen reader hears.</p>
               <ul class="lista-corta">
-                <li>Se recorre con flechas, Inicio, Fin y Escape.</li>
-                <li>Cada línea lleva su nombre al final, así nadie tiene que adivinar colores.</li>
-                <li>La paleta está probada para daltonismo. Usa el botón y compara.</li>
-                <li>Debajo de cada gráfico hay una tabla que solo leen los lectores de pantalla.</li>
+                <li>You get around with the arrow keys, Home, End, and Escape.</li>
+                <li>Each line has its name at the end, so nobody has to guess colors.</li>
+                <li>The palette is tested for color blindness. Use the button and compare.</li>
+                <li>Under every chart there’s a table that only screen readers read.</li>
               </ul>
             </div>
           </div>
@@ -279,22 +257,16 @@
       <section class="cartel" id="liviana" aria-labelledby="t-kb">
         <div class="wrap kb-rejilla">
           <div>
-            <p class="etiqueta"><span>05</span><span>Liviana</span></p>
+            <p class="etiqueta"><span>05</span><span>Lightweight</span></p>
             <h2 class="grito armar" id="t-kb" data-arma>
               <span class="fit"><span>79 KB.</span></span>
-              <span class="fit violeta"><span>Y ya.</span></span>
+              <span class="fit violeta"><span>That’s it.</span></span>
             </h2>
           </div>
           <div class="kb-lado">
-            <p class="texto">
-              Comprimida y sin nada aparte que instalar ni actualizar cada lunes. Guarda el gráfico como imagen (PNG o SVG) y los
-              datos como hoja (CSV), tiene zoom, y cambia sola a modo oscuro cuando tu sistema lo hace.
-            </p>
-            <p class="texto">
-              Trae un <a href="llms.txt">llms.txt</a>, una hoja de instrucciones para que la IA con la que programas sepa qué
-              opciones existen y no se invente otras.
-            </p>
-            <p class="donde-rotulo">Funciona donde ya trabajas</p>
+            <p class="texto">Compressed, with nothing else to install or update every Monday. Save the chart as an image (PNG or SVG) and the data as a spreadsheet (CSV). It has zoom, and it switches to dark mode on its own when your system does.</p>
+            <p class="texto">It comes with an <a href="llms.txt">llms.txt</a>, a cheat sheet so the AI you code with knows which options exist and doesn’t make up new ones.</p>
+            <p class="donde-rotulo">Works with what you already use</p>
             <p class="grito donde-lista">
               <span>React. Angular.</span>
               <span class="violeta">Vue. Svelte.</span>
@@ -308,21 +280,15 @@
       <section class="cartel caso" id="caso" aria-labelledby="t-caso">
         <div class="wrap caso-rejilla">
           <div>
-            <p class="etiqueta"><span>06</span><span>Un caso real</span></p>
+            <p class="etiqueta"><span>06</span><span>A real case</span></p>
             <h2 class="grito armar" id="t-caso" data-arma>
               <span class="fit"><span>Doña Carmen</span></span>
-              <span class="fit rosa acento"><span>vendía bien.</span></span>
+              <span class="fit rosa acento"><span>sold plenty.</span></span>
             </h2>
           </div>
           <div class="caso-lado">
-            <p class="texto">
-              Su tienda lleva veintidós años en la misma esquina de Cali. Las ventas vivían en un cuaderno y después en una hoja
-              de cálculo que solo entendía su hija Lucía. Nadie sabía cuánto. Son nueve gráficos, y ahora la familia los lee en la
-              mesa del comedor.
-            </p>
-            <a class="boton boton-borde" href="caso-real.html"
-              >Mira un caso real <span class="flecha" aria-hidden="true">→</span></a
-            >
+            <p class="texto">Her store has been on the same corner in Cali for twenty-two years. Sales lived in a notebook, then in a spreadsheet only her daughter Lucía understood. Nobody knew how much. It’s nine charts, and now the family reads them at the dinner table.</p>
+            <a class="boton boton-borde" href="case-study.html">See a real case <span class="flecha" aria-hidden="true">→</span></a>
           </div>
         </div>
       </section>
@@ -331,55 +297,56 @@
       <section id="gratis" aria-labelledby="t-modelo">
         <div class="cartel cartel-modelo">
           <div class="wrap">
-            <p class="etiqueta"><span>07</span><span>Gratis y Pro</span></p>
+            <p class="etiqueta"><span>07</span><span>Free and Pro</span></p>
             <h2 class="grito armar" id="t-modelo" data-arma>
-              <span class="fit"><span>Los gráficos no se cobran.</span></span>
-              <span class="fit rosa acento"><span>Lo de alrededor, sí.</span></span>
+              <span class="fit"><span>The charts are free.</span></span>
+              <span class="fit rosa acento"><span>What’s around them isn’t.</span></span>
             </h2>
           </div>
         </div>
 
         <div class="enfrentados">
           <article class="gratis" aria-labelledby="t-gratis">
-            <h3 class="grito" id="t-gratis">Gratis.</h3>
-            <p class="bajada">Para siempre, para todos. También si eres una empresa grande.</p>
+            <h3 class="grito" id="t-gratis">Free.</h3>
+            <p class="bajada">Forever, for everyone. Even if you’re a big company.</p>
             <ul class="incluye">
-              <li><b>Los 26 tipos</b> y las rejillas de gráficos pequeños</li>
-              <li>Zoom, anotaciones y nombres al final de cada línea</li>
-              <li>Guardar como imagen (PNG, SVG) o como hoja (CSV)</li>
-              <li>Teclado, lector de pantalla y colores para daltonismo</li>
-              <li>Modo claro y oscuro</li>
-              <li>React, Angular, Vue, Svelte y Django + HTMX</li>
-              <li>llms.txt para tu asistente de código</li>
-              <li><b>Licencia MIT:</b> úsala gratis, cámbiala, métela en tu producto</li>
+              <li><b>All 26 types</b> and grids of small multiples</li>
+              <li>Zoom, annotations, and labels at the end of each line</li>
+              <li>Save as an image (PNG, SVG) or a spreadsheet (CSV)</li>
+              <li>Keyboard, screen reader, and colorblind-safe colors</li>
+              <li>Light and dark mode</li>
+              <li>React, Angular, Vue, Svelte, and Django + HTMX</li>
+              <li>llms.txt for your coding assistant</li>
+              <li><b>MIT license:</b> use it for free, change it, ship it in your product</li>
             </ul>
             <div class="cola">
-              <a class="boton boton-lima" href="docs.html#instalar">
-                Úsala gratis <span class="flecha" aria-hidden="true">→</span>
+              <a class="boton boton-lima" href="docs.html#install">
+                Use it for free <span class="flecha" aria-hidden="true">→</span>
               </a>
-              <p class="nota">Sin registro y sin tarjeta. Copias un archivo y listo.</p>
+              <p class="nota">No sign-up, no card. Copy one file and you’re done.</p>
             </div>
           </article>
 
           <article class="pro" id="pro" aria-labelledby="t-pro">
             <h3 class="grito" id="t-pro">Pro.</h3>
-            <p class="bajada">Para cuando el gráfico ya no basta y lo que te piden es el informe.</p>
+            <p class="bajada">For when a chart isn’t enough anymore and what they want is the report.</p>
             <ul class="incluye">
-              <li>Informes en PDF y Excel</li>
-              <li>Tableros con tus números clave, donde un clic filtra todo</li>
-              <li>Plan de proyecto (Gantt) con las tareas que no pueden atrasarse</li>
-              <li>Gráfico de la bolsa con sus indicadores</li>
-              <li>Millones de datos sin que se trabe</li>
-              <li>Un narrador que explica el gráfico en palabras</li>
-              <li>Un revisor que te avisa cuando un gráfico confunde</li>
-              <li>El constructor: pegas una tabla y sale el gráfico, sin código</li>
+              <li>PDF and Excel reports</li>
+              <li>Dashboards with your key numbers, where one click filters everything</li>
+              <li>Project plans (Gantt) that show the tasks that can’t slip</li>
+              <li>Stock charts with their indicators</li>
+              <li>Millions of data points without freezing up</li>
+              <li>A narrator that explains the chart in words</li>
+              <li>A reviewer that tells you when a chart is confusing</li>
+              <li>The no-code builder: paste a table and out comes the chart</li>
             </ul>
             <div class="cola">
-              <!-- PRECIO DE PRO: cámbialo aquí (es el único lugar de la página donde aparece). -->
-              <p class="precio" id="precio-pro">Precio de Pro: pronto</p>
+              <!-- PRECIO DE PRO: se cambia en scripts/textos/inicio.mjs (clave precio_pro), en los tres idiomas; es el
+                   único lugar de la página donde aparece. -->
+              <p class="precio" id="precio-pro">Pro pricing: coming soon</p>
               <!-- ENLACE DE LICENCIA: reemplaza href="#pro" por el enlace real de compra o de contacto. -->
-              <a class="boton boton-negro" href="#pro">Pide tu licencia <span class="flecha" aria-hidden="true">→</span></a>
-              <p class="nota">Pagas por lo de alrededor. Los gráficos siguen siendo gratis.</p>
+              <a class="boton boton-negro" href="#pro">Get your license <span class="flecha" aria-hidden="true">→</span></a>
+              <p class="nota">You pay for what’s around them. The charts stay free.</p>
             </div>
           </article>
         </div>
@@ -387,26 +354,25 @@
 
       <!-- ============================================================ Dudas -->
       <section class="dudas wrap" aria-labelledby="t-dudas">
-        <h2 class="grito armar" id="t-dudas" data-arma>¿Du<span class="rosa">das?</span></h2>
+        <h2 class="grito armar" id="t-dudas" data-arma>Ques<span class="rosa">tions?</span></h2>
         <div>
-          <a class="humano" href="https://github.com/MayraLo2ada/lozcharts/issues"
-            >Déjame tu pregunta en GitHub y te contesto yo.</a
-          >
-          <p class="texto">Soy Mayra Lozada. Hice LozCharts y la sigo cuidando.</p>
+          <a class="humano" href="https://github.com/MayraLo2ada/lozcharts/issues">Leave me your question on GitHub and I’ll answer it myself.</a>
+          <p class="texto">I’m Mayra Lozada. I made LozCharts and I still look after it.</p>
         </div>
       </section>
     </main>
 
     <footer class="foot">
       <div class="wrap">
-        <span>LozCharts · Licencia MIT · Hecha en Latinoamérica</span>
-        <nav aria-label="Pie">
-          <a href="galeria.html">Galería</a>
-          <a href="docs.html">Documentación</a>
-          <a href="caso-real.html">Un caso real</a>
+        <span>LozCharts · MIT license · In English, Spanish, and Portuguese</span>
+        <nav aria-label="Footer">
+          <a href="gallery.html">Gallery</a>
+          <a href="docs.html">Docs</a>
+          <a href="case-study.html">A real case</a>
           <a href="llms.txt">llms.txt</a>
           <a href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
         </nav>
+        <span class="idiomas-pie"><a aria-current="true" lang="en">English</a> <a href="es/" hreflang="es" lang="es">Español</a> <a href="pt/" hreflang="pt-BR" lang="pt-BR">Português</a></span>
       </div>
     </footer>
 
@@ -425,9 +391,9 @@
          versión que le pone npm run site, cuando lo necesita. -->
     <script type="text/plain" id="mapa-mundo" src="lib/maps/world.umd.js?v=9007b00172"></script>
     <script defer src="lib/lozcharts.umd.js?v=e0bdb1567a"></script>
-    <script defer src="assets/ejemplos.js?v=60e0b41dfc"></script>
-    <script defer src="assets/portada.js?v=5fb60ac074"></script>
-    <script defer src="assets/portada-lab.js?v=a8af83eaf6"></script>
-    <script defer src="assets/portada-tipos.js?v=9cb2b1210f"></script>
+    <script defer src="assets/ejemplos.js?v=e65b59ec07"></script>
+    <script defer src="assets/portada.js?v=6a4246440a"></script>
+    <script defer src="assets/portada-lab.js?v=a8bcddbea5"></script>
+    <script defer src="assets/portada-tipos.js?v=187b12fc1d"></script>
   </body>
 </html>

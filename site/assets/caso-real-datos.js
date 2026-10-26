@@ -13,20 +13,52 @@
   var pad = function (n) {
     return String(n).padStart(2, '0');
   };
-  var NOMBRES = [
-    'enero',
-    'febrero',
-    'marzo',
-    'abril',
-    'mayo',
-    'junio',
-    'julio',
-    'agosto',
-    'septiembre',
-    'octubre',
-    'noviembre',
-    'diciembre',
-  ];
+  var tx = window.tx;
+  // Nombres de los meses en el idioma de la página (las tres primeras letras van en el eje).
+  var NOMBRES = tx({
+    es: [
+      'enero',
+      'febrero',
+      'marzo',
+      'abril',
+      'mayo',
+      'junio',
+      'julio',
+      'agosto',
+      'septiembre',
+      'octubre',
+      'noviembre',
+      'diciembre',
+    ],
+    en: [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ],
+    pt: [
+      'janeiro',
+      'fevereiro',
+      'março',
+      'abril',
+      'maio',
+      'junho',
+      'julho',
+      'agosto',
+      'setembro',
+      'outubro',
+      'novembro',
+      'dezembro',
+    ],
+  });
 
   // Ventas diarias en pesos colombianos.
   var semana = [0.62, 0.9, 0.84, 0.95, 1.0, 1.16, 1.4]; // domingo a sábado
@@ -59,24 +91,33 @@
   }, 0);
 
   // Qué se vende (parte del año).
+  var BASICA = tx({ es: 'Canasta básica', en: 'Basics', pt: 'Cesta básica' });
+  var BEBIDAS = tx({ es: 'Bebidas', en: 'Drinks', pt: 'Bebidas' });
+  var MECATO = tx({ es: 'Mecato', en: 'Snacks', pt: 'Salgadinhos e doces' });
+  var HOGAR = tx({ es: 'Hogar', en: 'Household', pt: 'Casa' });
+  var SERVICIOS = tx({ es: 'Servicios', en: 'Services', pt: 'Serviços' });
   var canasta = [
-    ['Granos y abarrotes', 'Canasta básica', 0.21],
-    ['Lácteos y huevos', 'Canasta básica', 0.16],
-    ['Pan y arepas', 'Canasta básica', 0.13],
-    ['Carnes frías', 'Canasta básica', 0.06],
-    ['Gaseosas y jugos', 'Bebidas', 0.09],
-    ['Cerveza', 'Bebidas', 0.08],
-    ['Mecato', 'Mecato', 0.1],
-    ['Aseo', 'Hogar', 0.07],
-    ['Velas y pilas', 'Hogar', 0.02],
-    ['Recargas de celular', 'Servicios', 0.06],
-    ['Pago de facturas', 'Servicios', 0.02],
+    [tx({ es: 'Granos y abarrotes', en: 'Grains and pantry', pt: 'Grãos e mercearia' }), BASICA, 0.21],
+    [tx({ es: 'Lácteos y huevos', en: 'Dairy and eggs', pt: 'Laticínios e ovos' }), BASICA, 0.16],
+    [tx({ es: 'Pan y arepas', en: 'Bread and arepas', pt: 'Pão e arepas' }), BASICA, 0.13],
+    [tx({ es: 'Carnes frías', en: 'Cold cuts', pt: 'Frios' }), BASICA, 0.06],
+    [tx({ es: 'Gaseosas y jugos', en: 'Sodas and juices', pt: 'Refrigerantes e sucos' }), BEBIDAS, 0.09],
+    [tx({ es: 'Cerveza', en: 'Beer', pt: 'Cerveja' }), BEBIDAS, 0.08],
+    [MECATO, MECATO, 0.1],
+    [tx({ es: 'Aseo', en: 'Cleaning supplies', pt: 'Limpeza' }), HOGAR, 0.07],
+    [tx({ es: 'Velas y pilas', en: 'Candles and batteries', pt: 'Velas e pilhas' }), HOGAR, 0.02],
+    [tx({ es: 'Recargas de celular', en: 'Phone top-ups', pt: 'Recargas de celular' }), SERVICIOS, 0.06],
+    [tx({ es: 'Pago de facturas', en: 'Bill payments', pt: 'Pagamento de contas' }), SERVICIOS, 0.02],
   ].map(function (c) {
     return { producto: c[0], grupo: c[1], ventas: Math.round((anual * c[2]) / 1000) * 1000 };
   });
 
   // Clientes por hora, promedio del año.
-  var DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  var DIAS = tx({
+    es: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+    en: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    pt: ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'],
+  });
   var horas = [];
   var r2 = rng(7);
   DIAS.forEach(function (dia, k) {
@@ -95,12 +136,17 @@
 
   // Mercados a domicilio pagados desde lejos (pedidos en el año).
   var lejos = [
-    { ciudad: 'Madrid', lat: 40.42, lon: -3.7, pedidos: 74 },
-    { ciudad: 'Nueva York', lat: 40.71, lon: -74.0, pedidos: 52 },
+    { ciudad: tx({ es: 'Madrid', en: 'Madrid', pt: 'Madri' }), lat: 40.42, lon: -3.7, pedidos: 74 },
+    { ciudad: tx({ es: 'Nueva York', en: 'New York', pt: 'Nova York' }), lat: 40.71, lon: -74.0, pedidos: 52 },
     { ciudad: 'Miami', lat: 25.76, lon: -80.19, pedidos: 31 },
-    { ciudad: 'Santiago de Chile', lat: -33.45, lon: -70.67, pedidos: 23 },
+    {
+      ciudad: tx({ es: 'Santiago de Chile', en: 'Santiago, Chile', pt: 'Santiago do Chile' }),
+      lat: -33.45,
+      lon: -70.67,
+      pedidos: 23,
+    },
     { ciudad: 'Valencia', lat: 39.47, lon: -0.38, pedidos: 18 },
-    { ciudad: 'Londres', lat: 51.51, lon: -0.13, pedidos: 11 },
+    { ciudad: tx({ es: 'Londres', en: 'London', pt: 'Londres' }), lat: 51.51, lon: -0.13, pedidos: 11 },
     { ciudad: 'Toronto', lat: 43.65, lon: -79.38, pedidos: 8 },
     { ciudad: 'Bogotá', lat: 4.71, lon: -74.07, pedidos: 27 },
   ];
@@ -108,14 +154,14 @@
   // De lo vendido a lo que queda.
   var costo = -Math.round((anual * 0.79) / 100000) * 100000;
   var cierre = [
-    { paso: 'Ventas', monto: anual },
-    { paso: 'Mercancía', monto: costo },
-    { paso: 'Margen', total: true },
-    { paso: 'Arriendo', monto: -14400000 },
-    { paso: 'Servicios', monto: -7800000 },
-    { paso: 'Sueldo', monto: -20400000 },
-    { paso: 'Fiado perdido', monto: -4200000 },
-    { paso: 'Lo que queda', total: true },
+    { paso: tx({ es: 'Ventas', en: 'Sales', pt: 'Vendas' }), monto: anual },
+    { paso: tx({ es: 'Mercancía', en: 'Merchandise', pt: 'Mercadoria' }), monto: costo },
+    { paso: tx({ es: 'Margen', en: 'Margin', pt: 'Margem' }), total: true },
+    { paso: tx({ es: 'Arriendo', en: 'Rent', pt: 'Aluguel' }), monto: -14400000 },
+    { paso: tx({ es: 'Servicios', en: 'Utilities', pt: 'Contas de consumo' }), monto: -7800000 },
+    { paso: tx({ es: 'Sueldo', en: 'Wages', pt: 'Salário' }), monto: -20400000 },
+    { paso: tx({ es: 'Fiado perdido', en: 'Unpaid tabs', pt: 'Fiado perdido' }), monto: -4200000 },
+    { paso: tx({ es: 'Lo que queda', en: 'What’s left', pt: 'O que sobra' }), total: true },
   ];
   var queda = cierre.reduce(function (s, c) {
     return s + (c.monto || 0);

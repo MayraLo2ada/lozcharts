@@ -5,5 +5,8 @@ capturas/
 dist/
 .pruebas/
 site/lib/
-site/docs.html
 site/llms.txt
+# El sitio generado por npm run site desde site/plantillas y scripts/textos.
+site/*.html
+site/es/
+site/pt/

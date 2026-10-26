@@ -1,4 +1,8 @@
-/* Ejemplos de la galería: cada uno con su nombre, familia y opciones. Datos de ejemplo, siempre iguales. */
+/*
+ * Ejemplos de la galería: cada uno con su nombre, familia y opciones. Datos de ejemplo, siempre
+ * iguales. Los textos van en el idioma de la página (tx, de idioma.js) y, en inglés y portugués,
+ * también los nombres de los campos de los datos (ver CAMPOS, al final).
+ */
 (function () {
   // Pseudoaleatorio con semilla: los mismos datos en cada visita.
   function rng(seed) {
@@ -15,6 +19,31 @@
   var MESES = [];
   for (var m = 0; m < 12; m++) MESES.push('2026-' + pad(m + 1));
   var r = rng(11);
+
+  // Las familias de la galería: la galería filtra por este texto, así que cada una se escribe una sola vez.
+  var COMPARAR = tx({ es: 'Comparar', en: 'Compare', pt: 'Comparar' });
+  var TIEMPO = tx({ es: 'En el tiempo', en: 'Over time', pt: 'Ao longo do tempo' });
+  var PARTES = tx({ es: 'Partes de un todo', en: 'Parts of a whole', pt: 'Partes de um todo' });
+  var RELACIONES = tx({ es: 'Relaciones', en: 'Relationships', pt: 'Relações' });
+  var FLUJOS = tx({ es: 'Flujos y mapas', en: 'Flows and maps', pt: 'Fluxos e mapas' });
+
+  // Lugares que cambian de nombre según el idioma (los demás se escriben igual en los tres).
+  var L = {
+    cdmx: tx({ es: 'Ciudad de México', en: 'Mexico City', pt: 'Cidade do México' }),
+    mexico: tx({ es: 'México', en: 'Mexico', pt: 'México' }),
+    peru: tx({ es: 'Perú', en: 'Peru', pt: 'Peru' }),
+    espana: tx({ es: 'España', en: 'Spain', pt: 'Espanha' }),
+    francia: tx({ es: 'Francia', en: 'France', pt: 'França' }),
+    japon: tx({ es: 'Japón', en: 'Japan', pt: 'Japão' }),
+    corea: tx({ es: 'Corea del Sur', en: 'South Korea', pt: 'Coreia do Sul' }),
+    lisboa: tx({ es: 'Lisboa', en: 'Lisbon', pt: 'Lisboa' }),
+    paris: tx({ es: 'París', en: 'Paris', pt: 'Paris' }),
+    tokio: tx({ es: 'Tokio', en: 'Tokyo', pt: 'Tóquio' }),
+    seul: tx({ es: 'Seúl', en: 'Seoul', pt: 'Seul' }),
+    america: tx({ es: 'América', en: 'Americas', pt: 'Américas' }),
+    europa: tx({ es: 'Europa', en: 'Europe', pt: 'Europa' }),
+    asia: tx({ es: 'Asia', en: 'Asia', pt: 'Ásia' }),
+  };
 
   // Ventas por canal: la tienda en línea alcanza a la física a mitad de año y la temporada de
   // fin de año empuja a las dos.
@@ -35,7 +64,8 @@
     return { mes: MESES[i], online: v[0], tienda: v[1], meta: v[2] };
   });
 
-  var ciudades = ['Lima', 'Bogotá', 'Quito', 'Santiago', 'Ciudad de México'];
+  // Las ciudades son a la vez campos de los datos y nombres de las series.
+  var ciudades = ['Lima', 'Bogotá', 'Quito', 'Santiago', L.cdmx];
   var usuarios = MESES.map(function (mes, i) {
     var row = { mes: mes };
     ciudades.forEach(function (c, k) {
@@ -73,7 +103,11 @@
   }
 
   var visitasHora = [];
-  ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].forEach(function (dia, k) {
+  tx({
+    es: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+    en: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    pt: ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'],
+  }).forEach(function (dia, k) {
     for (var h = 0; h < 24; h++) {
       var curva = Math.max(0.05, Math.sin(((h - 6) / 18) * Math.PI)) * (h >= 6 ? 1 : 0.3);
       visitasHora.push({
@@ -84,13 +118,70 @@
     }
   });
 
-  var regiones = ['Norte', 'Sur', 'Este', 'Oeste', 'Centro', 'Costa'];
+  // Como las ciudades: cada región es un campo y el nombre de su panel.
+  var regiones = tx({
+    es: ['Norte', 'Sur', 'Este', 'Oeste', 'Centro', 'Costa'],
+    en: ['North', 'South', 'East', 'West', 'Central', 'Coast'],
+    pt: ['Norte', 'Sul', 'Leste', 'Oeste', 'Centro', 'Litoral'],
+  });
   var porRegion = MESES.map(function (mes, i) {
     var row = { mes: mes };
     regiones.forEach(function (rg, k) {
       row[rg] = Math.round(50 + k * 6 + i * (k - 2) * 1.6 + 8 * Math.sin(i * 0.8 + k));
     });
     return row;
+  });
+
+  // Zonas de las burbujas, en el orden de sus series: norte, centro y sur.
+  var zonas = tx({ es: ['Norte', 'Centro', 'Sur'], en: ['North', 'Central', 'South'], pt: ['Norte', 'Centro', 'Sul'] });
+  var nombresZona = tx({
+    es: ['Zona norte', 'Zona centro', 'Zona sur'],
+    en: ['North zone', 'Central zone', 'South zone'],
+    pt: ['Zona norte', 'Zona centro', 'Zona sul'],
+  });
+
+  // Pasos del recorrido de las visitas (sankey): un nombre por nodo.
+  var paso = tx({
+    es: {
+      busqueda: 'Búsqueda',
+      redes: 'Redes',
+      correo: 'Correo',
+      directo: 'Directo',
+      inicio: 'Inicio',
+      ofertas: 'Ofertas',
+      producto: 'Producto',
+      abandono: 'Abandono',
+      compra: 'Compra',
+    },
+    en: {
+      busqueda: 'Search',
+      redes: 'Social',
+      correo: 'Email',
+      directo: 'Direct',
+      inicio: 'Home',
+      ofertas: 'Deals',
+      producto: 'Product',
+      abandono: 'Left the site',
+      compra: 'Purchase',
+    },
+    pt: {
+      busqueda: 'Busca',
+      redes: 'Redes sociais',
+      correo: 'E-mail',
+      directo: 'Direto',
+      inicio: 'Início',
+      ofertas: 'Ofertas',
+      producto: 'Produto',
+      abandono: 'Abandono',
+      compra: 'Compra',
+    },
+  });
+
+  // Regiones de las mudanzas (cuerdas).
+  var zona = tx({
+    es: { capital: 'Capital', centro: 'Centro', costa: 'Costa', norte: 'Norte', sur: 'Sur' },
+    en: { capital: 'Capital', centro: 'Central', costa: 'Coast', norte: 'North', sur: 'South' },
+    pt: { capital: 'Capital', centro: 'Centro', costa: 'Litoral', norte: 'Norte', sur: 'Sul' },
   });
 
   var filas = function (list, keys) {
@@ -103,6 +194,13 @@
     });
   };
 
+  /** Une una lista de nombres (por idioma) con sus números, fila por fila. */
+  var junto = function (nombres, resto) {
+    return nombres.map(function (n, i) {
+      return [n].concat(resto[i]);
+    });
+  };
+
   // Cada ejemplo: `tipo` es el nombre en la librería (va en el código), `clase` el nombre que
   // lee una persona, `tamano` cuánto ocupa en la galería ('grande': dos columnas; 'ancho': la
   // fila entera) y `desc` por qué esta forma sirve para estos datos (la página del ejemplo).
@@ -111,154 +209,396 @@
     {
       id: 'ventas',
       tipo: 'LozBar',
-      clase: 'Barras apiladas con meta',
-      familia: 'Comparar',
+      clase: tx({ es: 'Barras apiladas con meta', en: 'Stacked bars with a goal', pt: 'Barras empilhadas com meta' }),
+      familia: COMPARAR,
       tamano: 'grande',
-      desc: 'Apilar los dos canales deja ver el total del mes y, a la vez, cuánto pone cada uno. La meta va como línea para que nadie la confunda con una barra más.',
+      desc: tx({
+        es: 'Apilar los dos canales deja ver el total del mes y, a la vez, cuánto pone cada uno. La meta va como línea para que nadie la confunda con una barra más.',
+        en: 'Stacking the two channels shows the month’s total and, at the same time, how much each one adds. The goal is a line so nobody mistakes it for another bar.',
+        pt: 'Empilhar os dois canais mostra o total do mês e, ao mesmo tempo, quanto cada um contribui. A meta vai como linha para ninguém confundir com mais uma barra.',
+      }),
       opciones: {
-        title: 'La tienda en línea pasó a la física en junio',
-        subtitle: 'Ventas por mes en 2026, en dólares. La línea es la meta mensual.',
+        title: tx({
+          es: 'La tienda en línea pasó a la física en junio',
+          en: 'The online store overtook the physical one in June',
+          pt: 'A loja online passou a loja física em junho',
+        }),
+        subtitle: tx({
+          es: 'Ventas por mes en 2026, en dólares. La línea es la meta mensual.',
+          en: 'Monthly sales in 2026, in dollars. The line is the monthly goal.',
+          pt: 'Vendas por mês em 2026, em dólares. A linha é a meta mensal.',
+        }),
         data: ventas,
         xAxis: { field: 'mes', type: 'time' },
         yAxis: { format: 'currency' },
         series: [
-          { type: 'bar', field: 'online', name: 'En línea', stack: true },
-          { type: 'bar', field: 'tienda', name: 'Tienda física', stack: true },
-          { type: 'line', field: 'meta', name: 'Meta', smooth: true },
+          { type: 'bar', field: 'online', name: tx({ es: 'En línea', en: 'Online', pt: 'Online' }), stack: true },
+          { type: 'bar', field: 'tienda', name: tx({ es: 'Tienda física', en: 'In store', pt: 'Loja física' }), stack: true },
+          { type: 'line', field: 'meta', name: tx({ es: 'Meta', en: 'Goal', pt: 'Meta' }), smooth: true },
         ],
       },
     },
     {
       id: 'paginas',
       tipo: 'LozBar',
-      clase: 'Barras horizontales',
-      familia: 'Comparar',
-      desc: 'Con nombres largos, las barras acostadas se leen sin torcer la cabeza. Ordenadas de mayor a menor, la comparación sale de un vistazo.',
+      clase: tx({ es: 'Barras horizontales', en: 'Horizontal bars', pt: 'Barras horizontais' }),
+      familia: COMPARAR,
+      desc: tx({
+        es: 'Con nombres largos, las barras acostadas se leen sin torcer la cabeza. Ordenadas de mayor a menor, la comparación sale de un vistazo.',
+        en: 'With long names, sideways bars read without tilting your head. Sorted from largest to smallest, the comparison jumps out at a glance.',
+        pt: 'Com nomes longos, as barras deitadas se leem sem entortar a cabeça. Ordenadas da maior para a menor, a comparação salta aos olhos.',
+      }),
       opciones: {
-        title: 'Las preguntas frecuentes ya reciben más visitas que el carrito',
-        subtitle: 'Visitas únicas por página, octubre de 2026',
+        title: tx({
+          es: 'Las preguntas frecuentes ya reciben más visitas que el carrito',
+          en: 'The FAQ page now gets more visits than the cart',
+          pt: 'As perguntas frequentes já recebem mais visitas que o carrinho',
+        }),
+        subtitle: tx({
+          es: 'Visitas únicas por página, octubre de 2026',
+          en: 'Unique visits per page, October 2026',
+          pt: 'Visitas únicas por página, outubro de 2026',
+        }),
         orientation: 'horizontal',
         data: filas(
-          [
-            ['Inicio', 48210],
-            ['Catálogo de productos', 31840],
-            ['Ofertas de temporada', 27390],
-            ['Preguntas frecuentes', 15620],
-            ['Carrito', 12950],
-            ['Blog', 9430],
-          ],
+          junto(
+            tx({
+              es: ['Inicio', 'Catálogo de productos', 'Ofertas de temporada', 'Preguntas frecuentes', 'Carrito', 'Blog'],
+              en: ['Home', 'Product catalog', 'Seasonal deals', 'FAQ', 'Cart', 'Blog'],
+              pt: ['Início', 'Catálogo de produtos', 'Ofertas da temporada', 'Perguntas frequentes', 'Carrinho', 'Blog'],
+            }),
+            [48210, 31840, 27390, 15620, 12950, 9430],
+          ),
           ['pagina', 'visitas'],
         ),
         xAxis: { field: 'pagina' },
-        series: [{ type: 'bar', field: 'visitas', name: 'Visitas' }],
+        series: [{ type: 'bar', field: 'visitas', name: tx({ es: 'Visitas', en: 'Visits', pt: 'Visitas' }) }],
       },
     },
     {
       id: 'resultado',
       tipo: 'LozWaterfall',
-      clase: 'Cascada',
-      familia: 'Comparar',
-      desc: 'Una cascada explica cómo se pasa de un número a otro. Cada barra empieza donde terminó la anterior, y los subtotales vuelven a partir de cero.',
+      clase: tx({ es: 'Cascada', en: 'Waterfall', pt: 'Cascata' }),
+      familia: COMPARAR,
+      desc: tx({
+        es: 'Una cascada explica cómo se pasa de un número a otro. Cada barra empieza donde terminó la anterior, y los subtotales vuelven a partir de cero.',
+        en: 'A waterfall explains how you get from one number to another. Each bar starts where the last one ended, and the subtotals start again from zero.',
+        pt: 'Uma cascata explica como se chega de um número a outro. Cada barra começa onde a anterior terminou, e os subtotais voltam a partir do zero.',
+      }),
       opciones: {
-        title: 'De cada dólar vendido quedan 20 centavos',
-        subtitle: 'Estado de resultados de 2026, en dólares',
-        data: [
-          { paso: 'Ventas', monto: 1250000 },
-          { paso: 'Costo de ventas', monto: -520000 },
-          { paso: 'Utilidad bruta', total: true },
-          { paso: 'Gastos de operación', monto: -310000 },
-          { paso: 'Marketing', monto: -95000 },
-          { paso: 'Otros ingresos', monto: 40000 },
-          { paso: 'Impuestos', monto: -110000 },
-          { paso: 'Utilidad neta', total: true },
-        ],
+        title: tx({
+          es: 'De cada dólar vendido quedan 20 centavos',
+          en: 'Out of every dollar in sales, 20 cents is profit',
+          pt: 'De cada dólar vendido, sobram 20 centavos',
+        }),
+        subtitle: tx({
+          es: 'Estado de resultados de 2026, en dólares',
+          en: 'Income statement for 2026, in dollars',
+          pt: 'Demonstração de resultados de 2026, em dólares',
+        }),
+        data: (function () {
+          var n = tx({
+            es: [
+              'Ventas',
+              'Costo de ventas',
+              'Utilidad bruta',
+              'Gastos de operación',
+              'Marketing',
+              'Otros ingresos',
+              'Impuestos',
+              'Utilidad neta',
+            ],
+            en: [
+              'Revenue',
+              'Cost of sales',
+              'Gross profit',
+              'Operating expenses',
+              'Marketing',
+              'Other income',
+              'Taxes',
+              'Net profit',
+            ],
+            pt: [
+              'Vendas',
+              'Custo das vendas',
+              'Lucro bruto',
+              'Despesas operacionais',
+              'Marketing',
+              'Outras receitas',
+              'Impostos',
+              'Lucro líquido',
+            ],
+          });
+          return [
+            { paso: n[0], monto: 1250000 },
+            { paso: n[1], monto: -520000 },
+            { paso: n[2], total: true },
+            { paso: n[3], monto: -310000 },
+            { paso: n[4], monto: -95000 },
+            { paso: n[5], monto: 40000 },
+            { paso: n[6], monto: -110000 },
+            { paso: n[7], total: true },
+          ];
+        })(),
         xAxis: { field: 'paso' },
         yAxis: { format: 'currency' },
-        series: [{ type: 'waterfall', field: 'monto', name: 'Resultado', total: 'total' }],
+        series: [
+          {
+            type: 'waterfall',
+            field: 'monto',
+            name: tx({ es: 'Resultado', en: 'Result', pt: 'Resultado' }),
+            total: 'total',
+          },
+        ],
       },
     },
     {
       id: 'metas',
       tipo: 'LozBullet',
-      clase: 'Metas (bala)',
-      familia: 'Comparar',
-      desc: 'Una fila por región, todas en la misma escala. La barra delgada es lo vendido y la raya, la meta. Los grises del fondo marcan hasta dónde es bajo, aceptable o bueno.',
+      clase: tx({ es: 'Metas (bala)', en: 'Bullet chart', pt: 'Metas (bullet)' }),
+      familia: COMPARAR,
+      desc: tx({
+        es: 'Una fila por región, todas en la misma escala. La barra delgada es lo vendido y la raya, la meta. Los grises del fondo marcan hasta dónde es bajo, aceptable o bueno.',
+        en: 'One row per region, all on the same scale. The thin bar is what was sold and the tick mark is the target. The gray bands behind show where poor, fair and good end.',
+        pt: 'Uma linha por região, todas na mesma escala. A barra fina é o que foi vendido e o traço, a meta. Os cinzas do fundo marcam até onde é baixo, aceitável ou bom.',
+      }),
       opciones: {
-        title: 'El Sur quedó lejos de su meta',
-        subtitle: 'Ventas del tercer trimestre, en miles de dólares. La raya es la meta de cada región.',
+        title: tx({
+          es: 'El Sur quedó lejos de su meta',
+          en: 'The South fell far short of its target',
+          pt: 'O Sul ficou longe da meta',
+        }),
+        subtitle: tx({
+          es: 'Ventas del tercer trimestre, en miles de dólares. La raya es la meta de cada región.',
+          en: 'Third-quarter sales, in thousands of dollars. The tick mark is each region’s target.',
+          pt: 'Vendas do terceiro trimestre, em milhares de dólares. O traço é a meta de cada região.',
+        }),
         data: filas(
-          [
-            ['Norte', 512, 480],
-            ['Centro', 433, 460],
-            ['Sur', 297, 420],
-            ['Occidente', 571, 520],
-            ['Oriente', 365, 400],
-          ],
+          junto(
+            tx({
+              es: ['Norte', 'Centro', 'Sur', 'Occidente', 'Oriente'],
+              en: ['North', 'Central', 'South', 'West', 'East'],
+              pt: ['Norte', 'Centro', 'Sul', 'Oeste', 'Leste'],
+            }),
+            [
+              [512, 480],
+              [433, 460],
+              [297, 420],
+              [571, 520],
+              [365, 400],
+            ],
+          ),
           ['region', 'ventas', 'meta'],
         ),
         xAxis: { field: 'region' },
-        series: [{ type: 'bullet', field: 'ventas', name: 'Ventas', targetField: 'meta', ranges: [300, 450, 600] }],
+        series: [
+          {
+            type: 'bullet',
+            field: 'ventas',
+            name: tx({ es: 'Ventas', en: 'Sales', pt: 'Vendas' }),
+            targetField: 'meta',
+            ranges: [300, 450, 600],
+          },
+        ],
       },
     },
     {
       id: 'opiniones',
       tipo: 'LozWordcloud',
-      clase: 'Nube de palabras',
-      familia: 'Comparar',
-      desc: 'Da una idea rápida de qué se habla, no una medida: el tamaño de una palabra se compara peor que el largo de una barra. Para la cifra exacta, pasa el puntero por la palabra.',
+      clase: tx({ es: 'Nube de palabras', en: 'Word cloud', pt: 'Nuvem de palavras' }),
+      familia: COMPARAR,
+      desc: tx({
+        es: 'Da una idea rápida de qué se habla, no una medida: el tamaño de una palabra se compara peor que el largo de una barra. Para la cifra exacta, pasa el puntero por la palabra.',
+        en: 'It gives you a quick sense of what people talk about, not a measurement: the size of a word is harder to compare than the length of a bar. For the exact number, hover over the word.',
+        pt: 'Dá uma ideia rápida do que se fala, não uma medida: o tamanho de uma palavra se compara pior que o comprimento de uma barra. Para o número exato, passe o ponteiro sobre a palavra.',
+      }),
       opciones: {
-        title: 'Lo que más agradecen es la atención',
-        subtitle: 'Palabras más repetidas en 2.140 opiniones de clientes, por tema',
-        data: filas(
-          [
-            ['atención', 412, 'Servicio'],
-            ['rapidez', 356, 'Entrega'],
-            ['precio', 331, 'Precio'],
-            ['calidad', 298, 'Producto'],
-            ['envío', 276, 'Entrega'],
-            ['amabilidad', 214, 'Servicio'],
-            ['variedad', 198, 'Producto'],
-            ['puntualidad', 176, 'Entrega'],
-            ['ofertas', 164, 'Precio'],
-            ['devoluciones', 151, 'Servicio'],
-            ['empaque', 139, 'Entrega'],
-            ['descuentos', 127, 'Precio'],
-            ['garantía', 118, 'Producto'],
-            ['asesoría', 109, 'Servicio'],
-            ['frescura', 96, 'Producto'],
-            ['pago en línea', 92, 'Precio'],
-            ['seguimiento', 88, 'Entrega'],
-            ['tienda física', 81, 'Servicio'],
-            ['diseño', 74, 'Producto'],
-            ['cupones', 69, 'Precio'],
-            ['paciencia', 63, 'Servicio'],
-            ['horario', 58, 'Servicio'],
-            ['stock', 54, 'Producto'],
-            ['tallas', 49, 'Producto'],
-            ['cambio', 45, 'Servicio'],
-            ['envío gratis', 43, 'Entrega'],
-            ['reembolso', 38, 'Precio'],
-            ['recomendación', 35, 'Servicio'],
-            ['catálogo', 31, 'Producto'],
-            ['cuotas', 28, 'Precio'],
-          ],
-          ['palabra', 'menciones', 'tema'],
-        ),
+        title: tx({
+          es: 'Lo que más agradecen es la atención',
+          en: 'What customers appreciate most is the service',
+          pt: 'O que os clientes mais elogiam é o atendimento',
+        }),
+        subtitle: tx({
+          es: 'Palabras más repetidas en 2.140 opiniones de clientes, por tema',
+          en: 'Most frequent words in 2,140 customer reviews, by topic',
+          pt: 'Palavras mais repetidas em 2.140 avaliações de clientes, por tema',
+        }),
+        // Las palabras que de verdad escribe un cliente en cada idioma; las menciones y los temas
+        // son los mismos en los tres.
+        data: (function () {
+          var tema = tx({
+            es: { s: 'Servicio', e: 'Entrega', p: 'Precio', d: 'Producto' },
+            en: { s: 'Service', e: 'Delivery', p: 'Price', d: 'Product' },
+            pt: { s: 'Atendimento', e: 'Entrega', p: 'Preço', d: 'Produto' },
+          });
+          var palabras = tx({
+            es: [
+              'atención',
+              'rapidez',
+              'precio',
+              'calidad',
+              'envío',
+              'amabilidad',
+              'variedad',
+              'puntualidad',
+              'ofertas',
+              'devoluciones',
+              'empaque',
+              'descuentos',
+              'garantía',
+              'asesoría',
+              'frescura',
+              'pago en línea',
+              'seguimiento',
+              'tienda física',
+              'diseño',
+              'cupones',
+              'paciencia',
+              'horario',
+              'stock',
+              'tallas',
+              'cambio',
+              'envío gratis',
+              'reembolso',
+              'recomendación',
+              'catálogo',
+              'cuotas',
+            ],
+            en: [
+              'customer service',
+              'fast',
+              'price',
+              'quality',
+              'shipping',
+              'friendly',
+              'selection',
+              'on time',
+              'deals',
+              'returns',
+              'packaging',
+              'discounts',
+              'warranty',
+              'advice',
+              'fresh',
+              'easy checkout',
+              'tracking',
+              'in store',
+              'design',
+              'coupons',
+              'patient',
+              'store hours',
+              'in stock',
+              'sizes',
+              'exchanges',
+              'free shipping',
+              'refund',
+              'recommend',
+              'catalog',
+              'pay later',
+            ],
+            pt: [
+              'atendimento',
+              'rapidez',
+              'preço',
+              'qualidade',
+              'frete',
+              'simpatia',
+              'variedade',
+              'no prazo',
+              'promoções',
+              'devolução',
+              'embalagem',
+              'descontos',
+              'garantia',
+              'orientação',
+              'frescor',
+              'Pix',
+              'rastreio',
+              'loja física',
+              'design',
+              'cupons',
+              'paciência',
+              'horário',
+              'estoque',
+              'tamanhos',
+              'troca',
+              'frete grátis',
+              'reembolso',
+              'indicação',
+              'catálogo',
+              'parcelamento',
+            ],
+          });
+          return filas(
+            junto(palabras, [
+              [412, tema.s],
+              [356, tema.e],
+              [331, tema.p],
+              [298, tema.d],
+              [276, tema.e],
+              [214, tema.s],
+              [198, tema.d],
+              [176, tema.e],
+              [164, tema.p],
+              [151, tema.s],
+              [139, tema.e],
+              [127, tema.p],
+              [118, tema.d],
+              [109, tema.s],
+              [96, tema.d],
+              [92, tema.p],
+              [88, tema.e],
+              [81, tema.s],
+              [74, tema.d],
+              [69, tema.p],
+              [63, tema.s],
+              [58, tema.s],
+              [54, tema.d],
+              [49, tema.d],
+              [45, tema.s],
+              [43, tema.e],
+              [38, tema.p],
+              [35, tema.s],
+              [31, tema.d],
+              [28, tema.p],
+            ]),
+            ['palabra', 'menciones', 'tema'],
+          );
+        })(),
         xAxis: { field: 'palabra' },
-        series: [{ type: 'wordcloud', field: 'menciones', name: 'Menciones', group: 'tema' }],
+        series: [
+          {
+            type: 'wordcloud',
+            field: 'menciones',
+            name: tx({ es: 'Menciones', en: 'Mentions', pt: 'Menções' }),
+            group: 'tema',
+          },
+        ],
       },
     },
     {
       id: 'regiones',
       tipo: 'LozMultiples',
-      clase: 'Paneles pequeños',
-      familia: 'Comparar',
+      clase: tx({ es: 'Paneles pequeños', en: 'Small multiples', pt: 'Pequenos múltiplos' }),
+      familia: COMPARAR,
       tamano: 'ancho',
       multiples: true,
-      desc: 'Un panel por región, todos con la misma escala. Detrás de cada uno, en gris, van las demás: así se compara la forma sin andar buscando colores.',
+      desc: tx({
+        es: 'Un panel por región, todos con la misma escala. Detrás de cada uno, en gris, van las demás: así se compara la forma sin andar buscando colores.',
+        en: 'One panel per region, all on the same scale. Behind each one, in gray, are the others, so you compare shapes without hunting for colors.',
+        pt: 'Um painel por região, todos na mesma escala. Atrás de cada um, em cinza, ficam as outras: assim você compara a forma sem ficar procurando cores.',
+      }),
       opciones: {
-        title: 'El Norte perdió más de la mitad de sus ventas en el año',
-        subtitle: 'Ventas por mes en 2026, en miles de dólares. En gris, las otras regiones.',
+        title: tx({
+          es: 'El Norte perdió más de la mitad de sus ventas en el año',
+          en: 'The North lost more than half its sales over the year',
+          pt: 'O Norte perdeu mais da metade das vendas no ano',
+        }),
+        subtitle: tx({
+          es: 'Ventas por mes en 2026, en miles de dólares. En gris, las otras regiones.',
+          en: 'Monthly sales in 2026, in thousands of dollars. In gray, the other regions.',
+          pt: 'Vendas por mês em 2026, em milhares de dólares. Em cinza, as outras regiões.',
+        }),
         facet: 'series',
         context: true,
         data: porRegion,
@@ -273,36 +613,64 @@
     {
       id: 'visitas-dia',
       tipo: 'LozLine',
-      clase: 'Líneas con zoom',
-      familia: 'En el tiempo',
+      clase: tx({ es: 'Líneas con zoom', en: 'Lines with zoom', pt: 'Linhas com zoom' }),
+      familia: TIEMPO,
       tamano: 'ancho',
-      desc: 'Un año día por día es demasiado para verlo de una vez. Acércate a unas semanas, mueve la ventana con la barra de abajo y, con doble clic, vuelve a verlo entero.',
+      desc: tx({
+        es: 'Un año día por día es demasiado para verlo de una vez. Acércate a unas semanas, mueve la ventana con la barra de abajo y, con doble clic, vuelve a verlo entero.',
+        en: 'A year, day by day, is too much to take in at once. Zoom in on a few weeks, move the window with the bar below, and double-click to see the whole year again.',
+        pt: 'Um ano dia a dia é demais para ver de uma vez. Dê zoom em algumas semanas, mova a janela com a barra de baixo e, com um clique duplo, volte a ver o ano inteiro.',
+      }),
       opciones: {
-        title: 'Con la campaña de verano, la web pasó por primera vez la meta',
-        subtitle: 'Visitas diarias, noviembre de 2025 a octubre de 2026. Arrastra sobre el gráfico para acercarte.',
+        // En Brasil julio es invierno y vacaciones escolares: allá la campaña es de vacaciones.
+        title: tx({
+          es: 'Con la campaña de verano, la web pasó por primera vez la meta',
+          en: 'With the summer campaign, the website beat its goal for the first time',
+          pt: 'Com a campanha de férias, o site bateu a meta pela primeira vez',
+        }),
+        subtitle: tx({
+          es: 'Visitas diarias, noviembre de 2025 a octubre de 2026. Arrastra sobre el gráfico para acercarte.',
+          en: 'Daily visits, November 2025 to October 2026. Drag across the chart to zoom in.',
+          pt: 'Visitas diárias, de novembro de 2025 a outubro de 2026. Arraste sobre o gráfico para dar zoom.',
+        }),
         data: dias,
         xAxis: { field: 'fecha', type: 'time' },
         series: [
-          { type: 'line', field: 'web', name: 'Web' },
+          { type: 'line', field: 'web', name: tx({ es: 'Web', en: 'Website', pt: 'Site' }) },
           { type: 'line', field: 'app', name: 'App' },
         ],
         zoom: { range: ['2026-05-15', '2026-08-31'] },
         endLabels: true,
         annotations: [
-          { x: ['2026-06-29', '2026-07-21'], label: 'Campaña de verano' },
-          { y: 8000, label: 'Meta diaria' },
+          {
+            x: ['2026-06-29', '2026-07-21'],
+            label: tx({ es: 'Campaña de verano', en: 'Summer campaign', pt: 'Campanha de férias' }),
+          },
+          { y: 8000, label: tx({ es: 'Meta diaria', en: 'Daily goal', pt: 'Meta diária' }) },
         ],
       },
     },
     {
       id: 'usuarios',
       tipo: 'LozLine',
-      clase: 'Líneas con nombre al final',
-      familia: 'En el tiempo',
-      desc: 'Con cinco líneas, ir y volver a la leyenda cansa. Aquí cada ciudad lleva su nombre y su último valor donde termina la línea.',
+      clase: tx({ es: 'Líneas con nombre al final', en: 'Lines labeled at the end', pt: 'Linhas com nome no fim' }),
+      familia: TIEMPO,
+      desc: tx({
+        es: 'Con cinco líneas, ir y volver a la leyenda cansa. Aquí cada ciudad lleva su nombre y su último valor donde termina la línea.',
+        en: 'With five lines, going back and forth to the legend gets tiring. Here each city has its name and latest value right where its line ends.',
+        pt: 'Com cinco linhas, ir e voltar à legenda cansa. Aqui cada cidade leva o nome e o último valor onde a linha termina.',
+      }),
       opciones: {
-        title: 'Ciudad de México duplicó sus usuarios en un año',
-        subtitle: 'Usuarios activos al mes, en miles',
+        title: tx({
+          es: 'Ciudad de México duplicó sus usuarios en un año',
+          en: 'Mexico City doubled its users in a year',
+          pt: 'A Cidade do México dobrou de usuários em um ano',
+        }),
+        subtitle: tx({
+          es: 'Usuarios activos al mes, en miles',
+          en: 'Monthly active users, in thousands',
+          pt: 'Usuários ativos por mês, em milhares',
+        }),
         data: usuarios,
         xAxis: { field: 'mes', type: 'time' },
         series: ciudades.map(function (c) {
@@ -314,33 +682,59 @@
     {
       id: 'dispositivos',
       tipo: 'LozArea',
-      clase: 'Áreas apiladas',
-      familia: 'En el tiempo',
-      desc: 'Las áreas apiladas muestran el total y la mezcla al mismo tiempo. Con tres capas se leen bien; pasadas las cuatro, las de arriba bailan sobre las de abajo y cuesta seguirlas.',
+      clase: tx({ es: 'Áreas apiladas', en: 'Stacked areas', pt: 'Áreas empilhadas' }),
+      familia: TIEMPO,
+      desc: tx({
+        es: 'Las áreas apiladas muestran el total y la mezcla al mismo tiempo. Con tres capas se leen bien; pasadas las cuatro, las de arriba bailan sobre las de abajo y cuesta seguirlas.',
+        en: 'Stacked areas show the total and the mix at the same time. Three layers read fine; past four, the top ones wobble on the ones below and get hard to follow.',
+        pt: 'As áreas empilhadas mostram o total e a composição ao mesmo tempo. Com três camadas dá para ler bem; passando de quatro, as de cima dançam sobre as de baixo e fica difícil acompanhar.',
+      }),
       opciones: {
-        title: 'Casi todo el crecimiento vino del móvil',
-        subtitle: 'Visitas al mes por dispositivo, 2026',
+        title: tx({
+          es: 'Casi todo el crecimiento vino del móvil',
+          en: 'Almost all the growth came from mobile',
+          pt: 'Quase todo o crescimento veio do celular',
+        }),
+        subtitle: tx({
+          es: 'Visitas al mes por dispositivo, 2026',
+          en: 'Monthly visits by device, 2026',
+          pt: 'Visitas por mês por dispositivo, 2026',
+        }),
         data: MESES.map(function (mes, i) {
           return { mes: mes, movil: 5200 + i * 310, escritorio: 4100 - i * 60, tableta: 900 + i * 20 };
         }),
         xAxis: { field: 'mes', type: 'time' },
         yAxis: { format: 'compact' },
         series: [
-          { type: 'area', field: 'movil', name: 'Móvil', stack: true, smooth: true },
-          { type: 'area', field: 'escritorio', name: 'Escritorio', stack: true, smooth: true },
-          { type: 'area', field: 'tableta', name: 'Tableta', stack: true, smooth: true },
+          { type: 'area', field: 'movil', name: tx({ es: 'Móvil', en: 'Mobile', pt: 'Celular' }), stack: true, smooth: true },
+          {
+            type: 'area',
+            field: 'escritorio',
+            name: tx({ es: 'Escritorio', en: 'Desktop', pt: 'Desktop' }),
+            stack: true,
+            smooth: true,
+          },
+          { type: 'area', field: 'tableta', name: tx({ es: 'Tableta', en: 'Tablet', pt: 'Tablet' }), stack: true, smooth: true },
         ],
       },
     },
     {
       id: 'tasa',
       tipo: 'LozStep',
-      clase: 'Escalones',
-      familia: 'En el tiempo',
-      desc: 'Entre una decisión y la siguiente la tasa no se mueve, así que una línea inclinada mentiría. Los escalones marcan el salto el día en que ocurre.',
+      clase: tx({ es: 'Escalones', en: 'Step line', pt: 'Degraus' }),
+      familia: TIEMPO,
+      desc: tx({
+        es: 'Entre una decisión y la siguiente la tasa no se mueve, así que una línea inclinada mentiría. Los escalones marcan el salto el día en que ocurre.',
+        en: 'Between one decision and the next, the rate doesn’t move, so a sloped line would lie. The steps show the jump on the day it happens.',
+        pt: 'Entre uma decisão e a seguinte a taxa não se mexe, então uma linha inclinada mentiria. Os degraus marcam o salto no dia em que ele acontece.',
+      }),
       opciones: {
-        title: 'Siete recortes seguidos',
-        subtitle: 'Tasa de interés de referencia, de enero de 2025 a octubre de 2026',
+        title: tx({ es: 'Siete recortes seguidos', en: 'Seven cuts in a row', pt: 'Sete cortes seguidos' }),
+        subtitle: tx({
+          es: 'Tasa de interés de referencia, de enero de 2025 a octubre de 2026',
+          en: 'Benchmark interest rate, January 2025 to October 2026',
+          pt: 'Taxa básica de juros, de janeiro de 2025 a outubro de 2026',
+        }),
         data: filas(
           [
             ['2025-01', 0.1125],
@@ -356,46 +750,130 @@
         ),
         xAxis: { field: 'mes', type: 'time' },
         yAxis: { format: 'percent' },
-        series: [{ type: 'step', field: 'tasa', name: 'Tasa' }],
+        series: [{ type: 'step', field: 'tasa', name: tx({ es: 'Tasa', en: 'Rate', pt: 'Taxa' }) }],
       },
     },
     {
       id: 'lanzamiento',
       tipo: 'LozTimeline',
-      clase: 'Línea de tiempo',
-      familia: 'En el tiempo',
+      clase: tx({ es: 'Línea de tiempo', en: 'Timeline', pt: 'Linha do tempo' }),
+      familia: TIEMPO,
       tamano: 'grande',
-      desc: 'Un carril por equipo y una barra por tarea, de su inicio a su fin. Lo que no tiene fecha de fin es un hito y va en rombo; la línea punteada es hoy.',
+      desc: tx({
+        es: 'Un carril por equipo y una barra por tarea, de su inicio a su fin. Lo que no tiene fecha de fin es un hito y va en rombo; la línea punteada es hoy.',
+        en: 'One lane per team and one bar per task, from start to finish. Anything without an end date is a milestone and shows as a diamond; the dotted line is today.',
+        pt: 'Uma faixa por equipe e uma barra por tarefa, do início ao fim. O que não tem data de fim é um marco e aparece como losango; a linha pontilhada é hoje.',
+      }),
       opciones: {
-        title: 'Ocho meses de la primera entrevista al lanzamiento',
-        subtitle: 'Plan de la app de pagos por equipo, 2026. Los rombos son hitos.',
-        data: [
-          { tarea: 'Investigación', inicio: '2026-01-12', fin: '2026-02-27', equipo: 'Producto' },
-          { tarea: 'Definición del alcance', inicio: '2026-02-16', fin: '2026-03-13', equipo: 'Producto' },
-          { tarea: 'Pruebas con usuarios', inicio: '2026-07-06', fin: '2026-08-07', equipo: 'Producto' },
-          { tarea: 'Beta cerrada', inicio: '2026-08-24', equipo: 'Producto' },
-          { tarea: 'Prototipos', inicio: '2026-03-02', fin: '2026-04-10', equipo: 'Diseño' },
-          { tarea: 'Sistema visual', inicio: '2026-04-06', fin: '2026-05-22', equipo: 'Diseño' },
-          { tarea: 'API de pagos', inicio: '2026-04-13', fin: '2026-06-26', equipo: 'Ingeniería' },
-          { tarea: 'App móvil', inicio: '2026-05-04', fin: '2026-08-28', equipo: 'Ingeniería' },
-          { tarea: 'Integración con bancos', inicio: '2026-07-01', fin: '2026-08-21', equipo: 'Ingeniería' },
-          { tarea: 'Soporte', inicio: '2026-09-14', fin: '2026-12-18', equipo: 'Ingeniería' },
-          { tarea: 'Campaña', inicio: '2026-09-01', fin: '2026-10-09', equipo: 'Marketing' },
-          { tarea: 'Lanzamiento', inicio: '2026-09-15', equipo: 'Marketing' },
-        ],
+        title: tx({
+          es: 'Ocho meses de la primera entrevista al lanzamiento',
+          en: 'Eight months from the first interview to launch',
+          pt: 'Oito meses da primeira entrevista ao lançamento',
+        }),
+        subtitle: tx({
+          es: 'Plan de la app de pagos por equipo, 2026. Los rombos son hitos.',
+          en: 'Payments app plan by team, 2026. The diamonds are milestones.',
+          pt: 'Plano do app de pagamentos por equipe, 2026. Os losangos são marcos.',
+        }),
+        data: (function () {
+          var t = tx({
+            es: [
+              'Investigación',
+              'Definición del alcance',
+              'Pruebas con usuarios',
+              'Beta cerrada',
+              'Prototipos',
+              'Sistema visual',
+              'API de pagos',
+              'App móvil',
+              'Integración con bancos',
+              'Soporte',
+              'Campaña',
+              'Lanzamiento',
+            ],
+            en: [
+              'Research',
+              'Scope definition',
+              'User testing',
+              'Closed beta',
+              'Prototypes',
+              'Design system',
+              'Payments API',
+              'Mobile app',
+              'Bank integration',
+              'Support',
+              'Campaign',
+              'Launch',
+            ],
+            pt: [
+              'Pesquisa',
+              'Definição do escopo',
+              'Testes com usuários',
+              'Beta fechado',
+              'Protótipos',
+              'Design system',
+              'API de pagamentos',
+              'App mobile',
+              'Integração com bancos',
+              'Suporte',
+              'Campanha',
+              'Lançamento',
+            ],
+          });
+          var e = tx({
+            es: ['Producto', 'Diseño', 'Ingeniería', 'Marketing'],
+            en: ['Product', 'Design', 'Engineering', 'Marketing'],
+            pt: ['Produto', 'Design', 'Engenharia', 'Marketing'],
+          });
+          return [
+            { tarea: t[0], inicio: '2026-01-12', fin: '2026-02-27', equipo: e[0] },
+            { tarea: t[1], inicio: '2026-02-16', fin: '2026-03-13', equipo: e[0] },
+            { tarea: t[2], inicio: '2026-07-06', fin: '2026-08-07', equipo: e[0] },
+            { tarea: t[3], inicio: '2026-08-24', equipo: e[0] },
+            { tarea: t[4], inicio: '2026-03-02', fin: '2026-04-10', equipo: e[1] },
+            { tarea: t[5], inicio: '2026-04-06', fin: '2026-05-22', equipo: e[1] },
+            { tarea: t[6], inicio: '2026-04-13', fin: '2026-06-26', equipo: e[2] },
+            { tarea: t[7], inicio: '2026-05-04', fin: '2026-08-28', equipo: e[2] },
+            { tarea: t[8], inicio: '2026-07-01', fin: '2026-08-21', equipo: e[2] },
+            { tarea: t[9], inicio: '2026-09-14', fin: '2026-12-18', equipo: e[2] },
+            { tarea: t[10], inicio: '2026-09-01', fin: '2026-10-09', equipo: e[3] },
+            { tarea: t[11], inicio: '2026-09-15', equipo: e[3] },
+          ];
+        })(),
         xAxis: { field: 'inicio', type: 'time' },
-        series: [{ type: 'timeline', field: 'tarea', end: 'fin', group: 'equipo', name: 'Plan', today: '2026-10-25' }],
+        series: [
+          {
+            type: 'timeline',
+            field: 'tarea',
+            end: 'fin',
+            group: 'equipo',
+            name: tx({ es: 'Plan', en: 'Plan', pt: 'Plano' }),
+            today: '2026-10-25',
+          },
+        ],
       },
     },
     {
       id: 'precios',
       tipo: 'LozCandle',
-      clase: 'Velas',
-      familia: 'En el tiempo',
-      desc: 'Cada vela es un día. El cuerpo va de la apertura al cierre, hueco si el precio subió y relleno si bajó, y la mecha llega al máximo y al mínimo.',
+      clase: tx({ es: 'Velas', en: 'Candlesticks', pt: 'Candles' }),
+      familia: TIEMPO,
+      desc: tx({
+        es: 'Cada vela es un día. El cuerpo va de la apertura al cierre, hueco si el precio subió y relleno si bajó, y la mecha llega al máximo y al mínimo.',
+        en: 'Each candle is one day. The body runs from open to close, hollow if the price went up and filled if it went down, and the wick reaches the high and the low.',
+        pt: 'Cada candle é um dia. O corpo vai da abertura ao fechamento, vazado se o preço subiu e preenchido se caiu, e o pavio chega à máxima e à mínima.',
+      }),
       opciones: {
-        title: 'AURF perdió casi un 9 % en tres semanas',
-        subtitle: 'Precio diario de la acción en dólares, septiembre y octubre de 2026',
+        title: tx({
+          es: 'AURF perdió casi un 9 % en tres semanas',
+          en: 'AURF lost almost 9% in three weeks',
+          pt: 'AURF caiu quase 9% em três semanas',
+        }),
+        subtitle: tx({
+          es: 'Precio diario de la acción en dólares, septiembre y octubre de 2026',
+          en: 'Daily share price in dollars, September and October 2026',
+          pt: 'Preço diário da ação em dólares, setembro e outubro de 2026',
+        }),
         data: precios,
         xAxis: { field: 'fecha', type: 'time' },
         yAxis: { format: 'currency' },
@@ -405,149 +883,288 @@
     {
       id: 'categorias',
       tipo: 'LozDonut',
-      clase: 'Dona',
-      familia: 'Partes de un todo',
-      desc: 'Una dona va bien con pocas partes que suman un todo. Si hay más de cinco, o dos parecidas que importa distinguir, unas barras se leen mejor.',
+      clase: tx({ es: 'Dona', en: 'Donut', pt: 'Rosca' }),
+      familia: PARTES,
+      desc: tx({
+        es: 'Una dona va bien con pocas partes que suman un todo. Si hay más de cinco, o dos parecidas que importa distinguir, unas barras se leen mejor.',
+        en: 'A donut works well with a few parts that add up to a whole. With more than five, or two similar ones you need to tell apart, bars read better.',
+        pt: 'Uma rosca funciona bem com poucas partes que somam um todo. Se forem mais de cinco, ou duas parecidas que importa distinguir, barras se leem melhor.',
+      }),
       opciones: {
-        title: 'Los buscadores traen más pedidos que las redes y el correo juntos',
-        subtitle: 'Pedidos en línea según por dónde llegó el cliente, octubre de 2026',
+        title: tx({
+          es: 'Los buscadores traen más pedidos que las redes y el correo juntos',
+          en: 'Search engines bring in more orders than social and email combined',
+          pt: 'Os buscadores trazem mais pedidos que as redes sociais e o e-mail juntos',
+        }),
+        subtitle: tx({
+          es: 'Pedidos en línea según por dónde llegó el cliente, octubre de 2026',
+          en: 'Online orders by how the customer arrived, October 2026',
+          pt: 'Pedidos online por onde o cliente chegou, outubro de 2026',
+        }),
         data: filas(
-          [
-            ['Búsqueda', 4120],
-            ['Directo', 2010],
-            ['Redes', 1790],
-            ['Correo', 1220],
-            ['Referidos', 880],
-          ],
+          junto(
+            tx({
+              es: ['Búsqueda', 'Directo', 'Redes', 'Correo', 'Referidos'],
+              en: ['Search', 'Direct', 'Social', 'Email', 'Referrals'],
+              pt: ['Busca', 'Direto', 'Redes sociais', 'E-mail', 'Indicações'],
+            }),
+            [4120, 2010, 1790, 1220, 880],
+          ),
           ['canal', 'pedidos'],
         ),
         xAxis: { field: 'canal' },
-        series: [{ type: 'donut', field: 'pedidos', name: 'Pedidos' }],
+        series: [{ type: 'donut', field: 'pedidos', name: tx({ es: 'Pedidos', en: 'Orders', pt: 'Pedidos' }) }],
       },
     },
     {
       id: 'productos',
       tipo: 'LozTreemap',
-      clase: 'Rectángulos (treemap)',
-      familia: 'Partes de un todo',
+      clase: tx({ es: 'Rectángulos (treemap)', en: 'Treemap', pt: 'Retângulos (treemap)' }),
+      familia: PARTES,
       tamano: 'grande',
-      desc: 'Cada rectángulo ocupa tanto como vende su producto, y los de una misma categoría quedan juntos. Rinde cuando hay muchas partes y además una jerarquía.',
+      desc: tx({
+        es: 'Cada rectángulo ocupa tanto como vende su producto, y los de una misma categoría quedan juntos. Rinde cuando hay muchas partes y además una jerarquía.',
+        en: 'Each rectangle takes up as much room as its product sells, and products in the same category sit together. It shines when there are many parts and a hierarchy too.',
+        pt: 'Cada retângulo ocupa tanto quanto o produto vende, e os da mesma categoria ficam juntos. Rende quando há muitas partes e, além disso, uma hierarquia.',
+      }),
       opciones: {
-        title: 'Electrónica vende más que todo lo demás junto',
-        subtitle: 'Ventas de 2026 por producto y categoría, en dólares',
-        data: filas(
-          [
-            ['Laptops', 'Electrónica', 420000],
-            ['Teléfonos', 'Electrónica', 380000],
-            ['Tabletas', 'Electrónica', 142000],
-            ['Audífonos', 'Electrónica', 96000],
-            ['Sofás', 'Hogar', 210000],
-            ['Colchones', 'Hogar', 168000],
-            ['Cocina', 'Hogar', 88000],
-            ['Zapatillas', 'Moda', 176000],
-            ['Chaquetas', 'Moda', 122000],
-            ['Bicicletas', 'Deportes', 134000],
-            ['Camping', 'Deportes', 61000],
-          ],
-          ['producto', 'categoria', 'ventas'],
-        ),
+        title: tx({
+          es: 'Electrónica vende más que todo lo demás junto',
+          en: 'Electronics outsells everything else combined',
+          pt: 'Eletrônicos vendem mais que todo o resto junto',
+        }),
+        subtitle: tx({
+          es: 'Ventas de 2026 por producto y categoría, en dólares',
+          en: '2026 sales by product and category, in dollars',
+          pt: 'Vendas de 2026 por produto e categoria, em dólares',
+        }),
+        data: (function () {
+          var c = tx({
+            es: ['Electrónica', 'Hogar', 'Moda', 'Deportes'],
+            en: ['Electronics', 'Home', 'Fashion', 'Sports'],
+            pt: ['Eletrônicos', 'Casa', 'Moda', 'Esportes'],
+          });
+          return filas(
+            junto(
+              tx({
+                es: [
+                  'Laptops',
+                  'Teléfonos',
+                  'Tabletas',
+                  'Audífonos',
+                  'Sofás',
+                  'Colchones',
+                  'Cocina',
+                  'Zapatillas',
+                  'Chaquetas',
+                  'Bicicletas',
+                  'Camping',
+                ],
+                en: [
+                  'Laptops',
+                  'Phones',
+                  'Tablets',
+                  'Headphones',
+                  'Sofas',
+                  'Mattresses',
+                  'Kitchen',
+                  'Sneakers',
+                  'Jackets',
+                  'Bikes',
+                  'Camping',
+                ],
+                pt: [
+                  'Notebooks',
+                  'Celulares',
+                  'Tablets',
+                  'Fones de ouvido',
+                  'Sofás',
+                  'Colchões',
+                  'Cozinha',
+                  'Tênis',
+                  'Jaquetas',
+                  'Bicicletas',
+                  'Camping',
+                ],
+              }),
+              [
+                [c[0], 420000],
+                [c[0], 380000],
+                [c[0], 142000],
+                [c[0], 96000],
+                [c[1], 210000],
+                [c[1], 168000],
+                [c[1], 88000],
+                [c[2], 176000],
+                [c[2], 122000],
+                [c[3], 134000],
+                [c[3], 61000],
+              ],
+            ),
+            ['producto', 'categoria', 'ventas'],
+          );
+        })(),
         xAxis: { field: 'producto' },
         yAxis: { format: 'currency' },
-        series: [{ type: 'treemap', field: 'ventas', name: 'Ventas', group: 'categoria' }],
+        series: [
+          {
+            type: 'treemap',
+            field: 'ventas',
+            name: tx({ es: 'Ventas', en: 'Sales', pt: 'Vendas' }),
+            group: 'categoria',
+          },
+        ],
       },
     },
     {
       id: 'mercados',
       tipo: 'LozSunburst',
-      clase: 'Anillos (sunburst)',
-      familia: 'Partes de un todo',
-      desc: 'Del centro hacia afuera: región, país y ciudad. Pasa el puntero por una ciudad y se ilumina su camino hasta el centro.',
+      clase: tx({ es: 'Anillos (sunburst)', en: 'Sunburst', pt: 'Anéis (sunburst)' }),
+      familia: PARTES,
+      desc: tx({
+        es: 'Del centro hacia afuera: región, país y ciudad. Pasa el puntero por una ciudad y se ilumina su camino hasta el centro.',
+        en: 'From the center out: region, country and city. Hover over a city and its path to the center lights up.',
+        pt: 'Do centro para fora: região, país e cidade. Passe o ponteiro sobre uma cidade e o caminho dela até o centro se ilumina.',
+      }),
       opciones: {
-        title: 'Casi un tercio de las ventas sale de México',
-        subtitle: 'Ventas de 2026 por región, país y ciudad, en dólares',
+        title: tx({
+          es: 'Casi un tercio de las ventas sale de México',
+          en: 'Almost a third of sales come from Mexico',
+          pt: 'Quase um terço das vendas vem do México',
+        }),
+        subtitle: tx({
+          es: 'Ventas de 2026 por región, país y ciudad, en dólares',
+          en: '2026 sales by region, country and city, in dollars',
+          pt: 'Vendas de 2026 por região, país e cidade, em dólares',
+        }),
         data: filas(
           [
-            ['América', 'México', 'Ciudad de México', 412000],
-            ['América', 'México', 'Monterrey', 182000],
-            ['América', 'México', 'Guadalajara', 154000],
-            ['América', 'Colombia', 'Bogotá', 236000],
-            ['América', 'Colombia', 'Medellín', 118000],
-            ['América', 'Argentina', 'Buenos Aires', 205000],
-            ['América', 'Chile', 'Santiago', 141000],
-            ['América', 'Perú', 'Lima', 126000],
-            ['Europa', 'España', 'Madrid', 248000],
-            ['Europa', 'España', 'Barcelona', 197000],
-            ['Europa', 'Portugal', 'Lisboa', 92000],
-            ['Europa', 'Francia', 'París', 134000],
-            ['Asia', 'Japón', 'Tokio', 158000],
-            ['Asia', 'Corea del Sur', 'Seúl', 87000],
+            [L.america, L.mexico, L.cdmx, 412000],
+            [L.america, L.mexico, 'Monterrey', 182000],
+            [L.america, L.mexico, 'Guadalajara', 154000],
+            [L.america, 'Colombia', 'Bogotá', 236000],
+            [L.america, 'Colombia', 'Medellín', 118000],
+            [L.america, 'Argentina', 'Buenos Aires', 205000],
+            [L.america, 'Chile', 'Santiago', 141000],
+            [L.america, L.peru, 'Lima', 126000],
+            [L.europa, L.espana, 'Madrid', 248000],
+            [L.europa, L.espana, 'Barcelona', 197000],
+            [L.europa, 'Portugal', L.lisboa, 92000],
+            [L.europa, L.francia, L.paris, 134000],
+            [L.asia, L.japon, L.tokio, 158000],
+            [L.asia, L.corea, L.seul, 87000],
           ],
           ['region', 'pais', 'ciudad', 'ventas'],
         ),
         xAxis: { field: 'ciudad' },
         yAxis: { format: 'currency' },
-        series: [{ type: 'sunburst', field: 'ventas', name: 'Ventas', levels: ['region', 'pais', 'ciudad'] }],
+        series: [
+          {
+            type: 'sunburst',
+            field: 'ventas',
+            name: tx({ es: 'Ventas', en: 'Sales', pt: 'Vendas' }),
+            levels: ['region', 'pais', 'ciudad'],
+          },
+        ],
       },
     },
     {
       id: 'meta',
       tipo: 'LozGauge',
-      clase: 'Medidor',
-      familia: 'Partes de un todo',
-      desc: 'Un número contra su meta, para lo primero que se ve en un tablero. Si son varios números, un gráfico de metas (bala) ocupa menos y los compara mejor.',
+      clase: tx({ es: 'Medidor', en: 'Gauge', pt: 'Medidor' }),
+      familia: PARTES,
+      desc: tx({
+        es: 'Un número contra su meta, para lo primero que se ve en un tablero. Si son varios números, un gráfico de metas (bala) ocupa menos y los compara mejor.',
+        en: 'One number against its goal, for the first thing people see on a dashboard. For several numbers, a bullet chart takes less room and compares them better.',
+        pt: 'Um número contra a meta, para a primeira coisa que se vê em um painel. Se forem vários números, um gráfico de metas (bullet) ocupa menos espaço e compara melhor.',
+      }),
       opciones: {
-        title: 'Siete puntos por debajo de lo previsto',
-        subtitle: 'Avance de la meta de ventas del año a octubre. La marca es donde deberíamos ir.',
-        data: [{ mes: 'Octubre', avance: 0.78 }],
+        title: tx({
+          es: 'Siete puntos por debajo de lo previsto',
+          en: 'Seven points behind plan',
+          pt: 'Sete pontos abaixo do previsto',
+        }),
+        subtitle: tx({
+          es: 'Avance de la meta de ventas del año a octubre. La marca es donde deberíamos ir.',
+          en: 'Progress toward this year’s sales goal through October. The marker is where we should be.',
+          pt: 'Progresso da meta de vendas do ano até outubro. A marca é onde deveríamos estar.',
+        }),
+        data: [{ mes: tx({ es: 'Octubre', en: 'October', pt: 'Outubro' }), avance: 0.78 }],
         xAxis: { field: 'mes' },
         yAxis: { format: 'percent', min: 0, max: 1 },
-        series: [{ type: 'gauge', field: 'avance', name: 'Avance', target: 0.85 }],
+        series: [{ type: 'gauge', field: 'avance', name: tx({ es: 'Avance', en: 'Progress', pt: 'Progresso' }), target: 0.85 }],
       },
     },
     {
       id: 'embudo',
       tipo: 'LozFunnel',
-      clase: 'Embudo',
-      familia: 'Partes de un todo',
-      desc: 'Los pasos van uno debajo del otro, con lo que se pierde entre cada uno. Las barras son rectas y no trapecios porque los largos se comparan mejor que las formas.',
+      clase: tx({ es: 'Embudo', en: 'Funnel', pt: 'Funil' }),
+      familia: PARTES,
+      desc: tx({
+        es: 'Los pasos van uno debajo del otro, con lo que se pierde entre cada uno. Las barras son rectas y no trapecios porque los largos se comparan mejor que las formas.',
+        en: 'The steps go one below the other, with what gets lost between each one. The bars are straight, not trapezoids, because lengths are easier to compare than shapes.',
+        pt: 'As etapas vêm uma embaixo da outra, com o que se perde entre cada uma. As barras são retas e não trapézios porque comprimentos se comparam melhor que formas.',
+      }),
       opciones: {
-        title: 'Solo el 5 % de las visitas termina en una compra',
-        subtitle: 'Visitas de octubre de 2026 en cada paso de la compra',
+        title: tx({
+          es: 'Solo el 5 % de las visitas termina en una compra',
+          en: 'Only 5% of visits end in a purchase',
+          pt: 'Só 5% das visitas terminam em compra',
+        }),
+        subtitle: tx({
+          es: 'Visitas de octubre de 2026 en cada paso de la compra',
+          en: 'October 2026 visits at each step of checkout',
+          pt: 'Visitas de outubro de 2026 em cada etapa da compra',
+        }),
         data: filas(
-          [
-            ['Visitas', 48210],
-            ['Vieron un producto', 21400],
-            ['Agregaron al carrito', 6830],
-            ['Iniciaron el pago', 3120],
-            ['Compraron', 2540],
-          ],
+          junto(
+            tx({
+              es: ['Visitas', 'Vieron un producto', 'Agregaron al carrito', 'Iniciaron el pago', 'Compraron'],
+              en: ['Visits', 'Viewed a product', 'Added to cart', 'Started checkout', 'Purchased'],
+              pt: ['Visitas', 'Viram um produto', 'Adicionaram ao carrinho', 'Iniciaram o pagamento', 'Compraram'],
+            }),
+            [48210, 21400, 6830, 3120, 2540],
+          ),
           ['paso', 'sesiones'],
         ),
         xAxis: { field: 'paso' },
-        series: [{ type: 'funnel', field: 'sesiones', name: 'Visitas' }],
+        series: [{ type: 'funnel', field: 'sesiones', name: tx({ es: 'Visitas', en: 'Visits', pt: 'Visitas' }) }],
       },
     },
     {
       id: 'tiendas',
       tipo: 'LozBubble',
-      clase: 'Burbujas',
-      familia: 'Relaciones',
+      clase: tx({ es: 'Burbujas', en: 'Bubbles', pt: 'Bolhas' }),
+      familia: RELACIONES,
       tamano: 'grande',
-      desc: 'Tres medidas en un punto: ventas a lo ancho, margen a lo alto y clientes en el tamaño. Lo que crece con el valor es el área de la burbuja, no su radio.',
+      desc: tx({
+        es: 'Tres medidas en un punto: ventas a lo ancho, margen a lo alto y clientes en el tamaño. Lo que crece con el valor es el área de la burbuja, no su radio.',
+        en: 'Three measures in one point: sales across, margin up and down, and customers in the size. What grows with the value is the bubble’s area, not its radius.',
+        pt: 'Três medidas em um ponto: vendas na horizontal, margem na vertical e clientes no tamanho. O que cresce com o valor é a área da bolha, não o raio.',
+      }),
       opciones: {
-        title: 'Las tiendas grandes venden más, pero con menos margen',
-        subtitle: 'Nueve tiendas en 2026. El tamaño de cada burbuja es su cantidad de clientes.',
+        title: tx({
+          es: 'Las tiendas grandes venden más, pero con menos margen',
+          en: 'Big stores sell more, but at a lower margin',
+          pt: 'As lojas grandes vendem mais, mas com margem menor',
+        }),
+        subtitle: tx({
+          es: 'Nueve tiendas en 2026. El tamaño de cada burbuja es su cantidad de clientes.',
+          en: 'Nine stores in 2026. The size of each bubble is its number of customers.',
+          pt: 'Nove lojas em 2026. O tamanho de cada bolha é a quantidade de clientes.',
+        }),
+        // Una serie por zona: el campo de la zona es su margen y 'c' + zona, sus clientes.
         data: filas(
           [
-            [0.6, 0.39, 1200, 'Sur'],
-            [0.9, 0.35, 2400, 'Centro'],
-            [1.2, 0.31, 3800, 'Centro'],
-            [1.4, 0.26, 2100, 'Sur'],
-            [1.7, 0.29, 4100, 'Norte'],
-            [2.2, 0.34, 5200, 'Norte'],
-            [2.8, 0.28, 7600, 'Centro'],
-            [3.1, 0.31, 8100, 'Sur'],
-            [3.6, 0.24, 9800, 'Norte'],
+            [0.6, 0.39, 1200, zonas[2]],
+            [0.9, 0.35, 2400, zonas[1]],
+            [1.2, 0.31, 3800, zonas[1]],
+            [1.4, 0.26, 2100, zonas[2]],
+            [1.7, 0.29, 4100, zonas[0]],
+            [2.2, 0.34, 5200, zonas[0]],
+            [2.8, 0.28, 7600, zonas[1]],
+            [3.1, 0.31, 8100, zonas[2]],
+            [3.6, 0.24, 9800, zonas[0]],
           ],
           ['ventas', 'margen', 'clientes', 'zona'],
         ).map(function (t) {
@@ -556,10 +1173,20 @@
           o['c' + t.zona] = t.clientes;
           return o;
         }),
-        xAxis: { field: 'ventas', type: 'linear', title: 'Ventas (millones de dólares)' },
-        yAxis: { format: 'percent', title: 'Margen bruto' },
-        series: ['Norte', 'Centro', 'Sur'].map(function (z) {
-          return { type: 'bubble', field: z, size: 'c' + z, sizeName: 'Clientes', name: 'Zona ' + z.toLowerCase() };
+        xAxis: {
+          field: 'ventas',
+          type: 'linear',
+          title: tx({ es: 'Ventas (millones de dólares)', en: 'Sales (millions of dollars)', pt: 'Vendas (milhões de dólares)' }),
+        },
+        yAxis: { format: 'percent', title: tx({ es: 'Margen bruto', en: 'Gross margin', pt: 'Margem bruta' }) },
+        series: zonas.map(function (z, i) {
+          return {
+            type: 'bubble',
+            field: z,
+            size: 'c' + z,
+            sizeName: tx({ es: 'Clientes', en: 'Customers', pt: 'Clientes' }),
+            name: nombresZona[i],
+          };
         }),
       },
     },
@@ -567,153 +1194,247 @@
       id: 'modelos',
       tipo: 'LozRadar',
       clase: 'Radar',
-      familia: 'Relaciones',
-      desc: 'Compara dos o tres perfiles con los mismos criterios. Con más perfiles se vuelve una maraña, y ahí conviene un panel pequeño por cada una.',
+      familia: RELACIONES,
+      desc: tx({
+        es: 'Compara dos o tres perfiles con los mismos criterios. Con más perfiles se vuelve una maraña, y ahí conviene un panel pequeño por cada una.',
+        en: 'It compares two or three profiles on the same criteria. With more profiles it turns into a tangle, and then small multiples, one panel each, work better.',
+        pt: 'Compara dois ou três perfis com os mesmos critérios. Com mais perfis vira um emaranhado, e aí vale mais um gráfico pequeno para cada um.',
+      }),
       opciones: {
-        title: 'El modelo B gana en cámara y velocidad, pero cuesta más',
-        subtitle: 'Puntaje de 0 a 10 en seis pruebas; en precio, 10 es el más barato',
+        title: tx({
+          es: 'El modelo B gana en cámara y velocidad, pero cuesta más',
+          en: 'Model B wins on camera and speed, but costs more',
+          pt: 'O modelo B ganha em câmera e velocidade, mas custa mais',
+        }),
+        subtitle: tx({
+          es: 'Puntaje de 0 a 10 en seis pruebas; en precio, 10 es el más barato',
+          en: 'Score from 0 to 10 on six tests; for price, 10 is the cheapest',
+          pt: 'Nota de 0 a 10 em seis testes; em preço, 10 é o mais barato',
+        }),
         data: filas(
-          [
-            ['Batería', 8, 6],
-            ['Cámara', 7, 9],
-            ['Pantalla', 8, 8],
-            ['Precio', 9, 5],
-            ['Velocidad', 6, 9],
-            ['Diseño', 7, 8],
-          ],
+          junto(
+            tx({
+              es: ['Batería', 'Cámara', 'Pantalla', 'Precio', 'Velocidad', 'Diseño'],
+              en: ['Battery', 'Camera', 'Screen', 'Price', 'Speed', 'Design'],
+              pt: ['Bateria', 'Câmera', 'Tela', 'Preço', 'Velocidade', 'Design'],
+            }),
+            [
+              [8, 6],
+              [7, 9],
+              [8, 8],
+              [9, 5],
+              [6, 9],
+              [7, 8],
+            ],
+          ),
           ['criterio', 'a', 'b'],
         ),
         xAxis: { field: 'criterio' },
         yAxis: { min: 0, max: 10 },
         series: [
-          { type: 'radar', field: 'a', name: 'Modelo A' },
-          { type: 'radar', field: 'b', name: 'Modelo B' },
+          { type: 'radar', field: 'a', name: tx({ es: 'Modelo A', en: 'Model A', pt: 'Modelo A' }) },
+          { type: 'radar', field: 'b', name: tx({ es: 'Modelo B', en: 'Model B', pt: 'Modelo B' }) },
         ],
       },
     },
     {
       id: 'visitas-hora',
       tipo: 'LozHeatmap',
-      clase: 'Mapa de calor',
-      familia: 'Relaciones',
+      clase: tx({ es: 'Mapa de calor', en: 'Heatmap', pt: 'Mapa de calor' }),
+      familia: RELACIONES,
       tamano: 'grande',
-      desc: 'Siete días por veinticuatro horas son 168 números. Pintados en una rejilla, el patrón aparece antes de leer cualquier cifra.',
+      desc: tx({
+        es: 'Siete días por veinticuatro horas son 168 números. Pintados en una rejilla, el patrón aparece antes de leer cualquier cifra.',
+        en: 'Seven days times twenty-four hours is 168 numbers. Painted on a grid, the pattern shows up before you read a single figure.',
+        pt: 'Sete dias vezes vinte e quatro horas são 168 números. Pintados em uma grade, o padrão aparece antes de você ler qualquer número.',
+      }),
       opciones: {
-        title: 'Las visitas tocan techo a media tarde',
-        subtitle: 'Visitas por hora en una semana típica de octubre',
+        title: tx({
+          es: 'Las visitas tocan techo a media tarde',
+          en: 'Visits peak in the middle of the afternoon',
+          pt: 'As visitas chegam ao pico no meio da tarde',
+        }),
+        subtitle: tx({
+          es: 'Visitas por hora en una semana típica de octubre',
+          en: 'Visits per hour in a typical October week',
+          pt: 'Visitas por hora em uma semana típica de outubro',
+        }),
         data: visitasHora,
         xAxis: { field: 'hora' },
-        series: [{ type: 'heatmap', field: 'visitas', name: 'Visitas', y: 'dia' }],
+        series: [{ type: 'heatmap', field: 'visitas', name: tx({ es: 'Visitas', en: 'Visits', pt: 'Visitas' }), y: 'dia' }],
       },
     },
     {
       id: 'equipo',
       tipo: 'LozNetwork',
-      clase: 'Red',
-      familia: 'Relaciones',
-      desc: 'Cada línea une a dos personas que se escriben, más gruesa cuantos más mensajes. Quien conecta dos áreas queda entre ellas.',
+      clase: tx({ es: 'Red', en: 'Network', pt: 'Rede' }),
+      familia: RELACIONES,
+      desc: tx({
+        es: 'Cada línea une a dos personas que se escriben, más gruesa cuantos más mensajes. Quien conecta dos áreas queda entre ellas.',
+        en: 'Each line joins two people who message each other, thicker the more messages they send. Whoever connects two teams ends up between them.',
+        pt: 'Cada linha une duas pessoas que trocam mensagens, mais grossa quanto mais mensagens. Quem conecta duas áreas fica entre elas.',
+      }),
       opciones: {
-        title: 'Cada área habla sobre todo consigo misma',
-        subtitle: 'Mensajes por semana entre doce personas de cuatro áreas',
-        data: filas(
-          [
-            ['Luis', 'Ana', 18, 'Diseño'],
-            ['Ana', 'Marta', 11, 'Diseño'],
-            ['Marta', 'Luis', 7, 'Diseño'],
-            ['Ana', 'Pedro', 6, 'Diseño'],
-            ['Pedro', 'Sofía', 21, 'Datos'],
-            ['Pedro', 'Jorge', 13, 'Datos'],
-            ['Jorge', 'Sofía', 9, 'Datos'],
-            ['Sofía', 'Elena', 4, 'Datos'],
-            ['Carla', 'Elena', 16, 'Ventas'],
-            ['Elena', 'Raúl', 12, 'Ventas'],
-            ['Raúl', 'Carla', 8, 'Ventas'],
-            ['Carla', 'Marta', 3, 'Ventas'],
-            ['Tomás', 'Inés', 14, 'Soporte'],
-            ['Inés', 'Raúl', 5, 'Soporte'],
-            ['Tomás', 'Jorge', 4, 'Soporte'],
-            ['Inés', 'Bruno', 10, 'Soporte'],
-            ['Bruno', 'Tomás', 6, 'Soporte'],
-          ],
-          ['persona', 'con', 'mensajes', 'area'],
-        ),
+        title: tx({
+          es: 'Cada área habla sobre todo consigo misma',
+          en: 'Each team mostly talks to itself',
+          pt: 'Cada área conversa principalmente consigo mesma',
+        }),
+        subtitle: tx({
+          es: 'Mensajes por semana entre doce personas de cuatro áreas',
+          en: 'Messages per week among twelve people on four teams',
+          pt: 'Mensagens por semana entre doze pessoas de quatro áreas',
+        }),
+        data: (function () {
+          var a = tx({
+            es: ['Diseño', 'Datos', 'Ventas', 'Soporte'],
+            en: ['Design', 'Data', 'Sales', 'Support'],
+            pt: ['Design', 'Dados', 'Vendas', 'Suporte'],
+          });
+          return filas(
+            [
+              ['Luis', 'Ana', 18, a[0]],
+              ['Ana', 'Marta', 11, a[0]],
+              ['Marta', 'Luis', 7, a[0]],
+              ['Ana', 'Pedro', 6, a[0]],
+              ['Pedro', 'Sofía', 21, a[1]],
+              ['Pedro', 'Jorge', 13, a[1]],
+              ['Jorge', 'Sofía', 9, a[1]],
+              ['Sofía', 'Elena', 4, a[1]],
+              ['Carla', 'Elena', 16, a[2]],
+              ['Elena', 'Raúl', 12, a[2]],
+              ['Raúl', 'Carla', 8, a[2]],
+              ['Carla', 'Marta', 3, a[2]],
+              ['Tomás', 'Inés', 14, a[3]],
+              ['Inés', 'Raúl', 5, a[3]],
+              ['Tomás', 'Jorge', 4, a[3]],
+              ['Inés', 'Bruno', 10, a[3]],
+              ['Bruno', 'Tomás', 6, a[3]],
+            ],
+            ['persona', 'con', 'mensajes', 'area'],
+          );
+        })(),
         xAxis: { field: 'persona' },
-        series: [{ type: 'network', field: 'mensajes', name: 'Mensajes', to: 'con', group: 'area' }],
+        series: [
+          {
+            type: 'network',
+            field: 'mensajes',
+            name: tx({ es: 'Mensajes', en: 'Messages', pt: 'Mensagens' }),
+            to: 'con',
+            group: 'area',
+          },
+        ],
       },
     },
     {
       id: 'recorrido',
       tipo: 'LozSankey',
-      clase: 'Flujos (sankey)',
-      familia: 'Flujos y mapas',
+      clase: tx({ es: 'Flujos (sankey)', en: 'Sankey', pt: 'Fluxos (sankey)' }),
+      familia: FLUJOS,
       tamano: 'grande',
-      desc: 'Se lee de izquierda a derecha: de dónde llegan las visitas, por qué páginas pasan y cómo terminan. El grosor de cada flujo es la cantidad de visitas.',
+      desc: tx({
+        es: 'Se lee de izquierda a derecha: de dónde llegan las visitas, por qué páginas pasan y cómo terminan. El grosor de cada flujo es la cantidad de visitas.',
+        en: 'Read it from left to right: where visits come from, which pages they go through and how they end. The thickness of each flow is the number of visits.',
+        pt: 'Lê-se da esquerda para a direita: de onde vêm as visitas, por quais páginas passam e como terminam. A espessura de cada fluxo é a quantidade de visitas.',
+      }),
       opciones: {
-        title: 'La mayoría ve un producto y se va sin comprar',
-        subtitle: 'Visitas de octubre de 2026, desde que llegan hasta que se van',
+        title: tx({
+          es: 'La mayoría ve un producto y se va sin comprar',
+          en: 'Most people view a product and leave without buying',
+          pt: 'A maioria vê um produto e vai embora sem comprar',
+        }),
+        subtitle: tx({
+          es: 'Visitas de octubre de 2026, desde que llegan hasta que se van',
+          en: 'October 2026 visits, from the moment they arrive until they leave',
+          pt: 'Visitas de outubro de 2026, da chegada até a saída',
+        }),
         data: filas(
           [
-            ['Búsqueda', 'Inicio', 5200],
-            ['Búsqueda', 'Producto', 7400],
-            ['Redes', 'Inicio', 2600],
-            ['Redes', 'Ofertas', 3100],
-            ['Correo', 'Ofertas', 2200],
-            ['Directo', 'Inicio', 4300],
-            ['Inicio', 'Producto', 6900],
-            ['Inicio', 'Abandono', 5200],
-            ['Ofertas', 'Producto', 3800],
-            ['Ofertas', 'Abandono', 1500],
-            ['Producto', 'Compra', 6100],
-            ['Producto', 'Abandono', 12000],
+            [paso.busqueda, paso.inicio, 5200],
+            [paso.busqueda, paso.producto, 7400],
+            [paso.redes, paso.inicio, 2600],
+            [paso.redes, paso.ofertas, 3100],
+            [paso.correo, paso.ofertas, 2200],
+            [paso.directo, paso.inicio, 4300],
+            [paso.inicio, paso.producto, 6900],
+            [paso.inicio, paso.abandono, 5200],
+            [paso.ofertas, paso.producto, 3800],
+            [paso.ofertas, paso.abandono, 1500],
+            [paso.producto, paso.compra, 6100],
+            [paso.producto, paso.abandono, 12000],
           ],
           ['origen', 'destino', 'sesiones'],
         ),
         xAxis: { field: 'origen' },
-        series: [{ type: 'sankey', field: 'sesiones', name: 'Visitas', to: 'destino' }],
+        series: [{ type: 'sankey', field: 'sesiones', name: tx({ es: 'Visitas', en: 'Visits', pt: 'Visitas' }), to: 'destino' }],
       },
     },
     {
       id: 'mudanzas',
       tipo: 'LozChord',
-      clase: 'Cuerdas',
-      familia: 'Flujos y mapas',
-      desc: 'Las cuerdas muestran idas y vueltas entre los mismos lugares. Cada cinta tiene el color de la región de donde se fue la gente.',
+      clase: tx({ es: 'Cuerdas', en: 'Chord diagram', pt: 'Cordas' }),
+      familia: FLUJOS,
+      desc: tx({
+        es: 'Las cuerdas muestran idas y vueltas entre los mismos lugares. Cada cinta tiene el color de la región de donde se fue la gente.',
+        en: 'Chords show the back and forth between the same places. Each ribbon takes the color of the region people moved away from.',
+        pt: 'As cordas mostram idas e vindas entre os mesmos lugares. Cada faixa tem a cor da região de onde as pessoas saíram.',
+      }),
       opciones: {
-        title: 'De la capital se va más gente de la que llega',
-        subtitle: 'Mudanzas entre regiones en 2025, en miles de personas',
+        title: tx({
+          es: 'De la capital se va más gente de la que llega',
+          en: 'More people leave the capital than move in',
+          pt: 'Sai mais gente da capital do que chega',
+        }),
+        subtitle: tx({
+          es: 'Mudanzas entre regiones en 2025, en miles de personas',
+          en: 'Moves between regions in 2025, in thousands of people',
+          pt: 'Mudanças entre regiões em 2025, em milhares de pessoas',
+        }),
         data: filas(
           [
-            ['Capital', 'Centro', 182],
-            ['Centro', 'Capital', 96],
-            ['Capital', 'Costa', 74],
-            ['Costa', 'Capital', 58],
-            ['Norte', 'Capital', 71],
-            ['Capital', 'Norte', 39],
-            ['Sur', 'Centro', 64],
-            ['Centro', 'Sur', 41],
-            ['Costa', 'Sur', 33],
-            ['Norte', 'Costa', 27],
-            ['Sur', 'Capital', 52],
-            ['Centro', 'Norte', 22],
+            [zona.capital, zona.centro, 182],
+            [zona.centro, zona.capital, 96],
+            [zona.capital, zona.costa, 74],
+            [zona.costa, zona.capital, 58],
+            [zona.norte, zona.capital, 71],
+            [zona.capital, zona.norte, 39],
+            [zona.sur, zona.centro, 64],
+            [zona.centro, zona.sur, 41],
+            [zona.costa, zona.sur, 33],
+            [zona.norte, zona.costa, 27],
+            [zona.sur, zona.capital, 52],
+            [zona.centro, zona.norte, 22],
           ],
           ['origen', 'destino', 'personas'],
         ),
         xAxis: { field: 'origen' },
-        series: [{ type: 'chord', field: 'personas', name: 'Personas', to: 'destino' }],
+        series: [{ type: 'chord', field: 'personas', name: tx({ es: 'Personas', en: 'People', pt: 'Pessoas' }), to: 'destino' }],
       },
     },
     {
       id: 'tiendas-mapa',
       tipo: 'LozMap',
-      clase: 'Mapa de burbujas',
-      familia: 'Flujos y mapas',
+      clase: tx({ es: 'Mapa de burbujas', en: 'Bubble map', pt: 'Mapa de bolhas' }),
+      familia: FLUJOS,
       tamano: 'grande',
-      desc: 'Una burbuja por ciudad, en su lugar del mapa. El tamaño da el orden de magnitud; el valor exacto aparece al pasar el puntero.',
+      desc: tx({
+        es: 'Una burbuja por ciudad, en su lugar del mapa. El tamaño da el orden de magnitud; el valor exacto aparece al pasar el puntero.',
+        en: 'One bubble per city, in its spot on the map. The size gives you the order of magnitude; the exact value shows up when you hover.',
+        pt: 'Uma bolha por cidade, no seu lugar do mapa. O tamanho dá a ordem de grandeza; o valor exato aparece ao passar o ponteiro.',
+      }),
       opciones: {
-        title: 'São Paulo ya vende más que Ciudad de México',
-        subtitle: 'Ventas de octubre de 2026 por ciudad, en miles de dólares',
+        title: tx({
+          es: 'São Paulo ya vende más que Ciudad de México',
+          en: 'São Paulo now outsells Mexico City',
+          pt: 'São Paulo já vende mais que a Cidade do México',
+        }),
+        subtitle: tx({
+          es: 'Ventas de octubre de 2026 por ciudad, en miles de dólares',
+          en: 'October 2026 sales by city, in thousands of dollars',
+          pt: 'Vendas de outubro de 2026 por cidade, em milhares de dólares',
+        }),
         data: [
-          { ciudad: 'Ciudad de México', lat: 19.43, lon: -99.13, ventas: 4200 },
+          { ciudad: L.cdmx, lat: 19.43, lon: -99.13, ventas: 4200 },
           { ciudad: 'Bogotá', lat: 4.71, lon: -74.07, ventas: 2600 },
           { ciudad: 'Lima', lat: -12.05, lon: -77.04, ventas: 1900 },
           { ciudad: 'Santiago', lat: -33.45, lon: -70.67, ventas: 1500 },
@@ -723,18 +1444,32 @@
           { ciudad: 'Miami', lat: 25.76, lon: -80.19, ventas: 3600 },
         ],
         xAxis: { field: 'ciudad' },
-        series: [{ type: 'mapbubble', field: 'ventas', name: 'Ventas', lat: 'lat', lon: 'lon' }],
+        series: [
+          { type: 'mapbubble', field: 'ventas', name: tx({ es: 'Ventas', en: 'Sales', pt: 'Vendas' }), lat: 'lat', lon: 'lon' },
+        ],
       },
     },
     {
       id: 'paises',
       tipo: 'LozMap',
-      clase: 'Mapa coloreado',
-      familia: 'Flujos y mapas',
-      desc: 'Cada país con datos se pinta según su valor y los demás quedan en gris. La forma de mapa que trae de entrada respeta las áreas, así ningún país parece más grande de lo que es.',
+      clase: tx({ es: 'Mapa coloreado', en: 'Filled map', pt: 'Mapa colorido' }),
+      familia: FLUJOS,
+      desc: tx({
+        es: 'Cada país con datos se pinta según su valor y los demás quedan en gris. La forma de mapa que trae de entrada respeta las áreas, así ningún país parece más grande de lo que es.',
+        en: 'Each country with data is shaded by its value and the rest stay gray. The default map shape keeps areas true, so no country looks bigger than it really is.',
+        pt: 'Cada país com dados é pintado conforme o valor e os outros ficam em cinza. O formato de mapa padrão respeita as áreas, então nenhum país parece maior do que é.',
+      }),
       opciones: {
-        title: 'Brasil y México suman más de la mitad de los usuarios',
-        subtitle: 'Usuarios activos en América Latina, octubre de 2026',
+        title: tx({
+          es: 'Brasil y México suman más de la mitad de los usuarios',
+          en: 'Brazil and Mexico account for more than half the users',
+          pt: 'Brasil e México somam mais da metade dos usuários',
+        }),
+        subtitle: tx({
+          es: 'Usuarios activos en América Latina, octubre de 2026',
+          en: 'Active users in Latin America, October 2026',
+          pt: 'Usuários ativos na América Latina, outubro de 2026',
+        }),
         data: filas(
           [
             ['MEX', 1830],
@@ -761,33 +1496,53 @@
         }),
         xAxis: { field: 'pais' },
         yAxis: { format: 'compact' },
-        series: [{ type: 'choropleth', field: 'usuarios', name: 'Usuarios', fit: 'data' }],
+        series: [
+          { type: 'choropleth', field: 'usuarios', name: tx({ es: 'Usuarios', en: 'Users', pt: 'Usuários' }), fit: 'data' },
+        ],
       },
     },
     {
       id: 'globo',
       tipo: 'LozMap',
-      clase: 'Mapa en globo',
-      familia: 'Flujos y mapas',
+      clase: tx({ es: 'Mapa en globo', en: 'Globe map', pt: 'Mapa em globo' }),
+      familia: FLUJOS,
       tamano: 'ancho',
-      desc: 'En un globo las distancias se ven como son: Madrid queda al otro lado del océano y no estirado en una esquina, como en un mapa plano. Para comparar países conviene el mapa de áreas iguales; el globo sirve cuando importa dónde queda cada cosa y qué tan lejos.',
+      desc: tx({
+        es: 'En un globo las distancias se ven como son: Madrid queda al otro lado del océano y no estirado en una esquina, como en un mapa plano. Para comparar países conviene el mapa de áreas iguales; el globo sirve cuando importa dónde queda cada cosa y qué tan lejos.',
+        en: 'On a globe, distances look the way they are: Madrid sits across the ocean instead of stretched out in a corner, as on a flat map. To compare countries, use the equal-area map; the globe helps when what matters is where things are and how far apart.',
+        pt: 'Em um globo as distâncias aparecem como são: Madri fica do outro lado do oceano, e não esticada num canto, como em um mapa plano. Para comparar países, use o mapa de áreas iguais; o globo serve quando importa onde cada coisa fica e a que distância.',
+      }),
       // La galería y la página del ejemplo lo hacen girar con girarGlobo(): entra girando, frena
-      // sobre `destino` ([longitud, latitud]) y dibuja encima los arcos de `rutas`.
+      // sobre `destino` ([longitud, latitud]) y dibuja encima los arcos de `rutas`. `titulo` encabeza
+      // la lista de envíos (rutasGlobo).
       globo: {
         destino: [-66, -6],
-        origen: { nombre: 'Ciudad de México', lon: -99.13, lat: 19.43 },
+        origen: { nombre: L.cdmx, lon: -99.13, lat: 19.43 },
+        titulo: tx({
+          es: 'Envíos desde Ciudad de México',
+          en: 'Shipments from Mexico City',
+          pt: 'Envios saindo da Cidade do México',
+        }),
         rutas: [
           { nombre: 'Bogotá', lon: -74.07, lat: 4.71, envios: 1390 },
           { nombre: 'São Paulo', lon: -46.63, lat: -23.55, envios: 980 },
           { nombre: 'Lima', lon: -77.04, lat: -12.05, envios: 610, izq: true },
           { nombre: 'Buenos Aires', lon: -58.38, lat: -34.6, envios: 540 },
-          { nombre: 'Madrid', lon: -3.7, lat: 40.42, envios: 460 },
+          { nombre: tx({ es: 'Madrid', en: 'Madrid', pt: 'Madri' }), lon: -3.7, lat: 40.42, envios: 460 },
           { nombre: 'Santiago', lon: -70.67, lat: -33.45, envios: 420, izq: true },
         ],
       },
       opciones: {
-        title: 'Madrid es el único envío que cruza el océano, y ya pide más que Santiago',
-        subtitle: 'Envíos de octubre de 2026 desde Ciudad de México (arcos) y clientes por país (color)',
+        title: tx({
+          es: 'Madrid es el único envío que cruza el océano, y ya pide más que Santiago',
+          en: 'Madrid is the only shipment that crosses the ocean, and it already orders more than Santiago',
+          pt: 'Madri é o único envio que cruza o oceano, e já pede mais que Santiago',
+        }),
+        subtitle: tx({
+          es: 'Envíos de octubre de 2026 desde Ciudad de México (arcos) y clientes por país (color)',
+          en: 'October 2026 shipments from Mexico City (arcs) and customers by country (color)',
+          pt: 'Envios de outubro de 2026 saindo da Cidade do México (arcos) e clientes por país (cor)',
+        }),
         data: filas(
           [
             ['BRA', 2650],
@@ -818,10 +1573,111 @@
         ),
         xAxis: { field: 'pais' },
         yAxis: { format: 'compact' },
-        series: [{ type: 'choropleth', field: 'clientes', name: 'Clientes', projection: 'orthographic', rotate: [-66, -6] }],
+        series: [
+          {
+            type: 'choropleth',
+            field: 'clientes',
+            name: tx({ es: 'Clientes', en: 'Customers', pt: 'Clientes' }),
+            projection: 'orthographic',
+            rotate: [-66, -6],
+          },
+        ],
       },
     },
   ];
+
+  // Los nombres de los campos, en el idioma de la página: salen en el código que se copia.
+  // En español quedan como están; en portugués, sin acentos. Los campos que son a la vez nombres
+  // visibles (ciudades, regiones, zonas) ya vienen traducidos y no pasan por aquí.
+  var CAMPOS = {
+    mes: { en: 'month', pt: 'mes' },
+    tienda: { en: 'store', pt: 'loja' },
+    meta: { en: 'goal', pt: 'meta' },
+    fecha: { en: 'date', pt: 'dia' },
+    apertura: { en: 'open', pt: 'abertura' },
+    maximo: { en: 'high', pt: 'maxima' },
+    minimo: { en: 'low', pt: 'minima' },
+    cierre: { en: 'close', pt: 'fechamento' },
+    hora: { en: 'hour', pt: 'hora' },
+    dia: { en: 'day', pt: 'dia' },
+    visitas: { en: 'visits', pt: 'visitas' },
+    pagina: { en: 'page', pt: 'pagina' },
+    paso: { en: 'step', pt: 'etapa' },
+    monto: { en: 'amount', pt: 'valor' },
+    region: { en: 'region', pt: 'regiao' },
+    ventas: { en: 'sales', pt: 'vendas' },
+    palabra: { en: 'word', pt: 'palavra' },
+    menciones: { en: 'mentions', pt: 'mencoes' },
+    tema: { en: 'topic', pt: 'tema' },
+    movil: { en: 'mobile', pt: 'celular' },
+    escritorio: { en: 'desktop', pt: 'desktop' },
+    tableta: { en: 'tablet', pt: 'tablet' },
+    tasa: { en: 'rate', pt: 'taxa' },
+    tarea: { en: 'task', pt: 'tarefa' },
+    inicio: { en: 'start', pt: 'inicio' },
+    fin: { en: 'end', pt: 'fim' },
+    equipo: { en: 'team', pt: 'equipe' },
+    canal: { en: 'channel', pt: 'canal' },
+    pedidos: { en: 'orders', pt: 'pedidos' },
+    producto: { en: 'product', pt: 'produto' },
+    categoria: { en: 'category', pt: 'categoria' },
+    pais: { en: 'country', pt: 'pais' },
+    ciudad: { en: 'city', pt: 'cidade' },
+    avance: { en: 'progress', pt: 'progresso' },
+    sesiones: { en: 'sessions', pt: 'sessoes' },
+    criterio: { en: 'criterion', pt: 'criterio' },
+    persona: { en: 'person', pt: 'pessoa' },
+    con: { en: 'with', pt: 'com' },
+    mensajes: { en: 'messages', pt: 'mensagens' },
+    area: { en: 'team', pt: 'area' },
+    origen: { en: 'source', pt: 'origem' },
+    destino: { en: 'target', pt: 'destino' },
+    personas: { en: 'people', pt: 'pessoas' },
+    usuarios: { en: 'users', pt: 'usuarios' },
+    clientes: { en: 'customers', pt: 'clientes' },
+  };
+  // Opciones de serie cuyo valor es el nombre de un campo (ver SeriesOptions en src/types.ts).
+  var NOMBRAN_CAMPO = [
+    'field',
+    'size',
+    'y',
+    'group',
+    'to',
+    'end',
+    'label',
+    'total',
+    'targetField',
+    'lat',
+    'lon',
+    'open',
+    'high',
+    'low',
+  ];
+
+  /** Cambia los campos de un ejemplo al idioma de la página: las claves de las filas y las opciones que los nombran. */
+  function traducirCampos(o) {
+    var campo = function (k) {
+      return CAMPOS[k] ? CAMPOS[k][IDIOMA] : k;
+    };
+    o.data = o.data.map(function (fila) {
+      var n = {};
+      for (var k in fila) n[campo(k)] = fila[k];
+      return n;
+    });
+    if (o.xAxis && o.xAxis.field) o.xAxis = Object.assign({}, o.xAxis, { field: campo(o.xAxis.field) });
+    o.series = o.series.map(function (s) {
+      var c = Object.assign({}, s);
+      NOMBRAN_CAMPO.forEach(function (p) {
+        if (typeof c[p] === 'string') c[p] = campo(c[p]);
+      });
+      if (c.levels) c.levels = c.levels.map(campo);
+      return c;
+    });
+  }
+  if (IDIOMA !== 'es')
+    window.EJEMPLOS.forEach(function (ej) {
+      traducirCampos(ej.opciones);
+    });
 
   /** Los mapas necesitan el mapa del mundo (siteMapa) antes de dibujarse. */
   window.esMapa = function (ej) {
@@ -833,12 +1689,12 @@
   /** La lista de envíos del globo: lo que dicen los arcos, en texto (también para el lector de pantalla). */
   window.rutasGlobo = function (ej) {
     var g = ej.globo;
-    var nf = new Intl.NumberFormat('es-CO');
+    var nf = new Intl.NumberFormat(LOCALE);
     var caja = document.createElement('div');
     caja.className = 'globo-rutas';
     var t = document.createElement('p');
     t.className = 'globo-rutas-titulo';
-    t.textContent = 'Envíos desde ' + g.origen.nombre;
+    t.textContent = g.titulo;
     var ol = document.createElement('ol');
     g.rutas
       .slice()
@@ -900,13 +1756,19 @@
       mandos.appendChild(b);
       return b;
     };
-    var oeste = boton('←', 'Girar el globo hacia el oeste');
-    var este = boton('→', 'Girar el globo hacia el este');
-    var volver = boton('Volver a Latinoamérica');
+    var oeste = boton(
+      '←',
+      tx({ es: 'Girar el globo hacia el oeste', en: 'Turn the globe west', pt: 'Girar o globo para o oeste' }),
+    );
+    var este = boton(
+      '→',
+      tx({ es: 'Girar el globo hacia el este', en: 'Turn the globe east', pt: 'Girar o globo para o leste' }),
+    );
+    var volver = boton(tx({ es: 'Volver a Latinoamérica', en: 'Back to Latin America', pt: 'Voltar para a América Latina' }));
     volver.hidden = true;
     var pista = document.createElement('span');
     pista.className = 'globo-pista';
-    pista.textContent = 'Arrástralo para girarlo';
+    pista.textContent = tx({ es: 'Arrástralo para girarlo', en: 'Drag to spin it', pt: 'Arraste para girar' });
     mandos.appendChild(pista);
     lienzo.appendChild(mandos);
 
@@ -1204,13 +2066,16 @@
     };
   };
 
-  /** Crea el ejemplo en un elemento, con el tema del sitio. */
+  /** Crea el ejemplo en un elemento, con el tema y el idioma del sitio. */
   window.crearEjemplo = function (ej, el, extra) {
     // Sin fondo propio: el gráfico toma el de la página (o el de la tarjeta).
-    var o = Object.assign({ background: false }, ej.opciones, extra || {});
+    var o = Object.assign({ background: false, locale: LOCALE }, ej.opciones, extra || {});
     var c = ej.multiples ? LozChart.multiples(el, o) : new LozChart(el, o);
     return window.siteChart ? window.siteChart(c) : c;
   };
+
+  /** El id del elemento del gráfico en el código que se copia (también lo usa demo.js). */
+  window.ID_GRAFICO = tx({ es: 'grafico', en: 'chart', pt: 'grafico' });
 
   /** Código que crea el ejemplo: las opciones reales, con los datos acortados a 3 filas. */
   window.codigoEjemplo = function (ej) {
@@ -1222,9 +2087,10 @@
       .replace(/"/g, "'");
     if (n > 3)
       json = json.replace(/(\n {2}data: \[[\s\S]*?\n {2}\])/, function (s) {
-        return s.replace(/\n {2}\]$/, ',\n    // … ' + (n - 3) + ' filas más\n  ]');
+        var mas = tx({ es: n - 3 + ' filas más', en: n - 3 + ' more rows', pt: 'mais ' + (n - 3) + ' linhas' });
+        return s.replace(/\n {2}\]$/, ',\n    // … ' + mas + '\n  ]');
       });
     var fn = ej.multiples ? 'LozChart.multiples' : 'new LozChart';
-    return fn + "('#grafico', " + json + ');';
+    return fn + "('#" + window.ID_GRAFICO + "', " + json + ');';
   };
 })();

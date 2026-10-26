@@ -213,6 +213,101 @@ svg {
 :root[data-mode='dark'] .theme-btn .moon {
   display: none;
 }
+/* "Documentación" corto, solo en la barra de un teléfono (ver la regla de 400 px). */
+.nav .corto {
+  display: none;
+}
+
+/* Selector de idioma: un desplegable (details) que funciona sin JavaScript. Cerrado ocupa poco,
+   el globo y el código del idioma, para que quepa en la barra de un teléfono de 375 px. */
+.idioma {
+  position: relative;
+  flex: none;
+}
+.idioma summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  font: 600 13px/1 var(--font);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.idioma summary::-webkit-details-marker {
+  display: none;
+}
+.idioma summary:hover,
+.idioma[open] summary {
+  border-color: var(--line-strong);
+  background: var(--sunken);
+}
+.idioma summary svg {
+  width: 17px;
+  height: 17px;
+}
+.idioma ul {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  min-width: 190px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.18);
+}
+.nav .idioma a,
+.idioma a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  background: none;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 500;
+}
+.idioma a span {
+  width: 22px;
+  color: var(--faint);
+  font: 600 12px/1 var(--font);
+  letter-spacing: 0.04em;
+}
+.nav .idioma a:hover,
+.idioma a:hover {
+  background: var(--sunken);
+}
+.idioma a[aria-current] {
+  background: var(--sunken);
+  font-weight: 650;
+}
+.idioma a[aria-current]::after {
+  content: '✓';
+  margin-left: auto;
+  color: var(--brand);
+}
+/* En el pie, los tres idiomas como enlaces. */
+.idiomas-pie {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+}
+.idiomas-pie a[aria-current] {
+  color: var(--ink);
+  text-decoration: none;
+}
 @media (max-width: 720px) {
   .top .wrap {
     gap: var(--s2);
@@ -238,6 +333,20 @@ svg {
   }
   .nav a {
     padding-inline: 7px;
+  }
+  /* Con "Documentación" o "Documentação" la barra no cabe: el selector queda solo con el código
+     del idioma (ES, PT), que se sigue entendiendo. */
+  .idioma summary {
+    padding: 0 9px;
+  }
+  .idioma summary svg {
+    display: none;
+  }
+  .nav .largo {
+    display: none;
+  }
+  .nav .corto {
+    display: inline;
   }
 }
 

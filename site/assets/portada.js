@@ -186,33 +186,51 @@
   var VIOLETA = '#9b6bff';
   var ROSA = '#ff4fa3';
   var HUESO = '#f4f2ee';
-  var MESES = [
-    'Enero',
-    'Febrero',
-    'Marzo',
-    'Abril',
-    'Mayo',
-    'Junio',
-    'Julio',
-    'Agosto',
-    'Septiembre',
-    'Octubre',
-    'Noviembre',
-    'Diciembre',
-  ];
-  var CORTO = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  // Los meses en el idioma de la página, con mayúscula y sin punto ('Dic', 'Dec', 'Dez').
+  var nombreMes = function (estilo) {
+    var f = new Intl.DateTimeFormat(LOCALE, { month: estilo, timeZone: 'UTC' });
+    return Array.from({ length: 12 }, function (_, i) {
+      var t = f.format(new Date(Date.UTC(2026, i, 15))).replace('.', '');
+      return t.charAt(0).toLocaleUpperCase(LOCALE) + t.slice(1);
+    });
+  };
+  var MESES = nombreMes('long');
+  var CORTO = nombreMes('short');
+  // El campo del mes también lo nombra la tabla para lectores de pantalla.
+  var MES = tx({ es: 'mes', en: 'month', pt: 'mes' });
   var ONLINE = [34, 36, 43, 47, 52, 52, 55, 58, 57, 63, 78, 92];
   var TIENDA = [27, 25, 30, 32, 34, 33, 31, 35, 33, 36, 44, 51];
   var META = [74, 76, 78, 81, 83, 86, 88, 91, 93, 96, 112, 120];
   var VENTAS = CORTO.map(function (m, i) {
-    return { mes: m, online: ONLINE[i] * 1000, tienda: TIENDA[i] * 1000, meta: META[i] * 1000 };
+    var fila = {};
+    fila[MES] = m;
+    return Object.assign(fila, { online: ONLINE[i] * 1000, tienda: TIENDA[i] * 1000, meta: META[i] * 1000 });
   });
   var CEROS = VENTAS.map(function (r) {
-    return { mes: r.mes, online: 0, tienda: 0, meta: 0 };
+    return Object.assign({}, r, { online: 0, tienda: 0, meta: 0 });
   });
-  var miles = function (v) {
-    return '$' + Math.round(v / 1000) + ' mil';
-  };
+  // Dólares en corto según el idioma: $143K en inglés y US$ 143 mil en portugués, con Intl. En
+  // español Intl daría "143 mil US$"; la portada dice "$143 mil", como se dice en voz alta.
+  var miles =
+    IDIOMA === 'es'
+      ? function (v) {
+          return '$' + Math.round(v / 1000) + ' mil';
+        }
+      : new Intl.NumberFormat(LOCALE, { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 0 })
+          .format;
+  var milesSolos = new Intl.NumberFormat(LOCALE, { notation: 'compact', maximumFractionDigits: 0 }).format;
+  // "23 mil sobre la meta": en español sin moneda (ya está arriba); en inglés y portugués, con ella.
+  var frenteMeta = tx({
+    es: function (v, bajo) {
+      return milesSolos(v) + (bajo ? ' bajo la meta' : ' sobre la meta');
+    },
+    en: function (v, bajo) {
+      return miles(v) + (bajo ? ' under goal' : ' over goal');
+    },
+    pt: function (v, bajo) {
+      return miles(v) + (bajo ? ' abaixo da meta' : ' acima da meta');
+    },
+  });
 
   var figura = $('#figura');
   var gPortada = $('#g-portada');
@@ -226,15 +244,16 @@
       theme: 'dark',
       background: false,
       currency: 'USD',
-      title: 'Ventas de una tienda en 2026',
+      locale: LOCALE,
+      title: tx({ es: 'Ventas de una tienda en 2026', en: 'A store’s sales in 2026', pt: 'Vendas de uma loja em 2026' }),
       // Empieza en cero (sin animar) y al dibujarse sube a los datos reales con setData.
       data: quieto ? VENTAS : CEROS,
-      xAxis: { field: 'mes' },
+      xAxis: { field: MES },
       yAxis: { format: miles, min: 0, max: 150000 },
       series: [
-        { type: 'bar', field: 'online', name: 'En línea', stack: true },
-        { type: 'bar', field: 'tienda', name: 'En el local', stack: true },
-        { type: 'line', field: 'meta', name: 'Meta', smooth: true },
+        { type: 'bar', field: 'online', name: tx({ es: 'En línea', en: 'Online', pt: 'On-line' }), stack: true },
+        { type: 'bar', field: 'tienda', name: tx({ es: 'En el local', en: 'In store', pt: 'Na loja' }), stack: true },
+        { type: 'line', field: 'meta', name: tx({ es: 'Meta', en: 'Goal', pt: 'Meta' }), smooth: true },
       ],
       palette: [VIOLETA, ROSA, HUESO],
       legend: { position: 'bottom' },
@@ -267,9 +286,9 @@
     var k = i < 0 ? 11 : i;
     var total = (ONLINE[k] + TIENDA[k]) * 1000;
     var dif = total - META[k] * 1000;
-    lMes.textContent = MESES[k] + ' · ventas';
+    lMes.textContent = MESES[k] + ' · ' + tx({ es: 'ventas', en: 'sales', pt: 'vendas' });
     lValor.textContent = miles(total);
-    lMeta.textContent = (dif >= 0 ? miles(dif) + ' sobre la meta' : miles(-dif) + ' bajo la meta').replace('$', '');
+    lMeta.textContent = frenteMeta(Math.abs(dif), dif < 0);
     lMeta.classList.toggle('bajo', dif < 0);
   }
 
@@ -337,9 +356,14 @@
   var gAcc = $('#g-acc');
   var acc = null;
   function crearAcc() {
-    var CIUDADES = ['Lima', 'Bogotá', 'Quito', 'Santiago', 'Ciudad de México'];
+    var CIUDADES = tx({
+      es: ['Lima', 'Bogotá', 'Quito', 'Santiago', 'Ciudad de México'],
+      en: ['Lima', 'Bogotá', 'Quito', 'Santiago', 'Mexico City'],
+      pt: ['Lima', 'Bogotá', 'Quito', 'Santiago', 'Cidade do México'],
+    });
     var datos = CORTO.map(function (m, i) {
-      var fila = { mes: m };
+      var fila = {};
+      fila[MES] = m;
       CIUDADES.forEach(function (c, k) {
         fila[c] = Math.round(([31, 24, 18, 27, 22][k] + i * (0.6 + k * 0.25) + 2 * Math.sin(i + k)) * 10) / 10;
       });
@@ -348,10 +372,11 @@
     var opciones = {
       theme: 'dark',
       background: false,
-      title: 'Usuarios activos por ciudad',
-      subtitle: 'En miles, 2026',
+      locale: LOCALE,
+      title: tx({ es: 'Usuarios activos por ciudad', en: 'Active users by city', pt: 'Usuários ativos por cidade' }),
+      subtitle: tx({ es: 'En miles, 2026', en: 'In thousands, 2026', pt: 'Em milhares, 2026' }),
       data: datos,
-      xAxis: { field: 'mes' },
+      xAxis: { field: MES },
       series: CIUDADES.map(function (c) {
         return { type: 'line', field: c, name: c };
       }),
@@ -381,7 +406,9 @@
     var on = this.getAttribute('aria-pressed') !== 'true';
     this.setAttribute('aria-pressed', String(on));
     $('#marco-acc').classList.toggle('daltonismo', on);
-    this.textContent = on ? 'Volver a los colores normales' : 'Verlo con daltonismo';
+    this.textContent = on
+      ? tx({ es: 'Volver a los colores normales', en: 'Back to normal colors', pt: 'Voltar às cores normais' })
+      : tx({ es: 'Verlo con daltonismo', en: 'See it with color blindness', pt: 'Ver com daltonismo' });
   });
 
   // ------------------------------------------------------------ Arranque y tamaño
