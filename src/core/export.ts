@@ -10,6 +10,15 @@ export function slug(s: string): string {
     .replace(/^-|-$/g, '');
 }
 
+/**
+ * Nombre del archivo sin extensión: el que se dio (sin repetir la extensión si ya la trae:
+ * "ventas.csv" no se vuelve "ventas.csv.csv"), o el título en minúsculas y sin acentos.
+ */
+export function fileName(given: string | undefined, title: string | undefined, type: string): string {
+  const base = given?.trim().replace(new RegExp(`\\.${type}$`, 'i'), '');
+  return base || slug(title ?? '') || 'lozchart';
+}
+
 /** Descarga el markup como SVG, o lo rasteriza a PNG al doble de resolución. */
 export async function downloadImage(
   markup: string,
@@ -54,6 +63,23 @@ export function toCSV(rows: readonly (readonly (string | number)[])[]): string {
     return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   return '\ufeff' + rows.map((r) => r.map(cell).join(',')).join('\r\n') + '\r\n';
+}
+
+/**
+ * Una fecha para el CSV, en la hora local en que se dibuja: '2026-03-01' si cae a medianoche y
+ * '2026-03-01 14:30' (con segundos si los tiene) si no. En UTC, un día de los datos se leería en
+ * la hoja de cálculo como el día anterior en cualquier zona al este de Greenwich.
+ */
+export function csvDate(t: number): string {
+  if (!isFinite(t)) return '';
+  const d = new Date(t);
+  const two = (n: number) => String(n).padStart(2, '0');
+  const day = `${String(d.getFullYear()).padStart(4, '0')}-${two(d.getMonth() + 1)}-${two(d.getDate())}`;
+  const h = d.getHours();
+  const m = d.getMinutes();
+  const sec = d.getSeconds() + d.getMilliseconds() / 1000;
+  if (!h && !m && !sec) return day;
+  return `${day} ${two(h)}:${two(m)}` + (sec ? `:${two(Math.floor(sec))}` : '');
 }
 
 /** Descarga un texto CSV. */

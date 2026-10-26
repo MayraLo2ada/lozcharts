@@ -44,7 +44,7 @@ import { fitText, indexLabels, xLabel, xTicks, type XLabelContext } from './core
 import { attrs, esc, html, prefersReducedMotion, resolveElement, svg, textWidth } from './core/dom';
 import { polarPoint } from './core/shapes';
 import { Legend, legendSVG, type LegendItem } from './core/legend';
-import { downloadCSV, downloadImage, slug, toCSV } from './core/export';
+import { csvDate, downloadCSV, downloadImage, fileName, toCSV } from './core/export';
 import { destroyDetached, destroyWithin, mount, mountedOn, unmount } from './core/mount';
 import { annotationValues, renderAnnotations } from './core/annotations';
 import { registerMap, type MapSource } from './core/geo';
@@ -148,6 +148,14 @@ type Normalized = LozChartOptions &
   Required<Pick<LozChartOptions, 'theme' | 'height' | 'tooltip' | 'animate' | 'locale' | 'currency' | 'background'>>;
 
 function normalize(o: LozChartOptions): Normalized {
+  // Sin opciones o sin el campo de la X no hay nada que dibujar: mejor un error que lo diga que
+  // un "Cannot read properties of undefined" desde adentro.
+  if (!o || typeof o !== 'object')
+    throw new Error("LozCharts: faltan las opciones. Pasa un objeto como { data, xAxis: { field: 'mes' }, series: [...] }.");
+  if (!o.xAxis || typeof o.xAxis.field !== 'string')
+    throw new Error(
+      "LozCharts: falta xAxis.field, el campo de cada fila que va en el eje X (por ejemplo xAxis: { field: 'mes' }).",
+    );
   return {
     ...o,
     data: Array.isArray(o.data) ? o.data : [],
@@ -279,6 +287,8 @@ export class LozChart {
   private selectedIdx: Set<number> | null = null;
   /** Dónde se presionó el puntero (px de la pantalla), para distinguir un clic de un arrastre. */
   private pressedAt: { x: number; y: number } | null = null;
+  /** Cuántas marcas del valor se pidieron para el cuadro destino (cambia con el ancho en horizontal). */
+  private targetTicks = 0;
   /** El alto que dio el usuario, si lo dio: manda sobre el que pida el tipo de serie. */
   private explicitHeight: number | undefined;
   private theme: Theme = LIGHT;
@@ -315,9 +325,9 @@ export class LozChart {
 
   constructor(target: string | HTMLElement, options: LozChartOptions) {
     this.element = resolveElement(target);
+    this.opts = normalize(options);
     mount(this);
     injectStyles(document);
-    this.opts = normalize(options);
     this.explicitHeight = options.height;
 
     const clipId = `lc-clip-${++uid}`;
@@ -484,7 +494,7 @@ export class LozChart {
 
   /** Descarga el gráfico como PNG (al doble de resolución) o SVG, o sus datos como CSV. */
   download(type: 'png' | 'svg' | 'csv' = 'png', filename?: string): Promise<void> {
-    const name = filename || slug(this.opts.title ?? '') || 'lozchart';
+    const name = fileName(filename, this.opts.title, type);
     if (type === 'csv') {
       downloadCSV(this.toCSV(), name);
       return Promise.resolve();
@@ -495,7 +505,8 @@ export class LozChart {
 
   /**
    * Los datos del gráfico como CSV: la X y el valor de cada serie, sin formato (números con punto
-   * decimal, fechas en ISO), listos para una hoja de cálculo. Incluye todas las filas.
+   * decimal, fechas como 2026-03-01 en la hora local), listos para una hoja de cálculo. Incluye
+   * todas las filas.
    */
   toCSV(): string {
     const p = this.prepared;
@@ -518,10 +529,20 @@ export class LozChart {
     }
     const rows: (string | number)[][] = [[this.opts.xAxis.title ?? xField, ...cols.map((c) => c.name)]];
     for (let i = 0; i < p.n; i++) {
-      const x = p.xType === 'time' && isFinite(p.xNum[i]) ? new Date(p.xNum[i]).toISOString() : String(p.xRaw[i] ?? '');
-      rows.push([x, ...cols.map((c) => c.at(i))]);
+      rows.push([this.csvX(i), ...cols.map((c) => c.at(i))]);
     }
     return toCSV(rows);
+  }
+
+  /**
+   * La X del índice i en el CSV: una fecha en la hora local y un número como número (un texto que
+   * empieza con "-" se marca para que la hoja de cálculo no lo tome como fórmula; -3 no lo es).
+   */
+  private csvX(i: number): string | number {
+    const p = this.prepared;
+    const raw = p.xRaw[i];
+    if (p.xType !== 'category' && isFinite(p.xNum[i])) return p.xType === 'time' ? csvDate(p.xNum[i]) : p.xNum[i];
+    return typeof raw === 'number' ? raw : raw instanceof Date ? csvDate(raw.getTime()) : String(raw ?? '');
   }
 
   /**
@@ -702,6 +723,7 @@ export class LozChart {
         this.hiddenIdx,
       );
     const zoomed = this.zoomable && !isFull(this.view);
+    this.targetTicks = this.valueTickCount();
     // El cuadro de todos los datos (para el mini gráfico) cambia con los datos, no con la ventana.
     if (full || !this.fullTarget) this.fullTarget = this.zoomable ? build() : null;
     // Para el eje del valor cuentan también los vecinos de la ventana: la línea que sale por el
@@ -1023,8 +1045,9 @@ export class LozChart {
     /** Lo que ocupan los números del eje Y sin `yAxis.width` (0 si no se ven). */
     let labelWidth = 0;
     if (horizontal) {
-      const labels = p.xRaw.map((_, i) => measure(xLabel(p, i, true, this.xContext())));
-      left = Math.ceil(Math.min(Math.max(0, ...labels), width * MAX_LABEL_SHARE)) + 10;
+      const ctx = this.xContext();
+      const labels = maxOf(p.n, (i) => measure(xLabel(p, i, true, ctx)));
+      left = Math.ceil(Math.min(labels, width * MAX_LABEL_SHARE)) + 10;
       right = 0;
     } else {
       left = 0;
@@ -1046,7 +1069,7 @@ export class LozChart {
       // La última etiqueta del valor va centrada en el borde: que no se salga.
       right = Math.ceil(measure(valueFormat(valueTicks[valueTicks.length - 1] ?? 0)) / 2) + 2;
     } else {
-      const natural = Math.ceil(Math.max(0, ...valueTicks.map((v) => measure(valueFormat(v))))) + 10;
+      const natural = Math.ceil(maxOf(valueTicks.length, (k) => measure(valueFormat(valueTicks[k])))) + 10;
       labelWidth = natural;
       left = Math.max(natural, o.yAxis?.width ?? 0);
     }
@@ -1059,7 +1082,7 @@ export class LozChart {
       r?.step ?? 1,
       r ? Math.max(Math.abs(r.d0), Math.abs(r.d1)) : 0,
     );
-    if (r) right = Math.ceil(Math.max(0, ...rightTicks.map((v) => measure(rightFormat(v))))) + 14;
+    if (r) right = Math.ceil(maxOf(rightTicks.length, (k) => measure(rightFormat(rightTicks[k])))) + 14;
     // Etiquetas al final de las líneas: a la derecha del área (y del eje derecho, si lo hay).
     let endLabels: Layout['endLabels'] = null;
     const endWidth = horizontal ? 0 : this.endLabelWidth(measure);
@@ -1112,8 +1135,11 @@ export class LozChart {
     /** En polar: el ancho máximo de las etiquetas de cada radio (las más largas se recortan). */
     let labelWidth = 0;
     if (this.coords === 'polar') {
-      const labels = p.xRaw.map((_, i) => measure(xLabel(p, i, true, this.xContext())));
-      labelWidth = Math.min(width * 0.28, Math.max(0, ...labels));
+      const ctx = this.xContext();
+      labelWidth = Math.min(
+        width * 0.28,
+        maxOf(p.n, (i) => measure(xLabel(p, i, true, ctx))),
+      );
       const n = Math.max(1, p.n);
       polar = {
         cx: plotW / 2,
@@ -1368,8 +1394,17 @@ export class LozChart {
       if (o.value) {
         const fmt = this.valueFormat(f.ps);
         const finite = f.ps.values.filter((v) => isFinite(v));
-        const longest = Math.max(0, ...finite.map((v) => measure(fmt(v))));
-        w += END_TEXT + longest;
+        // Con miles de datos no se formatean todos: el mínimo, el máximo y una muestra pareja
+        // dan el ancho (los textos más largos están entre los de más cifras).
+        const some =
+          finite.length > 400
+            ? [
+                finite.reduce((a, b) => Math.min(a, b)),
+                finite.reduce((a, b) => Math.max(a, b)),
+                ...Array.from({ length: 200 }, (_, k) => finite[Math.floor((k * finite.length) / 200)]),
+              ]
+            : finite;
+        w += END_TEXT + maxOf(some.length, (k) => measure(fmt(some[k])));
       }
       widest = Math.max(widest, w);
     }
@@ -1677,6 +1712,14 @@ export class LozChart {
     // Un tooltip oculto conserva su última posición: al achicarse el gráfico podría quedar más
     // allá del borde y abrir un scroll horizontal en la página. Vuelve al origen hasta que se use.
     if (!this.tooltipEl.classList.contains('lc-show')) this.tooltipEl.style.transform = '';
+    // Si con el ancho nuevo caben otras marcas en el eje del valor (en horizontal, o un tipo cuyo
+    // alto depende del ancho), el dominio se vuelve a redondear: si no, quedaría el de un gráfico
+    // angosto, con mucho espacio vacío al final.
+    if (this.valueTickCount() !== this.targetTicks) {
+      this.retarget(true);
+      this.transition(false);
+      return;
+    }
     // Al cambiar el ancho se redibuja sin animar; si hay una animación en curso, ella dibuja.
     if (!this.anim) this.draw();
   };
@@ -1814,6 +1857,7 @@ export class LozChart {
     const title = own ? (/[.?!…:]$/.test(own) ? `${own} ` : `${own}. `) : '';
     // Un solo dato (un gauge): se dice el valor, no se invita a recorrer nada.
     if (n === 1) return `${title}${what}. ${this.describe(0)}`;
+    if (n === 0) return `${title}${what}, todavía sin datos.`;
     const plural = (k: number, [one, many]: readonly [string, string]) => `${k} ${k === 1 ? one : many}`;
     const items = this.itemWords();
     // Se cuentan las categorías de los datos, no las porciones: "Otros" reúne varias.
@@ -1850,17 +1894,27 @@ export class LozChart {
     return this.prepared.xType === 'time' ? label.charAt(0).toLocaleLowerCase(this.opts.locale) + label.slice(1) : label;
   }
 
-  /** " El más alto es noviembre, con 1,4 M $.": con una sola serie de valores simples. */
+  /**
+   * " El más alto es noviembre, con 1,4 M $.": con una sola serie de valores simples. Si todos
+   * valen lo mismo no hay uno más alto: " Todos valen 7."
+   */
   private peakText(): string {
     const p = this.prepared;
     const s = p.series[0];
     if (p.coords !== 'cartesian' || p.series.length !== 1 || !s || s.impl.tooltip || p.n < 2) return '';
     let top = -1;
+    let low = -1;
+    let count = 0;
     s.values.forEach((v, i) => {
-      if (isFinite(v) && (top < 0 || v > s.values[top])) top = i;
+      if (!isFinite(v)) return;
+      count++;
+      if (top < 0 || v > s.values[top]) top = i;
+      if (low < 0 || v < s.values[low]) low = i;
     });
     if (top < 0) return '';
-    return ` El más alto es ${this.inlineX(top)}, con ${this.valueText(s, top).value}.`;
+    const value = this.valueText(s, top).value;
+    if (count > 1 && s.values[top] === s.values[low]) return ` Todos valen ${value}.`;
+    return ` El más alto es ${this.inlineX(top)}, con ${value}.`;
   }
 
   /** Las anotaciones dichas en palabras: "Referencias: Meta, 120 mil $; Campaña de verano." */
@@ -2396,6 +2450,19 @@ export function seriesSymbol(type: string): 'line' | 'square' | 'dot' {
 /** Cuántos ticks caben en un eje vertical del valor de `height` px (el mismo criterio del gráfico). */
 export function tickCountFor(height: number): number {
   return Math.max(2, Math.round((height - AXIS_ALLOWANCE) / TICK_SPACING_V));
+}
+
+/**
+ * El mayor de `count` valores (0 si no hay). Sin `Math.max(...lista)`: con cien mil datos esa
+ * forma excede el límite de argumentos del navegador y lanza una excepción.
+ */
+function maxOf(count: number, at: (i: number) => number): number {
+  let max = 0;
+  for (let i = 0; i < count; i++) {
+    const v = at(i);
+    if (v > max) max = v;
+  }
+  return max;
 }
 
 /** Pone varios atributos a un elemento ya creado. */

@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Núcleo</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        background: #fcfcfb;
+        color: #0b0b0b;
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+      }
+      .fila {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+        gap: 16px;
+      }
+      .caso {
+        border: 1px solid #e7e6e1;
+        border-radius: 6px;
+        padding: 12px;
+        min-width: 0;
+      }
+      .caso h3 {
+        margin: 0 0 8px;
+        font-size: 13px;
+        color: #52514e;
+      }
+      #informe {
+        white-space: pre-wrap;
+        font:
+          12px/1.4 ui-monospace,
+          monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Núcleo: casos difíciles</h1>
+    <p>
+      Cada caso se crea sin animación. Abajo, el informe: excepciones, textos con NaN o Infinity en los ejes y avisos en consola.
+    </p>
+    <div class="fila" id="casos"></div>
+    <h2>Informe</h2>
+    <div id="informe"></div>
+    <script src="../dist/lozcharts.umd.js"></script>
+    <script>
+      const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun'];
+      const casos = {
+        vacio: { data: [], xAxis: { field: 'x' }, series: [{ type: 'line', field: 'y' }] },
+        unaFila: { data: [{ x: 'a', y: 5 }], xAxis: { field: 'x' }, series: [{ type: 'bar', field: 'y' }] },
+        iguales: {
+          data: meses.map((x) => ({ x, y: 7 })),
+          xAxis: { field: 'x' },
+          series: [{ type: 'line', field: 'y' }],
+        },
+        ceros: { data: meses.map((x) => ({ x, y: 0 })), xAxis: { field: 'x' }, series: [{ type: 'area', field: 'y' }] },
+        negativos: {
+          data: meses.map((x, i) => ({ x, y: -1000 * (i + 1) })),
+          xAxis: { field: 'x' },
+          yAxis: { format: 'currency' },
+          series: [{ type: 'bar', field: 'y' }],
+        },
+        sucios: {
+          data: [
+            { x: 'a', y: '12' },
+            { x: 'b', y: null },
+            { x: 'c', y: undefined },
+            { x: 'd', y: 'abc' },
+            { x: 'e', y: NaN },
+            { x: 'f', y: ' 3 ' },
+          ],
+          xAxis: { field: 'x' },
+          series: [{ type: 'line', field: 'y' }],
+        },
+        fechasMalas: {
+          data: [
+            { x: '2026-03-01', y: 3 },
+            { x: 'no es fecha', y: 4 },
+            { x: '2026-01-01', y: 1 },
+            { x: '2026-01-01', y: 2 },
+            { x: null, y: 9 },
+          ],
+          xAxis: { field: 'x', type: 'time' },
+          series: [{ type: 'line', field: 'y' }],
+        },
+        campoInexistente: {
+          data: meses.map((x, i) => ({ x, y: i })),
+          xAxis: { field: 'x' },
+          series: [{ type: 'line', field: 'ventas' }],
+        },
+        nombresRepetidos: {
+          data: meses.map((x, i) => ({ x, a: i, b: 2 * i })),
+          xAxis: { field: 'x' },
+          series: [
+            { type: 'line', field: 'a', name: 'Ventas' },
+            { type: 'line', field: 'b', name: 'Ventas' },
+          ],
+        },
+        log: {
+          data: [0, -5, 1, 10, 1000, 1e6].map((y, i) => ({ x: i, y })),
+          xAxis: { field: 'x', type: 'linear' },
+          yAxis: { type: 'log' },
+          series: [{ type: 'line', field: 'y' }],
+        },
+        logSinPositivos: {
+          data: [0, -5, -1].map((y, i) => ({ x: i, y })),
+          xAxis: { field: 'x', type: 'linear' },
+          yAxis: { type: 'log' },
+          series: [{ type: 'line', field: 'y' }],
+        },
+        diminutos: {
+          data: [1e-13, 3e-13, 2e-13, 5e-13].map((y, i) => ({ x: i, y })),
+          xAxis: { field: 'x', type: 'linear' },
+          series: [{ type: 'line', field: 'y' }],
+        },
+        enormes: {
+          data: [1e15, 3e18, 2e21].map((y, i) => ({ x: 'c' + i, y })),
+          xAxis: { field: 'x' },
+          locale: 'pt-BR',
+          currency: 'BRL',
+          yAxis: { format: 'currency' },
+          series: [{ type: 'bar', field: 'y' }],
+        },
+        porcentajes: {
+          data: [0.001, 0.25, 0.5, 1.2].map((y, i) => ({ x: 'p' + i, y })),
+          xAxis: { field: 'x' },
+          locale: 'en',
+          yAxis: { format: 'percent' },
+          series: [{ type: 'bar', field: 'y' }],
+        },
+        dobleEje: {
+          data: meses.map((x, i) => ({ x, a: 100 + i * 50, b: -0.2 + i * 0.1 })),
+          xAxis: { field: 'x' },
+          yAxis2: { format: 'percent' },
+          series: [
+            { type: 'bar', field: 'a' },
+            { type: 'line', field: 'b', axis: 'right' },
+          ],
+        },
+        indice: {
+          data: meses.map((x, i) => ({ x, a: 50 + i * 3, b: 2000 - i * 100 })),
+          xAxis: { field: 'x' },
+          yAxis: { index: true },
+          series: [
+            { type: 'line', field: 'a' },
+            { type: 'line', field: 'b' },
+          ],
+        },
+        lineaX: {
+          data: [-3, -1, 0, 2].map((x) => ({ x, y: x * x })),
+          xAxis: { field: 'x', type: 'linear' },
+          series: [{ type: 'scatter', field: 'y' }],
+        },
+        horario: {
+          // Cambio de horario: días alrededor de un cambio en muchas zonas.
+          data: Array.from({ length: 10 }, (_, i) => ({ x: new Date(2026, 2, 25 + i), y: i })),
+          xAxis: { field: 'x', type: 'time' },
+          series: [{ type: 'line', field: 'y' }],
+        },
+        horas: {
+          data: Array.from({ length: 48 }, (_, i) => ({ x: new Date(2026, 9, 24, i), y: i % 7 })),
+          xAxis: { field: 'x', type: 'time' },
+          series: [{ type: 'line', field: 'y' }],
+        },
+        monedaMala: {
+          data: meses.map((x, i) => ({ x, y: i * 1000 })),
+          xAxis: { field: 'x' },
+          currency: 'EURO',
+          yAxis: { format: 'currency' },
+          series: [{ type: 'bar', field: 'y' }],
+        },
+        localeMalo: {
+          data: meses.map((x, i) => ({ x, y: i * 1000 })),
+          xAxis: { field: 'x' },
+          locale: 'es_ES',
+          series: [{ type: 'bar', field: 'y' }],
+        },
+        html: {
+          title: '<img src=x onerror=alert(1)>',
+          data: [
+            { x: '<b>a</b>', y: 1 },
+            { x: '"b"&', y: 2 },
+          ],
+          xAxis: { field: 'x', title: '<i>x</i>' },
+          annotations: [{ y: 1.5, label: '<script>alert(1)<\/script>' }],
+          series: [{ type: 'bar', field: 'y', name: '<u>serie</u>' }],
+        },
+        horizontal: {
+          orientation: 'horizontal',
+          data: meses.map((x, i) => ({ x, y: 300 + i * 160 })),
+          xAxis: { field: 'x' },
+          series: [{ type: 'bar', field: 'y' }],
+        },
+      };
+
+      const informe = [];
+      const avisos = [];
+      const warn = console.warn;
+      const error = console.error;
+      console.warn = (...a) => (avisos.push('aviso: ' + a.join(' ')), warn(...a));
+      console.error = (...a) => (avisos.push('error: ' + a.join(' ')), error(...a));
+      window.graficos = {};
+      const raiz = document.getElementById('casos');
+      for (const [nombre, opciones] of Object.entries(casos)) {
+        const caja = document.createElement('div');
+        caja.className = 'caso';
+        caja.innerHTML = `<h3>${nombre}</h3><div></div>`;
+        raiz.appendChild(caja);
+        avisos.length = 0;
+        try {
+          const g = new LozChart(caja.lastChild, { animate: false, title: nombre, ...opciones });
+          graficos[nombre] = g;
+          const textos = [...caja.querySelectorAll('svg text')].map((t) => t.textContent);
+          const malos = textos.filter((t) => /NaN|Infinity|undefined/.test(t));
+          const svg = g.toSVG();
+          informe.push(
+            `${nombre}: ok${malos.length ? ' · TEXTOS MALOS: ' + malos.join(' | ') : ''}` +
+              (/NaN|Infinity/.test(svg) ? ' · NaN en toSVG' : '') +
+              (avisos.length ? '\n   ' + avisos.join('\n   ') : ''),
+          );
+        } catch (e) {
+          informe.push(`${nombre}: EXCEPCIÓN ${e.message}`);
+        }
+      }
+      document.getElementById('informe').textContent = informe.join('\n');
+    </script>
+  </body>
+</html>

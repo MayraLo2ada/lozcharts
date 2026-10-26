@@ -9,7 +9,7 @@ import type { LozChartOptions, MultiplesOptions, MultiplesUpdate, ThemeName, YAx
 import { AXIS_GAP, LozChart, seriesSymbol, tickCountFor, usesBand, valueDomain, X_LABEL_SPACE } from './chart';
 import { facetPanels, type PanelSpec } from './core/facet';
 import { attrs, esc, html, resolveElement } from './core/dom';
-import { downloadCSV, downloadImage, slug, toCSV } from './core/export';
+import { csvDate, downloadCSV, downloadImage, fileName, toCSV } from './core/export';
 import { Legend, legendSVG, type LegendItem } from './core/legend';
 import { mount, unmount, type Mounted } from './core/mount';
 import { injectStyles, MAX_COLORS, resolveTheme, themeVars, type Theme } from './core/theme';
@@ -134,7 +134,7 @@ export class LozMultiples implements Mounted {
 
   /** Descarga la cuadrícula como PNG o SVG, o los datos como CSV. */
   download(type: 'png' | 'svg' | 'csv' = 'png', filename?: string): Promise<void> {
-    const name = filename || slug(this.opts.title ?? '') || 'lozchart';
+    const name = fileName(filename, this.opts.title, type);
     if (type === 'csv') {
       downloadCSV(this.toCSV(), name);
       return Promise.resolve();
@@ -151,7 +151,7 @@ export class LozMultiples implements Mounted {
     const fields: string[] = [];
     for (const row of this.opts.data) for (const k of Object.keys(row)) if (!fields.includes(k)) fields.push(k);
     const cell = (v: unknown): string | number =>
-      typeof v === 'number' ? v : v instanceof Date ? v.toISOString() : v == null ? '' : String(v);
+      typeof v === 'number' ? v : v instanceof Date ? csvDate(v.getTime()) : v == null ? '' : String(v);
     return toCSV([fields, ...this.opts.data.map((row) => fields.map((k) => cell(row[k])))]);
   }
 

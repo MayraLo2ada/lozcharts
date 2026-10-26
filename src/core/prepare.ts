@@ -56,11 +56,29 @@ export function toNumber(v: unknown): number {
  */
 export function prepare(input: PrepareInput, registry: ReadonlyMap<string, SeriesImpl>, maxSeries: number): Prepared {
   const { xField, xType } = input;
-  let rows = input.data;
+  // Una fila que no es un objeto (null, un número) no tiene campos que leer.
+  let rows = input.data.filter((row) => row !== null && typeof row === 'object');
+  if (rows.length < input.data.length) {
+    console.warn(
+      `LozCharts: ${input.data.length - rows.length} de las filas de data no son objetos y las dejo fuera. Cada fila debe ser como { mes: 'ene', ventas: 120 }.`,
+    );
+  }
+  if (rows.length && !rows.some((row) => xField in row)) {
+    console.warn(
+      `LozCharts: ninguna fila tiene el campo "${xField}" que pide xAxis.field. Revisa cómo está escrito (las mayúsculas cuentan).`,
+    );
+  }
   let xNum: number[] = [];
   if (xType !== 'category') {
     const read = xType === 'time' ? parseTime : toNumber;
     const keyed = rows.map((row) => ({ row, x: read(row[xField]) })).filter((r) => isFinite(r.x));
+    const lost = rows.length - keyed.length;
+    // Una fila sin X no tiene dónde ir; se avisa, porque un formato de fecha que no se entiende
+    // dejaría el gráfico vacío sin explicación.
+    if (lost) {
+      const what = xType === 'time' ? 'una fecha válida (Date, milisegundos o texto como 2026-03-15)' : 'un número';
+      console.warn(`LozCharts: ${lost} de ${rows.length} filas no tienen ${what} en "${xField}" y quedan fuera del gráfico.`);
+    }
     keyed.sort((a, b) => a.x - b.x);
     rows = keyed.map((r) => r.row);
     xNum = keyed.map((r) => r.x);
@@ -73,6 +91,25 @@ export function prepare(input: PrepareInput, registry: ReadonlyMap<string, Serie
     );
     return false;
   });
+
+  // Un campo mal escrito deja la serie vacía: se avisa en vez de dibujar nada sin explicación.
+  if (rows.length) {
+    for (const s of defs) {
+      if (s.field && !rows.some((row) => s.field in row)) {
+        console.warn(
+          `LozCharts: ninguna fila tiene el campo "${s.field}" de la serie "${s.name ?? s.field}", así que queda vacía. Revisa cómo está escrito (las mayúsculas cuentan).`,
+        );
+      }
+    }
+  }
+  // El nombre identifica a la serie (leyenda, ocultar, animar): dos con el mismo se confunden.
+  const names = defs.map((s) => s.name ?? s.field);
+  const repeated = [...new Set(names.filter((name, i) => names.indexOf(name) !== i))];
+  if (repeated.length) {
+    console.warn(
+      `LozCharts: hay varias series que se llaman ${repeated.map((n) => `"${n}"`).join(', ')}; la leyenda y el tooltip no las distinguen y ocultar una oculta todas. Dale a cada una su propio name.`,
+    );
+  }
 
   // Todas las series comparten el sistema de coordenadas de la primera.
   const coords = (defs[0] && registry.get(defs[0].type)!.coords) ?? 'cartesian';
