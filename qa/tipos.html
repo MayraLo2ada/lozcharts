@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Los 26 tipos</title>
+    <style>
+      :root {
+        --surface: #fcfcfb;
+        --text: #0b0b0b;
+        --muted: #52514e;
+        --line: #e7e6e1;
+      }
+      :root[data-theme='dark'] {
+        --surface: #1a1a19;
+        --text: #f0efec;
+        --muted: #c3c2b7;
+        --line: #2f2f2d;
+      }
+      body {
+        margin: 0;
+        padding: 16px;
+        background: var(--surface);
+        color: var(--text);
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+      }
+      h2 {
+        margin: 32px 0 8px;
+        font-size: 18px;
+      }
+      .fila {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(var(--col, 340px), 100%), 1fr));
+        gap: 16px;
+      }
+      .caso {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 8px;
+        min-width: 0;
+      }
+      .caso > p {
+        margin: 0 0 6px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .caso.problema {
+        outline: 2px solid #e45934;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Los 26 tipos, uno por uno</h1>
+    <p>
+      Cada tipo con datos realistas y con los que lo ponen a prueba: vacío, uno, muchos, ceros, negativos, nombres larguísimos con
+      acentos y emojis, y valores muy dispares. Parámetros: <code>?tema=dark</code>, <code>?solo=pie,donut</code>,
+      <code>?var=largos</code>, <code>?col=700</code> (casos más anchos), <code>?sel=1,3</code> (selección), <code>?animar</code>.
+      <code>revisar()</code> en la consola busca textos encimados, textos fuera del gráfico, valores rotos en el SVG y contraste
+      bajo; los casos con problemas quedan marcados.
+    </p>
+    <div id="casos"></div>
+
+    <script src="../dist/lozcharts.umd.js"></script>
+    <script src="../dist/maps/world.umd.js"></script>
+    <script>
+      (function () {
+        var q = new URLSearchParams(location.search);
+        var tema = q.get('tema') || 'light';
+        document.documentElement.dataset.theme = tema;
+        var solo = q.get('solo') ? q.get('solo').split(',') : null;
+        var soloVar = q.get('var') ? q.get('var').split(',') : null;
+        var animar = q.has('animar');
+        // ?sel=1,3: esas filas seleccionadas (el resto atenuado).
+        var sel = q.get('sel') ? q.get('sel').split(',').map(Number) : null;
+        // ?col=700: casos más anchos (por defecto, columnas de 340 px como mínimo).
+        if (q.get('col')) document.documentElement.style.setProperty('--col', q.get('col') + 'px');
+
+        var cortos = ['Norte', 'Sur', 'Este', 'Oeste', 'Centro', 'Costa'];
+        var largos = [
+          'Región Autónoma de Ñuñoa y Alrededores 🌵',
+          'Distrito Metropolitano de São Paulo ☕',
+          'Provincia de Güiñazú — Zona Franca Internacional',
+          'Islas 🏝️ del Pacífico Sur Occidental',
+          'Área Andina de Bogotá D.C. y Cundinamarca',
+          'Otros mercados emergentes de Latinoamérica',
+        ];
+        var paises = ['COL', 'MEX', 'BRA', 'ARG', 'CHL', 'PER'];
+        var muchosPaises = (
+          'COL MEX BRA ARG CHL PER ECU URY PRY BOL VEN CAN USA ESP PRT FRA DEU ITA GBR IRL NOR SWE FIN POL ' +
+          'UKR RUS CHN IND JPN KOR IDN AUS NZL ZAF NGA EGY MAR DZA KEN ETH TUR IRN SAU PAK BGD VNM THA PHL ' +
+          'MYS GRC ROU HUN CZE AUT CHE BEL NLD DNK CUB GTM HND'
+        ).split(' ');
+        var normal = [420, 310, 265, 180, 120, 75];
+        var segunda = [260, 280, 150, 160, 90, 60];
+        var tercera = [120, 90, 110, 60, 70, 30];
+        var variantes = ['normal', 'vacio', 'uno', 'muchos', 'ceros', 'negativos', 'largos', 'dispares'];
+
+        function mes(i) {
+          var d = new Date(Date.UTC(2026, i, 1));
+          return d.toISOString().slice(0, 10);
+        }
+        function dia(i) {
+          var d = new Date(Date.UTC(2026, 0, 1 + i));
+          return d.toISOString().slice(0, 10);
+        }
+        // Filas base de una variante: cat, fecha, a, b, c y el índice.
+        function filas(v) {
+          var out = [];
+          var n = { vacio: 0, uno: 1, muchos: 60 }[v];
+          if (n === undefined) n = 6;
+          for (var i = 0; i < n; i++) {
+            var a = normal[i % 6] * (v === 'muchos' ? 1 + Math.sin(i / 3) * 0.4 : 1);
+            var b = segunda[i % 6];
+            var c = tercera[i % 6];
+            if (v === 'ceros') a = b = c = 0;
+            if (v === 'negativos') {
+              a = [120, -80, 45, -200, 30, -15][i];
+              b = [-40, 60, -90, 20, -10, 55][i];
+              c = [10, -20, 30, -40, 50, -60][i];
+            }
+            if (v === 'dispares') {
+              a = [1250000, 980, 45, 3, 0.4, 210000][i];
+              b = [2, 870000, 15, 64000, 1, 9][i];
+              c = [0.01, 5, 300000, 7, 12, 40][i];
+            }
+            out.push({
+              i: i,
+              cat: v === 'largos' ? largos[i] : v === 'muchos' ? 'Producto ' + (i + 1) : cortos[i],
+              fecha: v === 'muchos' ? dia(i * 3) : mes(i),
+              a: Math.round(a * 100) / 100,
+              b: b,
+              c: c,
+            });
+          }
+          return out;
+        }
+        function mapa(rows, f) {
+          return rows.map(function (r) {
+            return Object.assign({}, r, f(r));
+          });
+        }
+        var temporal = { xAxis: { field: 'fecha', type: 'time' } };
+        var categ = { xAxis: { field: 'cat' } };
+        function con(base, extra) {
+          return Object.assign({}, base, extra);
+        }
+        var grupos = ['Bebidas', 'Snacks', 'Lácteos'];
+
+        var tipos = {
+          line: function (r) {
+            return con(temporal, {
+              data: r,
+              series: [
+                { type: 'line', field: 'a', name: 'Ventas' },
+                { type: 'line', field: 'b', name: 'Costos' },
+              ],
+            });
+          },
+          'bar vertical': function (r) {
+            return con(categ, { data: r, series: [{ type: 'bar', field: 'a', name: 'Ventas' }] });
+          },
+          'bar horizontal': function (r) {
+            return con(categ, { data: r, orientation: 'horizontal', series: [{ type: 'bar', field: 'a', name: 'Ventas' }] });
+          },
+          'bar agrupadas': function (r) {
+            return con(categ, {
+              data: r,
+              series: [
+                { type: 'bar', field: 'a', name: '2024' },
+                { type: 'bar', field: 'b', name: '2025' },
+                { type: 'bar', field: 'c', name: '2026' },
+              ],
+            });
+          },
+          'bar apiladas': function (r) {
+            return con(categ, {
+              data: r,
+              series: [
+                { type: 'bar', field: 'a', name: 'Online', stack: true },
+                { type: 'bar', field: 'b', name: 'Tienda', stack: true },
+                { type: 'bar', field: 'c', name: 'Teléfono', stack: true },
+              ],
+            });
+          },
+          'area apiladas': function (r) {
+            return con(temporal, {
+              data: r,
+              series: [
+                { type: 'area', field: 'a', name: 'Móvil', stack: true },
+                { type: 'area', field: 'b', name: 'Escritorio', stack: true },
+              ],
+            });
+          },
+          step: function (r) {
+            return con(temporal, { data: r, series: [{ type: 'step', field: 'a', name: 'Tasa' }] });
+          },
+          'range + line': function (r) {
+            return con(temporal, {
+              data: mapa(r, function (f) {
+                return { hi: f.a + Math.abs(f.b) / 4, lo: f.a - Math.abs(f.b) / 4 };
+              }),
+              series: [
+                { type: 'range', field: 'hi', low: 'lo', name: 'Rango' },
+                { type: 'line', field: 'a', name: 'Media' },
+              ],
+            });
+          },
+          scatter: function (r) {
+            return {
+              data: mapa(r, function (f) {
+                return { x: f.c };
+              }),
+              xAxis: { field: 'x', type: 'linear', title: 'Visitas' },
+              yAxis: { title: 'Pedidos' },
+              series: [
+                { type: 'scatter', field: 'a', name: 'Pedidos' },
+                { type: 'scatter', field: 'b', name: 'Devoluciones' },
+              ],
+            };
+          },
+          bubble: function (r) {
+            return {
+              data: mapa(r, function (f) {
+                return { x: f.c, s: Math.abs(f.b), s2: Math.abs(f.b) / 4 };
+              }),
+              xAxis: { field: 'x', type: 'linear' },
+              series: [
+                { type: 'bubble', field: 'a', name: 'Tiendas', size: 's', sizeName: 'Clientes' },
+                { type: 'bubble', field: 'b', name: 'Kioscos', size: 's2', sizeName: 'Clientes' },
+              ],
+            };
+          },
+          candlestick: function (r) {
+            return con(temporal, {
+              data: mapa(r, function (f) {
+                var up = f.i % 2 === 0;
+                return { open: f.a, close: f.a * (up ? 1.08 : 0.93), high: f.a * 1.12, low: f.a * 0.9 };
+              }),
+              series: [{ type: 'candlestick', field: 'close', open: 'open', high: 'high', low: 'low', name: 'AURF' }],
+            });
+          },
+          ohlc: function (r) {
+            return con(temporal, {
+              data: mapa(r, function (f) {
+                var up = f.i % 2 === 0;
+                return { open: f.a, close: f.a * (up ? 1.08 : 0.93), high: f.a * 1.12, low: f.a * 0.9 };
+              }),
+              series: [{ type: 'ohlc', field: 'close', open: 'open', high: 'high', low: 'low', name: 'AURF' }],
+            });
+          },
+          pie: function (r) {
+            return con(categ, { data: r, series: [{ type: 'pie', field: 'a', name: 'Ventas' }] });
+          },
+          donut: function (r) {
+            return con(categ, { data: r, series: [{ type: 'donut', field: 'a', name: 'Ventas' }] });
+          },
+          gauge: function (r) {
+            return con(categ, {
+              data: r,
+              yAxis: { min: 0, max: 500 },
+              series: [{ type: 'gauge', field: 'a', name: 'Avance', target: 400 }],
+            });
+          },
+          radar: function (r) {
+            return con(categ, {
+              data: r,
+              series: [
+                { type: 'radar', field: 'a', name: 'Modelo A' },
+                { type: 'radar', field: 'b', name: 'Modelo B' },
+              ],
+            });
+          },
+          funnel: function (r) {
+            return con(categ, { data: r, series: [{ type: 'funnel', field: 'a', name: 'Sesiones' }] });
+          },
+          heatmap: function (r) {
+            var out = [];
+            ['Mañana', 'Tarde', 'Noche ☾'].forEach(function (franja, k) {
+              r.forEach(function (f) {
+                out.push({ cat: f.cat, franja: franja, a: k === 1 ? f.b : k === 2 ? f.c : f.a });
+              });
+            });
+            return con(categ, { data: out, series: [{ type: 'heatmap', field: 'a', name: 'Visitas', y: 'franja' }] });
+          },
+          treemap: function (r) {
+            return con(categ, {
+              data: mapa(r, function (f) {
+                return { grupo: grupos[f.i % 3] };
+              }),
+              series: [{ type: 'treemap', field: 'a', name: 'Ventas', group: 'grupo' }],
+            });
+          },
+          sankey: function (r) {
+            return con(categ, {
+              data: mapa(r, function (f) {
+                return { destino: f.i % 3 === 0 ? 'Compra ✓' : f.i % 3 === 1 ? 'Abandono' : 'Carrito' };
+              }),
+              series: [{ type: 'sankey', field: 'a', name: 'Sesiones', to: 'destino' }],
+            });
+          },
+          choropleth: function (r, v) {
+            return {
+              xAxis: { field: 'pais' },
+              data: mapa(r, function (f) {
+                return { pais: v === 'largos' ? f.cat : v === 'muchos' ? muchosPaises[f.i] : paises[f.i] };
+              }),
+              series: [{ type: 'choropleth', field: 'a', name: 'Usuarios' }],
+            };
+          },
+          mapbubble: function (r, v) {
+            return {
+              xAxis: { field: 'pais' },
+              data: mapa(r, function (f) {
+                return { pais: v === 'muchos' ? muchosPaises[f.i] : paises[f.i] };
+              }),
+              series: [{ type: 'mapbubble', field: 'a', name: 'Usuarios' }],
+            };
+          },
+          globo: function (r, v) {
+            return {
+              xAxis: { field: 'pais' },
+              data: mapa(r, function (f) {
+                return { pais: v === 'muchos' ? muchosPaises[f.i] : paises[f.i] };
+              }),
+              series: [{ type: 'choropleth', field: 'a', name: 'Usuarios', projection: 'orthographic' }],
+            };
+          },
+          waterfall: function (r) {
+            var rows = r.map(function (f, k) {
+              return { cat: f.cat, a: k === 0 ? Math.abs(f.a) : k % 2 ? -Math.abs(f.b) / 2 : f.c, total: false };
+            });
+            if (rows.length > 1) rows.push({ cat: 'Total', a: null, total: true });
+            return con(categ, { data: rows, series: [{ type: 'waterfall', field: 'a', name: 'Resultado', total: 'total' }] });
+          },
+          bullet: function (r) {
+            return con(categ, {
+              data: mapa(r, function (f) {
+                return { meta: f.b + f.c };
+              }),
+              series: [{ type: 'bullet', field: 'a', name: 'Ventas', targetField: 'meta', ranges: [200, 350, 500] }],
+            });
+          },
+          sunburst: function (r) {
+            return con(categ, {
+              data: mapa(r, function (f) {
+                return { grupo: grupos[f.i % 3] };
+              }),
+              series: [{ type: 'sunburst', field: 'a', name: 'Ventas', levels: ['grupo', 'cat'] }],
+            });
+          },
+          chord: function (r) {
+            return con(categ, {
+              data: mapa(r, function (f) {
+                return { destino: r[(f.i + 1) % r.length].cat };
+              }),
+              series: [{ type: 'chord', field: 'a', name: 'Clientes', to: 'destino' }],
+            });
+          },
+          network: function (r) {
+            return con(categ, {
+              data: mapa(r, function (f) {
+                return { destino: r[Math.floor(f.i / 2)].cat, grupo: grupos[f.i % 3] };
+              }),
+              series: [{ type: 'network', field: 'a', name: 'Llamadas', to: 'destino', group: 'grupo' }],
+            });
+          },
+          timeline: function (r) {
+            return {
+              xAxis: { field: 'fecha', type: 'time' },
+              data: mapa(r, function (f) {
+                var d = new Date(f.fecha);
+                d.setUTCDate(d.getUTCDate() + 20 + f.i * 9);
+                return { fin: f.i === 2 ? null : d.toISOString().slice(0, 10), grupo: grupos[f.i % 3] };
+              }),
+              series: [{ type: 'timeline', field: 'a', label: 'cat', end: 'fin', group: 'grupo', name: 'Plan' }],
+            };
+          },
+          wordcloud: function (r) {
+            return con(categ, { data: r, series: [{ type: 'wordcloud', field: 'a', name: 'Menciones' }] });
+          },
+        };
+
+        var cont = document.getElementById('casos');
+        var charts = [];
+        // Con una sola variante, todos los tipos van juntos en una cuadrícula: se comparan de un vistazo.
+        var plano = soloVar && soloVar.length === 1;
+        var todos = document.createElement('div');
+        todos.className = 'fila';
+        if (plano) cont.appendChild(todos);
+        Object.keys(tipos).forEach(function (tipo) {
+          if (solo && solo.indexOf(tipo) < 0) return;
+          var fila = todos;
+          if (!plano) {
+            var h = document.createElement('h2');
+            h.textContent = tipo;
+            cont.appendChild(h);
+            fila = document.createElement('div');
+            fila.className = 'fila';
+            cont.appendChild(fila);
+          }
+          variantes.forEach(function (v) {
+            if (soloVar && soloVar.indexOf(v) < 0) return;
+            var caja = document.createElement('div');
+            caja.className = 'caso';
+            var p = document.createElement('p');
+            p.textContent = plano ? tipo : v;
+            var el = document.createElement('div');
+            caja.append(p, el);
+            fila.appendChild(caja);
+            var opciones = Object.assign(
+              { title: tipo + ' · ' + v, theme: tema, animate: animar, height: 280, selection: sel },
+              tipos[tipo](filas(v), v),
+            );
+            try {
+              charts.push({ tipo: tipo, variante: v, el: caja, chart: new LozChart(el, opciones), opciones: opciones });
+            } catch (err) {
+              charts.push({ tipo: tipo, variante: v, el: caja, error: String(err) });
+              p.textContent += ' · ERROR: ' + err;
+            }
+          });
+        });
+
+        // Small multiples: uno por serie y uno por campo.
+        if (!solo || solo.indexOf('multiples') >= 0) {
+          var h = document.createElement('h2');
+          h.textContent = 'multiples';
+          cont.appendChild(h);
+          var sm = document.createElement('div');
+          cont.appendChild(sm);
+          var smData = [];
+          largos.slice(0, 4).forEach(function (r, k) {
+            for (var i = 0; i < 8; i++) smData.push({ fecha: mes(i), region: r, a: 30 + i * 4 + k * 9, b: 20 + i * 2 - k * 6 });
+          });
+          charts.push({
+            tipo: 'multiples',
+            variante: 'largos',
+            el: sm,
+            chart: LozChart.multiples(sm, {
+              title: 'Small multiples por campo',
+              facet: { field: 'region' },
+              data: smData,
+              theme: tema,
+              animate: animar,
+              xAxis: { field: 'fecha', type: 'time' },
+              series: [
+                { type: 'line', field: 'a', name: 'Online' },
+                { type: 'line', field: 'b', name: 'Tienda' },
+              ],
+            }),
+          });
+        }
+
+        // Opciones menos frecuentes de cada tipo (?extras): más de 8 grupos, orientaciones, varias series.
+        if (q.has('extras')) {
+          var doce = 'Ana Beto Caro Dani Eli Fer Gabi Hugo Iris Juan Kati Lalo'.split(' ');
+          var grupos12 = doce.map(function (n) {
+            return 'Equipo ' + n;
+          });
+          var ext = {
+            'treemap 12 grupos': {
+              xAxis: { field: 'x' },
+              data: doce.map(function (n, i) {
+                return { x: n, g: grupos12[i], v: 120 - i * 7 };
+              }),
+              series: [{ type: 'treemap', field: 'v', group: 'g', name: 'Ventas' }],
+            },
+            'sunburst 12 ramas': {
+              xAxis: { field: 'x' },
+              data: doce.map(function (n, i) {
+                return { x: n, g: grupos12[i], v: 120 - i * 7 };
+              }),
+              series: [{ type: 'sunburst', field: 'v', levels: ['g', 'x'], name: 'Ventas' }],
+            },
+            'red 12 grupos': {
+              xAxis: { field: 'x' },
+              data: doce.map(function (n, i) {
+                return { x: n, to: doce[(i * 5 + 1) % 12], g: grupos12[i], v: 1 + (i % 4) };
+              }),
+              series: [{ type: 'network', field: 'v', to: 'to', group: 'g', name: 'Llamadas' }],
+            },
+            'nube 12 grupos': {
+              xAxis: { field: 'x' },
+              data: doce.map(function (n, i) {
+                return { x: n, g: grupos12[i], v: 120 - i * 7 };
+              }),
+              series: [{ type: 'wordcloud', field: 'v', group: 'g', name: 'Menciones' }],
+            },
+            'timeline 12 carriles + hoy': {
+              xAxis: { field: 'ini', type: 'time' },
+              data: doce.map(function (n, i) {
+                return { ini: mes(i % 6), fin: mes((i % 6) + 2), nombre: 'Tarea de ' + n, g: grupos12[i] };
+              }),
+              series: [{ type: 'timeline', field: 'nombre', end: 'fin', group: 'g', today: '2026-04-15', name: 'Plan' }],
+            },
+            'cascada horizontal, 2 series': {
+              orientation: 'horizontal',
+              xAxis: { field: 'x' },
+              data: [
+                { x: 'Ventas', a: 500, b: 620 },
+                { x: 'Costos', a: -320, b: -380 },
+                { x: 'Impuestos', a: -60, b: -70 },
+                { x: 'Resultado', a: null, b: null, t: true },
+              ],
+              series: [
+                { type: 'waterfall', field: 'a', total: 't', name: '2025' },
+                { type: 'waterfall', field: 'b', total: 't', name: '2026' },
+              ],
+            },
+            'barras horizontales apiladas con negativos': {
+              orientation: 'horizontal',
+              xAxis: { field: 'x' },
+              data: cortos.map(function (n, i) {
+                return { x: n, a: [40, -20, 30, -50, 10, 25][i], b: [-10, 30, 20, -15, 35, -5][i] };
+              }),
+              series: [
+                { type: 'bar', field: 'a', stack: true, name: 'Entradas' },
+                { type: 'bar', field: 'b', stack: true, name: 'Salidas' },
+              ],
+            },
+            'líneas: etiquetas al final y énfasis': {
+              xAxis: { field: 'fecha', type: 'time' },
+              endLabels: { value: true },
+              emphasis: 'Región Autónoma de Ñuñoa y Alrededores 🌵',
+              data: [0, 1, 2, 3, 4, 5, 6, 7].map(function (i) {
+                var f = { fecha: mes(i) };
+                largos.slice(0, 4).forEach(function (n, k) {
+                  f[n] = 50 + i * (k + 1) * 3 + k * 4;
+                });
+                return f;
+              }),
+              series: largos.slice(0, 4).map(function (n) {
+                return { type: 'line', field: n, name: n };
+              }),
+            },
+            '9 series de líneas (nunca ciclar)': {
+              xAxis: { field: 'fecha', type: 'time' },
+              data: [0, 1, 2, 3, 4, 5].map(function (i) {
+                var f = { fecha: mes(i) };
+                for (var k = 0; k < 9; k++) f['s' + k] = 10 + k * 5 + i * (k % 3);
+                return f;
+              }),
+              series: [0, 1, 2, 3, 4, 5, 6, 7, 8].map(function (k) {
+                return { type: 'line', field: 's' + k, name: 'Serie ' + (k + 1) };
+              }),
+            },
+            'radar 2 categorías': {
+              xAxis: { field: 'x' },
+              data: [
+                { x: 'Precio', a: 4, b: 3 },
+                { x: 'Calidad', a: 2, b: 5 },
+              ],
+              series: [
+                { type: 'radar', field: 'a', name: 'A' },
+                { type: 'radar', field: 'b', name: 'B' },
+              ],
+            },
+            'mapa de burbujas con lat/lon y globo': {
+              xAxis: { field: 'c' },
+              data: [
+                { c: 'Lima', lat: -12.05, lon: -77.04, v: 10 },
+                { c: 'Tokio', lat: 35.68, lon: 139.69, v: 37 },
+                { c: 'Madrid', lat: 40.42, lon: -3.7, v: 6 },
+              ],
+              series: [{ type: 'mapbubble', field: 'v', lat: 'lat', lon: 'lon', projection: 'orthographic', name: 'Habitantes' }],
+            },
+          };
+          var hx = document.createElement('h2');
+          hx.textContent = 'extras';
+          cont.appendChild(hx);
+          var filaX = document.createElement('div');
+          filaX.className = 'fila';
+          cont.appendChild(filaX);
+          Object.keys(ext).forEach(function (nombre) {
+            var caja = document.createElement('div');
+            caja.className = 'caso';
+            var p = document.createElement('p');
+            p.textContent = nombre;
+            var el = document.createElement('div');
+            caja.append(p, el);
+            filaX.appendChild(caja);
+            var o = Object.assign({ title: nombre, theme: tema, animate: animar, height: 320 }, ext[nombre]);
+            try {
+              charts.push({ tipo: 'extras', variante: nombre, el: caja, chart: new LozChart(el, o), opciones: o });
+            } catch (err) {
+              charts.push({ tipo: 'extras', variante: nombre, el: caja, error: String(err) });
+              p.textContent += ' · ERROR: ' + err;
+            }
+          });
+        }
+
+        // --- Revisión automática ---------------------------------------------------------------
+        function rgb(c) {
+          var m = /rgba?\(([^)]+)\)/.exec(c);
+          if (!m) return null;
+          var p = m[1].split(/[ ,/]+/).map(Number);
+          return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 };
+        }
+        function lum(c) {
+          return ['r', 'g', 'b']
+            .map(function (k) {
+              var v = c[k] / 255;
+              return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+            })
+            .reduce(function (s, v, i) {
+              return s + v * [0.2126, 0.7152, 0.0722][i];
+            }, 0);
+        }
+        function contraste(a, b) {
+          var la = lum(a);
+          var lb = lum(b);
+          return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+        }
+        function mezcla(arriba, abajo, alfa) {
+          return {
+            r: arriba.r * alfa + abajo.r * (1 - alfa),
+            g: arriba.g * alfa + abajo.g * (1 - alfa),
+            b: arriba.b * alfa + abajo.b * (1 - alfa),
+          };
+        }
+        function opacidad(el) {
+          var o = 1;
+          for (var n = el; n && n.nodeType === 1 && n.tagName !== 'svg'; n = n.parentNode) {
+            o *= Number(getComputedStyle(n).opacity);
+          }
+          return o;
+        }
+        // Color del fondo bajo el centro de un texto: la primera forma con relleno debajo.
+        function fondo(t, sup) {
+          var b = t.getBoundingClientRect();
+          var pila = document.elementsFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+          var c = sup;
+          for (var k = pila.length - 1; k >= 0; k--) {
+            var e = pila[k];
+            // Las líneas no tienen relleno, aunque su estilo diga uno.
+            if (!(e instanceof SVGGraphicsElement) || /^(text|tspan|svg|line|polyline)$/.test(e.tagName)) continue;
+            var cs = getComputedStyle(e);
+            var f = rgb(cs.fill);
+            if (!f || cs.fill === 'none') continue;
+            c = mezcla(f, c, f.a * Number(cs.fillOpacity) * opacidad(e));
+          }
+          return c;
+        }
+        window.revisar = function (soloEste) {
+          var informe = [];
+          charts.forEach(function (c) {
+            if (soloEste && c.tipo !== soloEste) return;
+            var prob = [];
+            if (c.error) prob.push('error: ' + c.error);
+            // elementsFromPoint solo ve lo que está en pantalla.
+            c.el.scrollIntoView({ block: 'center' });
+            var svgs = c.el.querySelectorAll('svg');
+            svgs.forEach(function (svg) {
+              var html = svg.outerHTML;
+              if (/NaN|undefined|Infinity|null"/.test(html)) prob.push('valor roto en el SVG');
+              var caja = svg.getBoundingClientRect();
+              var sup = rgb(getComputedStyle(c.el.querySelector('.lc, [class^="lc"]') || c.el).backgroundColor);
+              if (!sup || sup.a === 0) sup = tema === 'dark' ? { r: 26, g: 26, b: 25 } : { r: 252, g: 252, b: 251 };
+              var textos = [].filter.call(svg.querySelectorAll('text'), function (t) {
+                var b = t.getBoundingClientRect();
+                return b.width > 0 && t.textContent.trim() && opacidad(t) > 0.5 && getComputedStyle(t).visibility !== 'hidden';
+              });
+              var cajas = textos.map(function (t) {
+                return t.getBoundingClientRect();
+              });
+              textos.forEach(function (t, k) {
+                var b = cajas[k];
+                if (b.left < caja.left - 1 || b.right > caja.right + 1 || b.top < caja.top - 1 || b.bottom > caja.bottom + 1)
+                  prob.push('fuera: "' + t.textContent.slice(0, 40) + '"');
+                for (var j = k + 1; j < textos.length; j++) {
+                  var o = cajas[j];
+                  var ix = Math.min(b.right, o.right) - Math.max(b.left, o.left);
+                  var iy = Math.min(b.bottom, o.bottom) - Math.max(b.top, o.top);
+                  if (ix > 2 && iy > 3 && !t.contains(textos[j]) && !textos[j].contains(t))
+                    prob.push('encima: "' + t.textContent.slice(0, 30) + '" / "' + textos[j].textContent.slice(0, 30) + '"');
+                }
+                var tc = rgb(getComputedStyle(t).fill);
+                if (tc) {
+                  var cr = contraste(tc, fondo(t, sup));
+                  var grande = parseFloat(getComputedStyle(t).fontSize) >= 18;
+                  if (cr < (grande ? 3 : 4.5)) prob.push('contraste ' + cr.toFixed(2) + ': "' + t.textContent.slice(0, 30) + '"');
+                }
+              });
+            });
+            if (prob.length) {
+              c.el.classList.add('problema');
+              informe.push({ tipo: c.tipo, variante: c.variante, problemas: prob.slice(0, 8), total: prob.length });
+            } else c.el.classList.remove('problema');
+          });
+          return informe;
+        };
+        window.qa = { charts: charts };
+      })();
+    </script>
+  </body>
+</html>
