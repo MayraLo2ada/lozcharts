@@ -246,3 +246,20 @@ Cuadrícula de 2 columnas que pasa a 1 bajo 860 px. Selector de tema segmentado 
 - Los gráficos de la galería toman el alto del ancho de su columna (entre 250 y 560 px).
 - Página de un ejemplo: gráfico grande con "Por qué esta forma" y los ajustes al lado; abajo, el
   código con "Para usarlo" y el nombre técnico al lado. Alto inicial según la pantalla (340 a 820 px).
+
+## Sitio: portada (`site/index.html`)
+
+- Póster nocturno, siempre oscuro: negro `#050505`, hueso `#f4f2ee`, violeta `#9b6bff` (5,8:1),
+  rosa `#ff4fa3` (6,7:1) y lima `#c8ff2e` solo para la acción principal («Úsala gratis») y como
+  acento (pestaña elegida, línea de código que cambió, foco). Esquinas rectas, bordes de 1 o 2 px,
+  sin sombras ni vidrio. Archivo (eje de ancho) para carteles y texto, Geist en barra y pie.
+- Titular de la portada: el tamaño lo pone el CSS y el JS solo ensancha la letra hasta los bordes,
+  así el alto nunca cambia al cargar. Respaldos de fuente con `size-adjust` y métricas de Archivo.
+- Orden: portada con la tienda que se dibuja → laboratorio (seis tipos, tres juegos de datos,
+  código en vivo) → los 26 tipos en un bento agrupado por la pregunta que responden → accesible →
+  liviana → caso real (`caso-real.html`) → Gratis / Pro → ¿Dudas?
+- Bento: grupos de 12 columnas que cierran sus filas sin huecos (6 en tableta, 1 en el celular);
+  los gráficos se crean al acercarse y se vuelven a dibujar al pasar el puntero. El mapa del mundo
+  se baja solo cuando un mapa se acerca. El globo no va en la portada.
+- `prefers-reduced-motion` (o `?reducido` para probarlo) pone `.quieto` en `<html>` antes de pintar:
+  sin letras que se arman, sin cortina, sin contadores; todo aparece directo.

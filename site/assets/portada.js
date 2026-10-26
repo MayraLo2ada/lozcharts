@@ -1,222 +1,426 @@
-/* Portada: el globo que gira, el taller y las pruebas en vivo. */
+/* Portada: titulares que se arman letra por letra, el gráfico de la tienda que se dibuja y los carteles. */
 (function () {
-  var byId = function (id) {
-    return document.getElementById(id);
+  'use strict';
+  var $ = function (s, r) {
+    return (r || document).querySelector(s);
   };
-  var ej = {};
-  EJEMPLOS.forEach(function (e) {
-    ej[e.id] = e;
-  });
-  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  // ------------------------------------------------------------ El globo
-
-  // Datos de ejemplo para todos los países del mapa (el globo nunca queda vacío al girar). Unos
-  // pocos con valores a mano; el resto, un número estable que sale de su código ISO.
-  var A_MANO = { USA: 4210, MEX: 1830, BRA: 2650, COL: 980, ESP: 1120, IND: 3540, CHN: 3260, DEU: 890, JPN: 1610, ARG: 760 };
-  var paises = (window.LozChartWorld || { objects: { countries: { geometries: [] } } }).objects.countries.geometries;
-  var USUARIOS = paises
-    .map(function (g) {
-      return g.properties.iso3;
-    })
-    .filter(function (iso) {
-      return iso && iso !== 'ATA';
-    })
-    .map(function (iso) {
-      var h = 0;
-      for (var i = 0; i < iso.length; i++) h = (h * 31 + iso.charCodeAt(i)) % 9973;
-      var miles = A_MANO[iso] || 150 + (h % 1000) * 3;
-      return { pais: iso, usuarios: miles * 1000 };
-    });
-  var rot = [-70, 12];
-  var serie = function () {
-    return [
-      { type: 'choropleth', field: 'usuarios', name: 'Usuarios', projection: 'orthographic', rotate: rot.slice(), labels: false },
-    ];
+  var $$ = function (s, r) {
+    return Array.prototype.slice.call((r || document).querySelectorAll(s));
   };
-  var globoEl = byId('globo');
-  var globo = siteChart(
-    new LozChart(globoEl, {
-      theme: 'dark',
-      data: USUARIOS,
-      xAxis: { field: 'pais' },
-      yAxis: { format: 'compact' },
-      series: serie(),
-      height: Math.round(globoEl.clientWidth),
-      background: false,
-      animate: false,
-      legend: false,
-      // Los países, en el violeta de la marca: de tenue (pocos usuarios) a intenso.
-      palette: { light: ['#a58bff'], dark: ['#a58bff'] },
-    }),
-    true,
-  );
-  var dibujar = function () {
-    globo.setOptions({ series: serie() }, false);
+  // La pone el script del <head>: prefers-reduced-motion, o ?reducido para probarlo.
+  var quieto = document.documentElement.classList.contains('quieto');
+  var movil = function () {
+    return document.documentElement.clientWidth <= 640;
   };
-  // Gira solo, despacio; al arrastrarlo se detiene y retoma unos segundos después.
-  var quieto = 0;
-  var arrastre = null;
-  var ultimo = performance.now();
-  function girar(t) {
-    var dt = Math.min(64, t - ultimo);
-    ultimo = t;
-    if (!arrastre && t > quieto && !document.hidden) {
-      rot[0] += dt * 0.006;
-      dibujar();
-    }
-    requestAnimationFrame(girar);
-  }
-  if (!reduce) requestAnimationFrame(girar);
-  globoEl.addEventListener('pointerdown', function (e) {
-    if (e.pointerType === 'touch') return;
-    arrastre = { x: e.clientX, y: e.clientY, rot: rot.slice() };
-    globoEl.classList.add('dragging');
-    globoEl.setPointerCapture(e.pointerId);
-  });
-  globoEl.addEventListener('pointermove', function (e) {
-    if (!arrastre) return;
-    rot = [
-      arrastre.rot[0] - (e.clientX - arrastre.x) * 0.35,
-      Math.max(-55, Math.min(55, arrastre.rot[1] + (e.clientY - arrastre.y) * 0.35)),
-    ];
-    dibujar();
-  });
-  var soltar = function () {
-    arrastre = null;
-    quieto = performance.now() + 4000;
-    globoEl.classList.remove('dragging');
-  };
-  globoEl.addEventListener('pointerup', soltar);
-  globoEl.addEventListener('pointercancel', soltar);
-  window.addEventListener('resize', function () {
-    globo.setOptions({ height: Math.round(globoEl.clientWidth) }, false);
-  });
 
-  // ------------------------------------------------------------ Taller
-
-  crearEjemplo(ej.recorrido, byId('lab-sankey'), { title: undefined, subtitle: undefined, height: 560 });
-  crearEjemplo(ej['visitas-hora'], byId('lab-calor'), { title: undefined, height: 230 });
-  crearEjemplo(ej['visitas-dia'], byId('lab-zoom'), {
-    title: undefined,
-    subtitle: undefined,
-    height: 230,
-    endLabels: false,
-    zoom: { range: ['2026-06-01', '2026-08-15'], scrollbar: false },
-    annotations: [{ x: ['2026-06-29', '2026-07-21'], label: 'Campaña' }],
-  });
-
-  // ------------------------------------------------------------ Cien mil puntos
-
-  function lecturas(n) {
-    var seed = 7;
-    var rand = function () {
-      seed = (seed * 16807) % 2147483647;
-      return seed / 2147483647;
-    };
-    var data = new Array(n);
-    var t0 = Date.UTC(2026, 0, 1);
-    var deriva = 0;
-    for (var i = 0; i < n; i++) {
-      deriva = (deriva + (rand() - 0.5) * 0.08) * 0.999;
-      var dia = Math.sin(((i % 1440) / 1440) * 2 * Math.PI - Math.PI / 2) * 4;
-      data[i] = { t: t0 + i * 60000, v: Math.round((18 + dia + deriva + (rand() - 0.5) * 0.6) * 10) / 10 };
-    }
-    return data;
-  }
-  var grados = function (v) {
-    return v + ' °C';
-  };
-  var mucho = siteChart(
-    new LozChart('#mucho', {
-      data: lecturas(10080),
-      xAxis: { field: 't', type: 'time' },
-      yAxis: { format: grados },
-      series: [{ type: 'line', field: 'v', name: 'Temperatura' }],
-      height: 260,
-      background: false,
-    }),
-  );
-  byId('mucho-btn').addEventListener('click', function () {
-    var data = lecturas(100000);
-    mucho.destroy();
-    var inicio = performance.now();
-    mucho = siteChart(
-      new LozChart('#mucho', {
-        data: data,
-        xAxis: { field: 't', type: 'time' },
-        yAxis: { format: grados },
-        series: [{ type: 'line', field: 'v', name: 'Temperatura' }],
-        height: 260,
-        background: false,
-        animate: false,
-        zoom: { scrollbar: false },
-      }),
+  /** Llama a `fn` una vez, cuando `el` se acerca a la pantalla. */
+  function alVer(el, fn, margen) {
+    if (!el) return;
+    if (!('IntersectionObserver' in window)) return fn();
+    var io = new IntersectionObserver(
+      function (entradas) {
+        if (
+          entradas.some(function (e) {
+            return e.isIntersecting;
+          })
+        ) {
+          io.disconnect();
+          fn();
+        }
+      },
+      { rootMargin: margen || '0px 0px 200px 0px' },
     );
-    var ms = Math.max(1, Math.round(performance.now() - inicio));
-    byId('mucho-res').innerHTML = '<strong>' + ms + ' ms</strong> en tu equipo. Arrastra para acercar.';
+    io.observe(el);
+  }
+
+  /**
+   * Ajusta el alto pedido a un gráfico para que el gráfico entero (con su leyenda) ocupe justo su
+   * caja, que tiene el alto reservado en el CSS. Devuelve el alto que hay que pedirle.
+   */
+  function altoPara(caja, extra) {
+    return Math.max(140, Math.round(caja.clientHeight - (extra || 0)));
+  }
+  function sobrante(caja) {
+    var raiz = caja.firstElementChild;
+    return raiz ? raiz.getBoundingClientRect().height - caja.clientHeight : 0;
+  }
+
+  window.portada = { quieto: quieto, alVer: alVer, altoPara: altoPara, sobrante: sobrante, movil: movil };
+
+  // ------------------------------------------------------------ Letras
+
+  // Parte cada titular en letras (conserva los <span> de color). El nombre accesible queda entero.
+  $$('[data-arma]').forEach(function (h) {
+    h.setAttribute('aria-label', h.textContent.replace(/\s+/g, ' ').trim());
+    var i = 0;
+    var andar = function (nodo) {
+      Array.prototype.slice.call(nodo.childNodes).forEach(function (n) {
+        if (n.nodeType === 3) {
+          var frag = document.createDocumentFragment();
+          n.textContent.split(/(\s+)/).forEach(function (pedazo) {
+            if (!pedazo) return;
+            if (/^\s+$/.test(pedazo)) {
+              frag.appendChild(document.createTextNode(' '));
+              return;
+            }
+            // Cada palabra junta, para que no se corte entre letras.
+            var palabra = document.createElement('span');
+            palabra.style.whiteSpace = 'nowrap';
+            palabra.style.display = 'inline-block';
+            Array.from(pedazo).forEach(function (c) {
+              var s = document.createElement('span');
+              s.className = 'l';
+              s.textContent = c;
+              s.style.setProperty('--i', i++);
+              palabra.appendChild(s);
+            });
+            frag.appendChild(palabra);
+          });
+          nodo.replaceChild(frag, n);
+        } else if (n.nodeType === 1) {
+          andar(n);
+        }
+      });
+    };
+    andar(h);
+    h.classList.add('partido');
+    // Las letras sueltas se ocultan al lector de pantalla: el aria-label del titular manda.
+    $$(':scope > *', h).forEach(function (hijo) {
+      hijo.setAttribute('aria-hidden', 'true');
+    });
   });
 
-  // ------------------------------------------------------------ Daltonismo, voz y forma
+  // ------------------------------------------------------------ Ajustar al ancho
 
-  crearEjemplo(ej.usuarios, byId('cvd-chart'), {
-    title: undefined,
-    subtitle: undefined,
-    height: 230,
-    legend: false,
-    endLabels: true,
+  /**
+   * Titular de la portada: el tamaño lo pone el CSS (así el alto nunca cambia al cargar) y aquí
+   * solo se ensancha la letra con el eje de ancho de Archivo hasta tocar los dos bordes.
+   */
+  function ensanchar(linea) {
+    var dentro = linea.firstElementChild;
+    var ancho = linea.clientWidth;
+    if (!dentro || !ancho) return;
+    linea.style.fontSize = '';
+    var lo = 62;
+    var hi = 125;
+    linea.style.fontStretch = hi + '%';
+    if (dentro.getBoundingClientRect().width <= ancho) return;
+    for (var k = 0; k < 8; k++) {
+      var mid = (lo + hi) / 2;
+      linea.style.fontStretch = mid + '%';
+      if (dentro.getBoundingClientRect().width > ancho) hi = mid;
+      else lo = mid;
+    }
+    linea.style.fontStretch = lo + '%';
+    // Si ni la letra más angosta cabe (no debería), se achica: mejor eso que cortarla.
+    var w = dentro.getBoundingClientRect().width;
+    if (w > ancho) linea.style.fontSize = (parseFloat(getComputedStyle(linea).fontSize) * ancho) / w + 'px';
+  }
+
+  /** Titulares de sección: cada línea crece hasta el ancho de su columna (con un tope de alto). */
+  function ajustar(linea) {
+    var dentro = linea.firstElementChild;
+    if (!dentro) return;
+    linea.style.fontSize = '100px';
+    var ancho = linea.parentElement.clientWidth;
+    var w = dentro.getBoundingClientRect().width;
+    if (!w || !ancho) return;
+    var talla = Math.min((100 * ancho) / w, innerHeight * 0.3);
+    linea.style.fontSize = Math.max(28, Math.floor(talla * 0.99)) + 'px';
+  }
+
+  var lineasPortada = $$('.portada-titular .fit');
+  var lineasSeccion = $$('.fit').filter(function (l) {
+    return lineasPortada.indexOf(l) < 0;
   });
-  byId('cvd').addEventListener('change', function (e) {
-    document.querySelector('.bento').classList.toggle('cvd-on', e.target.checked);
+  function ajustarPortada() {
+    lineasPortada.forEach(ensanchar);
+  }
+  // Las de sección se ajustan cuando les falta una pantalla para verse: el cambio de alto pasa
+  // fuera de la vista y no mueve nada de lo que estás mirando.
+  var ajustadas = [];
+  function ajustarSecciones() {
+    ajustadas.forEach(ajustar);
+  }
+  function prepararSecciones() {
+    lineasSeccion.forEach(function (l) {
+      alVer(
+        l,
+        function () {
+          ajustadas.push(l);
+          ajustar(l);
+        },
+        '0px 0px 100% 0px',
+      );
+    });
+  }
+
+  // ------------------------------------------------------------ Armar al entrar
+
+  function observarTitulares() {
+    var titulares = $$('.armar');
+    if (quieto || !('IntersectionObserver' in window)) {
+      titulares.forEach(function (t) {
+        t.classList.add('armado');
+      });
+      return;
+    }
+    var io = new IntersectionObserver(
+      function (entradas) {
+        entradas.forEach(function (e) {
+          if (e.isIntersecting) {
+            e.target.classList.add('armado');
+            io.unobserve(e.target);
+          }
+        });
+      },
+      { threshold: 0.25 },
+    );
+    titulares.forEach(function (t) {
+      io.observe(t);
+    });
+  }
+
+  // ------------------------------------------------------------ Portada: la tienda
+
+  var VIOLETA = '#9b6bff';
+  var ROSA = '#ff4fa3';
+  var HUESO = '#f4f2ee';
+  var MESES = [
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
+  ];
+  var CORTO = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  var ONLINE = [34, 36, 43, 47, 52, 52, 55, 58, 57, 63, 78, 92];
+  var TIENDA = [27, 25, 30, 32, 34, 33, 31, 35, 33, 36, 44, 51];
+  var META = [74, 76, 78, 81, 83, 86, 88, 91, 93, 96, 112, 120];
+  var VENTAS = CORTO.map(function (m, i) {
+    return { mes: m, online: ONLINE[i] * 1000, tienda: TIENDA[i] * 1000, meta: META[i] * 1000 };
   });
-
-  crearEjemplo(ej.embudo, byId('voz-chart'), { title: undefined, height: 220 });
-  var svgEl = byId('voz-chart').querySelector('svg.lc-svg');
-  var live = byId('voz-chart').querySelector('[aria-live]');
-  byId('voz').textContent = '“' + svgEl.getAttribute('aria-label') + '”';
-  new MutationObserver(function () {
-    if (live.textContent) byId('voz').textContent = '“' + live.textContent + '”';
-  }).observe(live, { childList: true, characterData: true, subtree: true });
-
-  var ventas = ej.ventas.opciones.data;
-  var total = function (k) {
-    return ventas.reduce(function (s, r) {
-      return s + r[k];
-    }, 0);
+  var CEROS = VENTAS.map(function (r) {
+    return { mes: r.mes, online: 0, tienda: 0, meta: 0 };
+  });
+  var miles = function (v) {
+    return '$' + Math.round(v / 1000) + ' mil';
   };
-  var FORMAS = {
-    barras: {
-      data: ventas,
-      xAxis: { field: 'mes', type: 'time' },
+
+  var figura = $('#figura');
+  var gPortada = $('#g-portada');
+  var portada = null;
+  var extraPortada = 0; // lo que ocupa la leyenda, fuera del alto pedido
+  var altoPedido = 0;
+
+  function crearPortada() {
+    altoPedido = altoPara(figura, 34);
+    portada = new LozChart(gPortada, {
+      theme: 'dark',
+      background: false,
+      currency: 'USD',
+      title: 'Ventas de una tienda en 2026',
+      // Empieza en cero (sin animar) y al dibujarse sube a los datos reales con setData.
+      data: quieto ? VENTAS : CEROS,
+      xAxis: { field: 'mes' },
+      yAxis: { format: miles, min: 0, max: 150000 },
       series: [
         { type: 'bar', field: 'online', name: 'En línea', stack: true },
-        { type: 'bar', field: 'tienda', name: 'Tienda', stack: true },
+        { type: 'bar', field: 'tienda', name: 'En el local', stack: true },
+        { type: 'line', field: 'meta', name: 'Meta', smooth: true },
       ],
-    },
-    lineas: {
-      data: ventas,
-      xAxis: { field: 'mes', type: 'time' },
-      series: [
-        { type: 'line', field: 'online', name: 'En línea', smooth: true },
-        { type: 'line', field: 'tienda', name: 'Tienda', smooth: true },
-      ],
-    },
-    donut: {
-      data: [
-        { canal: 'En línea', ventas: total('online') },
-        { canal: 'Tienda', ventas: total('tienda') },
-      ],
-      xAxis: { field: 'canal', type: 'category' },
-      series: [{ type: 'donut', field: 'ventas', name: 'Ventas' }],
-    },
-  };
-  var forma = siteChart(
-    new LozChart(
-      '#forma',
-      Object.assign({ yAxis: { format: 'compact' }, height: 220, background: false, legend: false }, FORMAS.barras),
-    ),
-  );
-  document.querySelector('[data-tabs="forma"]').addEventListener('tabchange', function (e) {
-    forma.setOptions(FORMAS[e.detail]);
+      palette: [VIOLETA, ROSA, HUESO],
+      legend: { position: 'bottom' },
+      height: altoPedido,
+      animate: false,
+    });
+    // El título queda para el lector de pantalla; en pantalla ya lo dice el cartel.
+    var t = gPortada.querySelector('.lc-header');
+    if (t) t.classList.add('sr-only');
+    medirPortada();
+  }
+  // El alto pedido no cuenta la leyenda: se corrige midiendo lo que de verdad ocupa.
+  function medirPortada() {
+    for (var k = 0; k < 2; k++) {
+      var sobra = sobrante(gPortada);
+      if (Math.abs(sobra) < 2) return;
+      extraPortada = Math.max(0, extraPortada + sobra);
+      altoPedido = altoPara(figura, extraPortada);
+      portada.setOptions({ height: altoPedido }, false);
+    }
+  }
+
+  var lMes = $('#lectura-mes');
+  var lValor = $('#lectura-valor');
+  var lMeta = $('#lectura-meta');
+  var ultimoIdx = -2;
+  function leer(i) {
+    if (i === ultimoIdx) return;
+    ultimoIdx = i;
+    var k = i < 0 ? 11 : i;
+    var total = (ONLINE[k] + TIENDA[k]) * 1000;
+    var dif = total - META[k] * 1000;
+    lMes.textContent = MESES[k] + ' · ventas';
+    lValor.textContent = miles(total);
+    lMeta.textContent = (dif >= 0 ? miles(dif) + ' sobre la meta' : miles(-dif) + ' bajo la meta').replace('$', '');
+    lMeta.classList.toggle('bajo', dif < 0);
+  }
+
+  function zonaDatos() {
+    var svg = gPortada.querySelector('svg.lc-svg');
+    if (!svg) return null;
+    var grid = svg.querySelector('.lc-grid') || svg;
+    return grid.getBoundingClientRect();
+  }
+  var pendiente = null;
+  function marcar(x) {
+    pendiente = x;
+    requestAnimationFrame(function () {
+      if (pendiente === null || !portada) return;
+      var r = zonaDatos();
+      var px = pendiente;
+      pendiente = null;
+      if (!r || !r.width) return;
+      var i = Math.floor(((px - r.left) / r.width) * VENTAS.length);
+      i = Math.max(0, Math.min(VENTAS.length - 1, i));
+      if (i !== ultimoIdx) portada.highlightIndex(i);
+      leer(i);
+    });
+  }
+  var zona = $('.portada');
+  zona.addEventListener('pointermove', function (e) {
+    if (e.pointerType !== 'touch') marcar(e.clientX);
+  });
+  // En el celular, tocar una barra también cambia la cifra grande.
+  figura.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'touch') marcar(e.clientX);
+  });
+  zona.addEventListener('pointerleave', function (e) {
+    if (e.pointerType === 'touch' || !portada) return;
+    portada.highlight(null);
+    leer(-1);
+  });
+
+  function dibujar() {
+    figura.querySelector('.lapiz').style.setProperty('--w', figura.clientWidth + 'px');
+    if (quieto) return;
+    portada.setOptions({ animate: true }, false);
+    portada.setData(VENTAS);
+    figura.classList.add('dibujando');
+  }
+
+  // Contador de 0 a 79.
+  function contar() {
+    if (quieto) return;
+    $$('[data-cuenta]').forEach(function (el) {
+      var fin = +el.getAttribute('data-cuenta');
+      var t0 = performance.now();
+      var paso = function (t) {
+        var p = Math.min(1, Math.max(0, (t - t0) / 1400));
+        el.textContent = Math.round(fin * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) requestAnimationFrame(paso);
+      };
+      el.textContent = '0';
+      requestAnimationFrame(paso);
+    });
+  }
+
+  // ------------------------------------------------------------ Accesible
+
+  var gAcc = $('#g-acc');
+  var acc = null;
+  function crearAcc() {
+    var CIUDADES = ['Lima', 'Bogotá', 'Quito', 'Santiago', 'Ciudad de México'];
+    var datos = CORTO.map(function (m, i) {
+      var fila = { mes: m };
+      CIUDADES.forEach(function (c, k) {
+        fila[c] = Math.round(([31, 24, 18, 27, 22][k] + i * (0.6 + k * 0.25) + 2 * Math.sin(i + k)) * 10) / 10;
+      });
+      return fila;
+    });
+    var opciones = {
+      theme: 'dark',
+      background: false,
+      title: 'Usuarios activos por ciudad',
+      subtitle: 'En miles, 2026',
+      data: datos,
+      xAxis: { field: 'mes' },
+      series: CIUDADES.map(function (c) {
+        return { type: 'line', field: c, name: c };
+      }),
+      legend: false,
+      endLabels: true,
+      height: altoPara(gAcc, 64),
+      animate: false,
+    };
+    acc = new LozChart(gAcc, opciones);
+    // Se mide antes de animar: así la corrección de alto no corta la animación.
+    var sobra = sobrante(gAcc);
+    if (Math.abs(sobra) > 1) acc.setOptions({ height: opciones.height - sobra }, false);
+    if (!quieto) acc.setOptions({ animate: true }, false);
+
+    var voz = $('#voz');
+    var svg = gAcc.querySelector('svg.lc-svg');
+    if (svg && svg.getAttribute('aria-label')) voz.textContent = svg.getAttribute('aria-label');
+    var vivo = gAcc.querySelector('[aria-live]');
+    if (vivo)
+      new MutationObserver(function () {
+        var t = vivo.textContent.trim();
+        if (t) voz.textContent = t;
+      }).observe(vivo, { childList: true, characterData: true, subtree: true });
+  }
+  alVer(gAcc, crearAcc);
+  $('#dalt').addEventListener('click', function () {
+    var on = this.getAttribute('aria-pressed') !== 'true';
+    this.setAttribute('aria-pressed', String(on));
+    $('#marco-acc').classList.toggle('daltonismo', on);
+    this.textContent = on ? 'Volver a los colores normales' : 'Verlo con deuteranopia';
+  });
+
+  // ------------------------------------------------------------ Arranque y tamaño
+
+  // El gráfico se crea enseguida (su caja ya tiene alto); las letras esperan a la fuente.
+  crearPortada();
+  var listo = false;
+  function arrancar() {
+    if (listo) return;
+    listo = true;
+    document.documentElement.classList.add('fuentes');
+    ajustarPortada();
+    dibujar();
+    observarTitulares();
+    contar();
+    prepararSecciones();
+  }
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(arrancar);
+    setTimeout(arrancar, 1500); // si las fuentes tardan, no esperamos más
+  } else arrancar();
+
+  var espera;
+  var anchoAntes = innerWidth;
+  window.addEventListener('resize', function () {
+    clearTimeout(espera);
+    espera = setTimeout(function () {
+      ajustarPortada();
+      ajustarSecciones();
+      if (portada) {
+        altoPedido = altoPara(figura, extraPortada);
+        portada.setOptions({ height: altoPedido }, false);
+        medirPortada();
+      }
+      if (innerWidth !== anchoAntes) {
+        anchoAntes = innerWidth;
+        figura.querySelector('.lapiz').style.setProperty('--w', figura.clientWidth + 'px');
+        if (acc) acc.setOptions({ height: altoPara(gAcc, 64) }, false);
+      }
+    }, 150);
   });
 })();
