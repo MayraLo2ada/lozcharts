@@ -11,6 +11,7 @@ import type { DrawContext, SeriesImpl } from '../core/series';
 import { attrs, esc } from '../core/dom';
 import { polarPoint } from '../core/shapes';
 import { fitText } from '../core/axis';
+import { countUp } from './common';
 
 const DEG = Math.PI / 180;
 export const START_ANGLE = -210 * DEG;
@@ -214,8 +215,11 @@ export const gauge: SeriesImpl = {
 
     // El número en grande, en texto principal: la identidad la da el arco, no el color del texto.
     const inner = 2 * (r - thickness) * 0.8;
-    const raw = i >= 0 ? ctx.format(v) : '–';
-    const width12 = ctx.measure(raw);
+    // El número cuenta con los decimales del valor final y su tamaño sale del texto final: no
+    // titila ni cambia de tamaño mientras el arco crece.
+    const final = i >= 0 ? ctx.frame.ps.values[i] : NaN;
+    const raw = i >= 0 ? ctx.format(countUp(v, final)) : '–';
+    const width12 = ctx.measure(i >= 0 ? ctx.format(final) : raw);
     let size = Math.min(VALUE_MAX, Math.max(VALUE_MIN, r * VALUE_SHARE));
     if (width12 > 0) size = Math.max(LABEL_SIZE, Math.min(size, (LABEL_SIZE * inner) / width12));
     s += text(cx, cy, raw, {

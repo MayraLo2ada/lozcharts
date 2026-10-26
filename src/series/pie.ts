@@ -21,7 +21,7 @@ import {
 import { attrs, esc } from '../core/dom';
 import { r2, polarPoint } from '../core/shapes';
 import { fitText } from '../core/axis';
-import { maxOf } from './common';
+import { countUp, maxOf } from './common';
 
 /** Arranque arriba; en SVG la Y crece hacia abajo, así que sumar ángulo es ir en sentido horario. */
 const START = -Math.PI / 2;
@@ -312,15 +312,22 @@ function labels(ctx: DrawContext, g: Geometry): string {
 /** Total visible en el centro del donut, en el texto principal, y "Total" debajo en secundario. */
 function centerTotal(ctx: DrawContext, g: Geometry): string {
   if (g.inner < HOLE_MIN_FOR_TOTAL) return '';
+  // El total de este cuadro (sube con la animación) y el de llegada (las visibles, sin animar).
   let total = 0;
   for (const v of ctx.frame.y1) if (isFinite(v) && v > 0) total += v;
+  let final = 0;
+  ctx.frame.ps.values.forEach((v, i) => {
+    if (!ctx.isHidden(i) && isFinite(v) && v > 0) final += v;
+  });
   // measure() mide a 12 px: el tamaño se escala para que el número quepa en el 80 % del agujero.
-  // Si el exacto no cabe ni al tamaño mínimo, va en forma compacta ("506 mil M").
+  // Si el exacto no cabe ni al tamaño mínimo, va en forma compacta ("506 mil M"). Tamaño y forma
+  // salen del total de llegada: el número no cambia de tamaño mientras cuenta.
   const sizeFor = (t: string) => Math.min(TOTAL_MAX, (g.inner * 2 * 0.8 * FONT) / Math.max(1, ctx.measure(t)), g.inner * 0.5);
-  let text = ctx.format(total);
-  if (sizeFor(text) < TOTAL_MIN) text = ctx.compact(total);
-  const size = sizeFor(text);
+  const compact = sizeFor(ctx.format(final)) < TOTAL_MIN;
+  const size = sizeFor(compact ? ctx.compact(final) : ctx.format(final));
   if (size < TOTAL_MIN) return '';
+  const now = countUp(total, final);
+  const text = compact ? ctx.compact(now) : ctx.format(now);
   const th = ctx.theme;
   const common = { x: r2(g.cx), 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-variant-numeric': 'tabular-nums' };
   return (

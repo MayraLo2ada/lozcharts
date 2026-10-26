@@ -70,3 +70,15 @@ export function maxOf(values: Iterable<number>, start = -Infinity): number {
   for (const v of values) if (isFinite(v) && v > m) m = v;
   return m;
 }
+
+/**
+ * Un número que se anima hasta `final` (el total de un donut, el valor de un gauge), redondeado a
+ * los decimales de `final`: mientras crece se lee 12, 37, 61… y no 12,37 o 37,9, que en un número
+ * grande titilan y no son ningún dato.
+ */
+export function countUp(v: number, final: number): number {
+  if (!isFinite(v) || !isFinite(final)) return v;
+  let d = 0;
+  while (d < 6 && Math.abs(final * 10 ** d - Math.round(final * 10 ** d)) > 1e-6) d++;
+  return Math.round(v * 10 ** d) / 10 ** d;
+}

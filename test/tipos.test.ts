@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { host, resize } from './dom';
 import { LozChart, type LozChartOptions } from '../src/index';
-import { maxOf } from '../src/series/common';
+import { countUp, maxOf } from '../src/series/common';
 import { barGeometry } from '../src/series/bar';
 import { bubbleMax } from '../src/series/scatter';
 import { lookAt } from '../src/series/map';
@@ -169,4 +169,12 @@ test('pie: un valor negativo no se dibuja, el tooltip lo dice y la consola avisa
   }
   assert.equal(seen.length, 1);
   assert.match(seen[0], /"Ventas", la fila 2 tiene un valor negativo/);
+});
+
+test('countUp: el número que se anima lleva los decimales del valor final', () => {
+  assert.equal(countUp(44.77, 75), 45);
+  assert.equal(countUp(303.2, 1370), 303);
+  assert.equal(countUp(12.345, 1370.5), 12.3);
+  assert.equal(countUp(0.123456, 0.25), 0.12);
+  assert.equal(countUp(7.5, NaN), 7.5);
 });

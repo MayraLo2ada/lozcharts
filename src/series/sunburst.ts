@@ -57,6 +57,7 @@ import { attrs, esc } from '../core/dom';
 import { mixOklab, parseColor, toHex } from '../core/color';
 import { polarPoint, r2 } from '../core/shapes';
 import { fitText } from '../core/axis';
+import { countUp } from './common';
 import { slicePath } from './pie';
 import { inkFor } from '../core/color';
 
@@ -564,16 +565,21 @@ function litNodes(ctx: DrawContext, m: SunModel): boolean[] | null {
   return lit;
 }
 
-/** Número del centro con su texto debajo: el total, o el nodo enfocado. */
-function centerMarkup(ctx: DrawContext, g: SunGeometry, value: number, caption: string): string {
+/**
+ * Número del centro con su texto debajo: el total, o el nodo enfocado. `final` es el valor de
+ * llegada cuando `value` se anima: de él salen el tamaño y los decimales, así el número cuenta sin
+ * titilar ni cambiar de tamaño.
+ */
+function centerMarkup(ctx: DrawContext, g: SunGeometry, value: number, caption: string, final = value): string {
   if (g.hole < HOLE_MIN_FOR_TOTAL) return '';
   // measure() mide a 12 px: el tamaño se escala para que el número quepa en el 80 % del agujero.
   const room = g.hole * 2 * 0.8;
   const sizeFor = (t: string) => Math.min(TOTAL_MAX, (room * FONT) / Math.max(1, ctx.measure(t)), g.hole * 0.5);
-  let text = ctx.format(value);
-  if (sizeFor(text) < TOTAL_MIN) text = ctx.compact(value);
-  const size = sizeFor(text);
+  const compact = sizeFor(ctx.format(final)) < TOTAL_MIN;
+  const size = sizeFor(compact ? ctx.compact(final) : ctx.format(final));
   if (size < TOTAL_MIN) return '';
+  const now = countUp(value, final);
+  const text = compact ? ctx.compact(now) : ctx.format(now);
   const th = ctx.theme;
   // El texto de abajo queda más cerca del borde del agujero: algo más angosto que el número.
   const label = fitText(caption, room * 0.85, ctx.measure);
@@ -622,7 +628,7 @@ export const sunburst: SeriesImpl = {
       const label = labelMarkup(d, th, id);
       s += lit && !lit[id] && label ? `<g opacity="${DIM_OPACITY}">${label}</g>` : label;
     }
-    return s + centerMarkup(ctx, g, g.total, CAPTION);
+    return s + centerMarkup(ctx, g, g.total, CAPTION, m.total);
   },
   hit(ctx, px, py) {
     const { m, g } = drawnOf(ctx);
