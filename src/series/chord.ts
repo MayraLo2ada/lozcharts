@@ -39,7 +39,7 @@ import {
 import { attrs, esc } from '../core/dom';
 import { r2, polarPoint } from '../core/shapes';
 import { fitText } from '../core/axis';
-import { maxOf } from './common';
+import { maxOf, share } from './common';
 
 const TAU = 2 * Math.PI;
 /** Arranque arriba; en SVG la Y crece hacia abajo, así que sumar ángulo es ir en sentido horario. */
@@ -728,8 +728,8 @@ export const chord: SeriesImpl = {
     // Como en los demás tipos: lo que no se dibuja dice por qué.
     if (!l) return { value, details: [['No aparece', v <= 0 ? 'vale cero o menos' : 'le falta el origen o el destino']] };
     const details: [string, string][] = [
-      [`De lo que sale de ${m.names[l.source]}`, format.percent(l.value / m.outflow[l.source])],
-      [`De lo que llega a ${m.names[l.target]}`, format.percent(l.value / m.inflow[l.target])],
+      [`De lo que sale de ${m.names[l.source]}`, share(l.value / m.outflow[l.source], format.percent)],
+      [`De lo que llega a ${m.names[l.target]}`, share(l.value / m.inflow[l.target], format.percent)],
     ];
     return { value, details };
   },

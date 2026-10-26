@@ -82,3 +82,16 @@ export function countUp(v: number, final: number): number {
   while (d < 6 && Math.abs(final * 10 ** d - Math.round(final * 10 ** d)) > 1e-6) d++;
   return Math.round(v * 10 ** d) / 10 ** d;
 }
+
+/**
+ * Una parte del total como porcentaje, sin redondear a un extremo que miente: una porción que
+ * existe no se lee "0 %" (va "<0,1 %") ni una que no es todo se lee "100 %" (va ">99,9 %").
+ */
+export function share(p: number, percent: (v: number) => string): string {
+  const text = percent(p);
+  if (!(p > 0 && p < 1)) return text;
+  const step = [0.001, 0.01, 0.1].find((s) => percent(s) !== percent(0)) ?? 0.1;
+  if (text === percent(0)) return '<' + percent(step);
+  if (text === percent(1)) return '>' + percent(1 - step);
+  return text;
+}

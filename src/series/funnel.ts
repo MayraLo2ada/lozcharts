@@ -23,7 +23,7 @@ import {
 import { attrs, esc } from '../core/dom';
 import { r2 } from '../core/shapes';
 import { fitText } from '../core/axis';
-import { maxOf } from './common';
+import { maxOf, share } from './common';
 
 /** Separación entre barras vecinas (espacio, no borde). */
 const GAP = 2;
@@ -84,6 +84,7 @@ export function barWidth(v: number, max: number, area: number): number {
 export function percentLabel(p: number, percent: (v: number) => string): string {
   if (!isFinite(p)) return '';
   if (p > 0 && p < 0.01) return '<' + percent(0.01);
+  if (p > 0.995 && p < 1) return '>' + percent(0.99);
   return percent(Math.round(p * 100) / 100);
 }
 
@@ -300,8 +301,8 @@ export const funnel: SeriesImpl = {
     if (v < 0) return { value: format.value(v), details: [['No aparece', 'vale menos de cero']] };
     const { fromStart, fromPrev } = conversions(ps.values);
     const details: [string, string][] = [];
-    if (isFinite(fromStart[i])) details.push(['Del inicio', format.percent(fromStart[i])]);
-    if (i > 0 && isFinite(fromPrev[i])) details.push(['Del paso anterior', format.percent(fromPrev[i])]);
+    if (isFinite(fromStart[i])) details.push(['Del inicio', share(fromStart[i], format.percent)]);
+    if (i > 0 && isFinite(fromPrev[i])) details.push(['Del paso anterior', share(fromPrev[i], format.percent)]);
     return { value: format.value(v), details: details.length ? details : undefined };
   },
 };

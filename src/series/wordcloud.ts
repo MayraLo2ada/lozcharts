@@ -48,6 +48,7 @@ import { attrs, esc } from '../core/dom';
 import { contrast, mixOklab, parseColor, toHex } from '../core/color';
 import { r2 } from '../core/shapes';
 import { fitText } from '../core/axis';
+import { share } from './common';
 
 /** Cuerpo de letra mínimo legible y máximo absoluto (px). */
 export const MIN_FONT = 12;
@@ -763,7 +764,7 @@ export const wordcloud: SeriesImpl = {
     }
     const w = m.words[k];
     if (w.row !== i) return { value: format.value(v), details: [['Se suma a', `${w.text} (${format.value(w.weight)})`]] };
-    const details: [string, string][] = [['Del total', format.percent(w.weight / m.total)]];
+    const details: [string, string][] = [['Del total', share(w.weight / m.total, format.percent)]];
     if (w.rows.length > 1) details.push(['Junta', `${format.number(w.rows.length)} filas`]);
     if (m.groups.length) details.push(['Grupo', w.group >= 0 ? m.groups[w.group] : 'Sin grupo']);
     if (omittedOf.get(m)?.has(k)) details.push(['No aparece', 'no cabe en el espacio']);

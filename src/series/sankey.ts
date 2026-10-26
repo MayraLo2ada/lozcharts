@@ -28,7 +28,7 @@ import {
 import { attrs, esc } from '../core/dom';
 import { r2 } from '../core/shapes';
 import { fitText } from '../core/axis';
-import { maxOf } from './common';
+import { maxOf, share } from './common';
 
 /** Ancho de los nodos y su radio. */
 export const NODE_WIDTH = 12;
@@ -791,9 +791,9 @@ export const sankey: SeriesImpl = {
     if (!l) return { value, details: [['No aparece', v <= 0 ? 'vale cero o menos' : 'le falta el origen o el destino']] };
     const details: [string, string][] = [];
     if (m.outflow[l.source] > 0)
-      details.push([`De lo que sale de ${m.names[l.source]}`, format.percent(l.value / m.outflow[l.source])]);
+      details.push([`De lo que sale de ${m.names[l.source]}`, share(l.value / m.outflow[l.source], format.percent)]);
     if (m.inflow[l.target] > 0)
-      details.push([`De lo que llega a ${m.names[l.target]}`, format.percent(l.value / m.inflow[l.target])]);
+      details.push([`De lo que llega a ${m.names[l.target]}`, share(l.value / m.inflow[l.target], format.percent)]);
     return { value, details };
   },
 };

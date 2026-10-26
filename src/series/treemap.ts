@@ -25,6 +25,7 @@ import { attrs, esc } from '../core/dom';
 import { inkFor } from '../core/color';
 import { r2 } from '../core/shapes';
 import { fitText } from '../core/axis';
+import { share } from './common';
 
 /** Aire entre rectángulos vecinos (superficie, no borde). */
 const GAP = 2;
@@ -439,12 +440,12 @@ export const treemap: SeriesImpl = {
     if (v <= 0) return { value: format.value(v), details: [['No aparece', 'vale cero o menos']] };
     let total = 0;
     for (const x of ps.values) if (positive(x)) total += x;
-    const details: [string, string][] = [['Del total', format.percent(v / total)]];
+    const details: [string, string][] = [['Del total', share(v / total, format.percent)]];
     const groups = groupsOf(ps);
     if (groups) {
       const g = groups[i] ?? '';
       const sum = groupTotals(ps.values, groups).get(g) ?? 0;
-      details.push([`De ${groupName(g)}`, format.percent(v / sum)]);
+      details.push([`De ${groupName(g)}`, share(v / sum, format.percent)]);
     }
     return { value: format.value(v), details };
   },

@@ -21,7 +21,7 @@ import {
 import { attrs, esc } from '../core/dom';
 import { r2, polarPoint } from '../core/shapes';
 import { fitText } from '../core/axis';
-import { countUp, maxOf } from './common';
+import { countUp, maxOf, share } from './common';
 
 /** Arranque arriba; en SVG la Y crece hacia abajo, así que sumar ángulo es ir en sentido horario. */
 const START = -Math.PI / 2;
@@ -253,8 +253,8 @@ function geometry(ctx: DrawContext, defaultHole: number): Geometry {
   const labelText = (i: number) => {
     // Con los valores animados (las ocultas se van encogiendo): las etiquetas acompañan a las
     // porciones durante la animación en vez de saltar a su porcentaje final.
-    const share = visibleShare(frame.y1, i, () => false);
-    return fitText(ctx.label(i), nameMax, ctx.measure) + ' ' + ctx.percent(share);
+    const part = visibleShare(frame.y1, i, () => false);
+    return fitText(ctx.label(i), nameMax, ctx.measure) + ' ' + share(part, ctx.percent);
   };
   return done(outer, labelText);
 }
@@ -428,7 +428,7 @@ export function sliceTooltip(ps: PreparedSeries, i: number, format: TooltipForma
   // Sin porcentaje: un "0 %" junto a un valor negativo parecería un cálculo.
   if (v < 0) return { value: format.value(v), details: [['No aparece', 'vale menos de cero']] };
   if (format.isHidden(i)) return { value: format.value(v) };
-  return { value: `${format.value(v)} (${format.percent(visibleShare(ps.values, i, format.isHidden))})` };
+  return { value: `${format.value(v)} (${share(visibleShare(ps.values, i, format.isHidden), format.percent)})` };
 }
 
 export const pie: SeriesImpl = radial(0, 'sectores');

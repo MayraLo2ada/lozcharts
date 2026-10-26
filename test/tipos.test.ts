@@ -7,12 +7,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { host, resize } from './dom';
 import { LozChart, type LozChartOptions } from '../src/index';
-import { countUp, maxOf } from '../src/series/common';
+import { countUp, maxOf, share } from '../src/series/common';
 import { barGeometry } from '../src/series/bar';
 import { bubbleMax } from '../src/series/scatter';
 import { lookAt } from '../src/series/map';
 import { sliceTooltip } from '../src/series/pie';
-import { funnel } from '../src/series/funnel';
+import { funnel, percentLabel } from '../src/series/funnel';
 import { mapbubble } from '../src/series/map';
 import { registerMap } from '../src/core/geo';
 import { world } from '../src/maps/world';
@@ -189,4 +189,16 @@ test('embudo y mapa de burbujas: un valor negativo dice que no aparece', () => {
   assert.deepEqual(funnel.tooltip!(ps, 2, format), { value: '45', details: [['Del inicio', '37.5 %']] });
   assert.deepEqual(mapbubble.tooltip!(ps, 1, format), { value: '-80', details: [['No aparece', 'vale cero o menos']] });
   assert.deepEqual(mapbubble.tooltip!(ps, 0, format), { value: '120' });
+});
+
+test('share: una parte que existe no se lee 0 %, ni una que no es todo, 100 %', () => {
+  const pct = (v: number) => `${(Math.round(v * 1000) / 10).toLocaleString('es')} %`;
+  assert.equal(share(45 / 1_461_028, pct), '<0,1 %');
+  assert.equal(share(0.9998, pct), '>99,9 %');
+  assert.equal(share(0.256, pct), '25,6 %');
+  assert.equal(share(0, pct), '0 %');
+  assert.equal(share(1, pct), '100 %');
+  const whole = (v: number) => `${Math.round(v * 100)} %`;
+  assert.equal(share(0.002, whole), '<1 %');
+  assert.equal(percentLabel(0.997, whole), '>99 %');
 });

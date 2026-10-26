@@ -57,7 +57,7 @@ import { attrs, esc } from '../core/dom';
 import { mixOklab, parseColor, toHex } from '../core/color';
 import { polarPoint, r2 } from '../core/shapes';
 import { fitText } from '../core/axis';
-import { countUp } from './common';
+import { countUp, share } from './common';
 import { slicePath } from './pie';
 import { inkFor } from '../core/color';
 
@@ -596,8 +596,8 @@ function centerMarkup(ctx: DrawContext, g: SunGeometry, value: number, caption: 
 function shares(m: SunModel, parent: number, v: number, format: TooltipFormat): [string, string][] {
   const out: [string, string][] = [];
   const p = parent >= 0 ? m.nodes[parent] : null;
-  if (p && p.value > 0) out.push([`De ${p.name}`, format.percent(v / p.value)]);
-  if (m.total > 0) out.push(['Del total', format.percent(v / m.total)]);
+  if (p && p.value > 0) out.push([`De ${p.name}`, share(v / p.value, format.percent)]);
+  if (m.total > 0) out.push(['Del total', share(v / m.total, format.percent)]);
   return out;
 }
 
