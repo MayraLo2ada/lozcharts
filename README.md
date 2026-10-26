@@ -1,14 +1,17 @@
 # LozCharts
 
-LozCharts es una librería de gráficos para la web. Está escrita en TypeScript, dibuja en SVG y no
-depende de nada. Cada gráfico que creas es un `LozChart`: le das tus datos y ya sale con tooltip,
-leyenda, modo claro y oscuro, animación, manejo con teclado y una tabla de datos para lectores de
+LozCharts es una librería de gráficos para la web. Está escrita en TypeScript, dibuja en SVG (el
+formato de imagen que se ve nítido a cualquier tamaño) y no necesita ninguna otra librería. Cada
+gráfico que creas es un `LozChart`: le das tus datos y ya sale con tooltip (la cajita con el dato
+al pasar el puntero), leyenda, modo claro y oscuro, animación, manejo con teclado y una tabla de datos para lectores de
 pantalla. Todo eso que normalmente terminas programando aparte.
 
-Tiene 26 tipos. Están las líneas y las barras de siempre, pero también velas, mapa de calor, sankey,
-cascada, línea de tiempo, nube de palabras, mapas y small multiples (la lista completa está en
+Tiene 26 tipos. Están las líneas y las barras de siempre, pero también velas, mapa de calor,
+diagrama de flujos (sankey), cascada, línea de tiempo, nube de palabras, mapas y small multiples,
+que son muchos gráficos pequeños con la misma escala (la lista completa está en
 [Tipos de serie](#tipos-de-serie)). Trae zoom, anotaciones, etiquetas al final de cada línea,
-exportación a PNG, SVG y CSV, y componentes para React y para Angular, Vue o Svelte.
+descarga como imagen PNG o SVG y como hoja CSV, y componentes para React y para Angular, Vue o
+Svelte.
 
 ## Instalar y compilar
 
@@ -19,7 +22,7 @@ npm test        # pruebas (node:test)
 npm run check   # formato, tipos y pruebas: lo mismo que corre la integración continua
 ```
 
-Después del build, abre `demo/index.html` con doble clic y tienes la galería. No hace falta
+Después de compilar, abre `demo/index.html` con doble clic y tienes la galería. No hace falta
 servidor.
 
 ## Usarla en otro proyecto (antes de publicarla en npm)
@@ -37,7 +40,7 @@ cualquier paquete: `import { Chart } from 'lozcharts/react'`.
 
 ## Tres formas de usarla
 
-**1. Con `<script>`.** No necesitas servidor ni build: pones el archivo junto a tu página y creas
+**1. Con `<script>`.** No necesitas servidor ni compilar nada: pones el archivo junto a tu página y creas
 el gráfico.
 
 ```html
@@ -94,7 +97,7 @@ const chart = new LozChart('#grafico', {
   xAxis: { field: 'mes', type: 'time' }, // 'category' | 'time' | 'linear'
   yAxis: { format: 'currency' }, // 'auto' | 'compact' | 'number' | 'percent' | 'currency' | función
   series: [
-    { type: 'bar', field: 'online', name: 'Online', stack: true },
+    { type: 'bar', field: 'online', name: 'En línea', stack: true },
     { type: 'bar', field: 'tienda', name: 'Tienda', stack: true },
     { type: 'line', field: 'meta', name: 'Meta', smooth: true },
   ],
@@ -124,7 +127,7 @@ const chart = new LozChart('#grafico', {
 | LozCandle    | `candlestick` | Precios: apertura, máximo, mínimo y cierre       | `field` (cierre), `open`, `high`, `low`                          |
 | LozOHLC      | `ohlc`        | Lo mismo que las velas, en trazos                | `field` (cierre), `open`, `high`, `low`                          |
 | LozPie       | `pie`         | Partes de un todo (pocas categorías)             | `xAxis.field` (categoría), `field` (valor)                       |
-| LozDonut     | `donut`       | Como el pie, con el total al centro              | igual que `pie`; `innerRadius` (0,6)                             |
+| LozDonut     | `donut`       | Como el pastel, con el total al centro           | igual que `pie`; `innerRadius` (0,6)                             |
 | LozGauge     | `gauge`       | Un indicador contra su rango y su meta           | `field`; `target`; rango con `yAxis.min` y `yAxis.max`           |
 | LozBullet    | `bullet`      | Indicadores contra su meta y sus rangos          | `xAxis.field` (indicador), `field`; `targetField`, `ranges`      |
 | LozRadar     | `radar`       | Perfiles en varias dimensiones                   | `xAxis.field` (criterio), `field` por serie                      |
@@ -145,17 +148,18 @@ const chart = new LozChart('#grafico', {
 LozBar, LozLine y los demás son los nombres que uso en esta documentación y en la galería. En el
 código cada tipo va por su nombre corto: `type: 'bar'`.
 
-Pie, donut, gauge y embudo muestran una sola serie. En el pie y el donut, cada categoría lleva su
+El pastel (`pie`), la dona (`donut`), el medidor (`gauge`) y el embudo muestran una sola serie. En
+el pastel y la dona, cada categoría lleva su
 color y su botón en la leyenda, con su porcentaje; si ocultas una, los porcentajes de las demás se
 recalculan. Con más de 8 categorías, las 7 primeras van en color y el resto se suma en "Otros", con
 el detalle en el tooltip y en la tabla.
 
-Mi consejo: si pasas de 5 categorías, cambia el pie por barras horizontales ordenadas. Se leen
+Mi consejo: si pasas de 5 categorías, cambia el pastel por barras horizontales ordenadas. Se leen
 mucho mejor.
 
 Las etiquetas se reparten para no encimarse. En pantallas angostas se omiten, porque la leyenda y
-el tooltip ya dicen lo mismo, y `labels: false` las apaga siempre. Si necesitas varios gauges o
-varios embudos, usa small multiples.
+el tooltip ya dicen lo mismo, y `labels: false` las apaga siempre. Si necesitas varios medidores
+o varios embudos, usa small multiples.
 
 ```js
 new LozChart('#categorias', {
@@ -177,8 +181,9 @@ new LozChart('#meta', {
 
 <!-- vivo: meta -->
 
-Para precios tienes velas (`candlestick`) y barras OHLC. Cada fila trae apertura, máximo, mínimo y
-cierre, y en la serie dices cómo se llama cada campo.
+Para precios tienes velas (`candlestick`) y barras OHLC (`ohlc`, por sus siglas en inglés: open,
+high, low, close). Cada fila trae apertura, máximo, mínimo y cierre, y en la serie dices cómo se
+llama cada campo.
 
 ¿Barras con nombres largos? Pon `orientation: 'horizontal'`: el gráfico gira y las categorías pasan
 al eje vertical, donde caben enteras.
@@ -292,7 +297,7 @@ gris. La punta apunta hacia donde se movió el acumulado y la etiqueta lleva el 
 dependes de distinguir el verde del rojo. Un total sin valor muestra el acumulado. Si le das un
 valor, manda ese; y si no cuadra, te avisa en la consola y el tooltip da la diferencia.
 
-La **bala** tiene una sola escala para todas las filas, porque los rangos valen para todas. Si tus
+La **bala** (el gráfico de metas) tiene una sola escala para todas las filas, porque los rangos valen para todas. Si tus
 indicadores tienen unidades distintas, haz un gráfico por indicador. Los rangos van en grises, más
 intensos cuanto peor, nunca en semáforo. El tooltip da la meta, la diferencia (con signo y en %) y
 el rango en que cae el valor. Va una serie por gráfico.
@@ -342,9 +347,9 @@ new LozChart('#nube', {
 });
 ```
 
-El **sunburst** empieza arriba y avanza en el sentido del reloj, con los hermanos de mayor a menor.
+El **sunburst** (anillos por niveles) empieza arriba y avanza en el sentido del reloj, con los hermanos de mayor a menor.
 Cada rama de primer nivel lleva su color, y los anillos de afuera lo heredan en tonos más claros.
-Sin `levels` queda un solo anillo, como un donut. Al pasar el puntero se resalta la ruta hasta la
+Sin `levels` queda un solo anillo, como una dona. Al pasar el puntero se resalta la ruta hasta la
 raíz. Con el teclado, ← → recorren y ↑ ↓ suben o bajan de nivel.
 
 En las **cuerdas**, cada nodo es un arco (lo que sale más lo que entra) y cada flujo es una cinta
@@ -447,8 +452,8 @@ no cambiaron.
 
 ## `<loz-chart>`: Angular, Vue, Svelte o HTML puro
 
-`<loz-chart>` es un elemento HTML estándar (un Custom Element), así que funciona en cualquier
-framework sin adaptador. Si cargas `<script src="lozcharts.umd.js">`, ya queda registrado; con
+`<loz-chart>` es un elemento HTML estándar (un Custom Element), así que funciona con cualquier
+framework, sin adaptador. Si cargas `<script src="lozcharts.umd.js">`, ya queda registrado; con
 módulos, importa `'lozcharts/element'`.
 
 ```html
@@ -495,7 +500,7 @@ Algo así basta:
 
 ```text
 Usa LozCharts; todo lo que necesitas saber está en llms.txt (te lo adjunto).
-Quiero barras apiladas con las ventas por mes, online y tienda, en dólares,
+Quiero barras apiladas con las ventas por mes, en línea y en tienda, en dólares,
 y una línea con la meta mensual.
 ```
 
@@ -534,7 +539,7 @@ LozChart.multiples('#regiones', {
   data: ventas, // { mes, region, online, tienda }
   xAxis: { field: 'mes', type: 'time' },
   series: [
-    { type: 'area', field: 'online', name: 'Online', stack: true },
+    { type: 'area', field: 'online', name: 'En línea', stack: true },
     { type: 'area', field: 'tienda', name: 'Tienda', stack: true },
   ],
 });
@@ -640,11 +645,11 @@ new LozChart('#visitas', {
 
 <!-- vivo: zoom -->
 
-El **zoom** (`zoom: true`) funciona en gráficos cartesianos verticales. Arrastra sobre el gráfico
-para marcar un tramo y acercarlo. Ctrl + rueda, o pellizcar en el trackpad, acerca y aleja bajo el
+El **zoom** (`zoom: true`) funciona en gráficos verticales con ejes X e Y (cartesianos). Arrastra sobre el gráfico
+para marcar un tramo y acercarlo. Ctrl + rueda, o pellizcar en el panel táctil, acerca y aleja bajo el
 puntero; Shift + rueda, o deslizar de lado, mueve la ventana, y doble clic vuelve a todo. En una
 pantalla táctil, con dos dedos pellizcas y mueves, y con uno sigues recorriendo los datos con el
-tooltip. La rueda sola sigue moviendo la página: el gráfico no te secuestra el scroll. Al acercar,
+tooltip. La rueda sola sigue moviendo la página: el gráfico no te la secuestra. Al acercar,
 el eje del valor se ajusta a lo que se ve.
 
 Debajo aparece una barra con un mini gráfico de todos los datos. Puedes arrastrar la ventana o sus
@@ -768,11 +773,11 @@ new LozChart('#grafico', {
 | `zoomWindow`, `setZoomWindow({ start, end } \| null)`     | La ventana exacta del zoom en fracciones del eje X, y fijarla (para sincronizar gráficos).       |
 | `redraw()`                                                | Vuelve a dibujar con el estado actual, sin animar (para tipos cuyo dibujo cambia por fuera).     |
 | `setTheme('dark')`                                        | Cambia el tema.                                                                                  |
-| `toggleSeries('Online', visible?)`                        | Oculta o muestra una serie; las demás conservan su color.                                        |
+| `toggleSeries('En línea', visible?)`                      | Oculta o muestra una serie; las demás conservan su color.                                        |
 | `toSVG()`                                                 | SVG completo como texto, con título y leyenda.                                                   |
 | `toCSV()`                                                 | Los datos como CSV (números sin formato, fechas en ISO), para una hoja de cálculo.               |
 | `download('png' \| 'svg' \| 'csv', nombre?)`              | Descarga la imagen (PNG al doble de resolución) o los datos en CSV.                              |
-| `destroy()`                                               | Quita el gráfico y sus listeners.                                                                |
+| `destroy()`                                               | Quita el gráfico y deja de escuchar sus eventos.                                                 |
 | `LozChart.initAll(raíz)`, `destroyAll(raíz)`, `cleanup()` | Montaje automático para HTMX.                                                                    |
 | `LozChart.registerSeries(nombre, impl)`                   | Agrega un tipo de serie.                                                                         |
 | `LozChart.registerMap(nombre, topojsonOGeojson)`          | Agrega un mapa para `choropleth` y `mapbubble`.                                                  |
@@ -794,7 +799,7 @@ No tienes que activar nada de esto: viene en cada gráfico.
 - Las anotaciones con texto se leen en la descripción del gráfico ("Referencias: Meta diaria, 8
   mil").
 - La leyenda son botones con `aria-pressed`.
-- Respeta `prefers-reduced-motion`.
+- Respeta la preferencia del sistema de reducir el movimiento (`prefers-reduced-motion`).
 
 ## Cómo funciona por dentro
 
@@ -803,13 +808,13 @@ Si vas a tocar el núcleo, esto te ahorra leer el código de cero.
 - **Escalas** (`core/scales.ts`). Convierten datos en píxeles. La Y es lineal, una regla de tres.
   La X es de **banda** si hay barras: el ancho se reparte en n franjas y cada serie usa el centro
   `x.at(i)`. Si no hay barras es **continua** y cada punto se ubica según su fecha real.
-- **Ticks bonitos** (`core/ticks.ts`). El paso se redondea a 1, 2 o 5 × 10ⁿ y el dominio se
+- **Marcas redondas del eje** (`core/ticks.ts`). El paso se redondea a 1, 2 o 5 × 10ⁿ y el dominio se
   extiende hasta múltiplos de ese paso. Para fechas elige el intervalo de calendario más fino (hora,
   día, mes, trimestre, año…) que deje espacio entre etiquetas.
 - **Curva monótona** (`core/shapes.ts`). Suaviza sin inventar picos: donde los datos cambian de
   dirección la curva queda plana, y las tangentes se recortan para no pasarse.
 - **Animación** (`chart.ts`). Cada estado es un "cuadro" con el dominio Y y la base y la punta de
-  cada serie. Animar es interpolar entre el cuadro actual y el nuevo durante 600 ms con ease-out. Si
+  cada serie. Animar es interpolar entre el cuadro actual y el nuevo durante 600 ms, rápido al empezar y suave al llegar (ease-out). Si
   llega otro cambio a mitad de camino, parte del cuadro que se ve en ese momento.
 - **Zoom** (`core/view.ts`). La ventana visible se guarda como fracciones del eje X, de 0 a 1. Así
   vale igual para barras, fechas y números, y no depende del ancho. Las escalas reciben la ventana y
@@ -836,8 +841,8 @@ LozChart.registerSeries('puntos', {
 
 Un tipo puede pedir columnas extra con `columns: (o) => ({ low: o.low })`, y le llegan animadas en
 `frame.cols.low`. Si están en unidades del eje, nómbralas en `valueColumns` para que cuenten en el
-dominio y se encojan al ocultar la serie. `pointer: 'nearest'` cambia el crosshair por "el punto más
-cercano", y `tooltip(ps, i, format)` personaliza el texto del tooltip y de la tabla.
+dominio y se encojan al ocultar la serie. `pointer: 'nearest'` cambia la guía que sigue al puntero (crosshair) por "el
+punto más cercano", y `tooltip(ps, i, format)` personaliza el texto del tooltip y de la tabla.
 
 Las series dibujan siempre en un plano lógico, con el índice en X y el valor en Y. En horizontal, el
 núcleo lo refleja sobre su diagonal, así que un tipo nuevo funciona en las dos orientaciones sin
@@ -887,7 +892,7 @@ Gantt, no lo recibe, porque la ventana, los gestos, la barra de desplazamiento y
 apoyan en la escala del índice del núcleo. Ese tipo puede ofrecer su propio recorte de fechas con
 sus opciones y `redraw()`.
 
-**Piezas del núcleo para extensiones.** El paquete (y `window.LozChart` en el build para
+**Piezas del núcleo para extensiones.** El paquete (y `window.LozChart` en la versión para
 `<script>`) exporta lo mismo con que se dibujan los tipos de la librería: colores (`parseColor`,
 `toHex`, `toOklab`, `fromOklab`, `mixOklab`, `luminance`, `contrast`, `textOn`, `inkFor`,
 `colorDomain`, `makeRamp`, `paint`, `paintColor`, `legendSpec`, `legendWidth`, `MAX_COLORS`),

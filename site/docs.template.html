@@ -738,7 +738,7 @@
                 xAxis: { field: 'mes', type: 'time' },
                 yAxis: { format: 'currency' },
                 series: [
-                  { type: 'bar', field: 'online', name: 'Online', stack: true },
+                  { type: 'bar', field: 'online', name: 'En línea', stack: true },
                   { type: 'bar', field: 'tienda', name: 'Tienda', stack: true },
                   { type: 'line', field: 'meta', name: 'Meta', smooth: true },
                 ],
@@ -750,7 +750,7 @@
             },
           },
           categorias: {
-            nota: 'El donut de arriba con cinco categorías. Toca una en la leyenda para ocultarla.',
+            nota: 'La dona de arriba con cinco categorías. Toca una en la leyenda para ocultarla.',
             crear: function (el) {
               nuevo(el, {
                 data: [
@@ -767,7 +767,7 @@
             },
           },
           meta: {
-            nota: 'El gauge: 78 % de avance contra una meta de 85 %.',
+            nota: 'El medidor (gauge): 78 % de avance contra una meta de 85 %.',
             crear: function (el) {
               nuevo(el, {
                 data: [{ mes: 'Octubre', avance: 0.78 }],
@@ -819,7 +819,7 @@
             },
           },
           kpi: {
-            nota: 'La bala del código: el Sur va lejos de su meta.',
+            nota: 'El gráfico de metas (bala) del código: el Sur va lejos de su meta.',
             crear: function (el) {
               nuevo(el, {
                 title: 'Ventas del trimestre por región',
@@ -955,7 +955,7 @@
             },
           },
           teclado: {
-            nota: 'Haz clic en el gráfico (o llega con Tab) y recórrelo con las flechas. Escape cierra el tooltip.',
+            nota: 'Haz clic en el gráfico (o llega con Tab) y recórrelo con las flechas. Escape cierra la cajita del dato (el tooltip).',
             crear: function (el) {
               nuevo(el, {
                 title: 'Consultas por canal',
