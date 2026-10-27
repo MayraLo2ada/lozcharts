@@ -12,6 +12,7 @@ import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, normalize, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { gzipSync } from 'node:zlib';
 
 const SITIO = 'site';
 
@@ -19,6 +20,10 @@ mkdirSync('site/lib/maps', { recursive: true });
 copyFileSync('dist/lozcharts.umd.js', 'site/lib/lozcharts.umd.js');
 copyFileSync('dist/maps/world.umd.js', 'site/lib/maps/world.umd.js');
 copyFileSync('llms.txt', 'site/llms.txt');
+
+// Lo que pesa la librería al bajarla (el UMD comprimido), en KB: la portada lo dice en varios
+// lugares como {{kb}}, y así nunca queda un número viejo.
+const KB = String(Math.round(gzipSync(readFileSync('dist/lozcharts.umd.js'), { level: 9 }).length / 1024));
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 /** Ancla como la de GitHub: minúsculas, sin signos, espacios a guiones (las letras con acento quedan). */
@@ -293,6 +298,7 @@ function gruposPorNumero(resto) {
  *   {{alternos}}     canonical y hreflang de la página
  *   {{selector}}     el selector de idioma de la barra
  *   {{idiomas_pie}}  los tres idiomas como enlaces, para el pie
+ *   {{kb}}           lo que pesa la librería comprimida; también vale dentro de los textos
  * Una marca sin texto detiene el armado: mejor un error que una página con {{algo}} a la vista.
  */
 export const BASE = 'https://mayralo2ada.github.io/lozcharts/';
@@ -385,6 +391,7 @@ function armar(plantilla, idioma, pagina, textos, extra = {}) {
     alternos,
     selector: selector(idioma, pagina, extra.anclas),
     idiomas_pie: `<span class="idiomas-pie">${pie}</span>`,
+    kb: KB,
   };
   return plantilla.replace(/\{\{([\w:.-]+)\}\}/g, (todo, clave) => {
     if (clave.startsWith('p:')) {
@@ -393,7 +400,7 @@ function armar(plantilla, idioma, pagina, textos, extra = {}) {
       return enlace(idioma, p);
     }
     if (clave in fijas) return fijas[clave];
-    if (clave in textos) return textos[clave][idioma];
+    if (clave in textos) return textos[clave][idioma].replaceAll('{{kb}}', KB);
     throw new Error(`site/plantillas/${PAGINAS[pagina].plantilla}: falta el texto {{${clave}}}`);
   });
 }

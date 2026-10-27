@@ -335,7 +335,7 @@
     figura.classList.add('dibujando');
   }
 
-  // Contador de 0 a 79.
+  // Contador de 0 al peso de la librería (data-cuenta).
   function contar() {
     if (quieto) return;
     $$('[data-cuenta]').forEach(function (el) {

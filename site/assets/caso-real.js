@@ -157,27 +157,11 @@
     vigia.observe(document.getElementById('historia'));
   } else cargarMapa();
 
-  // El gráfico del informe Pro.
-  var elInforme = document.getElementById('g-informe');
-  var informe = new LozChart(
-    elInforme,
-    Object.assign({}, base, {
-      data: H.mensual,
-      xAxis: { field: 'mes' },
-      yAxis: { format: 'compact' },
-      series: [{ type: 'bar', field: 'ventas', name: tx({ es: 'Ventas del mes', en: 'Sales that month', pt: 'Vendas do mês' }) }],
-      height: 200,
-      tooltip: true,
-    }),
-  );
-
   function ajustarTodo() {
     var alto = lienzo.clientHeight;
     Object.keys(graficos).forEach(function (k) {
       ajustar(graficos[k].g, graficos[k].el, alto);
     });
-    var hi = elInforme.clientHeight;
-    if (hi > 60) ajustar(informe, elInforme, hi);
   }
   ajustarTodo();
   var espera;

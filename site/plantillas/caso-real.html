@@ -156,24 +156,6 @@
               <div class="capa" data-capa="horas"><div id="g-horas" class="grafico"></div></div>
               <div class="capa" data-capa="lejos"><div id="g-lejos" class="grafico"></div></div>
               <div class="capa" data-capa="cierre"><div id="g-cierre" class="grafico"></div></div>
-              <div class="capa" data-capa="informe">
-                <article class="informe" aria-label="{{informe_aria}}">
-                  <header class="informe__cabeza">
-                    <p class="informe__marca">Tienda Doña Carmen <span>{{informe_anio}}</span></p>
-                    <p class="informe__sello">PDF · Pro</p>
-                  </header>
-                  <div class="informe__kpis">
-                    <p><span>{{kpi_vendido}}</span><strong>{{kpi_vendido_valor}}</strong></p>
-                    <p><span>{{kpi_queda}}</span><strong>{{kpi_queda_valor}}</strong></p>
-                    <p><span>{{kpi_dia}}</span><strong>{{kpi_dia_valor}}</strong></p>
-                  </div>
-                  <div id="g-informe" class="informe__grafico"></div>
-                  <div class="informe__narrador">
-                    <p class="informe__quien">{{narrador}}</p>
-                    <p>{{narrador_texto}}</p>
-                  </div>
-                </article>
-              </div>
             </div>
           </div>
 
@@ -326,28 +308,12 @@
                 <p class="paso__tipo">{{c8_tipo}}</p>
               </div>
             </li>
-
-            <li
-              class="paso paso--pro"
-              data-paso="informe"
-              data-capa="informe"
-              data-mes="{{mes_9}}"
-              data-titulo="{{t_informe}}"
-              data-sub="{{s_informe}}"
-            >
-              <div class="paso__tarjeta">
-                <p class="paso__mes">{{mes_9}}</p>
-                <h3 class="paso__titulo">{{c9_titulo}}</h3>
-                <p>{{c9_texto}}</p>
-                <p class="paso__tipo paso__tipo--pro">LozCharts Pro</p>
-              </div>
-            </li>
           </ol>
         </div>
         <p class="ancho relato__fin">{{relato_fin}}</p>
       </section>
 
-      <!-- Cierre: lleva a la portada, donde están Gratis y Pro -->
+      <!-- Cierre: a instalarla, o a ver los demás tipos en la galería -->
       <section class="cierre" aria-labelledby="cierre-titulo">
         <div class="ancho cierre__rejilla">
           <h2 id="cierre-titulo" class="cierre__titulo">
@@ -357,8 +323,8 @@
           <div class="cierre__texto">
             <p>{{cierre_texto}}</p>
             <div class="cierre__acciones">
-              <a class="boton boton--rosa" href="{{p:inicio}}#pro">{{comparar}}</a>
-              <a class="boton boton--borde-claro" href="{{p:docs}}#{{ancla_instalar}}">{{usala_gratis}}</a>
+              <a class="boton boton--rosa" href="{{p:docs}}#{{ancla_instalar}}">{{usala_gratis}}</a>
+              <a class="boton boton--borde-claro" href="{{p:galeria}}">{{ver_galeria}}</a>
             </div>
             <p class="cierre__humano">{{dudas}}</p>
           </div>

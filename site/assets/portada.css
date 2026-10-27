@@ -26,7 +26,7 @@
    4. Carteles de la 02: «Se entiende sin verlo» (lector de pantalla y
       deuteranopia) y «79 KB. Y ya.» (frameworks y llms.txt).
    5. «Doña Carmen vendía bien.»: anuncio de la historia, enlace a caso-real.html.
-   6. Gratis / Pro enfrentados (precio en un solo lugar, #precio-pro) y ¿Dudas?
+   6. Gratis: todo lo que trae, sin letra pequeña, y ¿Dudas?
    Barra y pie: los del sitio (site.css), en negro y sin vidrio.
 
    Tamaños
@@ -1128,40 +1128,37 @@ code {
   justify-items: start;
 }
 
-/* ---------------------------------------------------------------- Gratis / Pro */
+/* ---------------------------------------------------------------- Gratis */
 
 .cartel-modelo {
   padding-bottom: clamp(32px, 4vw, 96px);
 }
-.enfrentados {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.libre {
   border-top: 2px solid var(--linea);
 }
-.enfrentados > article {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(20px, 2vw, 44px);
-  min-height: 90svh;
-  padding: var(--seccion) var(--margen);
-}
+/* El titular a todo el ancho; debajo, la bajada y el botón a la izquierda y la lista a la derecha. */
 .gratis {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  grid-template-areas:
+    'titulo titulo'
+    'bajada lista'
+    'cola lista';
+  align-content: start;
+  gap: clamp(20px, 2vw, 44px) clamp(32px, 5vw, 160px);
+  padding: var(--seccion) var(--margen);
   background: var(--negro);
   border: clamp(6px, 0.6vw, 14px) solid var(--violeta);
 }
-.pro {
-  background: var(--rosa);
-  color: var(--negro);
-}
-.enfrentados .grito {
+.gratis .grito {
+  grid-area: titulo;
+  color: var(--violeta);
   font-size: clamp(88px, 13vw, 400px);
   line-height: 0.8;
   letter-spacing: -0.005em;
 }
-.gratis .grito {
-  color: var(--violeta);
-}
-.enfrentados .bajada {
+.gratis .bajada {
+  grid-area: bajada;
   margin: 0;
   max-width: 20ch;
   font-stretch: 75%;
@@ -1170,52 +1167,36 @@ code {
   line-height: 1.05;
 }
 .incluye {
+  grid-area: lista;
   margin: 0;
   padding: 0;
   list-style: none;
   columns: 2;
   column-gap: clamp(16px, 2vw, 48px);
+  font-size: clamp(16px, 0.45vw + 11px, 24px);
 }
 .incluye li {
   break-inside: avoid;
-  padding: 0.55em 0;
-  border-top: 2px solid currentColor;
+  padding: 0.6em 0;
+  border-top: 2px solid var(--linea);
   line-height: 1.3;
-}
-.gratis .incluye li {
-  border-color: var(--linea);
   color: var(--tinta-2);
 }
-.gratis .incluye li b {
+.incluye li b {
   color: var(--tinta);
 }
-.pro .incluye li {
-  border-color: rgba(5, 5, 5, 0.35);
-}
-.enfrentados .cola {
-  margin-top: auto;
+.gratis .cola {
+  grid-area: cola;
+  align-self: end;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 16px 28px;
 }
-.precio {
-  margin: 0;
-  font-stretch: 62%;
-  font-weight: 900;
-  text-transform: uppercase;
-  font-size: clamp(30px, 2.6vw, 76px);
-  line-height: 1;
-}
 .nota {
   margin: 0;
   max-width: 44ch;
-}
-.gratis .nota {
   color: var(--tinta-2);
-}
-.pro :focus-visible {
-  outline-color: var(--negro);
 }
 
 /* ---------------------------------------------------------------- Dudas */
@@ -1274,9 +1255,16 @@ code {
   .lab,
   .acc-rejilla,
   .kb-rejilla,
-  .caso-rejilla,
-  .enfrentados {
+  .caso-rejilla {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .gratis {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'titulo'
+      'bajada'
+      'lista'
+      'cola';
   }
   .codigo {
     contain: none;
@@ -1284,9 +1272,6 @@ code {
   .codigo-pre {
     flex: none;
     height: clamp(300px, 46vw, 460px);
-  }
-  .enfrentados > article {
-    min-height: 0;
   }
   /* Bento de 6 columnas: cada grupo sigue junto; dense tapa los huecos dentro del grupo. */
   .grupo {

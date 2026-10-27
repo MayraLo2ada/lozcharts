@@ -11,20 +11,20 @@ export default {
     pt: 'O ano de dona Carmen · Um caso com o LozCharts',
   },
   descripcion: {
-    es: 'Una tienda de barrio pasa de una hoja de cálculo desordenada a gráficos que entiende toda la familia. Un caso contado en nueve gráficos de LozCharts que puedes tocar.',
-    en: 'A corner store in Colombia goes from a messy spreadsheet to charts the whole family understands. A case told in nine LozCharts charts you can play with.',
-    pt: 'Um mercadinho de bairro na Colômbia troca uma planilha bagunçada por gráficos que a família inteira entende. Um caso contado em nove gráficos do LozCharts que dá para tocar.',
+    es: 'Una tienda de barrio pasa de una hoja de cálculo desordenada a gráficos que entiende toda la familia. Un caso contado en ocho gráficos de LozCharts que puedes tocar.',
+    en: 'A corner store in Colombia goes from a messy spreadsheet to charts the whole family understands. A case told in eight LozCharts charts you can play with.',
+    pt: 'Um mercadinho de bairro na Colômbia troca uma planilha bagunçada por gráficos que a família inteira entende. Um caso contado em oito gráficos do LozCharts que dá para tocar.',
   },
   og_titulo: { es: 'El año de doña Carmen', en: 'Doña Carmen’s year', pt: 'O ano de dona Carmen' },
   og_descripcion: {
-    es: 'Doña Carmen vendía bien y nadie sabía cuánto. Su año contado en nueve gráficos de LozCharts que se dejan tocar.',
-    en: 'Doña Carmen sold plenty, and nobody knew how much. Her year, told in nine LozCharts charts you can play with.',
-    pt: 'Dona Carmen vendia bem e ninguém sabia quanto. O ano dela contado em nove gráficos do LozCharts que dá para tocar.',
+    es: 'Doña Carmen vendía bien y nadie sabía cuánto. Su año contado en ocho gráficos de LozCharts que se dejan tocar.',
+    en: 'Doña Carmen sold plenty, and nobody knew how much. Her year, told in eight LozCharts charts you can play with.',
+    pt: 'Dona Carmen vendia bem e ninguém sabia quanto. O ano dela contado em oito gráficos do LozCharts que dá para tocar.',
   },
   saltar_historia: { es: 'Saltar a la historia', en: 'Skip to the story', pt: 'Pular para a história' },
 
   // ---------- Portada ----------
-  volanta: { es: 'Un caso en nueve gráficos', en: 'A case in nine charts', pt: 'Um caso em nove gráficos' },
+  volanta: { es: 'Un caso en ocho gráficos', en: 'A case in eight charts', pt: 'Um caso em oito gráficos' },
   lugar: { es: 'Cali, 2025', en: 'Cali, Colombia, 2025', pt: 'Cali, Colômbia, 2025' },
   titular_1: { es: 'Doña Carmen', en: 'Doña Carmen', pt: 'Dona Carmen' },
   titular_2: { es: 'vendía bien.', en: 'sold plenty.', pt: 'vendia bem.' },
@@ -95,26 +95,6 @@ export default {
   },
   escenario_aria: { es: 'Gráfico de la historia', en: 'The story’s chart', pt: 'Gráfico da história' },
 
-  // ---------- El informe Pro ----------
-  informe_aria: {
-    es: 'Ejemplo de informe exportado con LozCharts Pro',
-    en: 'Sample report exported with LozCharts Pro',
-    pt: 'Exemplo de relatório exportado com o LozCharts Pro',
-  },
-  informe_anio: { es: 'Informe del año 2025', en: '2025 annual report', pt: 'Relatório do ano de 2025' },
-  kpi_vendido: { es: 'Vendido', en: 'Sales', pt: 'Vendido' },
-  kpi_vendido_valor: { es: '$506 M', en: 'COP 506M', pt: 'COP 506 mi' },
-  kpi_queda: { es: 'Lo que queda', en: 'What’s left', pt: 'O que sobra' },
-  kpi_queda_valor: { es: '$59 M', en: 'COP 59M', pt: 'COP 59 mi' },
-  kpi_dia: { es: 'Mejor día', en: 'Best day', pt: 'Melhor dia' },
-  kpi_dia_valor: { es: '24 dic', en: 'Dec 24', pt: '24 dez' },
-  narrador: { es: 'Narrador', en: 'Narrator', pt: 'Narrador' },
-  narrador_texto: {
-    es: 'Las ventas subieron casi todo el año y diciembre fue el mejor mes, con $62,4 millones: 79 % más que enero. El día más alto fue el 24 de diciembre. Febrero fue el más flojo.',
-    en: 'Sales went up for most of the year, and December was the best month, with COP 62.4 million: 79% more than January. The best single day was December 24. February was the slowest.',
-    pt: 'As vendas subiram quase o ano todo e dezembro foi o melhor mês, com COP 62,4 milhões: 79% a mais que janeiro. O dia mais forte foi 24 de dezembro. Fevereiro foi o mais fraco.',
-  },
-
   // ---------- Los capítulos ----------
   // mes_*: el mes de la historia (encabezado grande y tarjeta); t_*: título del gráfico; s_*: subtítulo.
   mes_1: { es: 'Enero', en: 'January', pt: 'Janeiro' },
@@ -125,7 +105,6 @@ export default {
   mes_6: { es: 'Junio', en: 'June', pt: 'Junho' },
   mes_7: { es: 'Julio', en: 'July', pt: 'Julho' },
   mes_8: { es: 'Agosto', en: 'August', pt: 'Agosto' },
-  mes_9: { es: 'Septiembre', en: 'September', pt: 'Setembro' },
 
   t_diario: { es: 'Ventas de cada día de 2025', en: 'Daily sales, 2025', pt: 'Vendas de cada dia de 2025' },
   s_diario: {
@@ -309,41 +288,25 @@ export default {
   },
   c8_tipo: { es: 'Cascada', en: 'Waterfall', pt: 'Cascata' },
 
-  t_informe: { es: 'El informe que Lucía imprimió', en: 'The report Lucía printed', pt: 'O relatório que Lucía imprimiu' },
-  s_informe: {
-    es: 'Exportado a PDF, con el texto del Narrador',
-    en: 'Exported to PDF, with the Narrator’s text',
-    pt: 'Exportado em PDF, com o texto do Narrador',
-  },
-  c9_titulo: {
-    es: 'Para la reunión de familia, todo en un PDF.',
-    en: 'For the family meeting, everything in one PDF.',
-    pt: 'Para a reunião de família, tudo num PDF.',
-  },
-  c9_texto: {
-    es: 'Hasta aquí, todo es gratis. Lo que Lucía pagó fue lo de alrededor: el informe en PDF y Excel, un tablero con filtros para elegir el mes, y el Narrador, que escribe en palabras lo que dice cada gráfico. Ese párrafo lo leyó en voz alta el tío Julio.',
-    en: 'Up to here, it’s all free. What Lucía paid for was everything around the charts: the PDF and Excel report, a dashboard with filters to pick the month, and the Narrator, which puts into words what each chart is saying. Uncle Julio read that paragraph out loud.',
-    pt: 'Até aqui, tudo é de graça. O que Lucía pagou foi o que vem em volta: o relatório em PDF e Excel, um painel com filtros para escolher o mês e o Narrador, que escreve em palavras o que cada gráfico diz. Esse parágrafo quem leu em voz alta foi o tio Julio.',
-  },
   relato_fin: {
-    es: 'En octubre, doña Carmen pegó el informe en la nevera.',
-    en: 'In October, Doña Carmen stuck the report on the fridge.',
-    pt: 'Em outubro, dona Carmen prendeu o relatório na porta da geladeira.',
+    es: 'En septiembre, Lucía imprimió la cascada y doña Carmen la pegó en la nevera.',
+    en: 'In September, Lucía printed the waterfall and Doña Carmen stuck it on the fridge.',
+    pt: 'Em setembro, Lucía imprimiu a cascata e dona Carmen prendeu na porta da geladeira.',
   },
 
   // ---------- Cierre ----------
   cierre_1: { es: 'Los gráficos son gratis.', en: 'The charts are free.', pt: 'Os gráficos são de graça.' },
   cierre_2: {
-    es: 'Pagas por lo de alrededor.',
-    en: 'You pay for what’s around them.',
-    pt: 'Você paga pelo que vem em volta.',
+    es: 'Todos, y para todos.',
+    en: 'All of them, for everyone.',
+    pt: 'Todos, e para todo mundo.',
   },
   cierre_texto: {
-    es: 'Todo lo que viste hasta agosto viene en la librería, con licencia MIT: la puedes usar en tu empresa, en tu tesis o en la tienda de tu mamá. El informe en PDF, los tableros con filtros y el Narrador son de LozCharts Pro.',
-    en: 'Everything you saw through August comes with the library, under the MIT license: use it at your company, in your thesis, or at your mom’s store. The PDF report, the dashboards with filters, and the Narrator are part of LozCharts Pro.',
-    pt: 'Tudo o que você viu até agosto vem na biblioteca, com licença MIT: dá para usar na sua empresa, no seu TCC ou no mercadinho da sua mãe. O relatório em PDF, os painéis com filtros e o Narrador são do LozCharts Pro.',
+    es: 'Todo lo que viste viene en la librería, con licencia MIT: la puedes usar en tu empresa, en tu tesis o en la tienda de tu mamá. Sin registro y sin tarjeta.',
+    en: 'Everything you saw comes with the library, under the MIT license: use it at your company, in your thesis, or at your mom’s store. No sign-up, no credit card.',
+    pt: 'Tudo o que você viu vem na biblioteca, com licença MIT: dá para usar na sua empresa, no seu TCC ou no mercadinho da sua mãe. Sem cadastro e sem cartão.',
   },
-  comparar: { es: 'Compara Gratis y Pro', en: 'Compare Free and Pro', pt: 'Compare Grátis e Pro' },
+  ver_galeria: { es: 'Mira la galería', en: 'See the gallery', pt: 'Veja a galeria' },
   dudas: {
     es: '¿Dudas? <a href="https://github.com/MayraLo2ada/lozcharts/issues">Abre un tema en GitHub</a> y te contesto yo, Mayra.',
     en: 'Questions? <a href="https://github.com/MayraLo2ada/lozcharts/issues">Open an issue on GitHub</a> and I’ll answer it myself. —Mayra',

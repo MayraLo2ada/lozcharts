@@ -10,9 +10,9 @@ export default {
     pt: 'LozCharts · Gráficos para a web, gratuitos e acessíveis',
   },
   descripcion: {
-    es: 'LozCharts es una librería de gráficos para la web: 26 tipos que se leen con teclado y lector de pantalla, en claro y oscuro, con zoom, y se guardan como imagen o como hoja de datos. Gratis, con licencia MIT, sin nada más que instalar y en 79 KB.',
-    en: 'LozCharts is a charting library for the web: 26 chart types you can read with a keyboard and a screen reader, in light and dark mode, with zoom, and you can save them as an image or a spreadsheet. Free, MIT licensed, nothing else to install, and 79 KB.',
-    pt: 'LozCharts é uma biblioteca de gráficos para a web: 26 tipos que dá para ler com teclado e leitor de tela, nos modos claro e escuro, com zoom, e que você salva como imagem ou planilha. Grátis, com licença MIT, sem mais nada para instalar e com 79 KB.',
+    es: 'LozCharts es una librería de gráficos para la web: 26 tipos que se leen con teclado y lector de pantalla, en claro y oscuro, con zoom, y se guardan como imagen o como hoja de datos. Gratis, con licencia MIT, sin nada más que instalar y en {{kb}} KB.',
+    en: 'LozCharts is a charting library for the web: 26 chart types you can read with a keyboard and a screen reader, in light and dark mode, with zoom, and you can save them as an image or a spreadsheet. Free, MIT licensed, nothing else to install, and {{kb}} KB.',
+    pt: 'LozCharts é uma biblioteca de gráficos para a web: 26 tipos que dá para ler com teclado e leitor de tela, nos modos claro e escuro, com zoom, e que você salva como imagem ou planilha. Grátis, com licença MIT, sem mais nada para instalar e com {{kb}} KB.',
   },
   og_titulo: {
     es: 'LozCharts · Tus números, en grande.',
@@ -20,9 +20,9 @@ export default {
     pt: 'LozCharts · Seus números, em destaque.',
   },
   og_descripcion: {
-    es: '26 tipos de gráfico para la web, accesibles, sin nada más que instalar y en 79 KB. Gratis para todos, también para empresas.',
-    en: '26 accessible chart types for the web, nothing else to install, 79 KB. Free for everyone, companies included.',
-    pt: '26 tipos de gráfico acessíveis para a web, sem mais nada para instalar e com 79 KB. Grátis para todo mundo, inclusive empresas.',
+    es: '26 tipos de gráfico para la web, accesibles, sin nada más que instalar y en {{kb}} KB. Gratis para todos, también para empresas.',
+    en: '26 accessible chart types for the web, nothing else to install, {{kb}} KB. Free for everyone, companies included.',
+    pt: '26 tipos de gráfico acessíveis para a web, sem mais nada para instalar e com {{kb}} KB. Grátis para todo mundo, inclusive empresas.',
   },
   // La imagen (assets/og-portada.png) está en español: en los otros idiomas el texto lo dice.
   og_imagen_alt: {
@@ -31,14 +31,14 @@ export default {
     pt: 'Capa do LozCharts, em espanhol: o título “Tus números, en grande.” (seus números, em destaque) e as vendas de uma loja em barras roxas e rosa, com dezembro em US$ 143 mil.',
   },
   tw_descripcion: {
-    es: '26 tipos de gráfico para la web, accesibles, sin nada más que instalar y en 79 KB. Gratis, con licencia MIT.',
-    en: '26 accessible chart types for the web, nothing else to install, 79 KB. Free and MIT licensed.',
-    pt: '26 tipos de gráfico acessíveis para a web, sem mais nada para instalar e com 79 KB. Grátis, com licença MIT.',
+    es: '26 tipos de gráfico para la web, accesibles, sin nada más que instalar y en {{kb}} KB. Gratis, con licencia MIT.',
+    en: '26 accessible chart types for the web, nothing else to install, {{kb}} KB. Free and MIT licensed.',
+    pt: '26 tipos de gráfico acessíveis para a web, sem mais nada para instalar e com {{kb}} KB. Grátis, com licença MIT.',
   },
   ld_descripcion: {
-    es: 'Librería de gráficos para la web: 26 tipos accesibles con teclado, lector de pantalla y colores para daltonismo, modo claro y oscuro, zoom, y se guardan como imagen o como hoja de datos. Sin nada más que instalar y en 79 KB comprimida.',
-    en: 'Charting library for the web: 26 chart types that work with a keyboard, a screen reader, and colorblind-safe colors, with light and dark mode and zoom, and you can save them as an image or a spreadsheet. Nothing else to install, 79 KB compressed.',
-    pt: 'Biblioteca de gráficos para a web: 26 tipos acessíveis com teclado, leitor de tela e cores para daltonismo, modo claro e escuro, zoom, e você salva como imagem ou planilha. Sem mais nada para instalar e com 79 KB comprimida.',
+    es: 'Librería de gráficos para la web: 26 tipos accesibles con teclado, lector de pantalla y colores para daltonismo, modo claro y oscuro, zoom, y se guardan como imagen o como hoja de datos. Sin nada más que instalar y en {{kb}} KB comprimida.',
+    en: 'Charting library for the web: 26 chart types that work with a keyboard, a screen reader, and colorblind-safe colors, with light and dark mode and zoom, and you can save them as an image or a spreadsheet. Nothing else to install, {{kb}} KB compressed.',
+    pt: 'Biblioteca de gráficos para a web: 26 tipos acessíveis com teclado, leitor de tela e cores para daltonismo, modo claro e escuro, zoom, e você salva como imagem ou planilha. Sem mais nada para instalar e com {{kb}} KB comprimida.',
   },
   ld_plataforma: { es: 'Navegador web', en: 'Web browser', pt: 'Navegador web' },
   ld_so: {
@@ -66,7 +66,6 @@ export default {
   },
   resumen_aria: { es: 'En resumen', en: 'At a glance', pt: 'Em resumo' },
   sello_gratis: { es: 'Gratis', en: 'Free', pt: 'Grátis' },
-  ver_pro: { es: 'Ver Pro', en: 'See Pro', pt: 'Ver o Pro' },
   mira_caso: { es: 'Mira un caso real', en: 'See a real case', pt: 'Veja um caso real' },
 
   // ------------------------------------------------------------ Laboratorio
@@ -151,7 +150,7 @@ export default {
 
   // ------------------------------------------------------------ Liviana
   et_liviana: { es: 'Liviana', en: 'Lightweight', pt: 'Leve' },
-  kb_l1: { es: '79 KB.', en: '79 KB.', pt: '79 KB.' },
+  kb_l1: { es: '{{kb}} KB.', en: '{{kb}} KB.', pt: '{{kb}} KB.' },
   kb_l2: { es: 'Y ya.', en: 'That’s it.', pt: 'E só.' },
   kb_texto: {
     es: 'Comprimida y sin nada aparte que instalar ni actualizar cada lunes. Guarda el gráfico como imagen (PNG o SVG) y los datos como hoja (CSV), tiene zoom, y cambia sola a modo oscuro cuando tu sistema lo hace.',
@@ -171,15 +170,15 @@ export default {
   caso_l1: { es: 'Doña Carmen', en: 'Doña Carmen', pt: 'Dona Carmen' },
   caso_l2: { es: 'vendía bien.', en: 'sold plenty.', pt: 'vendia bem.' },
   caso_texto: {
-    es: 'Su tienda lleva veintidós años en la misma esquina de Cali. Las ventas vivían en un cuaderno y después en una hoja de cálculo que solo entendía su hija Lucía. Nadie sabía cuánto. Son nueve gráficos, y ahora la familia los lee en la mesa del comedor.',
-    en: 'Her store has been on the same corner in Cali for twenty-two years. Sales lived in a notebook, then in a spreadsheet only her daughter Lucía understood. Nobody knew how much. It’s nine charts, and now the family reads them at the dinner table.',
-    pt: 'A loja dela está na mesma esquina de Cali há vinte e dois anos. As vendas moravam num caderno e depois numa planilha que só a filha, Lucía, entendia. Ninguém sabia quanto. São nove gráficos, e agora a família lê tudo na mesa de jantar.',
+    es: 'Su tienda lleva veintidós años en la misma esquina de Cali. Las ventas vivían en un cuaderno y después en una hoja de cálculo que solo entendía su hija Lucía. Nadie sabía cuánto. Son ocho gráficos, y ahora la familia los lee en la mesa del comedor.',
+    en: 'Her store has been on the same corner in Cali for twenty-two years. Sales lived in a notebook, then in a spreadsheet only her daughter Lucía understood. Nobody knew how much. It’s eight charts, and now the family reads them at the dinner table.',
+    pt: 'A loja dela está na mesma esquina de Cali há vinte e dois anos. As vendas moravam num caderno e depois numa planilha que só a filha, Lucía, entendia. Ninguém sabia quanto. São oito gráficos, e agora a família lê tudo na mesa de jantar.',
   },
 
-  // ------------------------------------------------------------ Gratis y Pro
-  et_modelo: { es: 'Gratis y Pro', en: 'Free and Pro', pt: 'Grátis e Pro' },
-  modelo_l1: { es: 'Los gráficos no se cobran.', en: 'The charts are free.', pt: 'Os gráficos são grátis.' },
-  modelo_l2: { es: 'Lo de alrededor, sí.', en: 'What’s around them isn’t.', pt: 'O que vem em volta, não.' },
+  // ------------------------------------------------------------ Gratis
+  et_modelo: { es: 'Gratis', en: 'Free', pt: 'Grátis' },
+  modelo_l1: { es: 'Todo es gratis.', en: 'All of it is free.', pt: 'Tudo é grátis.' },
+  modelo_l2: { es: 'Sin letra pequeña.', en: 'No fine print.', pt: 'Sem letra miúda.' },
   gratis_titulo: { es: 'Gratis.', en: 'Free.', pt: 'Grátis.' },
   gratis_bajada: {
     es: 'Para siempre, para todos. También si eres una empresa grande.',
@@ -227,56 +226,6 @@ export default {
     en: 'No sign-up, no card. Copy one file and you’re done.',
     pt: 'Sem cadastro e sem cartão. Você copia um arquivo e pronto.',
   },
-  pro_bajada: {
-    es: 'Para cuando el gráfico ya no basta y lo que te piden es el informe.',
-    en: 'For when a chart isn’t enough anymore and what they want is the report.',
-    pt: 'Para quando o gráfico já não basta e o que pedem é o relatório.',
-  },
-  pro_1: { es: 'Informes en PDF y Excel', en: 'PDF and Excel reports', pt: 'Relatórios em PDF e Excel' },
-  pro_2: {
-    es: 'Tableros con tus números clave, donde un clic filtra todo',
-    en: 'Dashboards with your key numbers, where one click filters everything',
-    pt: 'Painéis com os seus números principais, onde um clique filtra tudo',
-  },
-  pro_3: {
-    es: 'Plan de proyecto (Gantt) con las tareas que no pueden atrasarse',
-    en: 'Project plans (Gantt) that show the tasks that can’t slip',
-    pt: 'Plano de projeto (Gantt) com as tarefas que não podem atrasar',
-  },
-  pro_4: {
-    es: 'Gráfico de la bolsa con sus indicadores',
-    en: 'Stock charts with their indicators',
-    pt: 'Gráfico da bolsa com os indicadores',
-  },
-  pro_5: {
-    es: 'Millones de datos sin que se trabe',
-    en: 'Millions of data points without freezing up',
-    pt: 'Milhões de dados sem travar',
-  },
-  pro_6: {
-    es: 'Un narrador que explica el gráfico en palabras',
-    en: 'A narrator that explains the chart in words',
-    pt: 'Um narrador que explica o gráfico em palavras',
-  },
-  pro_7: {
-    es: 'Un revisor que te avisa cuando un gráfico confunde',
-    en: 'A reviewer that tells you when a chart is confusing',
-    pt: 'Um revisor que avisa quando um gráfico confunde',
-  },
-  pro_8: {
-    es: 'El constructor: pegas una tabla y sale el gráfico, sin código',
-    en: 'The no-code builder: paste a table and out comes the chart',
-    pt: 'O construtor sem código: você cola uma tabela e sai o gráfico',
-  },
-  // PRECIO DE PRO: cámbialo aquí, en los tres idiomas (es el único lugar donde aparece).
-  precio_pro: { es: 'Precio de Pro: pronto', en: 'Pro pricing: coming soon', pt: 'Preço do Pro: em breve' },
-  pide_licencia: { es: 'Pide tu licencia', en: 'Get your license', pt: 'Peça sua licença' },
-  pro_nota: {
-    es: 'Pagas por lo de alrededor. Los gráficos siguen siendo gratis.',
-    en: 'You pay for what’s around them. The charts stay free.',
-    pt: 'Você paga pelo que vem em volta. Os gráficos continuam grátis.',
-  },
-
   // ------------------------------------------------------------ Dudas y pie
   // El titular se arma letra por letra; el <span> pinta de rosa la segunda mitad.
   dudas_titulo: {

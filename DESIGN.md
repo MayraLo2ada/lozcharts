@@ -270,7 +270,7 @@ Cuadrícula de 2 columnas que pasa a 1 bajo 860 px. Selector de tema segmentado 
   así el alto nunca cambia al cargar. Respaldos de fuente con `size-adjust` y métricas de Archivo.
 - Orden: portada con la tienda que se dibuja → laboratorio (seis tipos, tres juegos de datos,
   código en vivo) → los 26 tipos en un bento agrupado por la pregunta que responden → accesible →
-  liviana → caso real (`caso-real.html`) → Gratis / Pro → ¿Dudas?
+  liviana (el peso lo calcula `npm run site`) → caso real (`caso-real.html`) → Gratis → ¿Dudas?
 - Bento: grupos de 12 columnas que cierran sus filas sin huecos (6 en tableta, 1 en el celular);
   los gráficos se crean al acercarse y se vuelven a dibujar al pasar el puntero. El mapa del mundo
   se baja solo cuando un mapa se acerca. El globo no va en la portada.

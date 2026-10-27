@@ -112,13 +112,12 @@
           <ul class="sellos" aria-label="{{resumen_aria}}">
             <li>{{sello_gratis}}</li>
             <li>MIT</li>
-            <li><span data-cuenta="79">79</span> KB</li>
+            <li><span data-cuenta="{{kb}}">{{kb}}</span> KB</li>
           </ul>
           <div class="acciones">
             <a class="boton boton-lima" href="{{p:docs}}#{{ancla_instalar}}">
               {{usala_gratis}} <span class="flecha" aria-hidden="true">→</span>
             </a>
-            <a class="boton boton-borde" href="#pro">{{ver_pro}}</a>
             <a class="enlace-caso" href="{{p:caso}}">{{mira_caso}} <span aria-hidden="true">→</span></a>
           </div>
         </div>
@@ -289,7 +288,7 @@
         </div>
       </section>
 
-      <!-- ============================================================ Gratis / Pro -->
+      <!-- ============================================================ Gratis -->
       <section id="gratis" aria-labelledby="t-modelo">
         <div class="cartel cartel-modelo">
           <div class="wrap">
@@ -301,7 +300,7 @@
           </div>
         </div>
 
-        <div class="enfrentados">
+        <div class="libre">
           <article class="gratis" aria-labelledby="t-gratis">
             <h3 class="grito" id="t-gratis">{{gratis_titulo}}</h3>
             <p class="bajada">{{gratis_bajada}}</p>
@@ -320,29 +319,6 @@
                 {{usala_gratis}} <span class="flecha" aria-hidden="true">→</span>
               </a>
               <p class="nota">{{gratis_nota}}</p>
-            </div>
-          </article>
-
-          <article class="pro" id="pro" aria-labelledby="t-pro">
-            <h3 class="grito" id="t-pro">Pro.</h3>
-            <p class="bajada">{{pro_bajada}}</p>
-            <ul class="incluye">
-              <li>{{pro_1}}</li>
-              <li>{{pro_2}}</li>
-              <li>{{pro_3}}</li>
-              <li>{{pro_4}}</li>
-              <li>{{pro_5}}</li>
-              <li>{{pro_6}}</li>
-              <li>{{pro_7}}</li>
-              <li>{{pro_8}}</li>
-            </ul>
-            <div class="cola">
-              <!-- PRECIO DE PRO: se cambia en scripts/textos/inicio.mjs (clave precio_pro), en los tres idiomas; es el
-                   único lugar de la página donde aparece. -->
-              <p class="precio" id="precio-pro">{{precio_pro}}</p>
-              <!-- ENLACE DE LICENCIA: reemplaza href="#pro" por el enlace real de compra o de contacto. -->
-              <a class="boton boton-negro" href="#pro">{{pide_licencia}} <span class="flecha" aria-hidden="true">→</span></a>
-              <p class="nota">{{pro_nota}}</p>
             </div>
           </article>
         </div>

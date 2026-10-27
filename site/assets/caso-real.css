@@ -497,11 +497,6 @@ html:has(.caso) {
   font-weight: 600;
   color: var(--tinta-2);
 }
-.paso__tipo--pro {
-  background: var(--tinta);
-  border-color: var(--tinta);
-  color: var(--rosa-claro);
-}
 .cifra {
   margin: 0 0 16px;
   display: flex;
@@ -679,86 +674,6 @@ html:has(.caso) {
 /* El globo: en papel cálido, la tierra se perdía contra la esfera. */
 #g-lejos path[fill='#e7e6e1'] {
   fill: #d8cfc0;
-}
-
-/* El informe Pro */
-.informe {
-  height: 100%;
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
-  gap: clamp(10px, 1.2vw, 26px);
-  background: var(--hoja);
-  border: 1px solid var(--linea);
-  border-radius: 6px;
-  padding: clamp(16px, 2vw, 48px);
-  box-shadow: 0 30px 70px -36px rgba(60, 30, 90, 0.45);
-}
-.informe__cabeza {
-  display: flex;
-  justify-content: space-between;
-  align-items: start;
-  gap: 16px;
-  border-bottom: 1px solid var(--linea);
-  padding-bottom: 12px;
-}
-.informe__marca {
-  margin: 0;
-  font: 700 calc(24 * var(--u)) / 1.1 var(--serif);
-}
-.informe__marca span {
-  display: block;
-  font: 400 calc(14 * var(--u)) / 1.4 var(--sans);
-  color: var(--tinta-2);
-  margin-top: 4px;
-}
-.informe__sello {
-  margin: 0;
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: var(--tinta);
-  color: var(--rosa-claro);
-  font-size: calc(13 * var(--u));
-  font-weight: 700;
-  white-space: nowrap;
-}
-.informe__kpis {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-.informe__kpis p {
-  margin: 0;
-  padding: 10px 14px;
-  background: var(--papel);
-  border-radius: 4px;
-}
-.informe__kpis span {
-  display: block;
-  font-size: calc(13 * var(--u));
-  color: var(--tinta-2);
-}
-.informe__kpis strong {
-  font: 700 clamp(22px, 2vw, 60px) / 1.1 var(--serif);
-  letter-spacing: -0.02em;
-}
-.informe__grafico {
-  min-height: 0;
-}
-.informe__narrador {
-  border-left: 4px solid var(--violeta);
-  padding-left: 16px;
-}
-.informe__narrador p {
-  margin: 0;
-  font: 400 calc(18 * var(--u)) / 1.45 var(--serif);
-  max-width: 70ch;
-}
-.informe__narrador .informe__quien {
-  font: 700 calc(12 * var(--u)) / 1 var(--sans);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--violeta);
-  margin-bottom: 6px;
 }
 
 .relato__fin {
@@ -987,26 +902,6 @@ html:has(.caso) {
   }
   .cierre__rejilla {
     grid-template-columns: 1fr;
-  }
-  .informe {
-    padding: 10px;
-    gap: 6px;
-  }
-  .informe__cabeza {
-    padding-bottom: 6px;
-  }
-  .informe__marca {
-    font-size: 16px;
-  }
-  .informe__kpis p {
-    padding: 6px 8px;
-  }
-  .informe__kpis strong {
-    font-size: 16px;
-  }
-  .informe__narrador p {
-    font-size: 12.5px;
-    line-height: 1.35;
   }
 }
 
