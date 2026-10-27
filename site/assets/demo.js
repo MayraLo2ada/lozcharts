@@ -4,6 +4,11 @@
     return document.getElementById(id);
   };
   var id = new URLSearchParams(location.search).get('id') || 'ventas';
+  // Los ejemplos por capas se abren en el editor de «Crea el tuyo».
+  if (/^capas-/.test(id)) {
+    location.replace(tx({ es: 'crea-el-tuyo.html', en: 'make-your-own.html', pt: 'crie-o-seu.html' }) + '?ej=' + id.slice(6));
+    return;
+  }
   var ej =
     EJEMPLOS.find(function (e) {
       return e.id === id;

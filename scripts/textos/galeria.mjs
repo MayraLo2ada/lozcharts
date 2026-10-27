@@ -9,9 +9,9 @@ export default {
   },
   h1: { es: 'Galería', en: 'Gallery', pt: 'Galeria' },
   intro: {
-    es: 'Veintiséis ejemplos con datos inventados, de las ventas de una tienda a las mudanzas de un país. Abre cualquiera para cambiarle los ajustes y llevarte el código.',
-    en: "Twenty-six examples with made-up data, from a store's sales to people moving between regions. Open any of them to change its settings and take the code with you.",
-    pt: 'Vinte e seis exemplos com dados inventados, das vendas de uma loja às mudanças entre regiões. Abra qualquer um para mudar os ajustes e levar o código.',
+    es: 'Veintiocho ejemplos con datos inventados, de las ventas de una tienda a las notas de un curso. Abre cualquiera para cambiarle los ajustes y llevarte el código.',
+    en: "Twenty-eight examples with made-up data, from a store's sales to a class's grades. Open any of them to change its settings and take the code with you.",
+    pt: 'Vinte e oito exemplos com dados inventados, das vendas de uma loja às notas de uma turma. Abra qualquer um para mudar os ajustes e levar o código.',
   },
   filtrar_aria: { es: 'Filtrar por familia', en: 'Filter by family', pt: 'Filtrar por família' },
   buscar_etiqueta: { es: 'Buscar un gráfico', en: 'Search for a chart', pt: 'Buscar um gráfico' },

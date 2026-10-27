@@ -10,7 +10,10 @@
 (function () {
   'use strict';
 
-  var EJEMPLOS = window.EJEMPLOS || [];
+  var corto = function (l) {
+    return l.slice(0, 2);
+  };
+  var EJEMPLOS = window.capasEjemplos('es');
   var Lector = window.LectorJSON;
   var RETRASO = 280;
 
@@ -64,7 +67,10 @@
     b.addEventListener('click', function () {
       idioma = b.getAttribute('data-idioma');
       marcar(botonesIdioma, 'data-idioma', idioma);
-      dibujar(false);
+      // Los ejemplos tienen sus textos en cada idioma: el que está abierto se vuelve a cargar.
+      EJEMPLOS = window.capasEjemplos(corto(idioma));
+      if (actual) elegir(actual, true);
+      else dibujar(false);
     });
   });
 
@@ -83,7 +89,11 @@
       : Object.keys(v).every(function (k) {
           return v[k] === null || typeof v[k] !== 'object' || (Array.isArray(v[k]) && JSON.stringify(v[k]).length < 60);
         });
-    if (corto && plano.length + sangria.length <= 260) return enLinea(v);
+    // Una fila de datos (solo valores simples) va siempre en una línea, aunque sea larga.
+    var simple = Object.keys(v).every(function (k) {
+      return v[k] === null || typeof v[k] !== 'object';
+    });
+    if (corto && (simple || plano.length + sangria.length <= 260)) return enLinea(v);
     if (Array.isArray(v)) {
       if (!v.length) return '[]';
       return (

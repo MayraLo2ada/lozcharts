@@ -1699,6 +1699,48 @@
     'low',
   ];
 
+  // Gráficos por capas: dos de los ejemplos de «Crea el tuyo» (assets/capas-ejemplos.js), con sus
+  // textos y sus campos ya en el idioma de la página. Se abren en el editor, no en demo.html.
+  var CREA = tx({ es: 'crea-el-tuyo.html', en: 'make-your-own.html', pt: 'crie-o-seu.html' });
+  if (window.capasEjemplos) {
+    var capas = window.capasEjemplos(IDIOMA);
+    [
+      {
+        id: 'notas',
+        desc: tx({
+          es: 'Una tabla armada por capas: celdas con semáforo por materia, el número encima, una carita según el promedio y una línea chiquita con los cuatro parciales.',
+          en: 'A table built in layers: cells with a traffic light per subject, the number on top, a face for the average, and a tiny line with the four quizzes.',
+          pt: 'Uma tabela montada em camadas: células com semáforo por matéria, o número em cima, uma carinha pela média e uma linha pequena com as quatro provas.',
+        }),
+      },
+      {
+        id: 'clima',
+        desc: tx({
+          es: 'Cada celda lleva su ícono del cielo y la máxima del día; el color sigue la temperatura.',
+          en: 'Each cell has its sky icon and the day’s high; the color follows the temperature.',
+          pt: 'Cada célula tem o ícone do céu e a máxima do dia; a cor acompanha a temperatura.',
+        }),
+      },
+    ].forEach(function (c) {
+      var ej = capas.filter(function (x) {
+        return x.id === c.id;
+      })[0];
+      if (!ej) return;
+      window.EJEMPLOS.push({
+        id: 'capas-' + c.id,
+        tipo: 'LozChart.layers',
+        clase: tx({ es: 'Por capas', en: 'Layered', pt: 'Em camadas' }),
+        familia: tx({ es: 'Por capas', en: 'Layered', pt: 'Em camadas' }),
+        desc: c.desc,
+        capas: ej.spec,
+        enlace: CREA + '?ej=' + c.id,
+        // Las notas en dos columnas y el clima en una: cierran juntas la última fila de la galería.
+        tamano: c.id === 'notas' ? 'grande' : undefined,
+        opciones: { title: ej.spec.title, subtitle: ej.spec.subtitle, data: [], series: [{ type: 'layers', field: '' }] },
+      });
+    });
+  }
+
   /** Cambia los campos de un ejemplo al idioma de la página: las claves de las filas y las opciones que los nombran. */
   function traducirCampos(o) {
     var campo = function (k) {
@@ -2113,6 +2155,11 @@
 
   /** Crea el ejemplo en un elemento, con el tema y el idioma del sitio. */
   window.crearEjemplo = function (ej, el, extra) {
+    if (ej.capas) {
+      // Una tabla por capas pide su propio alto (una fila por estudiante, por ciudad).
+      var spec = Object.assign({}, ej.capas, { background: false, locale: LOCALE });
+      return window.siteChart ? window.siteChart(LozChart.layers(el, spec)) : LozChart.layers(el, spec);
+    }
     // Sin fondo propio: el gráfico toma el de la página (o el de la tarjeta).
     var o = Object.assign({ background: false, locale: LOCALE }, ej.opciones, extra || {});
     var c = ej.multiples ? LozChart.multiples(el, o) : new LozChart(el, o);
@@ -2124,6 +2171,7 @@
 
   /** Código que crea el ejemplo: las opciones reales, con los datos acortados a 3 filas. */
   window.codigoEjemplo = function (ej) {
+    if (ej.capas) return "LozChart.layers('#" + window.ID_GRAFICO + "', " + JSON.stringify(ej.capas, null, 2) + ');';
     var o = Object.assign({}, ej.opciones);
     var n = o.data.length;
     o.data = o.data.slice(0, 3);

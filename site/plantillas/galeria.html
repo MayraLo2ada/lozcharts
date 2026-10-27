@@ -29,6 +29,7 @@
         >
         <nav class="nav" aria-label="{{nav_aria}}">
           <a href="{{p:galeria}}" aria-current="page">{{nav_galeria}}</a>
+          <a class="crea" href="{{p:crea}}">{{nav_crea_barra}}</a>
           <a href="{{p:docs}}">{{nav_docs_barra}}</a>
           <a class="github" href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
           <button type="button" class="theme-btn" aria-label="{{tema_oscuro}}">
@@ -71,6 +72,7 @@
         <nav aria-label="{{pie_aria}}">
           <a href="{{p:inicio}}">{{nav_inicio}}</a>
           <a href="{{p:docs}}">{{nav_docs}}</a>
+          <a href="{{p:crea}}">{{nav_crea}}</a>
           <a href="https://github.com/MayraLo2ada/lozcharts">GitHub</a>
         </nav>
         {{idiomas_pie}}
@@ -80,7 +82,9 @@
     <script src="{{raiz}}lib/lozcharts.umd.js"></script>
     <!-- El mapa del mundo (unos 110 KB) se pide con siteMapa() cuando una ficha de mapa se acerca a la pantalla. -->
     <script type="text/x-diferido" data-mapa src="{{raiz}}lib/maps/world.umd.js"></script>
+    <script src="{{raiz}}lib/layers.umd.js"></script>
     <script src="{{raiz}}assets/site.js"></script>
+    <script src="{{raiz}}assets/capas-ejemplos.js"></script>
     <script src="{{raiz}}assets/ejemplos.js"></script>
     <script>
       (function () {
@@ -106,7 +110,7 @@
         }
         // Tipos que calculan su propio alto (una fila por tarea o por indicador) o que no lo usan.
         var altoPropio = function (ej) {
-          return ej.multiples || ej.tipo === 'LozTimeline' || ej.tipo === 'LozBullet';
+          return ej.multiples || ej.capas || ej.tipo === 'LozTimeline' || ej.tipo === 'LozBullet';
         };
         // El globo ocupa la fila entera con su texto al lado: es más alto que los demás.
         function altoGlobo(lienzo) {
@@ -180,7 +184,7 @@
           h.className = 'ficha-titulo';
           h.id = 't-' + ej.id;
           var enlace = document.createElement('a');
-          enlace.href = 'demo.html?id=' + ej.id;
+          enlace.href = ej.enlace || 'demo.html?id=' + ej.id;
           enlace.textContent = ej.opciones.title;
           h.appendChild(enlace);
           var sub = document.createElement('p');
@@ -206,7 +210,7 @@
             pt: 'Código<span class="sr-only"> deste gráfico</span>',
           });
           var abrir = document.createElement('a');
-          abrir.href = 'demo.html?id=' + ej.id;
+          abrir.href = ej.enlace || 'demo.html?id=' + ej.id;
           abrir.innerHTML =
             tx({ es: 'Abrir y ajustar', en: 'Open and tweak', pt: 'Abrir e ajustar' }) +
             '<span aria-hidden="true">&nbsp;→</span>';

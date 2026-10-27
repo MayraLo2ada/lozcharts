@@ -319,6 +319,12 @@ svg {
   .nav .github {
     display: none;
   }
+  .nav .crea .largo {
+    display: none;
+  }
+  .nav .crea .corto {
+    display: inline;
+  }
 }
 /* En un teléfono de 375 px la marca, dos enlaces y el botón de tema entran justos. */
 @media (max-width: 400px) {

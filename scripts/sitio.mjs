@@ -19,6 +19,7 @@ const SITIO = 'site';
 mkdirSync('site/lib/maps', { recursive: true });
 copyFileSync('dist/lozcharts.umd.js', 'site/lib/lozcharts.umd.js');
 copyFileSync('dist/maps/world.umd.js', 'site/lib/maps/world.umd.js');
+copyFileSync('dist/layers.umd.js', 'site/lib/layers.umd.js');
 copyFileSync('llms.txt', 'site/llms.txt');
 
 // Lo que pesa la librería al bajarla (el UMD comprimido), en KB: la portada lo dice en varios
@@ -289,7 +290,7 @@ function gruposPorNumero(resto) {
  *
  * Marcas de las plantillas:
  *   {{clave}}        un texto de los diccionarios (puede llevar HTML)
- *   {{p:pagina}}     el enlace a otra página del mismo idioma (galeria, docs, caso, demo, inicio)
+ *   {{p:pagina}}     el enlace a otra página del mismo idioma (galeria, docs, caso, demo, crea, inicio)
  *   {{raiz}}         la ruta a la raíz del sitio ('' en inglés, '../' en las carpetas)
  *   {{lang}}         el idioma de la página (en, es, pt-BR): va en <html lang> y la librería lo
  *                    toma como su `locale`
@@ -322,6 +323,7 @@ export const PAGINAS = {
   demo: { plantilla: 'demo.html', en: 'demo.html', es: 'demo.html', pt: 'demo.html' },
   caso: { plantilla: 'caso-real.html', en: 'case-study.html', es: 'caso-real.html', pt: 'caso-real.html' },
   docs: { plantilla: 'docs.html', en: 'docs.html', es: 'docs.html', pt: 'docs.html' },
+  crea: { plantilla: 'crea.html', en: 'make-your-own.html', es: 'crea-el-tuyo.html', pt: 'crie-o-seu.html' },
 };
 /**
  * Rutas viejas, de cuando el sitio era solo en español: quedan como puente a la página en español.

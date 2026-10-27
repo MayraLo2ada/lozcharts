@@ -1,0 +1,515 @@
+/* =============================================================================
+   «Crea el tuyo»: el editor de gráficos por capas, con las piezas del sitio (site.css).
+
+   PLAN
+   - Cabeza como la de la galería: el título grande a la izquierda y la intro al lado.
+   - Debajo, una franja pegajosa con los ejemplos (las pestañas del sitio).
+   - El taller a todo el ancho: el JSON a la izquierda (números de línea, colores del código del
+     sitio, errores en su línea) y el gráfico a la derecha sobre la superficie del sitio, como en la
+     galería. Llenan el alto de la pantalla; el estado va debajo del JSON.
+   - La guía en cuatro columnas (marcas, canales, condiciones, íconos) y cómo llevarlo a una página.
+
+   Tamaños
+   - 1440: taller en 0,85 : 1,15. 1920 y 2560: el gráfico gana ancho (0,72 : 1,28), la letra del
+     código sube con el ancho. 390: apilado, el gráfico antes que el JSON, botones de 44 px.
+   ========================================================================== */
+
+.crea-cabeza {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  align-items: end;
+  gap: var(--s4) clamp(32px, 5vw, 160px);
+  padding: clamp(40px, 5vw, 128px) 0 clamp(24px, 2.4vw, 56px);
+}
+.crea-cabeza h1 {
+  font-size: clamp(44px, 5vw, 136px);
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+}
+.crea-intro {
+  margin: 0;
+  max-width: 52ch;
+  font-size: clamp(17px, 0.55vw + 10px, 24px);
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.crea-barra {
+  position: sticky;
+  top: calc(clamp(64px, 3.4vw, 88px) + 1px);
+  z-index: 10;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  backdrop-filter: blur(8px);
+  border-block: 1px solid var(--line);
+}
+.crea-barra .wrap {
+  padding-block: var(--s2);
+}
+.crea-barra .tabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.crea-barra .tabs::-webkit-scrollbar {
+  display: none;
+}
+.crea-barra .tabs button {
+  min-height: 40px;
+  white-space: nowrap;
+  font-size: clamp(14px, 0.3vw + 9.5px, 17px);
+}
+
+/* ------------------------------------------------------------ Taller */
+
+.crea-taller {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: clamp(16px, 1.4vw, 36px);
+  margin-top: clamp(20px, 2vw, 48px);
+  scroll-margin-top: 140px;
+}
+@media (min-width: 1800px) {
+  .crea-taller {
+    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+  }
+}
+.crea-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--raised);
+  overflow: hidden;
+}
+.crea-cabeza-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s3);
+  min-height: 56px;
+  padding: var(--s2) var(--s2) var(--s2) var(--s4);
+  border-bottom: 1px solid var(--line);
+}
+.crea-archivo,
+.crea-vivo,
+.crea-medida {
+  font: 500 clamp(13px, 0.25vw + 9px, 16px) / 1 var(--mono);
+  color: var(--muted);
+}
+.crea-vivo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.crea-pulso {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand);
+  animation: crea-latir 2.4s infinite;
+}
+@keyframes crea-latir {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand) 55%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+.crea-medida {
+  color: var(--faint);
+  padding-right: var(--s2);
+}
+.crea-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.crea-acciones .btn {
+  min-height: 40px;
+  padding: 8px 14px;
+  font-size: clamp(14px, 0.2vw + 10.5px, 16px);
+}
+
+/* El editor: un textarea transparente sobre el JSON pintado; los números de línea van fuera del
+   flujo, así el alto del editor no crece con el texto. */
+.crea-codigo {
+  --margen-codigo: 4.4em;
+  position: relative;
+  flex: 1 1 auto;
+  min-height: clamp(480px, calc(100svh - 300px), 1400px);
+  overflow: hidden;
+  background: var(--code-bg);
+  font: 400 clamp(13px, 0.3vw + 8.6px, 16.5px) / 1.7 var(--mono);
+  tab-size: 2;
+}
+.crea-codigo::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--margen-codigo);
+  z-index: 1;
+  border-left: 1px solid var(--line);
+}
+.crea-margen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--margen-codigo);
+  padding: 14px 12px 14px 0;
+  text-align: right;
+  color: var(--faint);
+  user-select: none;
+  will-change: transform;
+}
+.crea-margen span {
+  display: block;
+}
+.crea-margen .con-error {
+  color: #fff;
+  background: var(--bad, #c0283f);
+}
+.crea-margen .con-warning {
+  color: #0b0b0b;
+  background: #f0b429;
+}
+.crea-hoja {
+  position: absolute;
+  inset: 0 0 0 var(--margen-codigo);
+  overflow: hidden;
+}
+.crea-pintado,
+#fuente {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 14px 20px 14px 14px;
+  font: inherit;
+  line-height: inherit;
+  white-space: pre;
+  tab-size: 2;
+  letter-spacing: 0;
+}
+.crea-pintado {
+  color: var(--code-ink);
+  pointer-events: none;
+  overflow: visible;
+  will-change: transform;
+}
+#fuente {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  resize: none;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--ink);
+  overflow: auto;
+  outline: none;
+}
+#fuente::selection {
+  background: color-mix(in srgb, var(--brand) 30%, transparent);
+  color: transparent;
+}
+.crea-codigo:focus-within {
+  box-shadow: inset 0 0 0 2px var(--focus);
+}
+.t-clave {
+  color: var(--code-key);
+}
+.t-texto {
+  color: var(--code-str);
+}
+.t-plantilla {
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  border-radius: 3px;
+}
+.t-numero {
+  color: var(--code-num);
+}
+.t-palabra {
+  color: var(--accent);
+}
+.t-signo {
+  color: var(--code-com);
+}
+
+.crea-estado {
+  flex: none;
+  max-height: 240px;
+  min-height: 52px;
+  overflow: auto;
+  border-top: 1px solid var(--line);
+  font-size: clamp(14px, 0.25vw + 10px, 17px);
+}
+.crea-ok {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 14px var(--s4);
+  color: var(--muted);
+}
+.crea-sello {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: var(--on-brand);
+  font-size: 12px;
+  font-weight: 800;
+}
+.crea-problemas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.crea-problema button {
+  display: grid;
+  grid-template-columns: 6em minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px var(--s4);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+}
+.crea-problema button:hover {
+  background: var(--sunken);
+}
+.crea-linea {
+  font: 600 0.88em/1.6 var(--mono);
+}
+.crea-error .crea-linea {
+  color: #c0283f;
+}
+.crea-warning .crea-linea {
+  color: #a35c00;
+}
+:root[data-mode='dark'] .crea-error .crea-linea {
+  color: #ff7a93;
+}
+:root[data-mode='dark'] .crea-warning .crea-linea {
+  color: #f5c35c;
+}
+.crea-problema code {
+  color: var(--muted);
+}
+
+.crea-lienzo {
+  position: relative;
+  flex: 1;
+  padding: clamp(18px, 1.8vw, 44px);
+}
+.crea-lienzo .lc-title {
+  font-size: clamp(17px, 0.5vw + 11px, 23px);
+  letter-spacing: -0.01em;
+}
+.crea-lienzo .lc-subtitle {
+  font-size: clamp(14px, 0.25vw + 10px, 17px);
+  max-width: 72ch;
+}
+.crea-lienzo .lc-header {
+  margin-bottom: clamp(14px, 1vw, 24px);
+}
+.crea-redibujo .crea-lienzo {
+  animation: crea-destello 0.6s ease-out;
+}
+@keyframes crea-destello {
+  from {
+    box-shadow: inset 3px 0 0 var(--brand);
+  }
+  to {
+    box-shadow: inset 3px 0 0 transparent;
+  }
+}
+.crea-velo {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--s5);
+  background: color-mix(in srgb, var(--raised) 82%, transparent);
+  text-align: center;
+  font-weight: 600;
+}
+.crea-velo span {
+  padding: 10px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--raised);
+}
+.crea-velo[hidden] {
+  display: none;
+}
+.crea-pista {
+  margin: 0;
+  padding: 12px var(--s4);
+  border-top: 1px solid var(--line);
+  font-size: clamp(14px, 0.2vw + 10.5px, 16px);
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------------ Guía y uso */
+
+.crea-guia,
+.crea-usar {
+  margin-top: clamp(64px, 6vw, 176px);
+}
+.crea-guia-cabeza {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  align-items: end;
+  gap: var(--s4) clamp(32px, 5vw, 160px);
+  padding-bottom: clamp(20px, 2vw, 48px);
+  border-bottom: 1px solid var(--line);
+}
+.crea-guia-cabeza p {
+  margin: 0;
+  max-width: 50ch;
+  color: var(--muted);
+  font-size: clamp(16px, 0.4vw + 11px, 21px);
+}
+.crea-guia-rejilla {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(28px, 2.6vw, 72px);
+  padding-top: clamp(24px, 2.4vw, 56px);
+}
+.crea-guia-rejilla h3,
+.crea-usar-rejilla h3 {
+  margin-bottom: var(--s4);
+  font-size: clamp(14px, 0.2vw + 10.5px, 16px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.crea-guia-rejilla dl {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px 16px;
+  margin: 0;
+  font-size: clamp(15px, 0.3vw + 10px, 18px);
+  line-height: 1.45;
+}
+.crea-guia-rejilla dt {
+  font: 600 0.88em/1.6 var(--mono);
+  color: var(--brand);
+  white-space: nowrap;
+}
+.crea-guia-rejilla dd {
+  margin: 0;
+  color: var(--muted);
+}
+.crea-guia-rejilla .code {
+  margin-bottom: var(--s4);
+}
+.crea-nota {
+  margin: 0;
+  color: var(--muted);
+  font-size: clamp(15px, 0.3vw + 10px, 18px);
+  line-height: 1.55;
+}
+.crea-iconos {
+  min-height: 280px;
+}
+.crea-usar-rejilla {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(24px, 2.4vw, 64px);
+  padding-top: clamp(24px, 2.4vw, 56px);
+}
+.crea-docs {
+  margin: var(--s5) 0 0;
+  font-size: clamp(16px, 0.3vw + 11px, 19px);
+}
+.crea-docs a {
+  color: var(--brand);
+}
+
+.crea-aviso {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 50;
+  max-width: calc(100% - 32px);
+  padding: 12px 18px;
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--surface);
+  font-weight: 600;
+  transform: translate(-50%, 140%);
+  opacity: 0;
+  transition:
+    transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.3s;
+}
+.crea-aviso.visible {
+  transform: translate(-50%, 0);
+  opacity: 1;
+}
+
+/* ------------------------------------------------------------ Pantallas medianas y chicas */
+
+@media (max-width: 1279px) {
+  .crea-guia-rejilla {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1099px) {
+  .crea-taller {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .crea-grafico-panel {
+    order: -1;
+  }
+  .crea-codigo {
+    min-height: 0;
+    height: min(70svh, 640px);
+  }
+}
+@media (max-width: 760px) {
+  .crea-cabeza,
+  .crea-guia-cabeza {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .crea-guia-rejilla,
+  .crea-usar-rejilla {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .crea-acciones {
+    width: 100%;
+  }
+  .crea-acciones .btn {
+    flex: 1;
+    justify-content: center;
+    min-height: 44px;
+  }
+  .crea-problema button {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .crea-pulso,
+  .crea-redibujo .crea-lienzo {
+    animation: none;
+  }
+  .crea-aviso {
+    transition: none;
+  }
+}

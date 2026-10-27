@@ -14,6 +14,13 @@ export default {
     en: 'Docs',
     pt: '<span class="largo">Documentação</span><span class="corto">Docs</span>',
   },
+  nav_crea: { es: 'Crea el tuyo', en: 'Make your own', pt: 'Crie o seu' },
+  // En la barra de un teléfono va la palabra sola.
+  nav_crea_barra: {
+    es: '<span class="largo">Crea el tuyo</span><span class="corto">Crea</span>',
+    en: '<span class="largo">Make your own</span><span class="corto">Make</span>',
+    pt: '<span class="largo">Crie o seu</span><span class="corto">Crie</span>',
+  },
   nav_caso: { es: 'Un caso real', en: 'A real case', pt: 'Um caso real' },
   tema_oscuro: { es: 'Cambiar a modo oscuro', en: 'Switch to dark mode', pt: 'Mudar para o modo escuro' },
   pie_firma: { es: 'LozCharts · por Mayra Lozada', en: 'LozCharts · by Mayra Lozada', pt: 'LozCharts · por Mayra Lozada' },
