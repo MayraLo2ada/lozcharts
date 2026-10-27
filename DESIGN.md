@@ -56,6 +56,19 @@ primero (25 oct 2026, `validate_palette.js`):
 
 El oscuro tiene sus propios valores; no es una inversión.
 
+### Estado (`good`, `warn`, `bad`)
+
+|         | Claro     | Oscuro    |
+| ------- | --------- | --------- |
+| Bien    | `#12a48c` | `#26b39a` |
+| Cuidado | `#f0b429` | `#e0ac2a` |
+| Mal     | `#c0283f` | `#cf3d55` |
+
+Viven en el tema (`theme.good`, `theme.warn`, `theme.bad`). El verde tira a azul para separarse del
+rojo con deuteranopia (ΔE 12,4 en claro y 11,6 en oscuro, validados el 27 oct 2026); el ámbar no
+llega a 3:1 en claro y por eso nunca va solo: lleva número, ícono o tooltip. El semáforo
+(`traffic-light`) es la mezcla en OKLab de mal a cuidado y de cuidado a bien.
+
 ## Marcas
 
 - Barras: máximo 24 px, punta de datos redondeada 4 px (solo el segmento exterior de una pila),
@@ -160,6 +173,32 @@ El oscuro tiene sus propios valores; no es una inversión.
   del color de la superficie; la Antártida se omite si no tiene datos. Burbujas al 70 % con
   anillo de superficie, la mayor de hasta 28 px de radio, las chicas encima.
 
+## Gráficos por capas
+
+- Las capas son una serie más (`'layers'`, sin ejes del núcleo): tooltip, teclado, tabla oculta,
+  selección y animación son los de siempre. Cada fila que se apunta es un dato.
+- Celdas como las del mapa de calor: radio 3, 2 px de aire (1 px si el paso baja de 8). Las filas
+  de una tabla miden 46 px (hasta 64 si sobra alto); `widths` agranda una columna de resumen.
+- Sin color, una marca toma el de la serie (el primero de la paleta o de `palette`); un ícono o un
+  texto sobre una celda, la tinta de más contraste con ella (texto o superficie del tema, o negro o
+  blanco); fuera de una celda, un halo de 3 px de superficie.
+- Íconos propios en una cuadrícula de 24 con trazo de 2 px, extremos y uniones redondeados, del
+  color de la marca. Escalan con el tamaño pedido; en un mapa o una red grandes crecen con el área
+  (hasta un 60 %). En una celda angosta se achican hasta caber, y si quedan de menos de 9 px no van.
+- Texto de 12 px; dentro de una celda va solo si cabe entero. Los nombres sueltos (ciudades, nodos)
+  no se pisan: si chocan, prueban del otro lado y, si no, no van (siguen en el tooltip).
+- Minigráfico (`spark`): línea de 1,5 px en el color de la serie con su escala propia por fila,
+  área al 16 % si se pide, último punto lleno de 2,75 px con anillo de superficie, mínimo y máximo
+  huecos de 2,25 px.
+- Leyenda de la escala de color arriba a la derecha, como la del mapa de calor: barra de 120 px y
+  8 px de alto con sus extremos debajo (los números, o Peor y Mejor si cada fila o columna tiene los
+  suyos, y "por fila" a su izquierda); con umbrales, una muestra de 10 px por tramo.
+- Ejes propios con las reglas de siempre: categorías de 12 px en texto secundario (las filas en
+  texto principal, 500), números compactos desde diez mil, rejilla al 55 % y la línea del cero.
+- Entrada: cada marca entra con un retraso según su lugar de izquierda a derecha (45 % de la
+  animación); celdas que crecen desde el centro, barras desde la base, íconos con un rebote de
+  menos del 10 %, líneas que se dibujan.
+
 ## Texto
 
 - Etiquetas de 12 px en texto secundario con números tabulares. Título 15 px/600, subtítulo 13 px.
@@ -259,6 +298,18 @@ Cuadrícula de 2 columnas que pasa a 1 bajo 860 px. Selector de tema segmentado 
 - Los gráficos de la galería toman el alto del ancho de su columna (entre 250 y 560 px).
 - Página de un ejemplo: gráfico grande con "Por qué esta forma" y los ajustes al lado; abajo, el
   código con "Para usarlo" y el nombre técnico al lado. Alto inicial según la pantalla (340 a 820 px).
+
+## Sitio: «Crea el tuyo» (`crea-el-tuyo.html`, `make-your-own.html`, `crie-o-seu.html`)
+
+- Las piezas del sitio (barra, pie, Geist, tokens claro y oscuro, a todo el ancho). Cabeza como la
+  de la galería; debajo, una franja pegajosa con los siete ejemplos como pestañas.
+- El taller: el JSON a la izquierda (0,85 : 1,15; 0,72 : 1,28 desde 1800 px) con números de línea,
+  los colores del código del sitio y los errores marcados en su línea; el gráfico a la derecha sin
+  fondo propio, sobre la superficie del panel. Los dos llenan el alto de la pantalla; sin `height`,
+  el gráfico toma el alto del editor. En el celular, el gráfico va antes que el JSON.
+- Ejemplos en los tres idiomas (textos, campos y datos): hábitos, notas, clima, viajes, un equipo,
+  frutas y uno mínimo. La galería suma dos (notas y clima, en la familia «Por capas»), que se abren
+  en el editor.
 
 ## Sitio: portada (`site/index.html`)
 

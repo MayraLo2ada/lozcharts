@@ -39,7 +39,7 @@ tu proyecto:
 ```
 
 `@1` te da siempre la última versión 1.x, que nunca rompe lo que ya funciona. Si prefieres fijar
-una versión exacta, escribe por ejemplo `@1.1.0`.
+una versión exacta, escribe por ejemplo `@1.2.0`.
 
 ## Tu primer gráfico
 
@@ -451,6 +451,101 @@ new LozChart('#usuarios', {
   latitud.
 - Los contornos vienen de Natural Earth 1:110m (dominio público), empaquetados por world-atlas
   (licencia ISC, en `maps/LICENSE`).
+
+## Gráficos por capas
+
+Cuando ningún tipo te sirve, arma el tuyo: describe el gráfico como una pila de capas en JSON. Cada
+capa tiene una marca (una celda, un texto, un ícono, una barra…) y canales que leen los campos de
+cada fila. Las escalas se comparten entre capas, los colores salen del tema y sigues teniendo
+tooltip, teclado, tabla para lectores de pantalla, modo oscuro y animación. Pruébalo en vivo en
+[Crea el tuyo](https://mayralo2ada.github.io/lozcharts/es/crea-el-tuyo.html).
+
+Los gráficos por capas vienen en un archivo aparte, así quien no los usa no los carga:
+
+```html
+<script src="lozcharts.umd.js"></script>
+<script src="layers.umd.js"></script>
+<script>
+  LozChart.layers('#notas', spec);
+</script>
+```
+
+```js
+import { layers } from '@lozcharts/core/layers';
+
+layers('#notas', {
+  title: 'Las notas del primer trimestre',
+  data: [
+    { estudiante: 'Ana', materia: 'Matemáticas', nota: 7.2 },
+    { estudiante: 'Ana', materia: 'Ciencias', nota: 8.5 },
+    { estudiante: 'Diego', materia: 'Matemáticas', nota: 4.9 },
+    { estudiante: 'Diego', materia: 'Ciencias', nota: 6.6 },
+  ],
+  layers: [
+    {
+      mark: 'cell',
+      x: 'materia',
+      y: 'estudiante',
+      color: { field: 'nota', scale: 'traffic-light', by: 'column' },
+    },
+    { mark: 'text', x: 'materia', y: 'estudiante', text: '{nota}', position: 'top' },
+    {
+      mark: 'icon',
+      x: 'materia',
+      y: 'estudiante',
+      position: 'bottom',
+      icon: { if: 'nota >= 6', then: 'smile', else: 'sad' },
+    },
+  ],
+});
+```
+
+| Marca   | Qué dibuja                                                                                                                                                       |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cell`  | Una celda de una tabla: `x` e `y` son categorías.                                                                                                                |
+| `text`  | Un texto hecho con una plantilla: `"{nota} pts"`.                                                                                                                |
+| `icon`  | Un ícono de la librería, un emoji, un `path` propio o una `image`.                                                                                               |
+| `point` | Un círculo; `size` fijo o desde un campo (por área).                                                                                                             |
+| `bar`   | Una barra desde el cero (o desde `y2`). Horizontal si las categorías van en `y`.                                                                                 |
+| `line`  | Una línea por cada `group`; `"curve": "smooth"` y `"points": true`.                                                                                              |
+| `spark` | Una línea chiquita por fila de una tabla: `period` ordena los puntos y `value` da su altura. `area` y `extremes` suman un relleno suave y el mínimo y el máximo. |
+| `rule`  | Una línea de referencia (`"y": 60`) con su `label`.                                                                                                              |
+| `link`  | Las uniones de una red (`network`).                                                                                                                              |
+
+- **Tres clases de valores.** Las posiciones y los números (`x`, `y`, `size`, `lon`, `lat`,
+  `period`, `value`) llevan un campo o una expresión: `"nota"`, `"precio * 1.19"`; uno fijo es
+  `{ "value": "Promedio" }`. Los textos (`text`, `title`, `alt`, `label`) llevan una plantilla: lo
+  que va entre llaves se calcula. El color y el ícono llevan un valor (`"good"`, `"#c0283f"`,
+  `"smile"`, `"😀"`), una tabla `{ "field": "estado", "map": { "bien": "good" } }` o una escala.
+- **Condiciones** en cualquier canal: `{ "if": "nota >= 6", "then": "smile", "else": "sad" }`.
+  `filter` deja solo las filas que cumplen.
+- **Expresiones** con su propio lector, sin `eval`: `== != < <= > >=`, `+ - * / %`, `and`, `or`,
+  `not`, textos entre comillas y `abs`, `round`, `floor`, `ceil`, `sqrt`, `min`, `max`, `len`,
+  `upper`, `lower`, `contains`. Un campo con espacios va entre acentos graves. Un dato que falta
+  hace falsa cualquier comparación.
+- **Colores** del tema y de la opción `palette`: `good`, `warn`, `bad`, la paleta por nombre
+  (`violet`, `pink`, `ochre`, `wine`, `green`, `sky`, `coral`, `teal`) o por número (1 a 8),
+  `text`, `muted`, `grid`. Una marca sin color toma el de la serie.
+- **Escalas de color:** `traffic-light` (mal, cuidado, bien; se distingue con daltonismo),
+  `sequential` o `diverging`. `by: 'row' | 'column' | 'all'` decide con qué se compara cada valor;
+  `better: 'low'` lo da vuelta; `thresholds: [90, 95]` pone cortes fijos.
+- **Íconos:** `pin`, `smile`, `meh`, `sad`, `alert`, `check`, `cross`, `arrow-up`, `arrow-down`,
+  `antenna`, `star`, `fire`, `bolt`, `heart`, `flag`, `dot`, `info`, `clock`, `signal`, `home`,
+  `user`, `sun`, `cloud`, `partly`, `rain`, `storm`, `snow`, `wind`, `plane`. Cada uno tiene su
+  nombre en tres idiomas para los lectores de pantalla; `alt` lo cambia.
+- **Datos:** una lista de filas o varias listas con nombre. `{ "from": "curso", "fold": ["P1", "P2"],
+"as": ["parcial", "nota"] }` pasa una tabla ancha (una columna por semana) a filas.
+- **Mapas y redes:** con `"geo": { "map": "mundo" }` las marcas usan `lon` y `lat`. Con
+  `"network": { "nodes": "personas", "links": "parejas" }` los nodos se acomodan solos y `link`
+  los une.
+- **Escalas:** `scales.x` y `scales.y` aceptan `type`, `domain`, `title`, `axis` (`'top'`, o
+  `false` para ocultarlo) y `widths` (`{ "Racha": 3 }` hace más ancha una categoría).
+- **Errores:** `checkLayers(spec)` devuelve los problemas con su ruta y una pista en el idioma del
+  gráfico (`layers[1].icon: No conozco el ícono "smiel". ¿Quisiste decir "smile"?`).
+  `LozChart.layers` avisa en la consola y dibuja lo demás; un ícono o un color mal escrito solo
+  deja sin dibujar ese caso.
+- `layerOptions(spec)` da las opciones de siempre, para `setOptions` o `<loz-chart>`, y
+  `LozChart.initAll` monta un `data-lozchart` cuyo JSON trae `layers`.
 
 ## React
 

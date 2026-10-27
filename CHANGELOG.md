@@ -1,5 +1,34 @@
 # Cambios
 
+## 1.2.0 (27 de octubre de 2026)
+
+- **Gráficos por capas**, en una entrada aparte para que el núcleo pese lo mismo:
+  `import { layers } from '@lozcharts/core/layers'` (también con `require`, con sus tipos) o
+  `<script src="layers.umd.js">` después de `lozcharts.umd.js`, que deja `LozChart.layers`. Un
+  gráfico se describe como una pila de capas en JSON (`{ data, layers }`) con nueve marcas:
+  `cell`, `text`, `icon`, `point`, `bar`, `line`, `spark`, `rule` y `link`. Las escalas se
+  comparten entre capas y siguen el tooltip, el teclado, la tabla para lectores de pantalla, los
+  temas, los tres idiomas y la animación de siempre.
+- **Condiciones y expresiones:** cualquier canal acepta `{ if, then, else }` y tablas
+  `{ field, map }`; las expresiones (`"nota >= 6 and not ausente"`) tienen su propio lector, sin
+  `eval`, y los textos son plantillas (`"{nota} pts"`).
+- **Semáforo y escalas de color:** `traffic-light`, `sequential` y `diverging`, por fila, por
+  columna o con todo, con lo bajo como bueno (`better: 'low'`) o con cortes fijos (`thresholds`).
+- **Minigráficos (`spark`):** una línea chiquita por fila de una tabla, con su último punto, área
+  suave y mínimo y máximo si se piden. El tooltip y la tabla dicen el primer valor, el último y el
+  cambio.
+- **29 íconos propios** con el trazo de la librería (caritas, alerta, check, flechas, clima, pin,
+  estrella…), cada uno con su nombre en los tres idiomas; también emojis, un `path` o una imagen.
+- **Mapas y redes por capas:** `geo` pone el mapa de fondo y las marcas van con `lon` y `lat`;
+  `network` acomoda los nodos y `link` los une.
+- **Avisos que ayudan:** `checkLayers(spec)` dice qué está mal, dónde (`layers[2].icon.then`) y a
+  qué se parece. Un ícono o un color mal escrito solo deja sin dibujar ese caso.
+- **Temas:** `good`, `warn` y `bad` son colores del tema (claro y oscuro), así el semáforo y los
+  estados combinan con todo lo demás. Para extensiones, el paquete exporta también las proyecciones
+  de los mapas (`fitProjection`, `geoPath`…), el acomodo de las redes (`forceLayout`) y `language`.
+- **En el sitio:** «Crea el tuyo», un editor en vivo con siete ejemplos, y dos gráficos por capas
+  en la galería.
+
 ## 1.1.0 (27 de octubre de 2026)
 
 Primera versión en npm, como `@lozcharts/core`: `npm install @lozcharts/core`, y las

@@ -38,7 +38,7 @@ file into your project:
 ```
 
 `@1` always gives you the latest 1.x version, which never breaks what already works. If you'd
-rather pin an exact version, write something like `@1.1.0`.
+rather pin an exact version, write something like `@1.2.0`.
 
 ## Your first chart
 
@@ -452,6 +452,101 @@ new LozChart('#users', {
   works.
 - The outlines come from Natural Earth 1:110m (public domain), packaged by world-atlas (ISC
   license, in `maps/LICENSE`).
+
+## Layered charts
+
+When none of the types fits, build your own: describe the chart as a stack of layers in JSON. Each
+layer has a mark (a cell, some text, an icon, a bar…) and channels that read the fields of each
+row. Scales are shared between layers, colors come from the theme, and you still get the tooltip,
+keyboard, screen reader table, dark mode, and animation. Try it live on
+[Make your own](https://mayralo2ada.github.io/lozcharts/make-your-own.html).
+
+Layered charts come in a separate file, so pages that don't use them don't load them:
+
+```html
+<script src="lozcharts.umd.js"></script>
+<script src="layers.umd.js"></script>
+<script>
+  LozChart.layers('#grades', spec);
+</script>
+```
+
+```js
+import { layers } from '@lozcharts/core/layers';
+
+layers('#grades', {
+  title: 'First-term grades',
+  data: [
+    { student: 'Ana', subject: 'Math', grade: 7.2 },
+    { student: 'Ana', subject: 'Science', grade: 8.5 },
+    { student: 'Diego', subject: 'Math', grade: 4.9 },
+    { student: 'Diego', subject: 'Science', grade: 6.6 },
+  ],
+  layers: [
+    {
+      mark: 'cell',
+      x: 'subject',
+      y: 'student',
+      color: { field: 'grade', scale: 'traffic-light', by: 'column' },
+    },
+    { mark: 'text', x: 'subject', y: 'student', text: '{grade}', position: 'top' },
+    {
+      mark: 'icon',
+      x: 'subject',
+      y: 'student',
+      position: 'bottom',
+      icon: { if: 'grade >= 6', then: 'smile', else: 'sad' },
+    },
+  ],
+});
+```
+
+| Mark    | What it draws                                                                                                                                           |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cell`  | A table cell: `x` and `y` are categories.                                                                                                               |
+| `text`  | Text from a template: `"{grade} pts"`.                                                                                                                  |
+| `icon`  | One of the library's icons, an emoji, a `path` of your own, or an `image`.                                                                              |
+| `point` | A circle; `size` can be fixed or come from a field (by area).                                                                                           |
+| `bar`   | A bar from zero (or from `y2`). Horizontal if the categories are on `y`.                                                                                |
+| `line`  | A line per `group`; `"curve": "smooth"` and `"points": true`.                                                                                           |
+| `spark` | A tiny line per table row: `period` orders the points and `value` sets their height. `area` and `extremes` add a soft fill and the low and high points. |
+| `rule`  | A reference line (`"y": 60`) with its `label`.                                                                                                          |
+| `link`  | The links of a network (`network`).                                                                                                                     |
+
+- **Three kinds of values.** Positions and numbers (`x`, `y`, `size`, `lon`, `lat`, `period`,
+  `value`) take a field or an expression: `"grade"`, `"price * 1.19"`; a fixed one is
+  `{ "value": "Average" }`. Text (`text`, `title`, `alt`, `label`) takes a template: whatever is in
+  braces gets calculated. Color and icon take a value (`"good"`, `"#c0283f"`, `"smile"`, `"😀"`), a
+  lookup `{ "field": "status", "map": { "ok": "good" } }`, or a scale.
+- **Conditions** work in every channel: `{ "if": "grade >= 6", "then": "smile", "else": "sad" }`.
+  `filter` keeps only the rows that match.
+- **Expressions** have their own reader, with no `eval`: `== != < <= > >=`, `+ - * / %`, `and`,
+  `or`, `not`, text in quotes, and `abs`, `round`, `floor`, `ceil`, `sqrt`, `min`, `max`, `len`,
+  `upper`, `lower`, `contains`. A field with spaces goes in backticks. A missing value makes any
+  comparison false.
+- **Colors** come from the theme and the `palette` option: `good`, `warn`, `bad`, the palette by
+  name (`violet`, `pink`, `ochre`, `wine`, `green`, `sky`, `coral`, `teal`) or by number (1 to 8),
+  `text`, `muted`, `grid`. A mark without a color takes the series color.
+- **Color scales:** `traffic-light` (bad, warn, good, readable with color blindness),
+  `sequential`, or `diverging`. `by: 'row' | 'column' | 'all'` decides what each value is compared
+  with; `better: 'low'` flips it; `thresholds: [90, 95]` sets fixed cut-offs.
+- **Icons:** `pin`, `smile`, `meh`, `sad`, `alert`, `check`, `cross`, `arrow-up`, `arrow-down`,
+  `antenna`, `star`, `fire`, `bolt`, `heart`, `flag`, `dot`, `info`, `clock`, `signal`, `home`,
+  `user`, `sun`, `cloud`, `partly`, `rain`, `storm`, `snow`, `wind`, `plane`. Each one has a name in
+  three languages for screen readers; `alt` replaces it.
+- **Data:** a list of rows, or several named lists. `{ "from": "grades", "fold": ["Q1", "Q2"], "as":
+["quiz", "grade"] }` turns a wide table (one column per week) into rows.
+- **Maps and networks:** with `"geo": { "map": "world" }`, marks use `lon` and `lat`. With
+  `"network": { "nodes": "people", "links": "pairs" }` the nodes arrange themselves and `link`
+  joins them.
+- **Scales:** `scales.x` and `scales.y` take `type`, `domain`, `title`, `axis` (`'top'`, or `false`
+  to hide it), and `widths` (`{ "Streak": 3 }` makes one category wider).
+- **Mistakes:** `checkLayers(spec)` returns the problems with their path and a hint in the chart's
+  language (`layers[1].icon: There's no icon called "smiel". Did you mean "smile"?`).
+  `LozChart.layers` warns in the console and draws everything else; a misspelled icon or color only
+  leaves that one case undrawn.
+- `layerOptions(spec)` gives the regular options, for `setOptions` or `<loz-chart>`, and
+  `LozChart.initAll` mounts a `data-lozchart` whose JSON has `layers`.
 
 ## React
 

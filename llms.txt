@@ -33,6 +33,8 @@
 - Django + HTMX: `<div data-lozchart="#json-id">` + `{{ options|json_script:"json-id" }}` and
   `htmx.onLoad((el) => LozChart.initAll(el))`.
 - Maps: also `import '@lozcharts/core/maps/world'` or `<script src="maps/world.umd.js">`.
+- Layered charts: `import { layers } from '@lozcharts/core/layers'` or `<script src="layers.umd.js">`
+  (see below). Types: `LayerSpec`, `Layer`, `LayerProblem`.
 - TypeScript: types included (`LozChartOptions`, `SeriesOptions`, `SeriesType`, `MultiplesOptions`).
   Rows can be typed with `interface` or with `type`.
 
@@ -101,6 +103,70 @@
 `redraw()`, `toSVG()`, `toCSV()`,
 `download('png'|'svg'|'csv')`, `destroy()`, `visibleSeries`; static `LozChart.multiples(el, { facet: 'series' | { field }, ... })`,
 `LozChart.initAll(root)`, `LozChart.destroyAll(root)`, `LozChart.getChart(element)`, `LozChart.registerMap(name, topojsonOrGeojson)`, `LozChart.registerSeries(name, impl)`.
+
+## Layered charts (`@lozcharts/core/layers`)
+
+When no series type fits (a table with icons, a status grid, pins on a map), write a layered spec.
+It is plain JSON. Load it with `import { layers } from '@lozcharts/core/layers'` and call
+`layers('#el', spec)`, or with `<script src=".../dist/layers.umd.js">` after lozcharts.umd.js and
+call `LozChart.layers('#el', spec)`. `checkLayers(spec)` returns `{ path, message, level }[]`.
+
+- Top level: `title`, `subtitle`, `description` (screen reader), `name`, `locale`, `currency`,
+  `theme`, `height`, `animate`, `background`, `data`, `layers` (required), `scales`, `geo`,
+  `network`. Nothing else.
+- `data`: a list of rows, or named lists `{ "grades": [...], "trend": { "from": "grades", "fold":
+  ["Q1", "Q2"], "as": ["quiz", "grade"] } }`. A layer picks one with `"data": "grades"`; without it,
+  the only list (or the one called `data`).
+- Every layer: `mark` plus `data`, `filter` (expression), `title` and `alt` (templates), `tooltip`
+  (`true`, `false`, or `["field", { "label": "Goal", "value": "{goal} %" }]`), `format` ('number',
+  'percent', 'compact', 'currency' or Intl.NumberFormat options), `opacity`.
+- Marks and their channels (use only these):
+  - `cell`: `x`, `y` (both categories), `color`.
+  - `text`: `x`, `y` (or `lon`/`lat`, or `node`), `text`, `color`, `size` (font px), `weight`,
+    `position`, `dx`, `dy`.
+  - `icon`: same placement, `icon`, `color`, `size` (px), `position`, `dx`, `dy`.
+  - `point`: same placement, `color`, `size`.
+  - `bar`: `x`, `y`, `x2`, `y2`, `color`, `size` (thickness).
+  - `line`: `x`, `y`, `group`, `color`, `size`, `curve: 'smooth'`, `points: true`.
+  - `spark`: `x` (usually `{ "value": "Trend" }`), `y` (the row), `period`, `value`, `color`,
+    `area: true`, `extremes: true`.
+  - `rule`: `y` (or `x`) as a number or field, `label`, `color`, `dash`.
+  - `link`: only with `network`; `from`, `to` default to `network.from`/`network.to`.
+- Value kinds. Position/number channels (`x`, `y`, `x2`, `y2`, `lon`, `lat`, `size`, `period`,
+  `value`, `node`, `group`): a field name or expression string (`"score"`, `"a + b"`), a number,
+  or `{ "value": "Fixed text" }`. Text channels (`text`, `title`, `alt`, `label`): templates,
+  `"{score} pts"`; plain text stays as is. `color`: a theme name (`good`, `warn`, `bad`, `violet`,
+  `pink`, `ochre`, `wine`, `green`, `sky`, `coral`, `teal`, `text`, `muted`, `grid`), 1 to 8, or a
+  `#hex`; or a scale `{ "field": "score", "scale": "traffic-light" | "sequential" | "diverging",
+  "by": "row" | "column" | "all", "better": "low", "thresholds": [60, 80], "domain": [0, 100] }`.
+  `icon`: an icon name, an emoji, `{ "field": "emoji" }`, `{ "path": "M…", "viewBox": 24 }` or
+  `{ "image": "url" }`.
+- Any channel can be a condition `{ "if": "score >= 60", "then": …, "else": … }` or a lookup
+  `{ "field": "status", "map": { "ok": "good", "down": "bad" }, "other": "muted" }`.
+- Expressions: fields (backticks for names with spaces), numbers, 'text' or "text", true, false,
+  null, `== != < <= > >= + - * / %`, `and or not`, and `abs round floor ceil sqrt min max len upper
+  lower contains`. No dots, brackets or other functions.
+- Icons: pin smile meh sad alert check cross arrow-up arrow-down antenna star fire bolt heart flag
+  dot info clock signal home user sun cloud partly rain storm snow wind plane.
+- `position`: center, left, right, top, bottom, top-left, top-right, bottom-left, bottom-right.
+  Inside a cell it places the mark within the cell; elsewhere, next to its point.
+- `scales.x` / `scales.y`: `type` ('band', 'linear', 'time'), `domain`, `title`, `format`, `axis`
+  ('top', 'bottom', 'left', 'right' or false), `zero`, `widths` (`{ "Total": 2 }`).
+- Maps: `"geo": { "map": "world", "fit": "data" | "all" }` plus the world map import; marks use
+  `lon` and `lat`. Networks: `"network": { "nodes": "people", "id": "name", "links": "pairs",
+  "from": "a", "to": "b" }`.
+
+```json
+{
+  "title": "Grades",
+  "data": [{ "student": "Ana", "subject": "Math", "grade": 72 }],
+  "layers": [
+    { "mark": "cell", "x": "subject", "y": "student", "color": { "field": "grade", "scale": "traffic-light", "by": "column" } },
+    { "mark": "text", "x": "subject", "y": "student", "text": "{grade}" },
+    { "mark": "icon", "x": "subject", "y": "student", "position": "right", "icon": { "if": "grade >= 60", "then": "smile", "else": "sad" } }
+  ]
+}
+```
 
 ## Example
 
