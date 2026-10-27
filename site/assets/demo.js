@@ -387,7 +387,7 @@
     return (
       'import { ' +
       comp +
-      " } from 'lozcharts/react';\n\n" +
+      " } from '@lozcharts/core/react';\n\n" +
       datos(false) +
       '\n\nexport function ' +
       tx({ es: 'Grafico', en: 'MyChart', pt: 'Grafico' }) +

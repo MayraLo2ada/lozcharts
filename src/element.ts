@@ -2,7 +2,7 @@
  * `<loz-chart>`: LozCharts como elemento HTML estándar (Custom Element). Funciona igual en HTML
  * puro, Angular, Vue, Svelte o cualquier otro framework, sin un adaptador para cada uno.
  *
- *   import 'lozcharts/element';
+ *   import '@lozcharts/core/element';
  *   <loz-chart options='{"data": [...], "xAxis": {...}, "series": [...]}'></loz-chart>
  *
  * Las opciones llegan por el atributo `options` (JSON) o por la propiedad `options` (un objeto,
@@ -13,8 +13,8 @@
  * en `detail`); en small multiples
  * (`facet`) no hay eventos: el puntero ya se sincroniza entre los paneles.
  */
-import { LozChart, messages, type LozMultiples } from 'lozcharts';
-import type { LozChartOptions, MultiplesOptions } from 'lozcharts';
+import { LozChart, messages, type LozMultiples } from '@lozcharts/core';
+import type { LozChartOptions, MultiplesOptions } from '@lozcharts/core';
 import { optionsKey, optionsPatch } from './core/sync';
 
 type Options = LozChartOptions | MultiplesOptions;

@@ -1,8 +1,9 @@
 # Cambios
 
-## 1.1.0 (25 de octubre de 2026)
+## 1.1.0 (27 de octubre de 2026)
 
-Primera versión en npm.
+Primera versión en npm, como `@lozcharts/core`: `npm install @lozcharts/core`, y las
+entradas `@lozcharts/core/react`, `@lozcharts/core/element` y `@lozcharts/core/maps/world`.
 
 - **Tres idiomas:** todo lo que dice el gráfico (tooltip, leyenda, botones, barra del zoom,
   descripción accesible, anuncios, tabla de datos y avisos de consola) en español, inglés y

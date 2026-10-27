@@ -214,7 +214,7 @@ export class LozChart {
 
   /**
    * Registra un mapa (TopoJSON o GeoJSON) con un nombre, para las series 'choropleth' y
-   * 'mapbubble'. El del mundo se registra solo al cargar 'lozcharts/maps/world' como 'mundo'.
+   * 'mapbubble'. El del mundo se registra solo al cargar '@lozcharts/core/maps/world' como 'mundo'.
    */
   static registerMap(name: string, source: MapSource): void {
     registerMap(name, source);

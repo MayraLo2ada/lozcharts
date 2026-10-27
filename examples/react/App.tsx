@@ -4,8 +4,8 @@
  */
 import { useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { LozChart } from 'lozcharts';
-import { Chart, Multiples } from 'lozcharts/react';
+import type { LozChart } from '@lozcharts/core';
+import { Chart, Multiples } from '@lozcharts/core/react';
 
 const REGIONES = ['Norte', 'Centro', 'Sur'] as const;
 type Region = (typeof REGIONES)[number];

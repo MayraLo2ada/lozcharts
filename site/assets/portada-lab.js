@@ -375,7 +375,7 @@
     var N = NOMBRES;
     if (estado.modo === 'react') {
       return [
-        "import { Chart } from 'lozcharts/react';",
+        "import { Chart } from '@lozcharts/core/react';",
         '',
         'const ' + N.opciones + ' = ' + cuerpo(o, 0) + ';',
         '',

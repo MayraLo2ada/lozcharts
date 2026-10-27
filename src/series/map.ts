@@ -2,7 +2,7 @@
  * Mapas (LozMap): países coloreados por su valor (coropletas) y burbujas sobre el mapa.
  *
  * Los contornos vienen de un mapa registrado (`LozChart.registerMap('mundo', topología)`; el del
- * mundo está en 'lozcharts/maps/world'). Cada fila de datos se cruza con un lugar por el campo
+ * mundo está en '@lozcharts/core/maps/world'). Cada fila de datos se cruza con un lugar por el campo
  * de la X: sirve el código ISO de 3 letras, el numérico o el nombre en inglés o en español, sin
  * importar mayúsculas ni acentos.
  *

@@ -1,5 +1,5 @@
 /**
- * LozCharts para React: `import { Chart, Multiples } from 'lozcharts/react'`.
+ * LozCharts para React: `import { Chart, Multiples } from '@lozcharts/core/react'`.
  *
  * Las opciones del gráfico van como props. El componente crea el gráfico al montarse, lo
  * destruye al desmontarse y, en cada render, decide qué cambió:
@@ -12,8 +12,8 @@
  * El `ref` da la instancia (LozChart o LozMultiples) para usar sus métodos: download, zoomTo…
  */
 import { createElement, forwardRef, useEffect, useRef, type CSSProperties, type MutableRefObject, type Ref } from 'react';
-import { LozChart, type LozMultiples } from 'lozcharts';
-import type { LozChartOptions, MultiplesOptions } from 'lozcharts';
+import { LozChart, type LozMultiples } from '@lozcharts/core';
+import type { LozChartOptions, MultiplesOptions } from '@lozcharts/core';
 import { optionsKey, optionsPatch, withLatest } from './core/sync';
 
 export { optionsKey };

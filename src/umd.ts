@@ -4,7 +4,7 @@ import { LozChart } from './index';
 import './element';
 
 // Con require (Node, Jest) el módulo es la clase misma; además lleva todo lo que exporta el
-// paquete, para que `const { LozChart } = require('lozcharts')` funcione y las extensiones
+// paquete, para que `const { LozChart } = require('@lozcharts/core')` funcione y las extensiones
 // cargadas con <script> encuentren las piezas del núcleo en window.LozChart.
 Object.assign(LozChart, api);
 

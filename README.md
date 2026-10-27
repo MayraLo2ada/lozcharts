@@ -19,22 +19,22 @@ and components for React and for Angular, Vue, or Svelte.
 In a project with npm:
 
 ```bash
-npm install lozcharts
+npm install @lozcharts/core
 ```
 
 ```js
-import { LozChart } from 'lozcharts';
-import { Chart } from 'lozcharts/react'; // if you use React
-import 'lozcharts/maps/world'; // only if you make maps
+import { LozChart } from '@lozcharts/core';
+import { Chart } from '@lozcharts/core/react'; // if you use React
+import '@lozcharts/core/maps/world'; // only if you make maps
 ```
 
 Without npm, with a `<script>` from npm's free content delivery network, or by downloading the
 file into your project:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/lozcharts@1/dist/lozcharts.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@lozcharts/core@1/dist/lozcharts.umd.js"></script>
 <!-- Only if you make maps: -->
-<script src="https://cdn.jsdelivr.net/npm/lozcharts@1/dist/maps/world.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@lozcharts/core@1/dist/maps/world.umd.js"></script>
 ```
 
 `@1` always gives you the latest 1.x version, which never breaks what already works. If you'd
@@ -54,7 +54,7 @@ anything:
   </head>
   <body>
     <div id="chart"></div>
-    <script src="https://cdn.jsdelivr.net/npm/lozcharts@1/dist/lozcharts.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@lozcharts/core@1/dist/lozcharts.umd.js"></script>
     <script>
       new LozChart('#chart', {
         title: 'Sales by month',
@@ -91,11 +91,11 @@ create the chart.
 
 **2. With `import` (Vite, webpack, Angular CLI) or `require` (Node, Jest).** Remember to call
 `destroy()` when you unmount the component. In React you don't have to do it by hand if you use the
-components from `lozcharts/react` (see [React](#react)), and in Angular, Vue, or Svelte you have the
+components from `@lozcharts/core/react` (see [React](#react)), and in Angular, Vue, or Svelte you have the
 `<loz-chart>` element (see [`<loz-chart>`](#loz-chart-angular-vue-svelte-or-plain-html)).
 
 ```js
-import { LozChart } from 'lozcharts'; // or: const { LozChart } = require('lozcharts');
+import { LozChart } from '@lozcharts/core'; // or: const { LozChart } = require('@lozcharts/core');
 const chart = new LozChart(element, options);
 // when the component unmounts:
 chart.destroy();
@@ -422,8 +422,8 @@ you're going to make maps.
 ```
 
 ```js
-import { LozChart } from 'lozcharts';
-import 'lozcharts/maps/world'; // registers the world map as 'world'
+import { LozChart } from '@lozcharts/core';
+import '@lozcharts/core/maps/world'; // registers the world map as 'world'
 
 new LozChart('#users', {
   data: [
@@ -457,7 +457,7 @@ new LozChart('#users', {
 
 ```jsx
 import { useMemo, useRef } from 'react';
-import { Chart } from 'lozcharts/react';
+import { Chart } from '@lozcharts/core/react';
 
 function Sales({ rows }) {
   const chart = useRef(null);
@@ -496,7 +496,7 @@ didn't change.
 
 `<loz-chart>` is a standard HTML element (a Custom Element), so it works with any framework, no
 adapter needed. If you load `<script src="lozcharts.umd.js">`, it's already registered; with
-modules, import `'lozcharts/element'`.
+modules, import `'@lozcharts/core/element'`.
 
 ```html
 <loz-chart
@@ -507,7 +507,7 @@ modules, import `'lozcharts/element'`.
 
 ```ts
 // Angular (standalone): add CUSTOM_ELEMENTS_SCHEMA to the component.
-import 'lozcharts/element';
+import '@lozcharts/core/element';
 @Component({
   selector: 'app-sales',
   standalone: true,
@@ -544,7 +544,7 @@ export default {
 
 ```html
 <script setup>
-  import 'lozcharts/element';
+  import '@lozcharts/core/element';
 </script>
 <template>
   <loz-chart :options="options" @lozclick="(e) => console.log(e.detail)"></loz-chart>
@@ -558,7 +558,7 @@ The types ship with the package and work with any `moduleResolution` (`bundler`,
 `smoth`, `theme: 'drak'`), your editor flags it and suggests the right one.
 
 ```ts
-import { LozChart, type LozChartOptions, type SeriesOptions } from 'lozcharts';
+import { LozChart, type LozChartOptions, type SeriesOptions } from '@lozcharts/core';
 
 const series: SeriesOptions[] = [{ type: 'line', field: 'sales', name: 'Sales' }];
 const options: LozChartOptions = { data: rows, xAxis: { field: 'month', type: 'time' }, series };
@@ -577,7 +577,7 @@ If you ask ChatGPT, Claude, or Copilot for charts, tell it to use LozCharts and 
 [llms.txt](llms.txt) file. It's a single page with everything that exists (types, options, and
 methods) and the rules for writing code that works. With that it doesn't make up options, and you
 don't have to ask for zoom, a legend, dark mode, or accessibility: they're already built in. If you
-use TypeScript, the `lozcharts` types also flag any option that doesn't exist.
+use TypeScript, the `@lozcharts/core` types also flag any option that doesn't exist.
 
 Something like this is enough:
 

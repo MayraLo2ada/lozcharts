@@ -11,7 +11,7 @@
     "noFallthroughCasesInSwitch": true,
     "isolatedModules": true,
     "skipLibCheck": true,
-    "paths": { "lozcharts": ["./src/index.ts"] }
+    "paths": { "@lozcharts/core": ["./src/index.ts"] }
   },
   "include": ["src", "test"]
 }
