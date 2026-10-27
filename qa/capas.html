@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LozCharts · Capas</title>
+    <meta name="description" content="Inventa tu propio gráfico: descríbelo por capas en JSON y míralo mientras escribes." />
+    <script>
+      // El tema antes de pintar: el guardado, o el del sistema.
+      try {
+        var guardado = localStorage.getItem('capas-tema');
+        var oscuro = guardado ? guardado === 'dark' : !matchMedia('(prefers-color-scheme: light)').matches;
+        document.documentElement.dataset.theme = oscuro ? 'dark' : 'light';
+      } catch (e) {}
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('quieto');
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Geist:wght@400..700&family=Geist+Mono:wght@400;500;600&display=swap"
+    />
+    <link rel="stylesheet" href="capas/editor.css" />
+  </head>
+  <body>
+    <a class="saltar" href="#editor">Saltar al editor</a>
+
+    <header class="barra">
+      <div class="ancho barra-in">
+        <a class="marca" href="./capas.html" aria-label="LozCharts capas, volver al inicio">
+          <span class="marca-loz">LozCharts</span><span class="marca-sep">/</span><span class="marca-capas">capas</span>
+          <span class="etiqueta">muestra</span>
+        </a>
+        <div class="controles">
+          <div class="segmento" role="group" aria-label="Idioma del gráfico">
+            <button type="button" data-idioma="es" aria-pressed="true">ES</button>
+            <button type="button" data-idioma="en" aria-pressed="false">EN</button>
+            <button type="button" data-idioma="pt-BR" aria-pressed="false">PT</button>
+          </div>
+          <div class="segmento" role="group" aria-label="Tema">
+            <button type="button" data-tema="dark" aria-pressed="true">Oscuro</button>
+            <button type="button" data-tema="light" aria-pressed="false">Claro</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="portada ancho" aria-labelledby="titulo">
+        <h1 id="titulo" class="grito">
+          <span class="linea"><span>Inventa</span></span>
+          <span class="linea"
+            ><span>tu <em>gráfico</em>.</span></span
+          >
+        </h1>
+        <div class="portada-lado">
+          <p class="bajada">
+            Descríbelo por capas en un JSON: celdas, textos, íconos, puntos, barras, líneas. Ponle condiciones y colores, y míralo
+            dibujarse mientras escribes.
+          </p>
+          <ul class="cifras" aria-label="Lo que trae">
+            <li><b>8</b> marcas</li>
+            <li><b id="cuenta-iconos">21</b> íconos propios</li>
+            <li><b>3</b> idiomas</li>
+            <li><b>0</b> eval</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="ejemplos ancho" aria-labelledby="ejemplos-titulo">
+        <h2 id="ejemplos-titulo" class="sr-only">Ejemplos para empezar</h2>
+        <div class="rieles" id="ejemplos" role="list"></div>
+      </section>
+
+      <section class="taller ancho" id="editor" aria-label="Editor y vista en vivo">
+        <div class="panel panel-codigo">
+          <div class="panel-cabeza">
+            <span class="pestana"><span class="punto" aria-hidden="true"></span>grafico.json</span>
+            <div class="acciones">
+              <button type="button" class="boton" id="formatear" title="Ordena las sangrías">Ordenar</button>
+              <button type="button" class="boton" id="copiar">Copiar JSON</button>
+              <button type="button" class="boton boton-fuerte" id="compartir">Compartir enlace</button>
+            </div>
+          </div>
+          <div class="codigo" id="codigo">
+            <div class="margen" id="margen" aria-hidden="true"></div>
+            <div class="hoja">
+              <pre class="pintado" id="pintado" aria-hidden="true"></pre>
+              <textarea
+                id="fuente"
+                spellcheck="false"
+                autocapitalize="off"
+                autocomplete="off"
+                autocorrect="off"
+                wrap="off"
+                aria-label="Especificación del gráfico en JSON"
+                aria-describedby="estado"
+              ></textarea>
+            </div>
+          </div>
+          <div class="estado" id="estado" role="status" aria-live="polite"></div>
+        </div>
+
+        <div class="panel panel-grafico">
+          <div class="panel-cabeza">
+            <span class="en-vivo"><span class="pulso" aria-hidden="true"></span>En vivo</span>
+            <span class="medida" id="medida"></span>
+          </div>
+          <div class="lienzo" id="lienzo">
+            <div id="grafico"></div>
+            <div class="velo" id="velo" hidden><span>Arregla el JSON y el gráfico vuelve a moverse.</span></div>
+          </div>
+          <p class="pista">Pasa el puntero por encima o entra con Tab y recórrelo con las flechas.</p>
+        </div>
+      </section>
+
+      <section class="chuleta ancho" aria-labelledby="chuleta-titulo">
+        <h2 id="chuleta-titulo" class="cartel">Lo que puedes escribir</h2>
+        <div class="chuleta-rejilla">
+          <article class="ficha">
+            <h3>Marcas</h3>
+            <dl class="lista">
+              <dt>cell</dt>
+              <dd>Una celda de una tabla: <code>x</code> e <code>y</code> son categorías.</dd>
+              <dt>text</dt>
+              <dd>Un texto: <code>"text": "{valor} %"</code>.</dd>
+              <dt>icon</dt>
+              <dd>Un ícono propio, un emoji, un <code>path</code> o una <code>image</code>.</dd>
+              <dt>point</dt>
+              <dd>Un círculo; <code>size</code> fijo o desde un campo.</dd>
+              <dt>bar</dt>
+              <dd>Una barra desde el cero (o desde <code>y2</code>).</dd>
+              <dt>line</dt>
+              <dd>Una línea por cada <code>group</code>; <code>"curve": "smooth"</code>.</dd>
+              <dt>rule</dt>
+              <dd>Una línea de referencia: <code>"y": 60</code> con su <code>label</code>.</dd>
+              <dt>link</dt>
+              <dd>Los enlaces de una red (<code>network</code>).</dd>
+            </dl>
+          </article>
+          <article class="ficha">
+            <h3>Canales</h3>
+            <dl class="lista">
+              <dt>x, y, size</dt>
+              <dd>Un campo o una cuenta: <code>"valor - meta"</code>. Fijo: <code>{ "value": "Meta" }</code>.</dd>
+              <dt>lon, lat</dt>
+              <dd>En un mapa, con <code>"geo": { "map": "mundo" }</code>.</dd>
+              <dt>text, title, alt</dt>
+              <dd>Plantillas: lo que va entre llaves se calcula.</dd>
+              <dt>color, icon</dt>
+              <dd>Un valor, una tabla <code>{ "field", "map" }</code> o una condición.</dd>
+              <dt>filter</dt>
+              <dd>Solo las filas que cumplen: <code>"estado == 'falla'"</code>.</dd>
+              <dt>tooltip</dt>
+              <dd><code>false</code>, o la lista de campos que quieres ver.</dd>
+            </dl>
+          </article>
+          <article class="ficha">
+            <h3>Condiciones y colores</h3>
+            <pre class="muestra"><code>"icon": {
+  "if": "valor >= meta",
+  "then": "smile",
+  "else": "sad"
+}
+"color": {
+  "field": "valor",
+  "scale": "semaforo",
+  "by": "row"
+}</code></pre>
+            <p class="nota">
+              Se compara con <code>== != &lt; &lt;= &gt; &gt;=</code>, se junta con <code>and</code>, <code>or</code> y
+              <code>not</code>, y hay <code>abs</code>, <code>round</code>, <code>min</code>, <code>max</code>,
+              <code>contains</code>. Colores: <span class="tinta tinta-good">good</span>
+              <span class="tinta tinta-warn">warn</span> <span class="tinta tinta-bad">bad</span>, la paleta (<code>violet</code>,
+              <code>pink</code>…) o un <code>#hex</code>. <code>by</code> compara por fila, por columna o con todo;
+              <code>thresholds</code> pone cortes fijos.
+            </p>
+          </article>
+          <article class="ficha ficha-iconos">
+            <h3>Íconos propios</h3>
+            <div id="iconos"></div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="pie ancho">
+      <p>LozCharts · capas es una muestra: la forma del JSON todavía puede cambiar.</p>
+    </footer>
+
+    <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
+
+    <script src="../dist/lozcharts.umd.js"></script>
+    <script src="../dist/maps/world.umd.js"></script>
+    <script src="capas/ejemplos.js"></script>
+    <script src="capas/json.js"></script>
+    <script src="capas/editor.js"></script>
+  </body>
+</html>
