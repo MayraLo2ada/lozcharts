@@ -23,6 +23,8 @@ import { chord } from './series/chord';
 import { timeline } from './series/timeline';
 import { wordcloud } from './series/wordcloud';
 import { network } from './series/network';
+import { layers, layerOptions, optionsOf } from './layers/render';
+import { buildModel } from './layers/compile';
 
 LozChart.registerSeries('line', line);
 LozChart.registerSeries('bar', bar);
@@ -50,8 +52,16 @@ LozChart.registerSeries('chord', chord);
 LozChart.registerSeries('timeline', timeline);
 LozChart.registerSeries('wordcloud', wordcloud);
 LozChart.registerSeries('network', network);
+LozChart.registerSeries('layers', layers);
 
 LozChart.multiples = (target, options) => new LozMultiples(target, options);
+// Gráficos por capas: se revisa la especificación, se avisa en la consola lo que esté mal (en el
+// idioma del gráfico) y se dibuja lo demás.
+LozChart.layers = (target, spec) => {
+  const model = buildModel(spec);
+  for (const p of model.problems) console.warn(`LozCharts: ${p.path ? p.path + ': ' : ''}${p.message}`);
+  return new LozChart(target, optionsOf(model));
+};
 
 export { LozChart, LozMultiples };
 export default LozChart;
@@ -113,3 +123,22 @@ export {
 export { esc, attrs, textWidth } from './core/dom';
 export { fitText } from './core/axis';
 export { toCSV, slug } from './core/export';
+
+// Gráficos por capas: las opciones de una especificación, su revisión y las piezas para el editor.
+export { layerOptions };
+export { checkLayers } from './layers/compile';
+export { ICON_NAMES } from './layers/icons';
+export type {
+  LayerSpec,
+  Layer,
+  LayerProblem,
+  LayerFormat,
+  ColorScale,
+  Cond,
+  Mapping,
+  PathIcon,
+  ImageIcon,
+  AxisSpec,
+  GeoSpec,
+  NetworkSpec,
+} from './layers/spec';

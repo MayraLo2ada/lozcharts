@@ -22,6 +22,7 @@ import type {
   ZoomWindow,
 } from './types';
 import type { LozMultiples } from './multiples';
+import type { LayerSpec } from './layers/spec';
 import {
   swatchOf,
   type DrawContext,
@@ -231,6 +232,12 @@ export class LozChart {
    */
   static multiples: (target: string | HTMLElement, options: MultiplesOptions) => LozMultiples;
 
+  /**
+   * Crea un gráfico por capas a partir de una especificación JSON ({ data, layers }). Avisa en la
+   * consola lo que esté mal escrito y dibuja lo demás. Lo conecta index.ts.
+   */
+  static layers: (target: string | HTMLElement, spec: LayerSpec) => LozChart;
+
   /** El gráfico (o los small multiples) montado en un elemento, si hay. */
   static getChart(target: string | HTMLElement): LozChart | LozMultiples | undefined {
     const el = typeof target === 'string' ? document.querySelector<HTMLElement>(target) : target;
@@ -253,8 +260,10 @@ export class LozChart {
       const raw = el.getAttribute('data-lozchart')!.trim();
       try {
         const json = raw.startsWith('{') ? raw : (document.querySelector(raw)?.textContent ?? '');
-        const options = JSON.parse(json) as LozChartOptions | MultiplesOptions;
-        charts.push('facet' in options && options.facet ? LozChart.multiples(el, options) : new LozChart(el, options));
+        const options = JSON.parse(json) as LozChartOptions | MultiplesOptions | LayerSpec;
+        if ('layers' in options && Array.isArray(options.layers)) charts.push(LozChart.layers(el, options));
+        else if ('facet' in options && options.facet) charts.push(LozChart.multiples(el, options));
+        else charts.push(new LozChart(el, options as LozChartOptions));
       } catch (err) {
         console.error(messages().warnings.badInit, el, err);
       }
