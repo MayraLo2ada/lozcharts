@@ -4,7 +4,7 @@
 //    "type": "module", TypeScript en node16 o nodenext lee los .d.ts como módulos ES y exige la
 //    extensión: sin ella no encuentra nada y LozChart queda como `any`, sin un solo aviso. Aquí
 //    cada ruta relativa pasa a './chart.js' (o './core/index.js' si es una carpeta).
-// 2. require. Para quien usa CommonJS con TypeScript (node16), `require('lozcharts')` necesita
+// 2. require. Para quien usa CommonJS con TypeScript (node16), `require('@lozcharts/core')` necesita
 //    tipos CommonJS: index.d.cts, que es la clase LozChart con todo lo demás colgado de ella,
 //    igual que el build UMD; y maps/register-world.d.cts para el mapa.
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -51,11 +51,25 @@ const tipos = new Set([
 ]);
 // LozChart.LozChart es el tipo de una instancia: `const grafico: LozChart.LozChart = new LozChart(…)`.
 tipos.add('LozChart');
-const alias = [...tipos].map((t) => `  export type ${t} = api.${t};`).join('\n');
+// Un tipo genérico (Localized<T>) necesita sus parámetros también en el alias.
+const genericos = new Map(
+  archivos(raiz).flatMap((archivo) =>
+    [...readFileSync(archivo, 'utf8').matchAll(/export (?:interface|type) (\w+)<([^>]*)>/g)].map((m) => [
+      m[1],
+      m[2].split(',').map((p) => p.trim().split(/[\s=]/)[0]),
+    ]),
+  ),
+);
+const alias = [...tipos]
+  .map((t) => {
+    const p = genericos.get(t);
+    return p ? `  export type ${t}<${p.join(', ')}> = api.${t}<${p.join(', ')}>;` : `  export type ${t} = api.${t};`;
+  })
+  .join('\n');
 
 writeFileSync(
   join(raiz, 'index.d.cts'),
-  `// Tipos para require('lozcharts'): la clase LozChart, con todo lo que exporta el paquete.
+  `// Tipos para require('@lozcharts/core'): la clase LozChart, con todo lo que exporta el paquete.
 import type * as api from './index.js' with { 'resolution-mode': 'import' };
 
 declare const LozChart: typeof api.LozChart & Omit<typeof api, 'LozChart' | 'default'> & {
@@ -69,7 +83,7 @@ export = LozChart;
 `,
 );
 
-// require('lozcharts/maps/world') devuelve { world }.
+// require('@lozcharts/core/maps/world') devuelve { world }.
 writeFileSync(
   join(raiz, 'maps/register-world.d.cts'),
   `import type { Topology } from '../core/geo.js' with { 'resolution-mode': 'import' };
