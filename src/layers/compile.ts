@@ -4,10 +4,7 @@
  * rango de cada escala de color, y arma la lista de datos que recorren el teclado, el tooltip y la
  * tabla oculta. Nada de esto depende del tamaño ni del tema: eso queda para render.ts.
  */
-import { parseTime } from '../core/format';
-import { defaultLocale } from '../core/i18n';
-import { getMap } from '../core/geo';
-import type { NetLink } from '../series/network';
+import { defaultLocale, getMap, parseTime, type NetLink } from '@lozcharts/core';
 import {
   ExprError,
   compile as compileExpr,
@@ -28,19 +25,20 @@ import type { AxisSpec, ColorScale, Layer, LayerFormat, LayerProblem, LayerSpec,
 type Row = Record<string, unknown>;
 export type Resolver<T> = (row: Row) => T | null;
 
-export const MARKS: readonly MarkName[] = ['cell', 'text', 'icon', 'point', 'bar', 'line', 'rule', 'link'];
+export const MARKS: readonly MarkName[] = ['cell', 'text', 'icon', 'point', 'bar', 'line', 'rule', 'link', 'spark'];
 
-const COMMON = ['mark', 'data', 'filter', 'name', 'tooltip', 'format', 'opacity', 'title'];
+const COMMON = ['mark', 'data', 'filter', 'name', 'tooltip', 'format', 'opacity', 'title', 'alt'];
 const PLACE = ['x', 'y', 'lon', 'lat', 'node', 'position', 'dx', 'dy'];
 const KEYS: Record<MarkName, string[]> = {
   cell: ['x', 'y', 'color'],
   text: [...PLACE, 'text', 'color', 'size', 'weight'],
-  icon: [...PLACE, 'icon', 'color', 'size', 'alt'],
+  icon: [...PLACE, 'icon', 'color', 'size'],
   point: [...PLACE, 'color', 'size'],
   bar: ['x', 'y', 'x2', 'y2', 'color', 'size'],
   line: ['x', 'y', 'color', 'size', 'group', 'curve', 'points'],
   rule: ['x', 'y', 'x2', 'y2', 'color', 'size', 'dash', 'label'],
   link: ['from', 'to', 'color', 'size', 'dash'],
+  spark: ['x', 'y', 'period', 'value', 'color', 'area', 'extremes'],
 };
 const TOP_KEYS = [
   'title',
@@ -52,6 +50,7 @@ const TOP_KEYS = [
   'theme',
   'height',
   'animate',
+  'background',
   'data',
   'layers',
   'scales',
@@ -59,7 +58,7 @@ const TOP_KEYS = [
   'network',
 ];
 /** Marcas con tooltip por defecto: las que son el dato. Textos, reglas y enlaces acompañan. */
-const INTERACTIVE: readonly MarkName[] = ['cell', 'icon', 'point', 'bar', 'line'];
+const INTERACTIVE: readonly MarkName[] = ['cell', 'icon', 'point', 'bar', 'line', 'spark'];
 const POSITIONS: readonly Position[] = [
   'center',
   'left',
@@ -72,7 +71,7 @@ const POSITIONS: readonly Position[] = [
   'bottom-right',
 ];
 /** Canales de posición: sus campos dan el lugar, no el dato (no van al tooltip por defecto). */
-const PLACE_CHANNELS = ['x', 'y', 'x2', 'y2', 'lon', 'lat', 'node', 'from', 'to', 'group'] as const;
+const PLACE_CHANNELS = ['x', 'y', 'x2', 'y2', 'lon', 'lat', 'node', 'from', 'to', 'group', 'period'] as const;
 type PlaceChannel = (typeof PLACE_CHANNELS)[number];
 
 /** Colores con nombre del tema (los ocho de la paleta, los del semáforo y los grises). */
@@ -105,7 +104,7 @@ export interface Dataset {
 export interface ColorScaleModel {
   spec: ColorScale;
   value: (row: Row) => unknown;
-  kind: 'semaforo' | 'sequential' | 'diverging';
+  kind: 'traffic-light' | 'sequential' | 'diverging';
   by: 'all' | 'row' | 'column';
   better: 'high' | 'low';
   thresholds: number[] | null;
@@ -135,7 +134,7 @@ export interface LayerModel {
   ds: Dataset;
   /** Filas que dibuja (las que pasan el filtro), en orden. */
   rows: number[];
-  ch: Partial<Record<PlaceChannel | 'size', Resolver<unknown>>>;
+  ch: Partial<Record<PlaceChannel | 'size' | 'value', Resolver<unknown>>>;
   /** Campos de cada canal de posición, y los de los demás (los que dicen algo del dato). */
   placeFields: Partial<Record<PlaceChannel, string[]>>;
   valueFields: string[];
@@ -157,6 +156,10 @@ export interface LayerModel {
   weight?: number;
   curve: 'linear' | 'smooth';
   points: boolean;
+  /** Minigráfico: sus series (las filas de cada celda, en el orden del periodo), con área y extremos. */
+  sparks?: number[][];
+  area: boolean;
+  extremes: boolean;
 }
 
 export interface AxisModel {
@@ -176,6 +179,8 @@ export interface Item {
   row: number;
   /** Las capas que dibujan esta fila, en orden. La primera interactiva es la principal. */
   layers: LayerModel[];
+  /** En un minigráfico, todas sus filas en orden. */
+  spark?: number[];
 }
 
 export interface Model {
@@ -337,8 +342,8 @@ function colorLeaf(
     if (isObject(raw) && typeof raw.field === 'string') {
       const s = raw as unknown as ColorScale;
       const v = expr(c, s.field, `${path}.field`);
-      const kind = s.scale ?? 'semaforo';
-      if (!['semaforo', 'sequential', 'diverging'].includes(kind))
+      const kind = s.scale ?? 'traffic-light';
+      if (!['traffic-light', 'sequential', 'diverging'].includes(kind))
         problem(c, `${path}.scale`, c.T.check.unknownScale(String(kind)));
       const by = s.by ?? 'all';
       if (!['all', 'row', 'column'].includes(by)) problem(c, `${path}.by`, c.T.check.badBy(String(by)));
@@ -363,7 +368,7 @@ function colorLeaf(
       const model: ColorScaleModel = {
         spec: s,
         value: v,
-        kind: kind === 'sequential' || kind === 'diverging' ? kind : 'semaforo',
+        kind: kind === 'sequential' || kind === 'diverging' ? kind : 'traffic-light',
         by: by === 'row' || by === 'column' ? by : 'all',
         better,
         thresholds,
@@ -381,8 +386,9 @@ function colorLeaf(
     const token = colorToken(raw);
     if (token) return () => token;
     const text = typeof raw === 'string' ? raw : JSON.stringify(raw);
+    // Un color mal escrito deja ese caso con el color de la serie, no la capa sin dibujar.
     problem(c, path, c.T.check.unknownColor(text, c.T.check.hint(closest(String(text), COLOR_NAMES))));
-    return null;
+    return () => null;
   };
 }
 
@@ -398,8 +404,9 @@ function iconLeaf(c: Ctx): (raw: unknown, path: string) => Resolver<IconRef> | n
         const ref: IconRef = { kind: 'glyph', text: raw.trim() };
         return () => ref;
       }
+      // Solo este caso queda sin ícono (el resto de la capa se dibuja), y el aviso dice cuál es.
       problem(c, path, c.T.check.unknownIcon(raw, c.T.check.hint(closest(raw, [...ICON_NAMES, ...Object.keys(ICON_ALIASES)]))));
-      return null;
+      return () => null;
     }
     if (isObject(raw) && typeof raw.field === 'string' && !own(raw, 'map')) {
       // El ícono sale de la fila ("emoji": "🍓"): se lee en cada fila y lo que no es un ícono no se dibuja.
@@ -416,7 +423,7 @@ function iconLeaf(c: Ctx): (raw: unknown, path: string) => Resolver<IconRef> | n
       // Un camino propio: solo comandos y números, nada que el SVG pueda interpretar de otra forma.
       if (!/^[MmLlHhVvCcSsQqTtAaZz0-9eE.,+\-\s]+$/.test(raw.path)) {
         problem(c, `${path}.path`, c.T.check.unknownIcon(raw.path.slice(0, 24), ''));
-        return null;
+        return () => null;
       }
       const box = typeof raw.viewBox === 'number' && raw.viewBox > 0 ? raw.viewBox : 24;
       const ref: IconRef = {
@@ -433,13 +440,13 @@ function iconLeaf(c: Ctx): (raw: unknown, path: string) => Resolver<IconRef> | n
       // Solo direcciones web o relativas: nada de javascript: ni data: con scripts.
       if (/^(javascript|vbscript):/i.test(href) || /^data:(?!image\/(png|jpeg|gif|webp|svg\+xml);)/i.test(href)) {
         problem(c, `${path}.image`, c.T.check.unknownIcon(href.slice(0, 24), ''));
-        return null;
+        return () => null;
       }
       const ref: IconRef = { kind: 'image', href, alt: typeof raw.alt === 'string' ? raw.alt : undefined };
       return () => ref;
     }
     problem(c, path, c.T.check.unknownIcon(JSON.stringify(raw)?.slice(0, 40) ?? '', ''));
-    return null;
+    return () => null;
   };
 }
 
@@ -724,12 +731,17 @@ function readLayer(raw: Layer, index: number, env: LayerEnv): LayerModel | null 
   const E = exprLeaf(c);
   const ch: LayerModel['ch'] = {};
   const placeFields: LayerModel['placeFields'] = {};
-  for (const key of [...PLACE_CHANNELS, 'size'] as const) {
+  for (const key of [...PLACE_CHANNELS, 'size', 'value'] as const) {
     if (!own(raw, key) || !allowed.includes(key) || raw[key] === undefined) continue;
     const before = c.fields.length;
     const r = value(c, raw[key], `${path}.${key}`, E);
     if (r) ch[key] = r;
-    if (key !== 'size') placeFields[key] = c.fields.splice(before);
+    if (key !== 'size' && key !== 'value') placeFields[key] = c.fields.splice(before);
+  }
+  if (mark === 'spark' && !ch.value) {
+    if (raw.value === undefined)
+      problems.push({ path: `${path}.value`, message: T.check.missing('value', mark), level: 'error' });
+    return null;
   }
 
   // Dónde va la marca, según el sistema de coordenadas del gráfico.
@@ -756,7 +768,7 @@ function readLayer(raw: Layer, index: number, env: LayerEnv): LayerModel | null 
           ? !!(ch.x || ch.y)
           : !!(ch.x && ch.y);
   if (!placed && mark !== 'link') {
-    if (env.coords === 'cartesian' && (mark === 'cell' || mark === 'bar' || mark === 'line')) {
+    if (env.coords === 'cartesian' && (mark === 'cell' || mark === 'bar' || mark === 'line' || mark === 'spark')) {
       for (const k of ['x', 'y'] as const)
         if (!own(raw, k)) problems.push({ path: `${path}.${k}`, message: T.check.missing(k, mark), level: 'error' });
     } else if (env.coords === 'cartesian' && mark === 'rule') {
@@ -871,7 +883,10 @@ function readLayer(raw: Layer, index: number, env: LayerEnv): LayerModel | null 
     weight,
     curve: raw.curve === 'smooth' ? 'smooth' : 'linear',
     points: raw.points === true,
+    area: raw.area === true,
+    extremes: raw.extremes === true,
   };
+  if (mark === 'spark') model.sparks = sparkGroups(model);
   return model;
 }
 
@@ -1043,13 +1058,54 @@ export function scalePosition(s: ColorScaleModel, v: number, group: string): num
   }
   // Todos iguales: al centro de la escala (ni bien ni mal).
   const p = d[1] > d[0] ? Math.max(0, Math.min(1, (v - d[0]) / (d[1] - d[0]))) : 0.5;
-  return s.better === 'low' && s.kind === 'semaforo' ? 1 - p : p;
+  return s.better === 'low' && s.kind === 'traffic-light' ? 1 - p : p;
+}
+
+// ------------------------------------------------------------ Minigráficos
+
+/**
+ * Las series de un minigráfico: las filas de cada celda (misma x, misma y), en el orden de su
+ * periodo si todos son números o fechas, o en el de los datos si son textos ("ene", "feb").
+ */
+function sparkGroups(L: LayerModel): number[][] {
+  const groups = new Map<string, number[]>();
+  for (const k of L.rows) {
+    const row = L.ds.rows[k];
+    const key = `${bandKey(L.ch.x?.(row))}\u0000${bandKey(L.ch.y?.(row))}`;
+    let g = groups.get(key);
+    if (!g) groups.set(key, (g = []));
+    g.push(k);
+  }
+  const period = L.ch.period;
+  const out = [...groups.values()];
+  if (!period) return out;
+  const all = L.rows.map((k) => period(L.ds.rows[k]));
+  const numeric = all.every((v) => typeof v === 'number' || v instanceof Date);
+  const dates = !numeric && all.every((v) => typeof v === 'string' && /^\d{4}-\d{1,2}(-\d{1,2})?$/.test(v));
+  if (!numeric && !dates) return out;
+  const read = (k: number) => (dates ? parseTime(period(L.ds.rows[k])) : toNumber(period(L.ds.rows[k])));
+  return out.map((g) => g.slice().sort((a, b) => read(a) - read(b)));
 }
 
 // ------------------------------------------------------------ Datos que se recorren
 
 function buildItems(model: Model): void {
   for (const L of model.layers) {
+    if (L.sparks) {
+      // Un minigráfico es un solo dato: todas sus filas llevan al mismo.
+      for (const g of L.sparks) {
+        const keys = g.map((k) => `${L.ds.name}\u0000${k}`);
+        let i = keys.map((k) => model.itemOf.get(k)).find((x) => x !== undefined);
+        if (i === undefined) {
+          i = model.items.length;
+          model.items.push({ ds: L.ds, row: g[0], layers: [] });
+        }
+        for (const key of keys) model.itemOf.set(key, i);
+        model.items[i].layers.push(L);
+        model.items[i].spark = g;
+      }
+      continue;
+    }
     for (const k of L.rows) {
       const key = `${L.ds.name}\u0000${k}`;
       let i = model.itemOf.get(key);

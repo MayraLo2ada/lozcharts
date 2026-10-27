@@ -11,19 +11,44 @@
  * de `frame.alpha`, que el núcleo lleva de 0 a 1 con su curva: cada marca entra con un pequeño
  * retraso según su lugar, de izquierda a derecha.
  */
-import type { LozChartOptions, SeriesOptions } from '../types';
-import type { DrawContext, PreparedSeries, SeriesImpl, TooltipFormat, TooltipValue } from '../core/series';
-import type { Theme } from '../core/theme';
-import { attrs, esc } from '../core/dom';
-import { barPath, linePath, r2, type Pt } from '../core/shapes';
-import { fitText } from '../core/axis';
-import { mixOklab, makeRamp, paint, parseColor, textOn, toHex, type RGB } from '../core/color';
-import { valueFormatter } from '../core/format';
-import { niceDomain, numberTicks, chooseTimeInterval, timeTicks } from '../core/ticks';
-import { timeTickLabel } from '../core/format';
-import { fitProjection, geoPath, getMap, projectFeature, rawProjection, type GeoFeature } from '../core/geo';
-import { messages } from '../core/i18n';
-import { fitPositions, forceLayout } from '../series/network';
+import {
+  attrs,
+  barPath,
+  chooseTimeInterval,
+  esc,
+  fitPositions,
+  fitProjection,
+  fitText,
+  forceLayout,
+  geoPath,
+  getMap,
+  linePath,
+  makeRamp,
+  messages,
+  mixOklab,
+  niceDomain,
+  numberTicks,
+  paint,
+  parseColor,
+  projectFeature,
+  r2,
+  rawProjection,
+  textOn,
+  timeTickLabel,
+  timeTicks,
+  toHex,
+  valueFormatter,
+  type DrawContext,
+  type GeoFeature,
+  type LozChartOptions,
+  type PreparedSeries,
+  type RGB,
+  type SeriesImpl,
+  type SeriesOptions,
+  type Theme,
+  type TooltipFormat,
+  type TooltipValue,
+} from '@lozcharts/core';
 import { fillTemplate, toNumber } from './expr';
 import { ICONS } from './icons';
 import { layerTexts } from './texts';
@@ -45,6 +70,7 @@ import {
 import type { LayerFormat, LayerSpec } from './spec';
 
 type Row = Record<string, unknown>;
+type Pt = [number, number];
 
 const FONT = 12;
 const SMALL = 11;
@@ -58,6 +84,8 @@ const PAD = 8;
 const ROW_PITCH = 46;
 const MAX_ROW_PITCH = 64;
 const BAR_MAX = 24;
+/** Ancho mínimo de una columna agrandada con `widths`. */
+const WIDE_MIN = 56;
 const ICON_SIZE = 22;
 const POINT_SIZE = 10;
 /** Tamaño de las marcas que vienen de un campo: diámetros mínimo y máximo (el área va con el valor). */
@@ -66,11 +94,6 @@ const GRID_OPACITY = 0.55;
 /** Parte de la animación que se reparte en retrasos de izquierda a derecha. */
 const STAGGER = 0.45;
 
-/** Colores del semáforo: rojo, ámbar y verde azulado, validados para daltonismo en cada tema. */
-const SEMAFORO: Record<'light' | 'dark', [string, string, string]> = {
-  light: ['#c0283f', '#f0b429', '#12a48c'],
-  dark: ['#cf3d55', '#e0ac2a', '#26b39a'],
-};
 const PALETTE_NAMES = ['violet', 'pink', 'ochre', 'wine', 'green', 'sky', 'coral', 'teal'];
 
 // ------------------------------------------------------------ Opciones
@@ -92,7 +115,7 @@ export function layerOptions(spec: LayerSpec): LozChartOptions {
 
 export function optionsOf(model: Model): LozChartOptions {
   const spec = model.spec;
-  const series: SeriesOptions = { type: 'layers', field: '__v', name: typeof spec.name === 'string' ? spec.name : '' };
+  const series: SeriesOptions = { type: 'layers', field: '__v', name: typeof spec.name === 'string' ? spec.name : model.T.value };
   models.set(series, model);
   const data = model.items.map((it) => ({ __t: headline(model, it), __v: primaryValue(it) }));
   return {
@@ -104,6 +127,7 @@ export function optionsOf(model: Model): LozChartOptions {
     theme: spec.theme,
     height: typeof spec.height === 'number' ? spec.height : undefined,
     animate: spec.animate,
+    background: typeof spec.background === 'boolean' ? spec.background : undefined,
     data,
     xAxis: { field: '__t', title: model.T.item },
     series: [series],
@@ -214,11 +238,17 @@ function tooltipOf(model: Model, i: number, locale: string | undefined): Tooltip
   if (!it) return { value: messages(locale).data.noData };
   const row = it.ds.rows[it.row];
   const loc = locale ?? model.locale;
+  const main = mainLayer(it);
+  if (it.spark && main.mark === 'spark') return sparkTooltip(model, main, it.spark, loc);
   const seen = new Set<string>();
   const details: [string, string][] = [];
   let alt = '';
   for (const L of it.layers) {
-    if (!alt && L.icon) alt = iconAlt(model, L, row, L.icon(row));
+    // Lo que dice el dato en palabras: el `alt` de la capa o el nombre de su ícono.
+    // Una capa con `tooltip: false` (un emoji de adorno encima de una barra) no habla por el dato.
+    const speaks = L.tooltip !== false;
+    if (!alt && speaks && L.alt) alt = fillTemplate(L.alt(row) ?? [], row, writer(L.format, model.locale));
+    if (!alt && speaks && L.icon) alt = iconAlt(model, L, row, L.icon(row));
     for (const line of linesOf(model, L)) {
       if (seen.has(line.label)) continue;
       seen.add(line.label);
@@ -233,31 +263,86 @@ function tooltipOf(model: Model, i: number, locale: string | undefined): Tooltip
   return { value: `${first[0]}: ${first[1]}`, details: rest.length ? rest : undefined };
 }
 
+/** El minigráfico en palabras: de dónde a dónde fue, cuánto cambió y, si se marcan, sus extremos. */
+function sparkTooltip(model: Model, L: LayerModel, group: number[], locale: string): TooltipValue {
+  const T = model.T.spark;
+  const write = writer(L.format, locale, model.spec.currency);
+  const values = group.map((k) => toNumber(L.ch.value?.(L.ds.rows[k]))).filter(isFinite);
+  if (!values.length) return { value: messages(locale).data.noData };
+  const first = values[0];
+  const last = values[values.length - 1];
+  let change: string;
+  try {
+    const opts = L.format && typeof L.format === 'object' ? L.format : { maximumFractionDigits: 2 };
+    change = new Intl.NumberFormat(locale, { ...opts, signDisplay: 'exceptZero' }).format(last - first);
+  } catch {
+    change = write(last - first);
+  }
+  const details: [string, string][] = [
+    [T.first, write(first)],
+    [T.last, write(last)],
+    [T.change, change],
+  ];
+  if (L.extremes) details.push([T.lowest, write(Math.min(...values))], [T.highest, write(Math.max(...values))]);
+  return { value: `${write(first)} → ${write(last)}`, details };
+}
+
 // ------------------------------------------------------------ Escalas de posición
 
 interface PosScale {
   type: AxisModel['type'];
   /** px del centro (band) o del valor. */
   at(v: unknown): number;
-  /** Paso de cada categoría (band), o 0. */
+  /** Paso de una categoría de ancho 1 (band), o 0. */
   pitch: number;
+  /** Paso de la categoría de un valor: más ancho si `widths` se lo da (band). */
+  pitchOf(v: unknown): number;
   ticks: { at: number; label: string }[];
   /** Para un eje de números: dónde está el cero (o la base visible). */
   base: number;
 }
 
+/**
+ * Escala de categorías. Cada una ocupa lo mismo, salvo las que `widths` agranda ({ "Racha": 3 }):
+ * una columna de resumen junto a una tabla de días entra sin achicar las demás.
+ */
 function bandScale(a: AxisModel, from: number, length: number, maxPitch = Infinity): PosScale {
-  const n = Math.max(1, a.keys.length);
-  const pitch = Math.min(maxPitch, length / n);
-  const index = new Map(a.keys.map((k, i) => [k, i]));
+  const widths = a.spec.widths ?? {};
+  const weight = (k: string) => {
+    const w = widths[k];
+    return typeof w === 'number' && w > 0 ? w : 1;
+  };
+  const total = Math.max(
+    1,
+    a.keys.reduce((s, k) => s + weight(k), 0),
+  );
+  let pitch = Math.min(maxPitch, length / total);
+  // En una pantalla angosta, una columna ancha no baja de WIDE_MIN px (su ícono y su número
+  // tienen que caber); las demás se reparten lo que queda.
+  const wide = a.keys.filter((k) => weight(k) > 1);
+  const wideW = wide.reduce((s, k) => s + weight(k), 0);
+  if (wide.length && pitch * Math.min(...wide.map(weight)) < WIDE_MIN) {
+    const rest = total - wideW;
+    const fixed = wide.length * WIDE_MIN;
+    if (rest > 0 && length > fixed) pitch = Math.min(maxPitch, (length - fixed) / rest);
+  }
+  const widthOf = (k: string) => (weight(k) > 1 ? Math.max(weight(k) * pitch, WIDE_MIN) : pitch);
+  const start = new Map<string, number>();
+  let acc = 0;
+  for (const k of a.keys) {
+    start.set(k, acc);
+    acc += widthOf(k);
+  }
+  const center = (k: string) => from + start.get(k)! + widthOf(k) / 2;
   return {
     type: 'band',
     pitch,
+    pitchOf: (v) => widthOf(bandKey(v)),
     at: (v) => {
-      const k = index.get(bandKey(v));
-      return k === undefined ? NaN : from + (k + 0.5) * pitch;
+      const k = bandKey(v);
+      return start.has(k) ? center(k) : NaN;
     },
-    ticks: a.keys.map((k, i) => ({ at: from + (i + 0.5) * pitch, label: k })),
+    ticks: a.keys.map((k) => ({ at: center(k), label: k })),
     base: from,
   };
 }
@@ -283,6 +368,7 @@ function continuousScale(a: AxisModel, from: number, to: number, count: number, 
   return {
     type: a.type,
     pitch: 0,
+    pitchOf: () => 0,
     at: (v) => {
       const n = axisValue(a, v) as number;
       return isFinite(n) ? map(n) : NaN;
@@ -323,12 +409,15 @@ interface Mark {
   shape: Shape | null;
   /** Para barras: la base y la punta en el eje del valor, y si crece en horizontal. */
   bar?: { along: number; thick: number; base: number; end: number; horizontal: boolean };
+  /** Para un minigráfico: sus puntos, cuál es el mínimo y el máximo, y la base del área. */
+  spark?: { pts: Pt[]; min: number; max: number; floor: number };
   /** Para reglas y enlaces: los dos extremos. */
   seg?: [number, number, number, number];
   /** Texto: anclaje. */
   anchor?: 'start' | 'middle' | 'end';
-  /** Clave de la celda que tiene debajo (para el color de la tinta), si cae en una. */
+  /** Clave de la celda que tiene debajo (para el color de la tinta), si cae en una, y su ancho. */
   cell?: string;
+  cellW?: number;
   /** Fracción de 0 a 1 de su lugar de izquierda a derecha: el retraso de su entrada. */
   delay: number;
 }
@@ -416,6 +505,8 @@ function build(ctx: DrawContext, model: Model, key: string): Geometry {
   const cellW = g.X?.type === 'band' ? g.X.pitch : 0;
   const cellH = g.Y?.type === 'band' ? g.Y.pitch : 0;
   const gap = Math.min(cellW || 99, cellH || 99) < 8 ? 1 : GAP;
+  /** Ancho de la columna de una fila (las de `widths` son más anchas). */
+  const colW = (L: LayerModel, row: Row) => (g.X?.type === 'band' ? g.X.pitchOf(L.ch.x?.(row)) : 0);
   // En un mapa o una red grandes, íconos, puntos y nombres crecen con el área (hasta un 60 %): a
   // 2560 px no quedan como hormigas. En ejes, el tamaño es el pedido.
   const zoom = model.coords === 'cartesian' ? 1 : Math.max(1, Math.min(1.6, Math.min(width, height) / 620));
@@ -458,12 +549,19 @@ function build(ctx: DrawContext, model: Model, key: string): Geometry {
       g.lines[li] = [...groups.values()];
       return;
     }
+    if (L.mark === 'spark') {
+      for (const group of L.sparks ?? []) {
+        const m = sparkMark(model, L, group, place, colW(L, L.ds.rows[group[0]]), cellH, gap, x0, W);
+        if (m) marks.push(m);
+      }
+      return;
+    }
     for (const k of L.rows) {
       const row = L.ds.rows[k];
       if (L.mark === 'cell') {
         const [cx, cy] = place(L, row);
         if (!isFinite(cx) || !isFinite(cy)) continue;
-        const w = (cellW || 14) - gap;
+        const w = (colW(L, row) || 14) - gap;
         const h = (cellH || 14) - gap;
         const m = mark(model, L, k, cx, cy, Math.min(w, h), { kind: 'rect', x: cx - w / 2, y: cy - h / 2, w, h }, x0, W);
         m.cell = cellKey(L, row);
@@ -486,17 +584,18 @@ function build(ctx: DrawContext, model: Model, key: string): Geometry {
       const fallback =
         L.mark === 'icon' ? (bothBand ? Math.min(ICON_SIZE, cellH * 0.62) : ICON_SIZE) : L.mark === 'point' ? POINT_SIZE : FONT;
       const inCell = bothBand && model.coords === 'cartesian';
+      const cw = inCell ? colW(L, row) : 0;
       let size = (sizeOf(row) ?? fallback) * zoom;
       // En una celda angosta (una tabla en un teléfono) el ícono se achica hasta caber; si ni así
       // se distingue, no va: el color y el tooltip siguen diciendo lo mismo.
       if (inCell && L.mark === 'icon') {
-        size = Math.min(size, (cellW - gap) * 0.8, (cellH - gap) * 0.8);
+        size = Math.min(size, (cw - gap) * 0.8, (cellH - gap) * 0.8);
         if (size < 9) continue;
       }
       const marker = L.mark === 'text' && !inCell ? markers.get(`${L.ds.name}\u0000${k}`) : undefined;
       const [ox, oy, anchor] = offset(
         L.position,
-        inCell ? cellW - gap : 0,
+        inCell ? cw - gap : 0,
         inCell ? cellH - gap : 0,
         size,
         L.mark === 'text',
@@ -507,7 +606,10 @@ function build(ctx: DrawContext, model: Model, key: string): Geometry {
       const shape: Shape | null = L.mark === 'text' ? null : { kind: 'circle', cx, cy, r: size / 2 };
       const m = mark(model, L, k, cx, cy, size, shape, x0, W);
       m.anchor = anchor;
-      if (inCell) m.cell = cellKey(L, row);
+      if (inCell) {
+        m.cell = cellKey(L, row);
+        m.cellW = cw;
+      }
       marks.push(m);
     }
   });
@@ -563,7 +665,7 @@ function avoidLabels(g: Geometry, model: Model, measure: (s: string) => number):
     if (L.mark !== 'text') return;
     g.marks[li] = g.marks[li].filter((m) => {
       // Dentro de una celda, el texto va solo si cabe entero (como los valores de un mapa de calor).
-      if (m.cell) return width(m, L) <= (g.X?.pitch ?? Infinity) - 6;
+      if (m.cell) return width(m, L) <= (m.cellW ?? Infinity) - 6;
       const w = width(m, L);
       const h = m.size + 2;
       const box = (x: number, anchor: Mark['anchor']): [number, number, number, number] => {
@@ -606,6 +708,54 @@ function headroom(model: Model): number {
     room = Math.max(room, rise + 2);
   }
   return room;
+}
+
+/**
+ * Un minigráfico en su celda: los puntos repartidos a lo ancho en el orden del periodo y, en alto,
+ * del mínimo al máximo de su propia serie (cada fila se compara consigo misma, como al leerla).
+ */
+function sparkMark(
+  model: Model,
+  L: LayerModel,
+  group: number[],
+  place: (L: LayerModel, row: Row) => [number, number],
+  cellW: number,
+  cellH: number,
+  gap: number,
+  x0: number,
+  W: number,
+): Mark | null {
+  const [cx, cy] = place(L, L.ds.rows[group[0]]);
+  if (!isFinite(cx) || !isFinite(cy)) return null;
+  const boxW = (cellW || 80) - gap;
+  const boxH = (cellH || 30) - gap;
+  // Aire para el punto final y los extremos: no tocan el borde de la celda.
+  const w = Math.max(8, boxW - 16);
+  const h = Math.max(6, boxH - 14);
+  const values = group.map((k) => toNumber(L.ch.value?.(L.ds.rows[k])));
+  const ok = values.filter(isFinite);
+  if (!ok.length) return null;
+  const lo = Math.min(...ok);
+  const hi = Math.max(...ok);
+  const n = values.length;
+  const pts: Pt[] = values.map((v, i) => [
+    cx - w / 2 + (n > 1 ? (i / (n - 1)) * w : w / 2),
+    isFinite(v) ? cy + h / 2 - (hi > lo ? (v - lo) / (hi - lo) : 0.5) * h : NaN,
+  ]);
+  const m = mark(
+    model,
+    L,
+    group[0],
+    cx,
+    cy,
+    Math.min(boxW, boxH),
+    { kind: 'rect', x: cx - boxW / 2, y: cy - boxH / 2, w: boxW, h: boxH },
+    x0,
+    W,
+  );
+  m.spark = { pts, min: values.indexOf(lo), max: values.indexOf(hi), floor: cy + h / 2 };
+  m.cell = cellKey(L, L.ds.rows[group[0]]);
+  return m;
 }
 
 function cellKey(L: LayerModel, row: Row): string {
@@ -774,7 +924,8 @@ function cartesian(g: Geometry, model: Model, measure: (s: string) => number): (
     if (ya.type === 'band') {
       const max = width * 0.32;
       g.rowLabels = ya.keys.map((k) => fitText(k, max, measure));
-      labelW = yAt ? Math.min(max, Math.max(0, ...g.rowLabels.map(measure))) : 0;
+      // Las categorías van en 500: un poco más anchas que lo que mide la letra normal.
+      labelW = yAt ? Math.min(max, Math.max(0, ...g.rowLabels.map(measure)) * 1.06 + 2) : 0;
       Y = bandScale(ya, top, plotH, cells ? MAX_ROW_PITCH : MAX_ROW_PITCH * 1.5);
     } else {
       // y crece hacia arriba: se arma del borde de abajo al de arriba.
@@ -866,22 +1017,24 @@ function network(g: Geometry, model: Model): (L: LayerModel, row: Row) => [numbe
 
 // ------------------------------------------------------------ Color
 
-/** Color con nombre del tema; null si no es un nombre (un #hex se usa tal cual). */
+/**
+ * Un color con nombre, del tema del gráfico: el estado (good, warn, bad), los grises y la paleta
+ * (la de LozCharts o la de la opción `palette`) por nombre o por lugar. Un #hex queda tal cual.
+ */
 function named(token: string, th: Theme): string {
-  const sem = SEMAFORO[th.name];
   switch (token) {
     case 'bad':
-      return sem[0];
+      return th.bad;
     case 'warn':
-      return sem[1];
+      return th.warn;
     case 'good':
-      return sem[2];
+      return th.good;
     case 'text':
       return th.text;
     case 'muted':
       return th.textMuted;
     case 'grid':
-      return th.zero;
+      return th.grid;
   }
   const slot = PALETTE_NAMES.indexOf(token);
   if (slot >= 0) return th.palette[slot] ?? th.other;
@@ -889,25 +1042,24 @@ function named(token: string, th: Theme): string {
   return token;
 }
 
-/** Semáforo en OKLab: de rojo a ámbar en la primera mitad y de ámbar a verde en la segunda. */
-function semaforo(p: number, th: Theme): RGB {
-  const [bad, warn, good] = SEMAFORO[th.name].map((c) => parseColor(c)!);
+/** Semáforo en OKLab con los colores de estado del tema: de mal a cuidado y de cuidado a bien. */
+function trafficLight(p: number, th: Theme): RGB {
+  const [bad, warn, good] = [th.bad, th.warn, th.good].map((c) => parseColor(c) ?? [0.5, 0.5, 0.5]) as RGB[];
   const q = Math.max(0, Math.min(1, p));
   return q < 0.5 ? mixOklab(bad, warn, q * 2) : mixOklab(warn, good, (q - 0.5) * 2);
 }
 
-function scaleColor(s: ColorScaleModel, v: number, group: string, th: Theme): string {
+/** Color de un valor en su escala. `base`: el color de la serie, del que salen las escalas de un tono. */
+function scaleColor(s: ColorScaleModel, v: number, group: string, th: Theme, base: string): string {
   const p = scalePosition(s, v, group);
-  if (s.kind === 'semaforo') return toHex(semaforo(p, th));
-  const ramp = makeRamp(s.kind, th, th.palette[0]);
-  const out = paint(ramp, p);
-  return out.fill;
+  if (s.kind === 'traffic-light') return toHex(trafficLight(p, th));
+  return paint(makeRamp(s.kind, th, base), p).fill;
 }
 
-function resolveColor(ref: ColorRef | null, th: Theme): string | null {
+function resolveColor(ref: ColorRef | null, th: Theme, base: string): string | null {
   if (ref === null) return null;
   if (typeof ref === 'string') return named(ref, th);
-  return scaleColor(ref.scale, ref.v, ref.group, th);
+  return scaleColor(ref.scale, ref.v, ref.group, th, base);
 }
 
 // ------------------------------------------------------------ Dibujo
@@ -922,6 +1074,8 @@ function draw(ctx: DrawContext, model: Model): string {
   const g = geometry(ctx, model);
   lastGeometry.set(ctx.frame.ps, g);
   const th = ctx.theme;
+  // El color de la serie: el primero de la paleta del gráfico (la de LozCharts o la de `palette`).
+  const base = ctx.color;
   const t = ctx.purpose === 'export' ? 1 : ctx.frame.alpha;
   const dimmed = (item: number) => item >= 0 && !!ctx.isDimmed?.(item);
   let out = '';
@@ -937,7 +1091,7 @@ function draw(ctx: DrawContext, model: Model): string {
     const write = writer(L.format, model.locale, model.spec.currency);
     let s = '';
     if (L.mark === 'line') {
-      s += lineMarkup(ctx, L, g.lines[li], t);
+      s += lineMarkup(ctx, L, g.lines[li], t, base);
       out += s;
       return;
     }
@@ -946,14 +1100,14 @@ function draw(ctx: DrawContext, model: Model): string {
       const p = progress(t, m.delay);
       if (p <= 0) continue;
       const colorRef = L.color?.(row) ?? null;
-      const own = resolveColor(colorRef, th);
+      const own = resolveColor(colorRef, th, base);
       const opacity = dimmed(m.item) ? 0.25 : L.opacity;
       const under = m.cell !== undefined ? cells.get(m.cell) : undefined;
       // Sobre una celda, la tinta de más contraste con ella; fuera de una celda, con un halo.
       const ink = under ? textOn(under, [th.text, th.surface, '#000000', '#ffffff']) : th.text;
       switch (L.mark) {
         case 'cell': {
-          const fill = own ?? th.palette[0];
+          const fill = own ?? base;
           cells.set(m.cell!, parseColor(fill));
           const sh = m.shape as Extract<Shape, { kind: 'rect' }>;
           const k = 0.55 + 0.45 * p;
@@ -968,18 +1122,19 @@ function draw(ctx: DrawContext, model: Model): string {
           // La barra vertical se dibuja en su plano; la horizontal, en el plano reflejado.
           const d = barPath(b.along - b.thick / 2, b.thick, b.base, end, 4);
           if (!d) break;
-          s += `<path${attrs({ d, fill: own ?? th.palette[0], opacity, transform: b.horizontal ? 'matrix(0 1 1 0 0 0)' : undefined })}/>`;
+          s += `<path${attrs({ d, fill: own ?? base, opacity, transform: b.horizontal ? 'matrix(0 1 1 0 0 0)' : undefined })}/>`;
           break;
         }
         case 'point': {
           const r = (m.size / 2) * pop(p);
-          s += `<circle${attrs({ cx: r2(m.cx), cy: r2(m.cy), r: r2(Math.max(0, r)), fill: own ?? th.palette[0], stroke: th.surface, 'stroke-width': 1.5, opacity })}/>`;
+          s += `<circle${attrs({ cx: r2(m.cx), cy: r2(m.cy), r: r2(Math.max(0, r)), fill: own ?? base, stroke: th.surface, 'stroke-width': 1.5, opacity })}/>`;
           break;
         }
         case 'icon': {
           const ref = L.icon?.(row) ?? null;
           if (!ref) break;
-          const color = own ?? (under ? ink : th.text);
+          // Sin color propio: sobre una celda, la tinta de más contraste; fuera, el de la serie.
+          const color = own ?? (under ? ink : base);
           s += iconMarkup(ref, m.cx, m.cy, m.size * pop(p), color, th, !under, mul(opacity, Math.min(1, p * 2)));
           break;
         }
@@ -1005,6 +1160,9 @@ function draw(ctx: DrawContext, model: Model): string {
           })}>${esc(str)}</text>`;
           break;
         }
+        case 'spark':
+          s += sparkMarkup(m, own ?? base, th, L, p, opacity);
+          break;
         case 'rule':
         case 'link': {
           const [ax, ay, bx, by] = m.seg!;
@@ -1058,12 +1216,14 @@ function mul(a: number | undefined, b: number): number | undefined {
   return v >= 0.999 ? undefined : r2(v);
 }
 
-function lineMarkup(ctx: DrawContext, L: LayerModel, lines: LineGeo[], t: number): string {
+function lineMarkup(ctx: DrawContext, L: LayerModel, lines: LineGeo[], t: number, base: string): string {
   const th = ctx.theme;
   let s = '';
   lines.forEach((line, k) => {
     const row = L.ds.rows[line.rows[0]];
-    const color = resolveColor(L.color?.(row) ?? null, th) ?? th.palette[k % th.palette.length] ?? th.palette[0];
+    // Una línea va en el color de la serie; con `group`, cada grupo con el suyo, en el orden de la paleta.
+    const own = resolveColor(L.color?.(row) ?? null, th, base);
+    const color = own ?? (lines.length > 1 ? (th.palette[k % th.palette.length] ?? base) : base);
     const width = L.ch.size ? (sizer(L)(row) ?? 2) : 2;
     const d = linePath(line.points, L.curve === 'smooth');
     const p = t >= 0.999 ? 1 : clamp01(t);
@@ -1195,62 +1355,97 @@ function axesMarkup(ctx: DrawContext, model: Model, g: Geometry): string {
   return s;
 }
 
+/**
+ * Leyenda de la escala de color, arriba a la derecha como la del mapa de calor: una barra de 120 px
+ * con sus extremos debajo (los números o, si cada fila o columna tiene los suyos, peor y mejor). Con
+ * umbrales, una muestra por tramo con su rango.
+ */
 function legendMarkup(ctx: DrawContext, model: Model, g: Geometry): string {
   const s = g.legend;
   if (!s) return '';
   const th = ctx.theme;
   const T = model.T;
-  const y = 10;
+  const base = ctx.color;
   const fmt = numberFormat(undefined, model.locale);
+  const small = (str: string) => ctx.measure(str) * (SMALL / FONT);
   let out = '';
-  const label = (x: number, str: string, anchor: string, fill = th.textMuted) =>
-    `<text${attrs({ x: r2(x), y, fill, 'font-size': SMALL, 'text-anchor': anchor, 'dominant-baseline': 'central' })}>${esc(str)}</text>`;
+  const label = (x: number, y: number, str: string, anchor: string) =>
+    `<text${attrs({ x: r2(x), y: r2(y), fill: th.textMuted, 'font-size': SMALL, 'text-anchor': anchor, 'dominant-baseline': 'central' })}>${esc(str)}</text>`;
   if (s.thresholds) {
-    // Tramos fijos: una muestra y su rango, de lo peor a lo mejor.
     const cuts = s.thresholds.map(fmt);
     const bins = cuts.length + 1;
     const items: { text: string; color: string }[] = [];
     for (let b = 0; b < bins; b++) {
       const text = b === 0 ? T.below(cuts[0]) : b === bins - 1 ? T.above(cuts[b - 1]) : T.between(cuts[b - 1], cuts[b]);
       const v = b === 0 ? s.thresholds[0] - 1 : s.thresholds[b - 1];
-      items.push({ text, color: scaleColor(s, v, '', th) });
+      items.push({ text, color: scaleColor(s, v, '', th, base) });
     }
     if (s.better === 'low') items.reverse();
     let x = ctx.width;
     for (let k = items.length - 1; k >= 0; k--) {
-      const w = ctx.measure(items[k].text) * (SMALL / FONT);
-      x -= w;
-      out = label(x, items[k].text, 'start') + out;
+      x -= small(items[k].text);
+      out = label(x, 6, items[k].text, 'start') + out;
       x -= 16;
-      out = `<rect${attrs({ x: r2(x), y: y - 5, width: 10, height: 10, rx: 2, fill: items[k].color })}/>` + out;
+      out = `<rect${attrs({ x: r2(x), y: 1, width: 10, height: 10, rx: 2, fill: items[k].color })}/>` + out;
       x -= 14;
     }
     return `<g aria-hidden="true">${out}</g>`;
   }
-  // Escala continua: una barra de 120 px con sus extremos. Por fila o por columna los números
-  // cambian en cada grupo, así que se dice peor y mejor.
-  const words = s.by !== 'all' || s.kind === 'semaforo';
   const d = s.domains.get('') ?? [...s.domains.values()][0];
-  const [lo, hi] = words && s.kind === 'semaforo' ? [T.worse, T.better] : [fmt(d[0]), fmt(d[1])];
-  const scaleW = (str: string) => ctx.measure(str) * (SMALL / FONT);
-  const barW = Math.min(120, Math.max(48, ctx.width * 0.18));
-  const caption = s.by === 'row' ? T.byRow : s.by === 'column' ? T.byColumn : '';
-  let x = ctx.width - scaleW(hi);
-  out += label(x, hi, 'start', th.text);
-  x -= 8 + barW;
-  const steps = 24;
+  const words = s.by !== 'all' && s.kind === 'traffic-light';
+  const [lo, hi] = words
+    ? [T.worse, T.better]
+    : s.better === 'low' && s.kind === 'traffic-light'
+      ? [fmt(d[1]), fmt(d[0])]
+      : [fmt(d[0]), fmt(d[1])];
+  const barW = Math.min(120, Math.max(64, ctx.width * 0.2));
+  const x0 = ctx.width - barW;
+  const steps = 30;
   for (let k = 0; k < steps; k++) {
     const p = (k + 0.5) / steps;
-    let color: string;
-    if (s.kind === 'semaforo') color = toHex(semaforo(p, th));
-    else if (s.kind === 'diverging') color = paint(makeRamp('diverging', th, th.palette[0]), p * 2 - 1).fill;
-    else color = paint(makeRamp('sequential', th, th.palette[0]), p).fill;
-    out += `<rect${attrs({ x: r2(x + (k * barW) / steps), y: y - 4, width: r2(barW / steps + (k < steps - 1 ? 0.5 : 0)), height: 8, fill: color })}/>`;
+    const color =
+      s.kind === 'traffic-light'
+        ? toHex(trafficLight(p, th))
+        : paint(makeRamp(s.kind, th, base), s.kind === 'diverging' ? p * 2 - 1 : p).fill;
+    out += `<rect${attrs({ x: r2(x0 + (k * barW) / steps), y: 0, width: r2(barW / steps + (k < steps - 1 ? 0.5 : 0)), height: 8, fill: color })}/>`;
   }
-  x -= 8;
-  out += label(x, lo, 'end', th.text);
-  if (caption) out += label(x - scaleW(lo) - 10, caption, 'end');
+  const y = 8 + 4 + SMALL / 2;
+  out += label(x0, y, lo, 'start') + label(ctx.width, y, hi, 'end');
+  // "por fila": a la izquierda de la barra, a su altura.
+  const caption = s.by === 'row' ? T.byRow : s.by === 'column' ? T.byColumn : '';
+  if (caption) out += label(x0 - 8, 4, caption, 'end');
   return `<g aria-hidden="true">${out}</g>`;
+}
+
+/** Minigráfico: la línea, el área si se pide, los extremos huecos y el último punto lleno. */
+function sparkMarkup(m: Mark, color: string, th: Theme, L: LayerModel, p: number, opacity?: number): string {
+  const sp = m.spark;
+  if (!sp || !sp.pts.length) return '';
+  let s = '';
+  const d = linePath(sp.pts, L.curve === 'smooth');
+  if (L.area && sp.pts.length > 1) {
+    const first = sp.pts[0];
+    const last = sp.pts[sp.pts.length - 1];
+    s += `<path${attrs({ d: `${d}L${r2(last[0])},${r2(sp.floor)}L${r2(first[0])},${r2(sp.floor)}Z`, fill: color, 'fill-opacity': r2(0.16 * p) })}/>`;
+  }
+  s += `<path${attrs({
+    d,
+    fill: 'none',
+    stroke: color,
+    'stroke-width': 1.5,
+    'stroke-linecap': 'round',
+    'stroke-linejoin': 'round',
+    pathLength: p < 1 ? 1 : undefined,
+    'stroke-dasharray': p < 1 ? `${r2(p)} 1` : undefined,
+  })}/>`;
+  if (p >= 1) {
+    if (L.extremes)
+      for (const k of [sp.min, sp.max])
+        s += `<circle${attrs({ cx: r2(sp.pts[k][0]), cy: r2(sp.pts[k][1]), r: 2.25, fill: th.surface, stroke: color, 'stroke-width': 1.25 })}/>`;
+    const [lx, ly] = sp.pts[sp.pts.length - 1];
+    s += `<circle${attrs({ cx: r2(lx), cy: r2(ly), r: 2.75, fill: color, stroke: th.surface, 'stroke-width': 1.25 })}/>`;
+  }
+  return opacity !== undefined ? `<g opacity="${opacity}">${s}</g>` : s;
 }
 
 // ------------------------------------------------------------ Hover, puntero y teclado
@@ -1334,7 +1529,11 @@ export const layers: SeriesImpl = {
     const model = modelOf(ps);
     if (!model) return undefined;
     const legend = legendScale(model) ? LEGEND_H : 0;
-    if (model.coords === 'geo') return Math.round(Math.max(360, Math.min(860, width * 0.78)));
+    if (model.coords === 'geo') {
+      // El mundo entero es el doble de ancho que de alto; una región encuadrada, más alta.
+      const share = model.spec.geo?.fit === 'all' ? 0.52 : 0.78;
+      return Math.round(Math.max(300, Math.min(860, width * share + legend)));
+    }
     if (model.coords === 'network') return Math.round(Math.max(380, Math.min(780, width * 0.66)));
     if (model.y?.type === 'band') {
       const rows = model.y.keys.length;
@@ -1371,8 +1570,8 @@ export const layers: SeriesImpl = {
     const it = model?.items[i];
     if (!model || !it) return null;
     const L = mainLayer(it);
-    const own = resolveColor(L.color?.(it.ds.rows[it.row]) ?? null, ctx.theme);
-    return own ?? ctx.theme.palette[0];
+    const own = resolveColor(L.color?.(it.ds.rows[it.row]) ?? null, ctx.theme, ctx.color);
+    return own ?? ctx.color;
   },
   step(ps, i, key) {
     const g = lastGeometry.get(ps);

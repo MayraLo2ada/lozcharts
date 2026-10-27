@@ -24,6 +24,13 @@ export interface Theme {
   other: string;
   /** Series de contexto (las que no están en `emphasis`): gris que se queda atrás. */
   context: string;
+  /**
+   * Estado: bien, cuidado y mal. Rojo, ámbar y verde azulado, distinguibles con daltonismo (el
+   * verde tira a azul para separarse del rojo). Son los extremos y el centro del semáforo.
+   */
+  good: string;
+  warn: string;
+  bad: string;
 }
 
 export const LIGHT: Theme = {
@@ -40,6 +47,9 @@ export const LIGHT: Theme = {
   tooltipShadow: '0 4px 16px rgba(11, 11, 11, 0.10)',
   other: '#8a8984',
   context: '#a9a8a1',
+  good: '#12a48c',
+  warn: '#f0b429',
+  bad: '#c0283f',
 };
 
 export const DARK: Theme = {
@@ -56,6 +66,9 @@ export const DARK: Theme = {
   tooltipShadow: '0 4px 16px rgba(0, 0, 0, 0.45)',
   other: '#8e8d86',
   context: '#6b6a65',
+  good: '#26b39a',
+  warn: '#e0ac2a',
+  bad: '#cf3d55',
 };
 
 /** Máximo de colores categóricos: más series se agrupan o se dividen, nunca se cicla. */

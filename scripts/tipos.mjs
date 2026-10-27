@@ -6,7 +6,8 @@
 //    cada ruta relativa pasa a './chart.js' (o './core/index.js' si es una carpeta).
 // 2. require. Para quien usa CommonJS con TypeScript (node16), `require('@lozcharts/core')` necesita
 //    tipos CommonJS: index.d.cts, que es la clase LozChart con todo lo demás colgado de ella,
-//    igual que el build UMD; y maps/register-world.d.cts para el mapa.
+//    igual que el build UMD; maps/register-world.d.cts para el mapa y layers/index.d.cts para los
+//    gráficos por capas.
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
@@ -89,5 +90,33 @@ writeFileSync(
   `import type { Topology } from '../core/geo.js' with { 'resolution-mode': 'import' };
 
 export declare const world: Topology;
+`,
+);
+
+// require('@lozcharts/core/layers') devuelve { layers, layerOptions, checkLayers, ICON_NAMES }; sus
+// tipos (LayerSpec, Layer…) van como alias, igual que los de LozChart.
+const capas = [...readFileSync(join(raiz, 'layers/spec.d.ts'), 'utf8').matchAll(/export (?:interface|type) (\w+)(<[^>]*>)?/g)];
+writeFileSync(
+  join(raiz, 'layers/index.d.cts'),
+  `// Tipos para require('@lozcharts/core/layers').
+import type * as api from './index.js' with { 'resolution-mode': 'import' };
+
+declare const capas: typeof api;
+declare namespace capas {
+${capas
+  .map(([, nombre, genericos]) => {
+    const p = genericos
+      ? genericos
+          .slice(1, -1)
+          .split(',')
+          .map((x) => x.trim().split(/[\s=]/)[0])
+      : null;
+    return p
+      ? `  export type ${nombre}<${p.join(', ')}> = api.${nombre}<${p.join(', ')}>;`
+      : `  export type ${nombre} = api.${nombre};`;
+  })
+  .join('\n')}
+}
+export = capas;
 `,
 );

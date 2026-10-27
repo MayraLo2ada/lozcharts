@@ -1,6 +1,6 @@
 {
   "name": "@lozcharts/core",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Charts for the web: 26 accessible types (keyboard, screen reader, color-blind safe), light and dark mode, zoom, maps and a globe, zero dependencies. Works with plain HTML, React, Angular, Vue, Svelte and Django + HTMX. Docs in English, Spanish and Portuguese.",
   "type": "module",
   "main": "./dist/lozcharts.umd.cjs",
@@ -27,6 +27,16 @@
       "types": "./dist/types/element.d.ts",
       "default": "./dist/element.js"
     },
+    "./layers": {
+      "import": {
+        "types": "./dist/types/layers/index.d.ts",
+        "default": "./dist/layers.js"
+      },
+      "require": {
+        "types": "./dist/types/layers/index.d.cts",
+        "default": "./dist/layers.cjs"
+      }
+    },
     "./maps/world": {
       "import": {
         "types": "./dist/types/maps/register-world.d.ts",
@@ -47,6 +57,9 @@
       "element": [
         "./dist/types/element.d.ts"
       ],
+      "layers": [
+        "./dist/types/layers/index.d.ts"
+      ],
       "maps/world": [
         "./dist/types/maps/register-world.d.ts"
       ]
@@ -60,7 +73,7 @@
   ],
   "sideEffects": true,
   "scripts": {
-    "build": "tsc --noEmit && vite build && LC_FORMAT=umd vite build && LC_FORMAT=react vite build && LC_FORMAT=element vite build && LC_FORMAT=world vite build && LC_FORMAT=world-umd vite build && LC_FORMAT=world-cjs vite build && cp dist/lozcharts.umd.js dist/lozcharts.umd.cjs && tsc -p tsconfig.types.json && node scripts/tipos.mjs",
+    "build": "tsc --noEmit && vite build && LC_FORMAT=umd vite build && LC_FORMAT=react vite build && LC_FORMAT=element vite build && LC_FORMAT=world vite build && LC_FORMAT=world-umd vite build && LC_FORMAT=world-cjs vite build && LC_FORMAT=layers vite build && LC_FORMAT=layers-cjs vite build && LC_FORMAT=layers-umd vite build && cp dist/lozcharts.umd.js dist/lozcharts.umd.cjs && tsc -p tsconfig.types.json && node scripts/tipos.mjs",
     "test": "esbuild test/*.test.ts --bundle --platform=node --format=esm --outdir=.pruebas --log-level=warning && node --test \".pruebas/*.test.js\"",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",

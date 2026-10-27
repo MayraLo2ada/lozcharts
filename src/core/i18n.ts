@@ -403,7 +403,6 @@ const es: Messages = {
     timeline: { label: 'línea de tiempo', items: ['tramo', 'tramos'] },
     wordcloud: { label: 'nube de palabras', items: ['palabra', 'palabras'] },
     network: { label: 'red', items: ['conexión', 'conexiones'] },
-    layers: { label: 'capas', items: ['dato', 'datos'] },
   },
   warnings: {
     noOptions: "LozCharts: faltan las opciones. Pasa un objeto como { data, xAxis: { field: 'mes' }, series: [...] }.",
@@ -648,7 +647,6 @@ const en: Messages = {
     timeline: { label: 'timeline', items: ['entry', 'entries'] },
     wordcloud: { label: 'word cloud', items: ['word', 'words'] },
     network: { label: 'network graph', items: ['connection', 'connections'] },
-    layers: { label: 'layered chart', items: ['item', 'items'] },
   },
   warnings: {
     noOptions: "LozCharts: the options are missing. Pass an object like { data, xAxis: { field: 'month' }, series: [...] }.",
@@ -892,7 +890,6 @@ const pt: Messages = {
     timeline: { label: 'linha do tempo', items: ['item', 'itens'] },
     wordcloud: { label: 'nuvem de palavras', items: ['palavra', 'palavras'] },
     network: { label: 'rede', items: ['conexão', 'conexões'] },
-    layers: { label: 'camadas', items: ['item', 'itens'] },
   },
   warnings: {
     noOptions: "LozCharts: faltam as opções. Passe um objeto como { data, xAxis: { field: 'mes' }, series: [...] }.",

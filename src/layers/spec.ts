@@ -13,7 +13,7 @@
  *
  * Cualquier canal acepta una condición: { "if": "valor >= meta", "then": …, "else": … }.
  */
-import type { FormatSpec, ThemeName } from '../types';
+import type { FormatSpec, ThemeName } from '@lozcharts/core';
 
 /** Una expresión: "valor", "valor - meta", "abs(delta) > 2 and zona == 'Costa'", o un número fijo. */
 export type Expr = string | number;
@@ -46,10 +46,10 @@ export interface ColorScale {
   /** El valor que se colorea (una expresión). */
   field: string;
   /**
-   * 'semaforo' (rojo, amarillo, verde; por defecto), 'sequential' (un tono, del claro al color de la
+   * 'traffic-light' (semáforo: rojo, ámbar y verde del tema; por defecto), 'sequential' (un tono, del claro al color de la
    * serie) o 'diverging' (dos tonos alrededor del cero).
    */
-  scale?: 'semaforo' | 'sequential' | 'diverging';
+  scale?: 'traffic-light' | 'sequential' | 'diverging';
   /**
    * Con qué se compara cada valor: 'all' (todos los datos, por defecto), 'row' (los de su fila: la
    * misma y) o 'column' (los de su columna: la misma x). Así una fila con números más altos no
@@ -109,7 +109,7 @@ export type LayerFormat = Exclude<FormatSpec, (value: number) => string> | Intl.
 /** Dónde va una marca dentro de su celda o junto a su punto. */
 export type Position = 'center' | 'left' | 'right' | 'top' | 'bottom' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
-export type MarkName = 'cell' | 'text' | 'icon' | 'point' | 'bar' | 'line' | 'rule' | 'link';
+export type MarkName = 'cell' | 'text' | 'icon' | 'point' | 'bar' | 'line' | 'rule' | 'link' | 'spark';
 
 export interface Layer {
   mark: MarkName;
@@ -160,6 +160,16 @@ export interface Layer {
   curve?: 'linear' | 'smooth';
   /** Línea: un punto en cada dato. */
   points?: boolean;
+  /**
+   * Minigráfico (`spark`): una línea pequeña por celda (misma x y misma y) con las filas de una serie
+   * larga. `period` ordena los puntos (un mes, una semana) y `value` da su altura.
+   */
+  period?: ExprValue;
+  value?: ExprValue;
+  /** Minigráfico: relleno suave bajo la línea. */
+  area?: boolean;
+  /** Minigráfico: marcar el mínimo y el máximo (el último punto siempre va marcado). */
+  extremes?: boolean;
   /** Regla y enlace: línea discontinua. */
   dash?: boolean | Cond<boolean>;
 }
@@ -175,6 +185,8 @@ export interface AxisSpec {
   axis?: 'bottom' | 'top' | 'left' | 'right' | false;
   /** Incluir el cero en un eje numérico (las barras ya lo incluyen). */
   zero?: boolean;
+  /** Categorías más anchas que las demás: { "Racha": 3 } (una columna de resumen junto a los días). */
+  widths?: Record<string, number>;
 }
 
 export interface GeoSpec {
@@ -214,6 +226,8 @@ export interface LayerSpec {
   theme?: ThemeName;
   height?: number;
   animate?: boolean;
+  /** Pinta el fondo con la superficie del tema. Por defecto true; false toma el de la página. */
+  background?: boolean;
   /**
    * Filas (una lista) o varias listas con nombre ({ "sitios": [...], "enlaces": [...] }). Una lista
    * con nombre también puede armarse de otra o pasar de ancho a largo: { "from": "red", "fold":

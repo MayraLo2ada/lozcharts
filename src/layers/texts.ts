@@ -4,14 +4,17 @@
  * semáforo, el nombre de cada ícono). Van aparte del catálogo general mientras las capas son una
  * muestra; si se quedan, pasan a core/i18n como un grupo más.
  */
-import { language } from '../core/i18n';
+import { language } from '@lozcharts/core';
 
 export interface LayerTexts {
   /** Nombre del tipo en la descripción accesible y cómo se llaman sus datos. */
   label: string;
   items: readonly [string, string];
-  /** Encabezado de la primera columna de la tabla de datos. */
+  /** Encabezado de la primera columna de la tabla de datos, y de la columna del valor. */
   item: string;
+  value: string;
+  /** Minigráfico: primer y último valor, el cambio entre ellos y los extremos. */
+  spark: { first: string; last: string; change: string; lowest: string; highest: string };
   worse: string;
   better: string;
   byRow: string;
@@ -73,6 +76,8 @@ const es: LayerTexts = {
   label: 'capas',
   items: ['dato', 'datos'],
   item: 'Dato',
+  value: 'Valor',
+  spark: { first: 'Primero', last: 'Último', change: 'Cambio', lowest: 'Mínimo', highest: 'Máximo' },
   worse: 'Peor',
   better: 'Mejor',
   byRow: 'por fila',
@@ -103,6 +108,14 @@ const es: LayerTexts = {
     signal: 'señal',
     home: 'casa',
     user: 'persona',
+    sun: 'sol',
+    cloud: 'nube',
+    partly: 'sol con nubes',
+    rain: 'lluvia',
+    storm: 'tormenta',
+    snow: 'nieve',
+    wind: 'viento',
+    plane: 'avión de papel',
   },
   expr: {
     empty: 'La expresión está vacía.',
@@ -139,7 +152,7 @@ const es: LayerTexts = {
     unknownColor: (value, hint) =>
       `No conozco el color "${value}".${hint} Usa un nombre (good, warn, bad, violet, pink…), un número de la paleta del 1 al 8 o un #hex.`,
     unknownIcon: (value, hint) => `No conozco el ícono "${value}".${hint} También puedes poner un emoji.`,
-    unknownScale: (value) => `No conozco la escala "${value}". Usa "semaforo", "sequential" o "diverging".`,
+    unknownScale: (value) => `No conozco la escala "${value}". Usa "traffic-light", "sequential" o "diverging".`,
     badBy: (value) => `"by" no puede ser "${value}": usa "row" (por fila), "column" (por columna) o "all" (todo junto).`,
     badThresholds: '"thresholds" debe ser una lista de números de menor a mayor, como [90, 95].',
     badCond: 'Una condición lleva "if" (la pregunta) y "then" (y, si quieres, "else").',
@@ -159,6 +172,8 @@ const en: LayerTexts = {
   label: 'layered chart',
   items: ['item', 'items'],
   item: 'Item',
+  value: 'Value',
+  spark: { first: 'First', last: 'Last', change: 'Change', lowest: 'Lowest', highest: 'Highest' },
   worse: 'Worse',
   better: 'Better',
   byRow: 'by row',
@@ -189,6 +204,14 @@ const en: LayerTexts = {
     signal: 'signal',
     home: 'home',
     user: 'person',
+    sun: 'sun',
+    cloud: 'cloud',
+    partly: 'partly cloudy',
+    rain: 'rain',
+    storm: 'storm',
+    snow: 'snow',
+    wind: 'wind',
+    plane: 'paper plane',
   },
   expr: {
     empty: 'The expression is empty.',
@@ -227,7 +250,7 @@ const en: LayerTexts = {
     unknownColor: (value, hint) =>
       `"${value}" isn't a known color.${hint} Use a name (good, warn, bad, violet, pink…), a palette number from 1 to 8 or a #hex.`,
     unknownIcon: (value, hint) => `There's no icon called "${value}".${hint} You can also use an emoji.`,
-    unknownScale: (value) => `There's no scale called "${value}". Use "semaforo", "sequential" or "diverging".`,
+    unknownScale: (value) => `There's no scale called "${value}". Use "traffic-light", "sequential" or "diverging".`,
     badBy: (value) => `"by" can't be "${value}": use "row", "column" or "all".`,
     badThresholds: '"thresholds" must be a list of numbers from low to high, like [90, 95].',
     badCond: 'A condition needs "if" (the question) and "then" (and "else" if you like).',
@@ -247,6 +270,8 @@ const pt: LayerTexts = {
   label: 'camadas',
   items: ['item', 'itens'],
   item: 'Item',
+  value: 'Valor',
+  spark: { first: 'Primeiro', last: 'Último', change: 'Variação', lowest: 'Mínimo', highest: 'Máximo' },
   worse: 'Pior',
   better: 'Melhor',
   byRow: 'por linha',
@@ -277,6 +302,14 @@ const pt: LayerTexts = {
     signal: 'sinal',
     home: 'casa',
     user: 'pessoa',
+    sun: 'sol',
+    cloud: 'nuvem',
+    partly: 'sol com nuvens',
+    rain: 'chuva',
+    storm: 'tempestade',
+    snow: 'neve',
+    wind: 'vento',
+    plane: 'avião de papel',
   },
   expr: {
     empty: 'A expressão está vazia.',
@@ -313,7 +346,7 @@ const pt: LayerTexts = {
     unknownColor: (value, hint) =>
       `Não conheço a cor "${value}".${hint} Use um nome (good, warn, bad, violet, pink…), um número da paleta de 1 a 8 ou um #hex.`,
     unknownIcon: (value, hint) => `Não conheço o ícone "${value}".${hint} Você também pode usar um emoji.`,
-    unknownScale: (value) => `Não conheço a escala "${value}". Use "semaforo", "sequential" ou "diverging".`,
+    unknownScale: (value) => `Não conheço a escala "${value}". Use "traffic-light", "sequential" ou "diverging".`,
     badBy: (value) => `"by" não pode ser "${value}": use "row" (por linha), "column" (por coluna) ou "all" (tudo junto).`,
     badThresholds: '"thresholds" deve ser uma lista de números do menor para o maior, como [90, 95].',
     badCond: 'Uma condição leva "if" (a pergunta) e "then" (e, se quiser, "else").',

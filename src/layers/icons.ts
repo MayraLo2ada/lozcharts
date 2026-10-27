@@ -30,6 +30,23 @@ function star(cx: number, cy: number, r: number): string {
   return d + 'z';
 }
 
+/** Rayos de un sol: `n` trazos cortos entre los radios r0 y r1, desde el ángulo `from` (grados). */
+function rays(cx: number, cy: number, r0: number, r1: number, n: number, from = 0, span = 360): string {
+  let d = '';
+  for (let k = 0; k < n; k++) {
+    const a = ((from + (span * k) / (span === 360 ? n : n - 1)) * Math.PI) / 180;
+    const p = (r: number) => `${(cx + r * Math.cos(a)).toFixed(2)} ${(cy + r * Math.sin(a)).toFixed(2)}`;
+    d += `M${p(r0)}L${p(r1)}`;
+  }
+  return d;
+}
+
+/** Nube de base plana, con su borde de abajo en `y` (la de lluvia va más arriba que la sola). */
+function cloud(y: number, dx = 0, k = 1): string {
+  const f = (v: number) => (v * k).toFixed(2);
+  return `M${(7.2 * k + dx).toFixed(2)} ${y}h${f(9.9)}a${f(4.1)} ${f(4.1)} 0 0 0 ${f(0.5)}-${f(8.2)}a${f(5.6)} ${f(5.6)} 0 0 0-${f(10.8)} ${f(1.5)}A${f(3.4)} ${f(3.4)} 0 0 0 ${(7.2 * k + dx).toFixed(2)} ${y}z`;
+}
+
 const FACE = circle(12, 12, 9);
 const EYES = [circle(9, 10, 1.15), circle(15, 10, 1.15)];
 
@@ -67,6 +84,15 @@ export const ICONS: Record<string, IconShape> = {
   signal: { stroke: ['M5 19.5v-2', 'M9.7 19.5v-5.2', 'M14.3 19.5v-8.6', 'M19 19.5V7.4'] },
   home: { stroke: ['M3.8 11.2 12 4l8.2 7.2', 'M6.2 9.4v11h11.6v-11', 'M10 20.4v-5.6h4v5.6'] },
   user: { stroke: [circle(12, 8.2, 3.7), 'M4.8 20.6c.9-3.8 3.7-6 7.2-6s6.3 2.2 7.2 6'] },
+  // Clima: la misma nube en todos, para que se lean como familia.
+  sun: { stroke: [circle(12, 12, 4.2), rays(12, 12, 7, 9.6, 8)] },
+  cloud: { stroke: [cloud(18.6)] },
+  partly: { stroke: [rays(8.6, 8.6, 4.8, 6.6, 4, 180, 135), 'M5.4 10.4a3.4 3.4 0 0 1 6.2-3.4', cloud(20.2, 2.2, 0.86)] },
+  rain: { stroke: [cloud(14.8), 'M8.6 17.6l-1.1 2.8', 'M12.6 17.6l-1.1 2.8', 'M16.6 17.6l-1.1 2.8'] },
+  storm: { stroke: [cloud(14.8), 'M13 16.2l-2.4 3.4h3l-1.9 3'] },
+  snow: { stroke: [cloud(14.8)], fill: [circle(8.4, 18.4, 1.1), circle(12, 20.6, 1.1), circle(15.6, 18.4, 1.1)] },
+  wind: { stroke: ['M3.4 9.4h11.2a2.7 2.7 0 1 0-2.7-2.7', 'M3.4 13.4h14.8a2.7 2.7 0 1 1-2.7 2.7', 'M3.4 17.4h6.2'] },
+  plane: { stroke: ['M20.6 3.4 3.4 10.6l7 2.5 2.5 7z', 'M10.4 13.1l4.7-4.7'] },
 };
 
 /** Otros nombres que se aceptan para los mismos íconos. */
@@ -88,6 +114,14 @@ export const ICON_ALIASES: Record<string, string> = {
   circle: 'dot',
   time: 'clock',
   person: 'user',
+  sunny: 'sun',
+  cloudy: 'cloud',
+  'partly-cloudy': 'partly',
+  rainy: 'rain',
+  thunder: 'storm',
+  snowy: 'snow',
+  windy: 'wind',
+  travel: 'plane',
 };
 
 export const ICON_NAMES = Object.keys(ICONS);

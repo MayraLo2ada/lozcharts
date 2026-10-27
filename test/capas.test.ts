@@ -3,14 +3,16 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { event, host, type FakeElement } from './dom';
-import { LozChart, checkLayers, layerOptions, type LayerSpec } from '../src/index';
+import { LozChart } from '../src/index';
+const LozChartClass = () => LozChart;
+import { checkLayers, layerOptions, layers, type LayerSpec } from '../src/layers/index';
 import { ExprError, compile, evaluate, fillTemplate, parse, parseTemplate } from '../src/layers/expr';
 import { buildModel, foldRows, scalePosition } from '../src/layers/compile';
 import { hitItem, iconMarkup, spatialStep } from '../src/layers/render';
 import { ICONS, ICON_NAMES, iconName, isGlyph } from '../src/layers/icons';
 import { layerTexts } from '../src/layers/texts';
 import { DARK, LIGHT } from '../src/core/theme';
-import '../qa/capas/ejemplos.js';
+import '../site/assets/capas-ejemplos.js';
 
 const run = (src: string, row: object = {}) => compile(src, 'es').run(row);
 const fails = (src: string, locale = 'es') => {
@@ -135,7 +137,7 @@ const TABLE: LayerSpec = {
     { fila: 'B', col: 'c2', v: 950 },
     { fila: 'B', col: 'c3', v: 800 },
   ],
-  layers: [{ mark: 'cell', x: 'col', y: 'fila', color: { field: 'v', scale: 'semaforo', by: 'row' } }],
+  layers: [{ mark: 'cell', x: 'col', y: 'fila', color: { field: 'v', scale: 'traffic-light', by: 'row' } }],
 };
 
 function scaleOf(spec: LayerSpec) {
@@ -232,7 +234,7 @@ const markup = (c: LozChart) =>
     .querySelectorAll('g')
     .map((g) => g.innerHTML)
     .join('');
-const quiet = (spec: LayerSpec) => LozChart.layers(host(), { animate: false, ...spec });
+const quiet = (spec: LayerSpec) => layers(host(), { animate: false, ...spec });
 
 test('marcas: celda, texto e ícono sobre una tabla', () => {
   const c = quiet({
@@ -352,11 +354,14 @@ test('avisos: en el idioma del gráfico, y nada si todo está bien', () => {
   const pt = checkLayers({ locale: 'pt-BR', data: [{ a: 1 }], layers: [] });
   assert.match(pt[0].message, /Falta "layers"/);
   assert.match(checkLayers('hola', 'es')[0].message, /objeto JSON/);
-  for (const ejemplo of (globalThis as unknown as { EJEMPLOS: { id: string; spec: LayerSpec }[] }).EJEMPLOS) {
-    // El mapa avisa que falta el mundo (en las pruebas no se carga): todo lo demás debe estar limpio.
-    const rest = checkLayers(ejemplo.spec).filter((p) => p.path !== 'geo.map');
-    assert.deepEqual(rest, [], `el ejemplo "${ejemplo.id}" no tiene problemas`);
-  }
+  const ejemplos = (globalThis as unknown as { capasEjemplos: (idioma: string) => { id: string; spec: LayerSpec }[] })
+    .capasEjemplos;
+  for (const idioma of ['es', 'en', 'pt'])
+    for (const ejemplo of ejemplos(idioma)) {
+      // El mapa avisa que falta el mundo (en las pruebas no se carga): todo lo demás debe estar limpio.
+      const rest = checkLayers(ejemplo.spec).filter((p) => p.path !== 'geo.map');
+      assert.deepEqual(rest, [], `el ejemplo "${ejemplo.id}" en ${idioma} no tiene problemas`);
+    }
 });
 
 test('LozChart.layers dibuja lo que está bien y avisa en la consola lo que no', () => {
@@ -448,4 +453,139 @@ test('layerOptions: las opciones de siempre, un dato por cada fila que se apunta
   assert.equal(o.data.length, 6);
   assert.equal(o.data[0].__t, 'A · c1');
   assert.equal(o.locale, 'es');
+});
+
+// ------------------------------------------------------------ 1.2.0
+
+test('spark: una línea por fila, en el orden del periodo, con su tooltip y en la tabla oculta', () => {
+  const spec: LayerSpec = {
+    locale: 'es',
+    data: [
+      { quien: 'Ana', mes: 3, nota: 8 },
+      { quien: 'Ana', mes: 1, nota: 6 },
+      { quien: 'Ana', mes: 2, nota: 7 },
+      { quien: 'Luis', mes: 1, nota: 9 },
+      { quien: 'Luis', mes: 2, nota: 5 },
+    ],
+    layers: [{ mark: 'spark', x: { value: 'Tendencia' }, y: 'quien', period: 'mes', value: 'nota', area: true, extremes: true }],
+  };
+  const m = buildModel(spec);
+  assert.deepEqual(m.problems, []);
+  assert.equal(m.items.length, 2, 'un dato por fila de la tabla, no por cada punto');
+  assert.deepEqual(m.layers[0].sparks, [
+    [1, 2, 0],
+    [3, 4],
+  ]);
+  const c = quiet(spec);
+  const root = c.element as unknown as FakeElement;
+  const svg = markup(c);
+  assert.equal(svg.match(/fill-opacity="0.16"/g)?.length, 2, 'el área suave de cada una');
+  assert.equal(svg.match(/r="2.75"/g)?.length, 2, 'el último punto marcado');
+  assert.equal(svg.match(/r="2.25"/g)?.length, 4, 'el mínimo y el máximo, huecos');
+  const table = root.querySelector('table')!.textContent;
+  assert.match(table, /Ana · Tendencia.*6 → 8 \(Primero: 6; Último: 8; Cambio: \+2; Mínimo: 6; Máximo: 8\)/);
+  assert.match(table, /Luis · Tendencia.*9 → 5.*Cambio: −?-?4/);
+  const falta = checkLayers({ locale: 'es', data: [{ a: 1 }], layers: [{ mark: 'spark', x: 'a', y: 'a' }] });
+  assert.match(falta[0].message, /Una capa "spark" necesita "value"/);
+});
+
+test('los colores salen del tema: estado, paleta propia y color de la serie', () => {
+  const spec: LayerSpec = {
+    locale: 'es',
+    data: [
+      { c: 'a', v: 1 },
+      { c: 'b', v: 2 },
+    ],
+    layers: [
+      { mark: 'bar', x: 'c', y: 'v' },
+      {
+        mark: 'icon',
+        x: 'c',
+        y: 'v',
+        icon: { if: 'v > 1', then: 'check', else: 'cross' },
+        color: { if: 'v > 1', then: 'good', else: 'bad' },
+      },
+    ],
+  };
+  const claro = markup(quiet(spec));
+  assert.ok(claro.includes(`fill="${LIGHT.palette[0]}"`), 'una barra sin color va en el de la serie');
+  assert.ok(claro.includes(`stroke="${LIGHT.good}"`) && claro.includes(`stroke="${LIGHT.bad}"`), 'good y bad son los del tema');
+  const oscuro = markup(quiet({ ...spec, theme: 'dark' }));
+  assert.ok(oscuro.includes(`stroke="${DARK.good}"`) && oscuro.includes(`fill="${DARK.palette[0]}"`));
+  // Con `palette` en las opciones del gráfico, la serie toma el primero de esa paleta.
+  const propia = new (LozChartClass())(host(), { ...layerOptions(spec), palette: ['#123456'], animate: false });
+  assert.ok(markup(propia).includes('fill="#123456"'));
+  // El semáforo va de bad a good del tema.
+  const t = markup(quiet({ ...TABLE, theme: 'dark' }));
+  assert.ok(t.includes(`fill="${DARK.bad}"`) && t.includes(`fill="${DARK.good}"`));
+});
+
+test('un ícono o un color mal escritos dejan sin dibujar solo ese caso', () => {
+  const spec: LayerSpec = {
+    locale: 'es',
+    data: [
+      { c: 'a', v: 1 },
+      { c: 'b', v: 2 },
+    ],
+    layers: [
+      {
+        mark: 'icon',
+        x: 'c',
+        y: 'v',
+        icon: { if: 'v > 1', then: 'smiel', else: 'sad' },
+        color: { if: 'v > 1', then: 'gren', else: 'pink' },
+      },
+    ],
+  };
+  const problems = checkLayers(spec);
+  assert.deepEqual(problems.map((p) => p.path).sort(), ['layers[0].color.then', 'layers[0].icon.then']);
+  const original = console.warn;
+  console.warn = () => {};
+  let svg = '';
+  try {
+    svg = markup(quiet(spec));
+  } finally {
+    console.warn = original;
+  }
+  assert.ok(svg.includes(ICONS.sad.stroke[1]), 'la carita triste sí se dibuja');
+  assert.ok(svg.includes(`stroke="${LIGHT.palette[1]}"`));
+  assert.ok(!svg.includes(ICONS.smile.stroke[1]));
+});
+
+test('columnas más anchas con widths, clima con sus íconos y nombre del valor por idioma', () => {
+  const spec: LayerSpec = {
+    locale: 'en',
+    data: [
+      { d: '1', h: 'Read', ok: 1 },
+      { d: '2', h: 'Read', ok: 0 },
+    ],
+    scales: { x: { widths: { Streak: 3 } } },
+    layers: [
+      { mark: 'cell', x: 'd', y: 'h', color: { if: 'ok == 1', then: 'violet', else: 'grid' } },
+      { mark: 'text', x: { value: 'Streak' }, y: 'h', text: '1', tooltip: false },
+    ],
+  };
+  const c = quiet(spec);
+  const widths = [...markup(c).matchAll(/<rect[^>]*width="([\d.]+)"[^>]*rx=/g)].map((m) => Number(m[1]));
+  assert.equal(widths.length, 2);
+  assert.ok(
+    widths.every((w) => Math.abs(w - widths[0]) < 0.01),
+    'los días miden lo mismo',
+  );
+  const root = c.element as unknown as FakeElement;
+  assert.match(
+    root
+      .querySelector('table')!
+      .querySelectorAll('th')
+      .map((t) => t.textContent)
+      .join('|'),
+    /Item\|Value/,
+  );
+  for (const name of ['sun', 'cloud', 'partly', 'rain', 'storm', 'snow', 'wind', 'plane']) assert.ok(ICONS[name], name);
+  assert.equal(iconName('rainy'), 'rain');
+});
+
+test('la entrada aparte: registra el tipo y deja LozChart.layers', () => {
+  assert.equal(typeof (LozChartClass() as unknown as { layers?: unknown }).layers, 'function');
+  assert.ok((LozChartClass() as unknown as { seriesTypes: string[] }).seriesTypes.includes('layers'));
 });

@@ -8,6 +8,9 @@ import { defineConfig } from 'vite';
 // - element: dist/element.js, el elemento <loz-chart> (importa '@lozcharts/core').
 // - world: dist/maps/world.js (ESM, registra el mapa en '@lozcharts/core') y
 // - world-umd: dist/maps/world.umd.js (registra el mapa en window.LozChart), y world-cjs para require.
+// - layers: dist/layers.js (ESM), layers-cjs: dist/layers.cjs (require) y layers-umd:
+//   dist/layers.umd.js (<script>, se conecta a window.LozChart): los gráficos por capas, aparte
+//   para que el núcleo no pese más. Los tres usan el LozChart del paquete, no traen otro.
 // Para require, el UMD se copia como lozcharts.umd.cjs: con "type": "module", Node leería un .js como ESM.
 const format = process.env.LC_FORMAT;
 
@@ -18,6 +21,14 @@ const libs = {
   element: { entry: 'src/element.ts', formats: ['es' as const], fileName: () => 'element.js' },
   // Para require: el mapa como CommonJS, que hace require('@lozcharts/core') y lo registra ahí.
   'world-cjs': { entry: 'src/maps/register-world.ts', formats: ['cjs' as const], fileName: () => 'maps/world.cjs' },
+  layers: { entry: 'src/layers/index.ts', formats: ['es' as const], fileName: () => 'layers.js' },
+  'layers-cjs': { entry: 'src/layers/index.ts', formats: ['cjs' as const], fileName: () => 'layers.cjs' },
+  'layers-umd': {
+    entry: 'src/layers/umd.ts',
+    name: 'LozChartLayers',
+    formats: ['umd' as const],
+    fileName: () => 'layers.umd.js',
+  },
   'world-umd': {
     entry: 'src/maps/world-umd.ts',
     name: 'LozChartWorld',
@@ -30,11 +41,14 @@ const lib = libs[format as keyof typeof libs] ?? {
   formats: ['es' as const],
   fileName: () => 'lozcharts.js',
 };
-const umd = format === 'umd' || format === 'world-umd';
+const umd = format === 'umd' || format === 'world-umd' || format === 'layers-umd';
 
 export default defineConfig({
   // En el UMD todo va junto: '@lozcharts/core' (que importa <loz-chart>) es el propio código fuente.
-  resolve: umd ? { alias: { '@lozcharts/core': fileURLToPath(new URL('./src/index.ts', import.meta.url)) } } : {},
+  resolve:
+    umd && format !== 'layers-umd'
+      ? { alias: { '@lozcharts/core': fileURLToPath(new URL('./src/index.ts', import.meta.url)) } }
+      : {},
   build: {
     emptyOutDir: !format,
     // El mapa del mundo son datos: un sourcemap solo duplicaría sus 110 KB.
@@ -45,10 +59,11 @@ export default defineConfig({
       external:
         format === 'react'
           ? ['react', '@lozcharts/core']
-          : format === 'world' || format === 'world-cjs' || format === 'element'
+          : ['world', 'world-cjs', 'element', 'layers', 'layers-cjs', 'layers-umd'].includes(format ?? '')
             ? ['@lozcharts/core']
             : [],
-      output: umd ? { exports: 'default' } : {},
+      // En el UMD de las capas, '@lozcharts/core' es el LozChart que ya cargó la página.
+      output: umd ? { exports: 'default', globals: { '@lozcharts/core': 'LozChart' } } : {},
     },
   },
 });
