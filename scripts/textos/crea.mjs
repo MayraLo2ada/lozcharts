@@ -171,5 +171,4 @@ export default {
     en: 'Everything you can write is in the docs.',
     pt: 'Tudo o que dá para escrever está na documentação.',
   },
-  ancla_capas: { es: 'gráficos-por-capas', en: 'layered-charts', pt: 'gráficos-em-camadas' },
 };

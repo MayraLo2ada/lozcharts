@@ -91,6 +91,28 @@ export default {
     pt: 'O que acende acabou de mudar. Ao copiar, vão todas as linhas, não só as quatro que aparecem.',
   },
 
+  // ------------------------------------------------------------ Crea el tuyo (gráficos por capas)
+  et_capas: { es: 'Nuevo · Crea el tuyo', en: 'New · Make your own', pt: 'Novo · Crie o seu' },
+  capas_l1: { es: 'Inventa', en: 'Invent', pt: 'Invente' },
+  capas_l2: { es: 'tu gráfico.', en: 'your chart.', pt: 'seu gráfico.' },
+  capas_texto: {
+    es: 'Cuando ningún tipo te sirve, armas el tuyo por capas: cuadritos, caritas, íconos, puntos, barras y líneas, uno encima del otro. Lo describes en un JSON corto y se dibuja al instante. Trae 29 íconos propios, sin emojis ni imágenes de afuera.',
+    en: 'When no chart type fits, you build your own in layers: squares, faces, icons, dots, bars, and lines, one on top of the other. You describe it in a short JSON and it draws right away. It comes with 29 icons of its own, no emojis or outside images.',
+    pt: 'Quando nenhum tipo serve, você monta o seu em camadas: quadradinhos, carinhas, ícones, pontos, barras e linhas, um em cima do outro. Você descreve num JSON curto e ele se desenha na hora. Vem com 29 ícones próprios, sem emojis nem imagens de fora.',
+  },
+  capas_ejemplos_aria: {
+    es: 'Ejemplos de gráficos por capas',
+    en: 'Layered chart examples',
+    pt: 'Exemplos de gráficos em camadas',
+  },
+  capas_json_aria: {
+    es: 'El JSON que dibuja el gráfico',
+    en: 'The JSON that draws the chart',
+    pt: 'O JSON que desenha o gráfico',
+  },
+  capas_cta: { es: 'Abre el editor', en: 'Open the editor', pt: 'Abra o editor' },
+  capas_docs: { es: 'Cómo se escribe', en: 'How to write one', pt: 'Como se escreve' },
+
   // ------------------------------------------------------------ Los 26 tipos
   et_tipos: { es: 'Los 26 tipos', en: 'All 26 types', pt: 'Os 26 tipos' },
   tipos_l1: { es: '26 formas de', en: '26 ways to', pt: '26 jeitos de' },

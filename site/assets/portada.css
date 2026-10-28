@@ -892,6 +892,53 @@ code {
   color: var(--tinta-2);
 }
 
+/* ---------------------------------------------------------------- Crea el tuyo (capas) */
+
+.capas-resumen {
+  margin: 0;
+  padding: calc(14 * var(--u)) clamp(12px, 1vw, 24px) 0;
+  color: var(--e-tinta-2);
+  font-size: clamp(14px, 0.3vw + 10px, 19px);
+}
+.capas-grafico {
+  min-height: clamp(360px, 28vw, 720px);
+  margin: 0 clamp(8px, 1vw, 24px) clamp(8px, 1vw, 20px);
+  min-width: 0;
+}
+.capas-archivo,
+.capas-ms {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 calc(16 * var(--u));
+  font-family: var(--mono);
+  font-size: clamp(13px, 0.25vw + 10px, 17px);
+}
+.capas-archivo {
+  color: var(--tinta);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.capas-ms {
+  flex: none;
+  color: var(--lima);
+}
+.capas-cola {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 28px;
+  padding: clamp(12px, 1vw, 24px);
+  border-top: 1px solid var(--linea);
+}
+.capas-docs {
+  color: var(--tinta);
+  text-decoration-color: var(--violeta);
+  text-underline-offset: 4px;
+}
+
 /* ---------------------------------------------------------------- Bento de los 26 */
 
 .bento {

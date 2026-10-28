@@ -29,4 +29,5 @@ export default {
   // Anclas de la documentación de cada idioma (salen de los títulos de su README).
   ancla_instalar: { es: 'instalar', en: 'install', pt: 'instalação' },
   ancla_tipos: { es: 'tipos-de-serie', en: 'series-types', pt: 'tipos-de-série' },
+  ancla_capas: { es: 'gráficos-por-capas', en: 'layered-charts', pt: 'gráficos-em-camadas' },
 };

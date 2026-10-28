@@ -238,7 +238,7 @@
           x: { value: N.promedio },
           y: N.estudiante,
           position: 'left',
-          size: 18,
+          size: 26,
           icon: { if: promedio + ' >= 6', then: 'smile', else: 'sad' },
           color: { if: promedio + ' >= 6', then: 'good', else: 'bad' },
           alt: {

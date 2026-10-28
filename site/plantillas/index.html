@@ -200,10 +200,44 @@
         </div>
       </section>
 
+      <!-- ============================================================ Crea el tuyo (gráficos por capas) -->
+      <section class="cartel" id="crea-el-tuyo" aria-labelledby="t-capas">
+        <div class="wrap">
+          <p class="etiqueta"><span>03</span><span>{{et_capas}}</span></p>
+          <div class="lab-cabeza">
+            <h2 class="grito armar" id="t-capas" data-arma>
+              <span class="fit"><span>{{capas_l1}}</span></span>
+              <span class="fit violeta"><span>{{capas_l2}}</span></span>
+            </h2>
+            <p class="texto">{{capas_texto}}</p>
+          </div>
+
+          <div class="lab capas">
+            <div class="escenario">
+              <div class="tipos-lab" role="tablist" aria-label="{{capas_ejemplos_aria}}" id="capas-tabs"></div>
+              <p class="capas-resumen" id="capas-resumen"></p>
+              <div class="capas-grafico" id="capas-grafico" role="tabpanel"></div>
+            </div>
+
+            <div class="codigo capas-codigo">
+              <div class="codigo-barra">
+                <p class="capas-archivo">LozChart.layers('#chart', spec)</p>
+                <span class="capas-ms" id="capas-ms" aria-live="off"></span>
+              </div>
+              <pre class="codigo-pre" tabindex="0" aria-label="{{capas_json_aria}}"><code id="capas-json"></code></pre>
+              <div class="capas-cola">
+                <a class="boton boton-lima" href="{{p:crea}}">{{capas_cta}}</a>
+                <a class="capas-docs" href="{{p:docs}}#{{ancla_capas}}">{{capas_docs}}</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ============================================================ Los 26 tipos -->
       <section class="cartel" id="tipos" aria-labelledby="t-tipos">
         <div class="wrap">
-          <p class="etiqueta"><span>03</span><span>{{et_tipos}}</span></p>
+          <p class="etiqueta"><span>04</span><span>{{et_tipos}}</span></p>
           <div class="tipos-cabeza">
             <h2 class="grito armar" id="t-tipos" data-arma>
               <span class="fit"><span>{{tipos_l1}}</span></span>
@@ -221,7 +255,7 @@
       <!-- ============================================================ Accesible -->
       <section class="cartel" id="accesible" aria-labelledby="t-acc">
         <div class="wrap">
-          <p class="etiqueta"><span>04</span><span>{{et_accesible}}</span></p>
+          <p class="etiqueta"><span>05</span><span>{{et_accesible}}</span></p>
           <h2 class="grito armar" id="t-acc" data-arma>
             <span class="fit"><span>{{acc_l1}}</span></span>
             <span class="fit rosa"><span>{{acc_l2}}</span></span>
@@ -253,7 +287,7 @@
       <section class="cartel" id="liviana" aria-labelledby="t-kb">
         <div class="wrap kb-rejilla">
           <div>
-            <p class="etiqueta"><span>05</span><span>{{et_liviana}}</span></p>
+            <p class="etiqueta"><span>06</span><span>{{et_liviana}}</span></p>
             <h2 class="grito armar" id="t-kb" data-arma>
               <span class="fit"><span>{{kb_l1}}</span></span>
               <span class="fit violeta"><span>{{kb_l2}}</span></span>
@@ -276,7 +310,7 @@
       <section class="cartel caso" id="caso" aria-labelledby="t-caso">
         <div class="wrap caso-rejilla">
           <div>
-            <p class="etiqueta"><span>06</span><span>{{nav_caso}}</span></p>
+            <p class="etiqueta"><span>07</span><span>{{nav_caso}}</span></p>
             <h2 class="grito armar" id="t-caso" data-arma>
               <span class="fit"><span>{{caso_l1}}</span></span>
               <span class="fit rosa acento"><span>{{caso_l2}}</span></span>
@@ -293,7 +327,7 @@
       <section id="gratis" aria-labelledby="t-modelo">
         <div class="cartel cartel-modelo">
           <div class="wrap">
-            <p class="etiqueta"><span>07</span><span>{{et_modelo}}</span></p>
+            <p class="etiqueta"><span>08</span><span>{{et_modelo}}</span></p>
             <h2 class="grito armar" id="t-modelo" data-arma>
               <span class="fit"><span>{{modelo_l1}}</span></span>
               <span class="fit rosa acento"><span>{{modelo_l2}}</span></span>
@@ -369,5 +403,8 @@
     <script defer src="{{raiz}}assets/portada.js"></script>
     <script defer src="{{raiz}}assets/portada-lab.js"></script>
     <script defer src="{{raiz}}assets/portada-tipos.js"></script>
+    <script defer src="{{raiz}}lib/layers.umd.js"></script>
+    <script defer src="{{raiz}}assets/capas-ejemplos.js"></script>
+    <script defer src="{{raiz}}assets/portada-capas.js"></script>
   </body>
 </html>
